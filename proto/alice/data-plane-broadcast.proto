@@ -1,0 +1,42 @@
+syntax = "proto3";
+package alice.data;
+
+import "common.proto";
+
+message WorkerStats {
+  string name = 1;
+  int32 maxActivateRequests = 2;
+  int32 activeRequestCount = 3;
+}
+
+message BrokerStats {
+  string functionName = 1;
+  bool inspector = 2;
+  repeated WorkerStats workers = 3;
+  bool useCGIMode = 4;
+}
+
+message WorkerTrafficStatsSnapshotBroadcast {
+  repeated BrokerStats brokers = 1;
+}
+
+message WorkerTrafficStatsSnapshot {
+  repeated BrokerStats brokers = 1;
+}
+
+message RequestQueueingBroadcast {
+  string name = 1;
+  bool isInspect = 2;
+  WorkerTrafficStatsSnapshot stats = 3;
+  int32 queuedRequestCount = 4;
+  string requestId = 5;
+}
+
+message ContainerStatusReport {
+  string functionName = 1;
+  bool isInspector = 2;
+  string event = 3;
+  float timestamp = 4;
+  string name = 5;
+  string requestId = 6;
+}

@@ -1,0 +1,64 @@
+syntax = "proto3";
+package alice;
+
+message Any {
+  string typeUrl = 1;
+  bytes data = 2;
+}
+
+message Empty {}
+
+message KeyValuePair {
+  string key = 1;
+  string value = 2;
+}
+
+message SetFunctionProfileRequest {
+  repeated FunctionProfile profiles = 1;
+  string mode = 2;
+}
+
+message SetFunctionProfileResponse {
+  bool set = 1;
+}
+
+message FunctionProfile {
+  string name = 1;
+  string runtime = 2;
+  string url = 3;
+  string signature = 4;
+
+  string handler = 5;
+  string initializer = 6;
+  string sourceFile = 7;
+
+  ResourceLimit resourceLimit = 8;
+  FunctionProfileWorker worker = 9;
+  repeated KeyValuePair environments = 10;
+  RateLimit rateLimit = 11;
+
+  string namespace = 12;
+}
+
+message RateLimit {
+  int32 maxTokenCount = 1;
+  int32 tokensPerFill = 2;
+  int32 fillInterval = 3;
+}
+
+message ResourceLimit {
+  int32 memory = 1; // 最大 3G 不到
+  float cpu = 2;
+}
+
+message FunctionProfileWorker {
+  int32 initializationTimeout = 1;
+  int32 maxActivateRequests = 2;
+  int32 reservationCount = 3;
+  bool fastFailRequestsOnStarting = 4;
+  int32 replicaCountLimit = 5;
+  repeated string v8Options = 6;
+  string shrinkStrategy = 7;
+  repeated string execArgv = 8;
+  bool useCGIMode = 9;
+}

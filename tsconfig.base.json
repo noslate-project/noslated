@@ -1,0 +1,38 @@
+{
+  "compilerOptions": {
+    "composite": true,
+    "incremental": true,
+
+    "target": "esnext",
+    "module": "commonjs",
+    "lib": ["ES2020"],
+    "allowJs": true,
+
+    "outDir": "./build",
+    "rootDir": "./src",
+    "paths": {
+      "#self/*": ["./src/*"]
+    },
+    "typeRoots": [
+      "./typings",
+      "./node_modules/@types"
+    ],
+    "declaration": true,
+
+    "strict": true,
+
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+
+    "inlineSourceMap": true,
+
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+
+    "suppressImplicitAnyIndexErrors": true
+  },
+  "exclude": [
+    "node_modules"
+  ]
+}

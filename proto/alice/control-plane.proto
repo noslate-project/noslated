@@ -1,0 +1,62 @@
+syntax = "proto3";
+package alice.control;
+
+import "common.proto";
+
+service ControlPlane {
+  rpc setFunctionProfile(SetFunctionProfileRequest) returns (SetFunctionProfileResponse);
+  rpc getFunctionProfile(Empty) returns (GetFunctionProfileResponse);
+  rpc setPlatformEnvironmentVariables(SetPlatformEnvironmentVariablesRequest) returns (SetPlatformEnvironmentVariablesResponse);
+  rpc getWorkerStatsSnapshot(Empty) returns (WorkerStatsSnapshotResponse);
+}
+
+message WorkerAdditionalData {
+  int32 maxActivateRequests = 1;
+  int32 activeRequestCount = 2;
+  bool trafficOff = 3;
+}
+
+message GetFunctionProfileResponse {
+  repeated FunctionProfile profiles = 1;
+}
+
+message WorkerStats {
+  string name = 1;
+  string credential = 2;
+  double registerTime = 4;
+  int32 pid = 5;
+  string status = 6;
+  string containerStates = 7;
+  string gcStatus = 8;
+  int32 gcStartTime = 9;
+  WorkerAdditionalData data = 10;
+}
+
+message StartingPoolItem {
+  string workerName = 1;
+  string credential = 2;
+  int32 estimateRequestLeft = 3;
+  int32 maxActivateRequests = 4;
+}
+
+message BrokerStats {
+  string name = 1;
+  bool inspector = 2;
+  int32 redundantTimes = 4;
+
+  FunctionProfile profile = 5;
+  repeated StartingPoolItem startingPool = 6;
+  repeated WorkerStats workers = 7;
+}
+
+message WorkerStatsSnapshotResponse {
+  repeated BrokerStats brokers = 1;
+}
+
+message SetPlatformEnvironmentVariablesRequest {
+  repeated KeyValuePair envs = 1;
+}
+
+message SetPlatformEnvironmentVariablesResponse {
+  bool set = 1;
+}

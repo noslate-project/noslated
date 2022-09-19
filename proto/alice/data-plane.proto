@@ -1,0 +1,97 @@
+syntax = "proto3";
+package alice.data;
+
+import "common.proto";
+
+service DataPlane {
+  rpc setFunctionProfile(SetFunctionProfileRequest) returns (SetFunctionProfileResponse);
+  rpc setServiceProfiles(ServiceProfilesAccessor) returns (Empty);
+  rpc getServiceProfiles(Empty) returns (ServiceProfilesAccessor);
+  rpc useInspector(UseInspectorRequest) returns (Empty);
+  rpc setDaprAdaptor(SetDaprAdaptorRequest) returns (Empty);
+  rpc registerWorkerCredential(RegisterWorkerCredentialRequest) returns (Empty);
+  rpc serverSockPath(Empty) returns (ServerSockPathResponse);
+  rpc reduceCapacity(CapacityReductionRequest) returns (CapacityReductionResponse);
+
+  rpc startWorkerFastFail(StartWorkerFastFailRequest) returns (Empty);
+
+  /**
+   * experimental
+   */
+  rpc setTracingCategories(SetTracingCategoriesRequest) returns (Empty);
+  rpc startInspector(StartInspectorRequest) returns (Empty);
+}
+
+message UseInspectorRequest {
+  string funcName = 1;
+  bool use = 2;
+}
+
+message SetDaprAdaptorRequest {
+  string modulePath = 1;
+}
+
+message RegisterWorkerCredentialRequest {
+  string funcName = 1;
+  string processName = 2;
+  string credential = 3;
+  bool inspect = 4;
+}
+
+message ServerSockPathResponse {
+  string path = 1;
+}
+
+message CapacityReductionWorker {
+  string name = 1;
+  string credential = 2;
+}
+
+message CapacityReductionBroker {
+  string functionName = 1;
+  bool inspector = 2;
+  repeated CapacityReductionWorker workers = 3;
+}
+
+message CapacityReductionRequest {
+  repeated CapacityReductionBroker brokers = 1;
+}
+
+message CapacityReductionResponse {
+  repeated CapacityReductionBroker brokers = 1;
+}
+
+message StartWorkerFastFailRequest {
+  string type = 1;
+  string funcName = 2;
+  bool inspect = 3;
+  string message = 4;
+  string stack = 5;
+  string displayMessage = 6;
+}
+
+message FunctionService {
+  string name = 1;
+  string type = 2;
+  message Selector {
+    repeated KeyValuePair selector = 1;
+    float proportion = 2;
+  }
+  repeated Selector selectors = 3;
+  repeated KeyValuePair selector = 4;
+}
+
+message ServiceProfilesAccessor {
+  repeated FunctionService profiles = 1;
+}
+
+message SetTracingCategoriesRequest {
+  string functionName = 1;
+  bool inspect = 2;
+  repeated string categories = 3;
+}
+
+message StartInspectorRequest {
+  string functionName = 1;
+  bool inspect = 2;
+}

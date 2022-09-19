@@ -1,0 +1,25 @@
+#!/usr/bin/env node
+
+'use strict';
+
+const Logger = require('#self/lib/logger');
+const { config } = require('#self/config');
+const { ControlPlane } = require('#self/control_plane/index');
+
+(async function() {
+  Logger.setSink(Logger.getPrettySink('control_plane.log'));
+
+  const controlPlane = new ControlPlane(config);
+  await controlPlane.ready();
+
+  const onSignal = async () => {
+    await controlPlane.close();
+    process.exit(0);
+  };
+
+  process.on('SIGINT', onSignal);
+  process.on('SIGTERM', onSignal);
+})().catch(err => {
+  console.error(err);
+  process.exit(1);
+});

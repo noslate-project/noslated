@@ -1,0 +1,14 @@
+syntax = "proto3";
+package alice.test;
+
+service TestService {
+  rpc ping(Ping) returns (Pong);
+}
+
+message Ping {
+  string msg = 1;
+}
+
+message Pong {
+  string msg = 2;
+}
