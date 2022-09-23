@@ -152,7 +152,7 @@ export class Turf {
     const lines = ret.split('\n').filter(l => l);
     if (!lines.length) return null;
     const obj = lines.reduce((obj, line) => {
-      // Output format and semantics: https://yuque.antfin.com/alinode-project/alinode-cloud/utlp6l
+      // Output format and semantics
       const match = TurfStateLineMatcher.exec(line);
       if (match == null) {
         return obj;

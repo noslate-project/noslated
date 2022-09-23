@@ -1,7 +1,6 @@
 import cp from 'child_process';
 
 /**
- * See https://yuque.antfin.com/alinode-project/alinode-cloud/utlp6l
  * @enum
  */
 export enum TurfContainerStates {

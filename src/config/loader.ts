@@ -31,7 +31,6 @@ export function resolveEnvConfig() {
     envConfig.logger.level = process.env.ALICE_LOG_LEVEL;
   }
 
-  // Refs: https://yuque.antfin-inc.com/alinode-project/alinode-cloud/gqcmgi#9Veu0
   if (process.env.ALICE_LOGDIR) {
     envConfig.logger.dir = process.env.ALICE_LOGDIR;
   }
