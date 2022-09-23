@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+service service {
+  rpc trigger(TriggerRequest) returns (TriggerResponse) {}
+}
+
+message TriggerRequest {
+  string method = 1;
+}
+
+message TriggerResponse {
+  int32 status = 1;
+}

@@ -1,0 +1,46 @@
+syntax = "proto3";
+package alice;
+
+import "common.proto";
+
+service Host {
+  rpc connect(stream Request) returns (stream SubscriptionChunk);
+}
+
+enum RequestType {
+  RESERVED = 0; /** this one is reserved for future use */
+  SUBSCRIBE = 1;
+  LIVENESS_PROBE = 2;
+}
+
+message Request {
+  RequestType type = 1;
+  oneof request_oneof {
+    SubscriptionRequest subscription = 11;
+    LivenessProbeRequest liveness = 12;
+  }
+}
+
+message SubscriptionRequest {
+  string eventName = 1;
+  bool subscribe = 2;
+}
+
+message SubscriptionChunk {
+  uint32 timestamp = 1;
+  repeated SubscriptionEvent events = 2;
+}
+
+message SubscriptionEvent {
+  string name = 1;
+  Any data = 2;
+}
+
+message LivenessProbeRequest {
+  uint32 timestamp = 1;
+}
+
+message LivenessProbeEventData {
+  uint32 timestamp = 1;
+  KeyValuePair component_liveness = 2;
+}

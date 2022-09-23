@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "tsBuildInfoFile": "build/src.tsbuildinfo",
+  },
+  "include": [
+    "src",
+    // https://github.com/microsoft/TypeScript/issues/33827
+    "src/**/*.json"
+  ],
+  "exclude": [
+    "src/test",
+    "src/**/__test__"
+  ]
+}

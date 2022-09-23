@@ -1,0 +1,86 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Alice Service Metadata",
+  "description": "the metadata schema for services in Alice",
+  "type":"array",
+  "uniqueItems": true,
+  "additionalItems": false,
+  "definitions": {
+    "default-service": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "service name"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["default"],
+          "description": "service type"
+        },
+        "selector": {
+          "type": "object",
+          "properties": {
+            "functionName": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "required": [
+        "name",
+        "selector"
+      ],
+      "additionalProperties": true
+    },
+    "proportional-load-balance-service": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "service name"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["proportional-load-balance"],
+          "description": "service type"
+        },
+        "selectors": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "selector": {
+                "type": "object",
+                "properties": {
+                  "functionName": {
+                    "type": "string"
+                  }
+                }
+              },
+              "proportion": {
+                "type": "number"
+              }
+            }
+          }
+        }
+      },
+      "required": [
+        "name",
+        "type",
+        "selectors"
+      ],
+      "additionalProperties": true
+    }
+  },
+  "items": {
+    "oneOf": [
+      {
+        "$ref": "#/definitions/default-service"
+      },
+      {
+        "$ref": "#/definitions/proportional-load-balance-service"
+      }
+    ]
+  }
+}

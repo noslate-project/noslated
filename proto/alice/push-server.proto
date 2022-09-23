@@ -1,0 +1,43 @@
+syntax = "proto3";
+package alice.data;
+
+import "common.proto";
+
+service PushServer {
+  rpc invoke(InvokeRequest) returns (InvokeResponse);
+  rpc invokeService(InvokeRequest) returns (InvokeResponse);
+}
+
+message InvokeRequest {
+  string name = 1;
+  string url = 2;
+  string method = 3;
+  repeated KeyValuePair headers = 4;
+  repeated KeyValuePair baggage = 5;
+  uint32 timeout = 6;
+  bytes body = 7;
+  string requestId = 8;
+}
+
+message InvokeResponse {
+  oneof maybe {
+    InvokeErrorResponse error = 1;
+    InvokeResultResponse result = 2;
+  }
+}
+
+message InvokeErrorResponse {
+  string name = 1;
+  string message = 2;
+  string stack = 3;
+  string peerMessage = 4;
+  string peerStack = 5;
+  string operation = 6;
+  int32 code = 7;
+}
+
+message InvokeResultResponse {
+  int32 status = 1;
+  repeated KeyValuePair headers = 2;
+  bytes body = 3;
+}

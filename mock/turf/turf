@@ -1,0 +1,39 @@
+#!/usr/bin/env node
+
+'use strict';
+
+const { Command } = require('commander');
+
+// .
+// |- code
+// |   |- 用户代码
+// |- config.json
+//
+// 1. turf spec
+// 2. turf create func1
+// 2. turf start func1
+// 3. turf stop func1
+
+// turf list
+// turf ps
+// turf delete
+const program = new Command();
+
+program.version('0.0.1');
+
+program.option('-H', 'switch to command mode');
+
+program.command('create <name>').action(require('./create'));
+program.command('start <name>')
+  .option('--stdout <path>')
+  .option('--stderr <path>')
+  .action(require('./start'));
+program.command('stop <name>').action(require('./stop'));
+program.command('delete <name>').action(require('./delete'));
+program.command('run <name>').action(name => {
+  require('./create')(name);
+  require('./start')(name, { attach: true });
+});
+program.command('ps').action(require('./ps'));
+
+program.parse(process.argv);

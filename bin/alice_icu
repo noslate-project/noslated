@@ -1,0 +1,23 @@
+#!/usr/bin/env node
+
+'use strict';
+
+const arg = require('arg');
+const { icu } = require('#self/lib/icu/_util');
+
+async function main(argv) {
+  const args = arg({
+    '--help': Boolean,
+    '--version': Boolean,
+  }, {
+    argv,
+    stopAtPositional: true,
+  });
+
+  // TODO: help and version
+
+  const cli = require(`#self/lib/icu/${args._[0]}`);
+  icu(cli(args._.slice(1)));
+}
+
+main(process.argv.slice(2));

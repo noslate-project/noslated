@@ -1,0 +1,233 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Alice Function Metadata",
+  "description": "the metadata schema for Functions in Alice",
+  "type":"array",
+  "uniqueItems": true,
+  "additionalItems": false,
+  "definitions": {
+    "resourceLimit": {
+      "type": "object",
+      "properties": {
+        "memory": {
+          "type": "number",
+          "description": "the memory limit (byte)"
+        },
+        "cpu": {
+          "type": "number",
+          "description": "the cpu limit (0-1)"
+        }
+      },
+      "additionalProperties": true
+    },
+    "environments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "description": "environment key"
+          },
+          "value": {
+            "type": "string",
+            "description": "environment value"
+          }
+        },
+        "required": [
+          "key",
+          "value"
+        ]
+      }
+    },
+    "worker": {
+      "type": "object",
+      "properties": {
+        "initializationTimeout": {
+          "type": "number",
+          "description": "timeout for initializing per worker"
+        },
+        "maxActivateRequests": {
+          "type": "number",
+          "description": "max activate requests per worker"
+        },
+        "reservationCount": {
+          "type": "number",
+          "description": "the reservation worker count per node"
+        },
+        "replicaCountLimit": {
+          "type": "number",
+          "description": "the limitation for replica count"
+        },
+        "fastFailRequestsOnStarting": {
+          "type": "boolean",
+          "description": "whether requests should hold on when starting worker"
+        },
+        "shrinkStrategy": {
+          "type": "string",
+          "description": "The shrink strategy",
+          "enum": [ "FILO", "FIFO", "LCC" ]
+        },
+        "v8Options": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "The additional v8 options. Deprecated"
+        },
+        "execArgv": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "The additional exec argv."
+        },
+        "useCGIMode": {
+          "type": "boolean",
+          "description": "whether use CGI mode to process request"
+        }
+      },
+      "additionalProperties": true
+    },
+    "rateLimit": {
+      "type": "object",
+      "properties": {
+        "maxTokenCount": {
+          "type": "number",
+          "description": "max token count for the token bucket"
+        },
+        "tokensPerFill": {
+          "type": "number",
+          "description": "number of tokens filled per refill"
+        },
+        "fillInterval": {
+          "type": "number",
+          "description": "fill interval for tokens. token count in the bucket will never exceed the `maxTokenCount`"
+        }
+      }
+    }
+  },
+  "items": {
+    "oneOf": [{
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "the function name"
+        },
+        "runtime": {
+          "type": "string",
+          "enum": [ "nodejs-v16" ],
+          "description": "the function runtime"
+        },
+        "url": {
+          "type": "string",
+          "description": "the code download URL",
+          "examples": [
+            "file:///home/admin/code/A",
+            "https://oss/foobar/A.zip"
+          ]
+        },
+        "signature": {
+          "type": "string",
+          "description": "the code sign",
+          "examples": [
+            "md5:xxx"
+          ]
+        },
+        "handler": {
+          "type": "string",
+          "pattern": "^[^\\.]+\\.[^\\.]+$",
+          "description": "the function handler. e.g. foo.bar"
+        },
+        "initializer": {
+          "type": "string",
+          "pattern": "^[^\\.]+\\.[^\\.]+$",
+          "description": "the function initializer. e.g. foo.bar"
+        },
+        "rateLimit": {
+          "$ref": "#/definitions/rateLimit"
+        },
+        "resourceLimit": {
+          "$ref": "#/definitions/resourceLimit"
+        },
+        "worker": {
+          "$ref": "#/definitions/worker"
+        },
+        "environments": {
+          "$ref": "#/definitions/environments"
+        },
+        "namespace": {
+          "type": "string",
+          "description": "worker related resources namespace, eg. kv_storage"
+        }
+      },
+      "required": [
+        "name",
+        "runtime",
+        "url",
+        "signature",
+        "handler"
+      ]
+    }, {
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "the function name"
+        },
+        "runtime": {
+          "type": "string",
+          "enum": [
+            "aworker"
+          ],
+          "description": "the function runtime"
+        },
+        "url": {
+          "type": "string",
+          "description": "the code download URL",
+          "examples": [
+            "file:///home/admin/code/A",
+            "https://oss/foobar/A.zip"
+          ]
+        },
+        "signature": {
+          "type": "string",
+          "description": "the code sign",
+          "examples": [
+            "md5:xxx"
+          ]
+        },
+        "sourceFile": {
+          "type": "string",
+          "description": "the source code file of aworker.js function"
+        },
+        "rateLimit": {
+          "$ref": "#/definitions/rateLimit"
+        },
+        "resourceLimit": {
+          "$ref": "#/definitions/resourceLimit"
+        },
+        "worker": {
+          "$ref": "#/definitions/worker"
+        },
+        "environments": {
+          "$ref": "#/definitions/environments"
+        },
+        "namespace": {
+          "type": "string",
+          "description": "worker related resources namespace, eg. kv_storage"
+        }
+      },
+      "required": [
+        "name",
+        "runtime",
+        "url",
+        "signature",
+        "sourceFile"
+      ]
+    }]
+  }
+}

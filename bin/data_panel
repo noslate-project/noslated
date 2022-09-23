@@ -1,0 +1,24 @@
+#!/usr/bin/env node
+
+'use strict';
+
+const Logger = require('#self/lib/logger');
+const { config } = require('#self/config');
+const { DataPanel } = require('#self/data_panel/index');
+
+(async function() {
+  Logger.setSink(Logger.getPrettySink('data_panel.log'));
+  const dataPanel = new DataPanel(config);
+  await dataPanel.ready();
+
+  const onSignal = async () => {
+    await dataPanel.close();
+    process.exit(0);
+  };
+
+  process.on('SIGINT', onSignal);
+  process.on('SIGTERM', onSignal);
+})().catch(err => {
+  console.error(err);
+  process.exit(1);
+});
