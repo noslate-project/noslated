@@ -23,7 +23,7 @@ describe(testName(__filename), () => {
 
     it('should generate integrity sigil', async () => {
       const codeManager = new CodeManager(testUtil.TMP_DIR());
-      const bundlePath = await codeManager.ensure('test', 'http://127.0.0.1:55331/shinki-hello-unit-test.zip', 'aaa');
+      const bundlePath = await codeManager.ensure('test', 'http://127.0.0.1:55331/aworker-echo.zip', 'aaa');
       const stat = await fs.stat(path.join(bundlePath, '.integrity'));
       assert(stat.isFile());
     });
@@ -32,12 +32,12 @@ describe(testName(__filename), () => {
       let codeManager = new CodeManager(testUtil.TMP_DIR());
       const spy = sinon.spy(codeManager, 'ensureFromHTTP');
 
-      const bundlePath = await codeManager.ensure('test', 'http://127.0.0.1:55331/shinki-hello-unit-test.zip', 'aaa');
+      const bundlePath = await codeManager.ensure('test', 'http://127.0.0.1:55331/aworker-echo.zip', 'aaa');
       await fs.rm(bundlePath, { recursive: true });
 
       // simulates process restart
       codeManager = new CodeManager(testUtil.TMP_DIR());
-      const bundlePath2 = await codeManager.ensure('test', 'http://127.0.0.1:55331/shinki-hello-unit-test.zip', 'aaa');
+      const bundlePath2 = await codeManager.ensure('test', 'http://127.0.0.1:55331/aworker-echo.zip', 'aaa');
       assert.strictEqual(bundlePath, bundlePath2);
       const stat = await fs.stat(path.join(bundlePath2, '.integrity'));
       assert(stat.isFile());

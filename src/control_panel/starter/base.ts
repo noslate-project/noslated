@@ -204,7 +204,6 @@ export abstract class BaseStarter extends Base {
       pairsToMap(profile.environments || []),
       appendEnvs);
 
-    // Refs: https://yuque.antfin.com/alinode-project/rfcs/kouxg0#aRW6T
     envs.NOSLATE_WORKER_ID = name;
     envs.HOME = codePath;
 

@@ -670,7 +670,7 @@ describe(common.testName(__filename), () => {
       assert.strictEqual(stopWorkerCalled, 5);
     });
 
-    it('a wrong situation of https://yuque.antfin.com/alinode-project/rerh3c/emny4m', async () => {
+    it('a wrong situation of worker count infinitely increasing', async () => {
       // unexpecated Error: No enough virtual memory (used: 1073741824 + need: 536870912) > total: 1073741824
       //                 at WorkerLauncher.tryLaunch (/usr/local/noslate/control_panel/worker_launcher.js:117:19)
       //                 ...

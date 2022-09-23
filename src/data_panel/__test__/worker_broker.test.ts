@@ -14,9 +14,9 @@ import { Metadata } from '#self/delegate/request_response';
 import { createDeferred, sleep } from '#self/lib/util';
 
 const PROFILES = [{
-  name: 'emp',
+  name: 'node-http-demo',
   runtime: 'nodejs-v16',
-  url: 'https://alinode-release-archive-zjk.oss-cn-zhangjiakou.aliyuncs.com/unittest/emp.zip',
+  url: 'https://noslate-release.oss-cn-hangzhou.aliyuncs.com/demo/node-http-demo.zip',
   handler: 'index.handler',
   initializer: 'index.initializer',
   signature: '0F32CEE2035C23F134E27FCE7D2BC87D',
@@ -30,7 +30,7 @@ const PROFILES = [{
 }, {
   name: 'hello',
   runtime: 'aworker',
-  url: 'https://alinode-release-archive-zjk.oss-cn-zhangjiakou.aliyuncs.com/unittest/shinki-hello.zip',
+  url: 'https://noslate-release.oss-cn-hangzhou.aliyuncs.com/demo/aworker-echo.zip',
   sourceFile: 'index.js',
   signature: '6D3ADBE5392F1805C163D3DFC5B30FCE',
   worker: {
@@ -103,7 +103,7 @@ describe(common.testName(__filename), () => {
           },
         },
         host: mockHost
-      } as unknown as DataFlowController, 'emp', {});
+      } as unknown as DataFlowController, 'node-http-demo', {});
 
       broker.registerCredential('foo', 'bar');
       await broker.bindWorker('bar');
@@ -138,7 +138,7 @@ describe(common.testName(__filename), () => {
           },
         },
         host: mockHost
-      } as unknown as DataFlowController, 'emp', {});
+      } as unknown as DataFlowController, 'node-http-demo', {});
 
       broker.registerCredential('foo', 'bar');
       await broker.bindWorker('bar');
@@ -173,7 +173,7 @@ describe(common.testName(__filename), () => {
           },
         },
         host: mockHost
-      } as unknown as DataFlowController, 'emp', {});
+      } as unknown as DataFlowController, 'node-http-demo', {});
 
       broker.registerCredential('foo', 'bar');
       await broker.bindWorker('bar');
@@ -205,7 +205,7 @@ describe(common.testName(__filename), () => {
         delegate: dummyDelegate,
         config: require('#self/config'),
         host: mockHost
-      } as unknown as DataFlowController, 'emp', {});
+      } as unknown as DataFlowController, 'node-http-demo', {});
       assert.strictEqual(broker.getAvailableWorker(), null);
     });
 
@@ -215,7 +215,7 @@ describe(common.testName(__filename), () => {
         delegate: dummyDelegate,
         config: require('#self/config'),
         host: mockHost
-      } as unknown as DataFlowController, 'emp', {});
+      } as unknown as DataFlowController, 'node-http-demo', {});
 
       broker.registerCredential('foo', 'bar');
       await broker.bindWorker('bar');
@@ -233,7 +233,7 @@ describe(common.testName(__filename), () => {
         delegate: dummyDelegate,
         config: require('#self/config'),
         host: mockHost
-      } as unknown as DataFlowController, 'emp', {});
+      } as unknown as DataFlowController, 'node-http-demo', {});
 
       broker.registerCredential('foo', 'bar');
       await broker.bindWorker('bar');
@@ -257,7 +257,7 @@ describe(common.testName(__filename), () => {
         delegate: dummyDelegate,
         config: require('#self/config'),
         host: mockHost
-      } as unknown as DataFlowController, 'emp', {});
+      } as unknown as DataFlowController, 'node-http-demo', {});
 
       broker.registerCredential('foo', 'bar');
       await broker.bindWorker('bar');
