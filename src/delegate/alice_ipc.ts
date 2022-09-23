@@ -338,6 +338,7 @@ export class AliceClient {
   onRequest?: (method: string, streamId: number | undefined | null, metadata: aworker.ipc.ITriggerMetadata, hasInputData: boolean, hasOutputData: boolean, callback: any) => void;
   onStreamPush?: (streamId: number, isEos: boolean, chunk: Uint8Array, isError: boolean) => void;
   onCollectMetrics?: () => aworker.ipc.ICollectMetricsResponseMessage;
+  onResourceNotification?: (resourceId: string, token: string) => void;
   onDisconnect?: () => void;
 
   constructor(private _serverPath: string, private _credential: string, private _logger: Logger = kNoopLogger) {}
@@ -429,6 +430,21 @@ export class AliceClient {
     }, ALICE_SEND_BEACON_TIMEOUT_MS);
   }
 
+  resourcePut(resourceId: string, action: aworker.ipc.ResourcePutAction, token?: string) {
+    if (this._session == null) {
+      throw new Error('Alice client not connected');
+    }
+
+    return this._session.request<
+      aworker.ipc.IResourcePutRequestMessage,
+      aworker.ipc.IResourcePutResponseMessage
+    >(RequestKind.ResourcePut, {
+      resourceId,
+      action,
+      token,
+    }, ALICE_RESOURCE_NOTIFICATION_TIMEOUT_MS);
+  }
+
   private _onClose = () => {
     this.onDisconnect?.();
   }
@@ -461,6 +477,15 @@ export class AliceClient {
         return callback(CanonicalCode.NOT_IMPLEMENTED);
       }
       callback(CanonicalCode.OK, null, this.onCollectMetrics());
+      return;
+    }
+    if (message.requestKind === RequestKind.ResourceNotification) {
+      if (this.onResourceNotification == null) {
+        return callback(CanonicalCode.NOT_IMPLEMENTED);
+      }
+      const body = message.content as aworker.ipc.IResourceNotificationRequestMessage;
+      this.onResourceNotification(body.resourceId, body.token);
+      callback(CanonicalCode.OK, null, {});
       return;
     }
     return callback(CanonicalCode.NOT_IMPLEMENTED);

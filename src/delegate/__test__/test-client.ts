@@ -1,15 +1,12 @@
 import childProcess from 'child_process';
 import { EventEmitter, once } from 'events';
 import { aworker } from '../../proto/aworker';
+import { AliceClient } from '../alice_ipc';
 
 const logger = require('#self/lib/logger').get('test-client');
 
 function child() {
-  const { config } = require('#self/config');
-  const RELEASE_OR_DEBUG = config.aliceAddonType;
-
-  const { AliceClient } = require(`../../../native/addon/${RELEASE_OR_DEBUG}/node_alice_client.node`);
-  let client: any;
+  let client: AliceClient;
   process.on('message', ({ type, args }: CallbackArgs) => {
     console.log('[CLIENT CHILD] client process received message', { type, args });
     if (type === 'connect') {
@@ -19,7 +16,7 @@ function child() {
       return close();
     }
     if (type === 'resourcePut') {
-      return client.resourcePut(...args).then((ret: any) => {
+      return client.resourcePut(...args).then((ret) => {
         process.send?.({ type, args: ret });
       });
     }
@@ -30,21 +27,38 @@ function child() {
       return;
     }
     client = new AliceClient(serverPath, credential);
+    client.onCollectMetrics = () => {
+      return {
+        integerRecords: [
+          {
+            name: 'test',
+            value: 1,
+            labels: [
+              {
+                key: 'my_label',
+                value: 'foo',
+              },
+            ],
+          },
+        ],
+      };
+    };
+
     const onEvent = (type: string) => (...args: any[]) => process.send?.({ type, args });
-    client.onBind = onEvent('bind');
     client.onRequest = onEvent('request');
     client.onStreamPush = onEvent('streamPush');
     client.onResourceNotification = onEvent('resourceNotification');
-    client.onError = onEvent('error');
     client.onDisconnect = onEvent('disconnect');
-    client.connect();
+    client.start()
+      .then(() => {
+        process.send?.({ type: 'bind', args: [] });
+      });
   }
   function close() {
     if (client == null) {
       return;
     }
     client.close();
-    client = null;
     // TODO: proper close;
     process.exit(0);
   }
@@ -96,7 +110,7 @@ export class TestClient extends EventEmitter {
   }
 }
 
-type CallbackArgs = { type: string; args: [string, string]; };
+type CallbackArgs = { type: string; args: [any, any]; };
 
 if (require.main === module && process.argv[2] === 'child') {
   child();

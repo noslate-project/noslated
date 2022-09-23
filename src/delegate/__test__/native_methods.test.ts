@@ -14,7 +14,7 @@ describe(common.testName(__filename), () => {
     client = null;
     delegate = null;
   });
-  it('should emit bind event', async () => {
+  it('should call client methods', async () => {
     delegate = new AliceDelegateService();
     delegate.register('foobar');
     delegate.start();
@@ -28,10 +28,10 @@ describe(common.testName(__filename), () => {
     const ret = await delegate.collectMetrics('foobar');
     assert.ok(Array.isArray(ret.integerRecords));
 
-    const item = ret.integerRecords.find((it: { name: string; }) => it.name === WorkerMetrics.TOTAL_HEAP_SIZE);
+    const item = ret.integerRecords.find((it: { name: string; }) => it.name === 'test');
     assert.ok(item != null);
-    const pid_label = item.labels[WorkerMetricsAttributes.WORKER_PID];
-    assert.ok(typeof pid_label === 'string');
-    assert.strictEqual(`${client.pid}`, pid_label);
+    const label = item.labels['my_label'];
+    assert.ok(typeof label === 'string');
+    assert.strictEqual(label, 'foo');
   });
 });

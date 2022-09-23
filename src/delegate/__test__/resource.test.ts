@@ -224,13 +224,13 @@ describe(common.testName(__filename), () => {
       client.connect();
       await bindFuture;
 
-      let success_or_acquired;
+      let successOrAcquired;
       let token;
       {
         const resultFuture = once(client, 'resourcePut');
         client.resourcePut(resourceId, ResourcePutAction.ACQUIRE_SH, '');
-        ([{ success_or_acquired, token }] = await resultFuture);
-        assert.strictEqual(success_or_acquired, true);
+        ([{ successOrAcquired, token }] = await resultFuture);
+        assert.strictEqual(successOrAcquired, true);
         const stub = resolver.resolve(cred).resources.get(resourceId);
         assert.ok(stub?.activeTokens.includes(token));
       }
@@ -238,8 +238,8 @@ describe(common.testName(__filename), () => {
       {
         const resultFuture = once(client, 'resourcePut');
         client.resourcePut(resourceId, ResourcePutAction.RELEASE, token);
-        ([{ success_or_acquired }] = await resultFuture);
-        assert.strictEqual(success_or_acquired, true);
+        ([{ successOrAcquired }] = await resultFuture);
+        assert.strictEqual(successOrAcquired, true);
         // released resource should have been collected.
         assert(!resolver.resolve(cred).resources.has(resourceId));
       }
@@ -256,21 +256,21 @@ describe(common.testName(__filename), () => {
       client.connect();
       await bindFuture;
 
-      let success_or_acquired;
+      let successOrAcquired;
       let token;
       {
         const resultFuture = once(client, 'resourcePut');
         client.resourcePut(resourceId, ResourcePutAction.ACQUIRE_EX, '');
-        ([{ success_or_acquired, token }] = await resultFuture);
-        assert.strictEqual(success_or_acquired, true);
+        ([{ successOrAcquired, token }] = await resultFuture);
+        assert.strictEqual(successOrAcquired, true);
       }
 
       let token2;
       {
         const resultFuture = once(client, 'resourcePut');
         client.resourcePut(resourceId, ResourcePutAction.ACQUIRE_EX, '');
-        ([{ success_or_acquired, token: token2 }] = await resultFuture);
-        assert.strictEqual(success_or_acquired, false); // failed to put resource, notification registered.
+        ([{ successOrAcquired, token: token2 }] = await resultFuture);
+        assert.strictEqual(successOrAcquired, false); // failed to put resource, notification registered.
       }
       {
         const notificationFuture = once(client, 'resourceNotification');
@@ -327,21 +327,21 @@ describe(common.testName(__filename), () => {
       client2.connect();
       await bindFuture;
 
-      let success_or_acquired;
+      let successOrAcquired;
       let token;
       {
         const resultFuture = once(client1, 'resourcePut');
         client1.resourcePut(resourceId, ResourcePutAction.ACQUIRE_EX, '');
-        ([{ success_or_acquired, token }] = await resultFuture);
-        assert.strictEqual(success_or_acquired, true);
+        ([{ successOrAcquired, token }] = await resultFuture);
+        assert.strictEqual(successOrAcquired, true);
         const stub = resolver.resolve(cred1).resources.get(resourceId);
         assert.ok(stub?.activeTokens.includes(token));
       }
       {
         const resultFuture = once(client2, 'resourcePut');
         client2.resourcePut(resourceId, ResourcePutAction.ACQUIRE_EX, '');
-        const [{ success_or_acquired }] = await resultFuture;
-        assert.strictEqual(success_or_acquired, false); // failed to put resource, notification registered.
+        const [{ successOrAcquired }] = await resultFuture;
+        assert.strictEqual(successOrAcquired, false); // failed to put resource, notification registered.
       }
 
       {
@@ -379,13 +379,13 @@ describe(common.testName(__filename), () => {
       client2.connect();
       await bindFuture;
 
-      let success_or_acquired;
+      let successOrAcquired;
       let token;
       {
         const resultFuture = once(client1, 'resourcePut');
         client1.resourcePut(resourceId, ResourcePutAction.ACQUIRE_EX, '');
-        ([{ success_or_acquired, token }] = await resultFuture);
-        assert.ok(success_or_acquired);
+        ([{ successOrAcquired, token }] = await resultFuture);
+        assert.ok(successOrAcquired);
         const stub = resolver.resolve(cred1).resources.get(resourceId);
         assert.ok(stub?.activeTokens.includes(token));
       }
@@ -393,8 +393,8 @@ describe(common.testName(__filename), () => {
       {
         const resultFuture = once(client2, 'resourcePut');
         client2.resourcePut(resourceId, ResourcePutAction.ACQUIRE_EX, '');
-        ([{ success_or_acquired, token: token2 }] = await resultFuture);
-        assert.strictEqual(success_or_acquired, false); // failed to put resource, notification registered.
+        ([{ successOrAcquired, token: token2 }] = await resultFuture);
+        assert.strictEqual(successOrAcquired, false); // failed to put resource, notification registered.
       }
 
       {
