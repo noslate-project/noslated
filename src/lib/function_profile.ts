@@ -6,7 +6,7 @@ import loggers from './logger';
 import * as utils from './util';
 import SCHEMA_JSON from './json/function_profile_schema.json';
 import SPEC_JSON from './json/spec.template.json';
-import type { NodejsFunctionProfile, RawFunctionProfile, RawWithDefaultsFunctionProfile, ServerlessWorkerFunctionProfile } from './json/function_profile';
+import type { NodejsFunctionProfile, RawFunctionProfile, RawWithDefaultsFunctionProfile, AworkerFunctionProfile } from './json/function_profile';
 import { Config } from '#self/config';
 
 const logger = loggers.get('function_profile');
@@ -18,7 +18,7 @@ type PresetFunction = (profile: RawFunctionProfile[], mode: Mode) => Promise<voi
  * Per function profile
  */
 // @ts-expect-error Mixin type
-export interface PerFunctionProfile extends NodejsFunctionProfile, ServerlessWorkerFunctionProfile {}
+export interface PerFunctionProfile extends NodejsFunctionProfile, AworkerFunctionProfile {}
 export class PerFunctionProfile {
   #json;
   #config;

@@ -9,7 +9,7 @@ import { TurfContainerStates } from '#self/lib/turf/wrapper';
 import * as naming from '#self/lib/naming';
 import { ControlPanel } from '../control_panel';
 import { Config } from '#self/config';
-import { ServerlessWorkerFunctionProfile } from '#self/lib/json/function_profile';
+import { AworkerFunctionProfile } from '#self/lib/json/function_profile';
 import { TurfState } from '#self/lib/turf/types';
 
 const SEED_CONTAINER_NAME = '___seed___';
@@ -156,7 +156,7 @@ export class AworkerStarter extends BaseStarter {
     }
   }
 
-  async start(serverSockPath: string, name: string, credential: string, profile: ServerlessWorkerFunctionProfile, bundlePath: string, options: BaseOptions) {
+  async start(serverSockPath: string, name: string, credential: string, profile: AworkerFunctionProfile, bundlePath: string, options: BaseOptions) {
     this.logger.info('start worker(%s)', name);
     const sourceFile = path.join(bundlePath, 'code', profile.sourceFile);
     const sameOriginSharedDataDir = path.join(SameOriginSharedDataRoot, naming.normalizeFuncNameToName(profile.name));

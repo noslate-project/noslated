@@ -50,10 +50,10 @@ interface NodejsFunctionProfile extends BaseFunctionProfile, ProcessFunctionProf
   initializer?: string;
 }
 
-interface ServerlessWorkerFunctionProfile extends BaseFunctionProfile, ProcessFunctionProfile {
+interface AworkerFunctionProfile extends BaseFunctionProfile, ProcessFunctionProfile {
   runtime: 'aworker';
   sourceFile: string;
 }
 
-export type RawFunctionProfile = NodejsFunctionProfile | ServerlessWorkerFunctionProfile;
+export type RawFunctionProfile = NodejsFunctionProfile | AworkerFunctionProfile;
 export type RawWithDefaultsFunctionProfile = DeepRequired<RawFunctionProfile>;

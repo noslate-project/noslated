@@ -204,7 +204,6 @@ describe(common.testName(__filename), () => {
       const Clz = require(modPath);
 
       oldMod = new Clz({
-        eagleeyeTracer: {},
         logger: console,
       });
 
@@ -220,7 +219,6 @@ describe(common.testName(__filename), () => {
       const Clz = require(modPath);
 
       newMod = new Clz({
-        eagleeyeTracer: {},
         logger: console,
       });
 

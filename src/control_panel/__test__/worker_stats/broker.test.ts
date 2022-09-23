@@ -6,7 +6,7 @@ import * as common from '#self/test/common';
 import { config } from '#self/config';
 import { FunctionProfileManager as ProfileManager } from '#self/lib/function_profile';
 import { turf, TurfContainerStates } from '#self/lib/turf';
-import { ServerlessWorkerFunctionProfile, ShrinkStrategy } from '#self/lib/json/function_profile';
+import { AworkerFunctionProfile, ShrinkStrategy } from '#self/lib/json/function_profile';
 import { ContainerStatus } from '#self/lib/constants';
 import sinon from 'sinon';
 import pedding from 'pedding';
@@ -14,7 +14,7 @@ import { performance } from 'perf_hooks';
 import { sleep } from '#self/lib/util';
 
 describe(common.testName(__filename), () => {
-  const funcData: ServerlessWorkerFunctionProfile[] = [{
+  const funcData: AworkerFunctionProfile[] = [{
     name: 'func',
     url: `file://${__dirname}`,
     runtime: 'aworker',

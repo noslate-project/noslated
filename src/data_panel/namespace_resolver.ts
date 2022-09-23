@@ -18,9 +18,6 @@ export class DataPanelBeaconHost implements BeaconHost {
     if (type !== 'trace') {
       return;
     }
-    if (metadata.format !== 'eagleeye') {
-      return;
-    }
 
     this.logger.write(body);
   }

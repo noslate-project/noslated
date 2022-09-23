@@ -17,7 +17,6 @@ export class DataPanelImpl implements IDataPanel {
   /**
    * Constructor
    * @param dataFlowController The data flow controller object.
-   * @param eagleeyeTracer -
    * @param config The global config object.
    */
   constructor(private dataFlowController: DataFlowController, private config: Config) {}

@@ -45,3 +45,5 @@ bin/node
 bin/aworker
 bin/aworker_g
 .vscode
+
+package-lock.json

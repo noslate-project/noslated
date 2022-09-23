@@ -13,12 +13,12 @@ import sinon from 'sinon';
 import fs from 'fs';
 import pedding from 'pedding';
 import { Done } from 'mocha';
-import { ServerlessWorkerFunctionProfile } from '#self/lib/json/function_profile';
+import { AworkerFunctionProfile } from '#self/lib/json/function_profile';
 import { NotNullableInterface } from '#self/lib/interfaces';
 import * as root from '#self/proto/root';
 
 describe(common.testName(__filename), () => {
-  const funcData: ServerlessWorkerFunctionProfile[] = [{
+  const funcData: AworkerFunctionProfile[] = [{
     name: 'func',
     url: `file://${__dirname}`,
     runtime: 'aworker',

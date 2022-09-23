@@ -23,7 +23,7 @@ describe(common.testName(__filename), () => {
       });
       const writeStub = sinon.stub(logger, 'write');
       const beaconHost = new DataPanelBeaconHost(logger);
-      await beaconHost.sendBeacon('trace', { format: 'eagleeye' }, Buffer.from('foobar'));
+      await beaconHost.sendBeacon('trace', { format: 'trace' }, Buffer.from('foobar'));
 
       assert.ok(writeStub.calledOnce);
     });
@@ -35,7 +35,7 @@ describe(common.testName(__filename), () => {
       });
       const writeStub = sinon.stub(logger, 'write');
       const beaconHost = new DataPanelBeaconHost(logger);
-      await beaconHost.sendBeacon('metrics', { format: 'eagleeye' }, Buffer.from('foobar'));
+      await beaconHost.sendBeacon('metrics', { format: 'trace' }, Buffer.from('foobar'));
       await beaconHost.sendBeacon('trace', { format: 'stats' }, Buffer.from('foobar'));
 
       assert.ok(!writeStub.called);

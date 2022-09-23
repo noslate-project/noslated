@@ -9,10 +9,10 @@ import { TurfContainerStates } from '#self/lib/turf';
 import { ContainerStatus, ContainerStatusReport } from '#self/lib/constants';
 import { performance } from 'perf_hooks';
 import sinon from 'sinon';
-import { ServerlessWorkerFunctionProfile } from '#self/lib/json/function_profile';
+import { AworkerFunctionProfile } from '#self/lib/json/function_profile';
 
 describe(common.testName(__filename), () => {
-  const funcData: ServerlessWorkerFunctionProfile[] = [{
+  const funcData: AworkerFunctionProfile[] = [{
     name: 'func',
     url: `file://${__dirname}`,
     runtime: 'aworker',
