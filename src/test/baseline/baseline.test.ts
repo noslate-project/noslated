@@ -260,11 +260,11 @@ const cases = [
     expect: {},
   },
   {
-    name: 'service_worker_echo',
+    name: 'aworker_echo',
     profile: {
-      name: 'service_worker_echo',
+      name: 'aworker_echo',
       runtime: 'aworker',
-      url: `file://${baselineDir}/service_worker_echo`,
+      url: `file://${baselineDir}/aworker_echo`,
       sourceFile: 'index.js',
       signature: 'md5:234234',
     },
@@ -281,11 +281,11 @@ const cases = [
     },
   },
   {
-    name: 'service_worker_echo_large_data',
+    name: 'aworker_echo_large_data',
     profile: {
-      name: 'service_worker_echo',
+      name: 'aworker_echo',
       runtime: 'aworker',
-      url: `file://${baselineDir}/service_worker_echo`,
+      url: `file://${baselineDir}/aworker_echo`,
       sourceFile: 'index.js',
       signature: 'md5:234234',
     },
@@ -302,11 +302,11 @@ const cases = [
     },
   },
   {
-    name: 'service_worker_echo_req_metadata',
+    name: 'aworker_echo_req_metadata',
     profile: {
-      name: 'service_worker_echo_req_metadata',
+      name: 'aworker_echo_req_metadata',
       runtime: 'aworker',
-      url: `file://${baselineDir}/service_worker_echo`,
+      url: `file://${baselineDir}/aworker_echo`,
       sourceFile: 'req_metadata.js',
       signature: 'md5:234234',
     },
@@ -332,11 +332,11 @@ const cases = [
     },
   },
   {
-    name: 'service_worker_echo_res_metadata',
+    name: 'aworker_echo_res_metadata',
     profile: {
-      name: 'service_worker_echo_res_metadata',
+      name: 'aworker_echo_res_metadata',
       runtime: 'aworker',
-      url: `file://${baselineDir}/service_worker_echo`,
+      url: `file://${baselineDir}/aworker_echo`,
       sourceFile: 'res_metadata.js',
       signature: 'md5:234234',
     },
@@ -361,11 +361,11 @@ const cases = [
     },
   },
   {
-    name: 'service_worker_echo_with_initializer',
+    name: 'aworker_echo_with_initializer',
     profile: {
-      name: 'service_worker_echo_with_initializer',
+      name: 'aworker_echo_with_initializer',
       runtime: 'aworker',
-      url: `file://${baselineDir}/service_worker_echo`,
+      url: `file://${baselineDir}/aworker_echo`,
       sourceFile: 'with_initializer.js',
       signature: 'md5:234234',
     },
@@ -384,11 +384,11 @@ const cases = [
     },
   },
   {
-    name: 'service_worker_dapr_invoke',
+    name: 'aworker_dapr_invoke',
     profile: {
-      name: 'service_worker_dapr_invoke',
+      name: 'aworker_dapr_invoke',
       runtime: 'aworker',
-      url: `file://${baselineDir}/service_worker_dapr`,
+      url: `file://${baselineDir}/aworker_dapr`,
       sourceFile: 'invoke.js',
       signature: 'md5:234234',
     },
@@ -402,11 +402,11 @@ const cases = [
     },
   },
   {
-    name: 'service_worker_dapr_invoke_non_200_status',
+    name: 'aworker_dapr_invoke_non_200_status',
     profile: {
-      name: 'service_worker_dapr_invoke',
+      name: 'aworker_dapr_invoke',
       runtime: 'aworker',
-      url: `file://${baselineDir}/service_worker_dapr`,
+      url: `file://${baselineDir}/aworker_dapr`,
       sourceFile: 'invoke.js',
       signature: 'md5:234234',
     },
@@ -425,11 +425,11 @@ const cases = [
     },
   },
   {
-    name: 'service_worker_dapr_binding',
+    name: 'aworker_dapr_binding',
     profile: {
-      name: 'service_worker_dapr_binding',
+      name: 'aworker_dapr_binding',
       runtime: 'aworker',
-      url: `file://${baselineDir}/service_worker_dapr`,
+      url: `file://${baselineDir}/aworker_dapr`,
       sourceFile: 'binding.js',
       signature: 'md5:234234',
     },
@@ -450,11 +450,11 @@ const cases = [
     },
   },
   {
-    name: 'service_worker_dapr_binding_non_200_status',
+    name: 'aworker_dapr_binding_non_200_status',
     profile: {
-      name: 'service_worker_dapr_binding',
+      name: 'aworker_dapr_binding',
       runtime: 'aworker',
-      url: `file://${baselineDir}/service_worker_dapr`,
+      url: `file://${baselineDir}/aworker_dapr`,
       sourceFile: 'binding.js',
       signature: 'md5:234234',
     },
@@ -473,11 +473,11 @@ const cases = [
     },
   },
   {
-    name: 'service_worker_cache',
+    name: 'aworker_cache',
     profile: {
-      name: 'service_worker_cache',
+      name: 'aworker_cache',
       runtime: 'aworker',
-      url: `file://${baselineDir}/service_worker_cache`,
+      url: `file://${baselineDir}/aworker_cache`,
       sourceFile: 'index.js',
       signature: 'md5:234234',
     },
@@ -489,11 +489,11 @@ const cases = [
     },
   },
   {
-    name: 'service_worker_fetch',
+    name: 'aworker_fetch',
     profile: {
-      name: 'service_worker_fetch',
+      name: 'aworker_fetch',
       runtime: 'aworker',
-      url: `file://${baselineDir}/service_worker_fetch`,
+      url: `file://${baselineDir}/aworker_fetch`,
       sourceFile: 'index.js',
       signature: 'md5:234234',
     },
@@ -517,17 +517,17 @@ const cases = [
     },
     after: async (roles: BaseLineTestContext) => {
       const resourceUsages = roles.data.dataFlowController.getResourceUsages()
-        .filter((it) => it!.functionName === 'service_worker_fetch');
+        .filter((it) => it!.functionName === 'aworker_fetch');
       assert.strictEqual(resourceUsages.length, 1);
       assert.strictEqual(resourceUsages[0]!.activeFetchRequestCount, 0);
     },
   },
   {
-    name: 'service_worker_fetch_body_error',
+    name: 'aworker_fetch_body_error',
     profile: {
-      name: 'service_worker_fetch_body_error',
+      name: 'aworker_fetch_body_error',
       runtime: 'aworker',
-      url: `file://${baselineDir}/service_worker_fetch`,
+      url: `file://${baselineDir}/aworker_fetch`,
       sourceFile: 'body-error.js',
       signature: 'md5:234234',
     },
@@ -540,17 +540,17 @@ const cases = [
     },
     after: async (roles: BaseLineTestContext) => {
       const resourceUsages = roles.data.dataFlowController.getResourceUsages()
-        .filter((it) => it!.functionName === 'service_worker_fetch_body_error');
+        .filter((it) => it!.functionName === 'aworker_fetch_body_error');
       assert.strictEqual(resourceUsages.length, 1);
       assert.strictEqual(resourceUsages[0]!.activeFetchRequestCount, 0);
     },
   },
   {
-    name: 'service_worker_error_sync_uncaught',
+    name: 'aworker_error_sync_uncaught',
     profile: {
-      name: 'service_worker_error_sync_uncaught',
+      name: 'aworker_error_sync_uncaught',
       runtime: 'aworker',
-      url: `file://${baselineDir}/service_worker_error`,
+      url: `file://${baselineDir}/aworker_error`,
       sourceFile: 'sync_uncaught.js',
       signature: 'md5:234234',
     },
@@ -568,11 +568,11 @@ const cases = [
     },
   },
   {
-    name: 'service_worker_error_promise_unhandled',
+    name: 'aworker_error_promise_unhandled',
     profile: {
-      name: 'service_worker_error_promise_unhandled',
+      name: 'aworker_error_promise_unhandled',
       runtime: 'aworker',
-      url: `file://${baselineDir}/service_worker_error`,
+      url: `file://${baselineDir}/aworker_error`,
       sourceFile: 'promise_unhandled.js',
       signature: 'md5:234234',
     },
@@ -673,11 +673,11 @@ const cases = [
     },
   },
   {
-    name: 'service_worker_echo_seed_mode',
+    name: 'aworker_echo_seed_mode',
     profile: {
-      name: 'service_worker_echo_seed_mode',
+      name: 'aworker_echo_seed_mode',
       runtime: 'aworker',
-      url: `file://${baselineDir}/service_worker_echo`,
+      url: `file://${baselineDir}/aworker_echo`,
       sourceFile: 'index.js',
       signature: 'md5:234234',
     },
@@ -750,11 +750,11 @@ const cases = [
     },
   },
   {
-    name: 'service_worker_env',
+    name: 'aworker_env',
     profile: {
-      name: 'service_worker_env',
+      name: 'aworker_env',
       runtime: 'aworker',
-      url: `file://${baselineDir}/service_worker_env`,
+      url: `file://${baselineDir}/aworker_env`,
       sourceFile: 'index.js',
       signature: 'md5:234234',
       environments: [{
@@ -796,11 +796,11 @@ const cases = [
     },
   },
   {
-    name: 'service_worker_env_timezone',
+    name: 'aworker_env_timezone',
     profile: {
-      name: 'service_worker_env_timezone',
+      name: 'aworker_env_timezone',
       runtime: 'aworker',
-      url: `file://${baselineDir}/service_worker_env`,
+      url: `file://${baselineDir}/aworker_env`,
       sourceFile: 'timezone.js',
       signature: 'md5:234234',
     },
@@ -824,11 +824,11 @@ const cases = [
 
       return spy;
     },
-    name: 'service_worker_beacon',
+    name: 'aworker_beacon',
     profile: {
-      name: 'service_worker_beacon',
+      name: 'aworker_beacon',
       runtime: 'aworker',
-      url: `file://${baselineDir}/service_worker_beacon`,
+      url: `file://${baselineDir}/aworker_beacon`,
       sourceFile: 'index.js',
       signature: 'md5:234234',
     },
@@ -843,7 +843,7 @@ const cases = [
     after: async (roles: BaseLineTestContext, beforeRet: any) => {
       const spy: SinonSpy = beforeRet;
       const written = spy.args[0]?.[0];
-      assert.ok(Buffer.from('service_worker_beacon|a-unique-trace-id\n').equals(written as any));
+      assert.ok(Buffer.from('aworker_beacon|a-unique-trace-id\n').equals(written as any));
       spy.restore();
     },
     expect: {},
@@ -911,11 +911,11 @@ const cases = [
     }
   },
   {
-    name: 'service_worker_without_cgi_mode',
+    name: 'aworker_without_cgi_mode',
     profile: {
-      name: 'service_worker_without_cgi_mode',
+      name: 'aworker_without_cgi_mode',
       runtime: 'aworker',
-      url: `file://${baselineDir}/service_worker_dapr`,
+      url: `file://${baselineDir}/aworker_dapr`,
       sourceFile: 'invoke.js',
       signature: 'md5:234234',
     },
@@ -928,7 +928,7 @@ const cases = [
       data: Buffer.from('{"appId":"hello-world","methodName":"echo","data":"foobar"}'),
     },
     after: async (roles: Required<ProseContext<TurfContext>>) => {
-      const broker = roles.control.capacityManager.workerStatsSnapshot.getBroker('service_worker_without_cgi_mode', false)!;
+      const broker = roles.control.capacityManager.workerStatsSnapshot.getBroker('aworker_without_cgi_mode', false)!;
       assert.deepStrictEqual(broker.workers.size, 1);
       const worker = broker.workers.values().next().value;
       assert.deepStrictEqual(worker.containerStatus, ContainerStatus.Ready);
@@ -936,11 +936,11 @@ const cases = [
     }
   },
   {
-    name: 'service_worker_with_cgi_mode',
+    name: 'aworker_with_cgi_mode',
     profile: {
-      name: 'service_worker_with_cgi_mode',
+      name: 'aworker_with_cgi_mode',
       runtime: 'aworker',
-      url: `file://${baselineDir}/service_worker_dapr`,
+      url: `file://${baselineDir}/aworker_dapr`,
       sourceFile: 'invoke.js',
       signature: 'md5:234234',
       worker: {
@@ -956,7 +956,7 @@ const cases = [
       data: Buffer.from('{"appId":"hello-world","methodName":"echo","data":"foobar"}'),
     },
     after: async (roles: Required<ProseContext<TurfContext>>) => {
-      const broker = roles.control.capacityManager.workerStatsSnapshot.getBroker('service_worker_with_cgi_mode', false)!;
+      const broker = roles.control.capacityManager.workerStatsSnapshot.getBroker('aworker_with_cgi_mode', false)!;
       assert.deepStrictEqual(broker.workers.size, 1);
       const worker = broker.workers.values().next().value;
       assert.deepStrictEqual(worker.containerStatus, ContainerStatus.Stopped);
@@ -999,11 +999,11 @@ const cases = [
     before: async (roles: BaseLineTestContext) => {
       return sinon.spy(roles.data.dataFlowController, 'invoke');
     },
-    name: 'service_worker_echo_with_request_id',
+    name: 'aworker_echo_with_request_id',
     profile: {
-      name: 'service_worker_echo_with_request_id',
+      name: 'aworker_echo_with_request_id',
       runtime: 'aworker',
-      url: `file://${baselineDir}/service_worker_echo`,
+      url: `file://${baselineDir}/aworker_echo`,
       sourceFile: 'index.js',
       signature: 'md5:234234',
     },
@@ -1013,7 +1013,7 @@ const cases = [
         // ServiceWorker doesn't support populate GET requests body. As
         // Request in Fetch Spec disallow that.
         method: 'POST',
-        requestId: 'service_worker_echo_with_request_id'
+        requestId: 'aworker_echo_with_request_id'
       },
     },
     expect: {
@@ -1022,7 +1022,7 @@ const cases = [
     after: async (roles: BaseLineTestContext, beforeRet: any) => {
       const spy: SinonSpy = beforeRet;
       const spyCall = spy.getCall(-1);
-      assert.strictEqual(spyCall.args[2].requestId, 'service_worker_echo_with_request_id');
+      assert.strictEqual(spyCall.args[2].requestId, 'aworker_echo_with_request_id');
       spy.restore();
     }
   }

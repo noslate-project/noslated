@@ -93,7 +93,7 @@ describe(common.testName(__filename), () => {
         {
           name: 'foobar',
           runtime: 'aworker',
-          url: `file://${baselineDir}/service_worker_echo`,
+          url: `file://${baselineDir}/aworker_echo`,
           sourceFile: 'index.js',
           signature: 'md5:234234',
         },
@@ -133,7 +133,7 @@ describe(common.testName(__filename), () => {
         {
           name: 'foobar',
           runtime: 'aworker',
-          url: `file://${baselineDir}/service_worker_echo`,
+          url: `file://${baselineDir}/aworker_echo`,
           sourceFile: 'index.js',
           signature: 'md5:234234',
         },

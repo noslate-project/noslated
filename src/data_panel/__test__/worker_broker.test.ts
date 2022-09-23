@@ -283,9 +283,9 @@ describe(common.testName(__filename), () => {
     it('should consume request queue', async() => {
       await agent.setFunctionProfile([
         {
-          name: 'service_worker_echo',
+          name: 'aworker_echo',
           runtime: 'aworker',
-          url: `file://${common.baselineDir}/service_worker_echo`,
+          url: `file://${common.baselineDir}/aworker_echo`,
           sourceFile: 'index.js',
           signature: 'md5:234234',
           worker: {
@@ -294,9 +294,9 @@ describe(common.testName(__filename), () => {
         }
       ]);
 
-      await agent.invoke('service_worker_echo', Buffer.from('ok'), { method: 'POST' });
+      await agent.invoke('aworker_echo', Buffer.from('ok'), { method: 'POST' });
 
-      const dpBroker = data.dataFlowController.getBroker('service_worker_echo')!;
+      const dpBroker = data.dataFlowController.getBroker('aworker_echo')!;
       const dpWorker = dpBroker.workers[0];
 
       for (let i = 0; i < 5; i ++) {
@@ -317,9 +317,9 @@ describe(common.testName(__filename), () => {
     it('should not continue deal request when worker traffic off', async() => {
       await agent.setFunctionProfile([
         {
-          name: 'service_worker_echo',
+          name: 'aworker_echo',
           runtime: 'aworker',
-          url: `file://${common.baselineDir}/service_worker_echo`,
+          url: `file://${common.baselineDir}/aworker_echo`,
           sourceFile: 'sleep.js',
           signature: 'md5:234234',
           worker: {
@@ -328,9 +328,9 @@ describe(common.testName(__filename), () => {
         }
       ]);
 
-      await agent.invoke('service_worker_echo', Buffer.from('200'), { method: 'POST' });
+      await agent.invoke('aworker_echo', Buffer.from('200'), { method: 'POST' });
 
-      const dpBroker = data.dataFlowController.getBroker('service_worker_echo')!;
+      const dpBroker = data.dataFlowController.getBroker('aworker_echo')!;
 
       const defer = createDeferred<void>();
 
@@ -345,7 +345,7 @@ describe(common.testName(__filename), () => {
           await control.dataPanelClientManager.reduceCapacity({
             brokers: [
               {
-                functionName: 'service_worker_echo',
+                functionName: 'aworker_echo',
                 inspector: false,
                 workers: [
                   {

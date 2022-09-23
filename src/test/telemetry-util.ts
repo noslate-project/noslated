@@ -14,11 +14,11 @@ export const nodeJsWorkerTestItem = {
   },
 };
 export const serverlessWorkerTestItem = {
-  name: 'service_worker_echo',
+  name: 'aworker_echo',
   profile: {
-    name: 'service_worker_echo',
+    name: 'aworker_echo',
     runtime: 'aworker',
-    url: `file://${baselineDir}/service_worker_echo`,
+    url: `file://${baselineDir}/aworker_echo`,
     sourceFile: 'index.js',
     signature: 'md5:234234',
   },

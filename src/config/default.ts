@@ -21,7 +21,6 @@ export default {
   dirs: {
     aliceSock: path.join(projectRoot, '.code/socks'),
     aliceWork: path.join(projectRoot, '.code'),
-    alicePlatformServer: path.join(projectRoot, 'mock/server/test.js')
   },
 
   aliceAddonType: 'Release',

@@ -147,11 +147,11 @@ const cases = [
     },
   },
   {
-    name: 'service_worker_echo_v8_options',
+    name: 'aworker_echo_v8_options',
     profile: {
-      name: 'service_worker_echo',
+      name: 'aworker_echo',
       runtime: 'aworker',
-      url: `file://${baselineDir}/service_worker_echo`,
+      url: `file://${baselineDir}/aworker_echo`,
       sourceFile: 'index.js',
       signature: 'md5:234234',
       worker: {
@@ -188,11 +188,11 @@ const cases = [
     },
   },
   {
-    name: 'service_worker_echo_exec_argv',
+    name: 'aworker_echo_exec_argv',
     profile: {
-      name: 'service_worker_exec_argv',
+      name: 'aworker_exec_argv',
       runtime: 'aworker',
-      url: `file://${baselineDir}/service_worker_echo`,
+      url: `file://${baselineDir}/aworker_echo`,
       sourceFile: 'index.js',
       signature: 'md5:234234',
       worker: {
@@ -229,11 +229,11 @@ const cases = [
     },
   },
   {
-    name: 'service_worker_echo_reservation',
+    name: 'aworker_echo_reservation',
     profile: {
-      name: 'service_worker_echo',
+      name: 'aworker_echo',
       runtime: 'aworker',
-      url: `file://${baselineDir}/service_worker_echo`,
+      url: `file://${baselineDir}/aworker_echo`,
       sourceFile: 'index.js',
       signature: 'md5:234234',
       worker: {
@@ -250,7 +250,7 @@ const cases = [
       },
     },
     after: async ({ control }: Required<ProseContext<{ turf: Turf }>>) => {
-      const broker = control.capacityManager.workerStatsSnapshot.getBroker('service_worker_echo', false)!;
+      const broker = control.capacityManager.workerStatsSnapshot.getBroker('aworker_echo', false)!;
       while (true) {
         if (broker.workerCount !== 4) {
           await sleep(10);
@@ -264,11 +264,11 @@ const cases = [
     },
   },
   {
-    name: 'service_worker_echo_reservation_memory_limit_exceeded',
+    name: 'aworker_echo_reservation_memory_limit_exceeded',
     profile: {
-      name: 'service_worker_echo',
+      name: 'aworker_echo',
       runtime: 'aworker',
-      url: `file://${baselineDir}/service_worker_echo`,
+      url: `file://${baselineDir}/aworker_echo`,
       sourceFile: 'index.js',
       signature: 'md5:234234',
       worker: {
@@ -285,7 +285,7 @@ const cases = [
       },
     },
     after: async ({ control }: Required<ProseContext<{ turf: Turf }>>) => {
-      const broker = control.capacityManager.workerStatsSnapshot.getBroker('service_worker_echo', false)!;
+      const broker = control.capacityManager.workerStatsSnapshot.getBroker('aworker_echo', false)!;
       while (true) {
         if (broker.workerCount !== 2) {
           await sleep(10);
@@ -299,11 +299,11 @@ const cases = [
     },
   },
   {
-    name: 'service_worker_echo_lcc',
+    name: 'aworker_echo_lcc',
     profile: {
-      name: 'service_worker_echo',
+      name: 'aworker_echo',
       runtime: 'aworker',
-      url: `file://${baselineDir}/service_worker_echo`,
+      url: `file://${baselineDir}/aworker_echo`,
       sourceFile: 'index.js',
       signature: 'md5:234234',
       worker: {
@@ -320,8 +320,8 @@ const cases = [
       },
     },
     after: async ({ control }: Required<ProseContext<{ turf: Turf }>>) => {
-      await control.capacityManager.tryExpansion('service_worker_echo', 1, { inspect: false });
-      const broker = control.capacityManager.workerStatsSnapshot.getBroker('service_worker_echo', false)!;
+      await control.capacityManager.tryExpansion('aworker_echo', 1, { inspect: false });
+      const broker = control.capacityManager.workerStatsSnapshot.getBroker('aworker_echo', false)!;
       while (true) {
         if (broker.workerCount !== 2) {
           await sleep(10);
@@ -350,11 +350,11 @@ const cases = [
     },
   },
   {
-    name: 'service_worker_echo_filo',
+    name: 'aworker_echo_filo',
     profile: {
-      name: 'service_worker_echo',
+      name: 'aworker_echo',
       runtime: 'aworker',
-      url: `file://${baselineDir}/service_worker_echo`,
+      url: `file://${baselineDir}/aworker_echo`,
       sourceFile: 'index.js',
       signature: 'md5:234234',
       worker: {
@@ -369,8 +369,8 @@ const cases = [
       },
     },
     after: async ({ control }: Required<ProseContext<{ turf: Turf }>>) => {
-      await control.capacityManager.tryExpansion('service_worker_echo', 1, { inspect: false });
-      const broker = control.capacityManager.workerStatsSnapshot.getBroker('service_worker_echo', false)!;
+      await control.capacityManager.tryExpansion('aworker_echo', 1, { inspect: false });
+      const broker = control.capacityManager.workerStatsSnapshot.getBroker('aworker_echo', false)!;
       while (true) {
         if (broker.workerCount !== 2) {
           await sleep(10);
@@ -402,11 +402,11 @@ const cases = [
     },
   },
   {
-    name: 'service_worker_echo_fifo',
+    name: 'aworker_echo_fifo',
     profile: {
-      name: 'service_worker_echo',
+      name: 'aworker_echo',
       runtime: 'aworker',
-      url: `file://${baselineDir}/service_worker_echo`,
+      url: `file://${baselineDir}/aworker_echo`,
       sourceFile: 'index.js',
       signature: 'md5:234234',
       worker: {
@@ -421,8 +421,8 @@ const cases = [
       },
     },
     after: async ({ control }: Required<ProseContext<{ turf: Turf }>>) => {
-      await control.capacityManager.tryExpansion('service_worker_echo', 1, { inspect: false });
-      const broker = control.capacityManager.workerStatsSnapshot.getBroker('service_worker_echo', false)!;
+      await control.capacityManager.tryExpansion('aworker_echo', 1, { inspect: false });
+      const broker = control.capacityManager.workerStatsSnapshot.getBroker('aworker_echo', false)!;
       while (true) {
         if (broker.workerCount !== 2) {
           await sleep(10);

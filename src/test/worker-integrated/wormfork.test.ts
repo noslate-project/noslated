@@ -14,11 +14,11 @@ const codeDir = path.join(FIXTURES_DIR, 'worker-integrated');
 
 const defaultSeedCases: any = [
   {
-    name: 'service_worker_math_random',
+    name: 'aworker_math_random',
     profile: {
-      name: 'service_worker_math_random',
+      name: 'aworker_math_random',
       runtime: 'aworker',
-      url: `file://${codeDir}/serverless-worker`,
+      url: `file://${codeDir}/aworker`,
       sourceFile: 'math-random.js',
       signature: 'md5:234234',
     },
@@ -30,12 +30,12 @@ const defaultSeedCases: any = [
 
 const seedScriptCases: any = [
   {
-    name: 'service_worker_seed_userland',
-    seedScript: `${codeDir}/serverless-worker/seed-userland.js`,
+    name: 'aworker_seed_userland',
+    seedScript: `${codeDir}/aworker/seed-userland.js`,
     profile: {
-      name: 'service_worker_seed_userland',
+      name: 'aworker_seed_userland',
       runtime: 'aworker',
-      url: `file://${codeDir}/serverless-worker`,
+      url: `file://${codeDir}/aworker`,
       // This is ignored
       sourceFile: 'seed-userland.js',
       signature: 'md5:234234',
@@ -48,12 +48,12 @@ const seedScriptCases: any = [
     },
   },
   {
-    name: 'service_worker_seed_userland_error',
-    seedScript: `${codeDir}/serverless-worker/seed-userland-serialize-error.js`,
+    name: 'aworker_seed_userland_error',
+    seedScript: `${codeDir}/aworker/seed-userland-serialize-error.js`,
     profile: {
-      name: 'service_worker_seed_userland_error',
+      name: 'aworker_seed_userland_error',
       runtime: 'aworker',
-      url: `file://${codeDir}/serverless-worker`,
+      url: `file://${codeDir}/aworker`,
       // This is ignored
       sourceFile: 'seed-userland-serialize-error.js',
       signature: 'md5:234234',

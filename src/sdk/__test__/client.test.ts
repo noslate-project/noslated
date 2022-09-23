@@ -34,9 +34,9 @@ describe(testName(__filename), () => {
   describe('.setFunctionProfile()', () => {
     it('should not set profile due to invalid v8 options (service worker)', async () => {
       const profile: any = {
-        name: 'service_worker_echo',
+        name: 'aworker_echo',
         runtime: 'aworker',
-        url: `file://${baselineDir}/service_worker_echo`,
+        url: `file://${baselineDir}/aworker_echo`,
         sourceFile: 'index.js',
         signature: 'md5:234234',
         worker: {

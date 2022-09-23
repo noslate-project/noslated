@@ -71,15 +71,15 @@ describe(common.testName(__filename), () => {
     it('should use function as namespace', async () => {
       await agent.setFunctionProfile([
         {
-          name: 'service_worker_echo_with_storage',
+          name: 'aworker_echo_with_storage',
           runtime: 'aworker',
-          url: `file://${common.baselineDir}/service_worker_storage`,
+          url: `file://${common.baselineDir}/aworker_storage`,
           sourceFile: 'index.js',
           signature: 'md5:234234',
         }
       ]);
 
-      await assertWorkerInvoke(agent.invoke('service_worker_echo_with_storage', Buffer.alloc(0), {
+      await assertWorkerInvoke(agent.invoke('aworker_echo_with_storage', Buffer.alloc(0), {
         method: 'POST',
       }), Buffer.from('test-value'));
     });
@@ -87,16 +87,16 @@ describe(common.testName(__filename), () => {
     it('should use namespace config work', async () => {
       await agent.setFunctionProfile([
         {
-          name: 'service_worker_echo_with_storage',
+          name: 'aworker_echo_with_storage',
           runtime: 'aworker',
-          url: `file://${common.baselineDir}/service_worker_storage`,
+          url: `file://${common.baselineDir}/aworker_storage`,
           sourceFile: 'index.js',
           signature: 'md5:234234',
-          namespace: 'service_worker'
+          namespace: 'aworker'
         }
       ]);
 
-      await assertWorkerInvoke(agent.invoke('service_worker_echo_with_storage', Buffer.alloc(0), {
+      await assertWorkerInvoke(agent.invoke('aworker_echo_with_storage', Buffer.alloc(0), {
         method: 'POST',
       }), Buffer.from('test-value'));
     });
@@ -104,9 +104,9 @@ describe(common.testName(__filename), () => {
     it('should shard namespace work', async () => {
       await agent.setFunctionProfile([
         {
-          name: 'service_worker_echo_with_storage',
+          name: 'aworker_echo_with_storage',
           runtime: 'aworker',
-          url: `file://${common.baselineDir}/service_worker_storage`,
+          url: `file://${common.baselineDir}/aworker_storage`,
           sourceFile: 'index.js',
           signature: 'md5:234234',
           namespace: 'shared',
@@ -115,9 +115,9 @@ describe(common.testName(__filename), () => {
           }
         },
         {
-          name: 'service_worker_echo_with_storage_shard',
+          name: 'aworker_echo_with_storage_shard',
           runtime: 'aworker',
-          url: `file://${common.baselineDir}/service_worker_storage_shared`,
+          url: `file://${common.baselineDir}/aworker_storage_shared`,
           sourceFile: 'index.js',
           signature: 'md5:2342345',
           namespace: 'shared',
@@ -126,9 +126,9 @@ describe(common.testName(__filename), () => {
           }
         },
         {
-          name: 'service_worker_echo_without_storage_shard',
+          name: 'aworker_echo_without_storage_shard',
           runtime: 'aworker',
-          url: `file://${common.baselineDir}/service_worker_storage_shared`,
+          url: `file://${common.baselineDir}/aworker_storage_shared`,
           sourceFile: 'index.js',
           signature: 'md5:234234',
           resourceLimit: {
@@ -138,17 +138,17 @@ describe(common.testName(__filename), () => {
       ]);
 
       // 设置 kv storage 内容
-      await assertWorkerInvoke(agent.invoke('service_worker_echo_with_storage', Buffer.alloc(0), {
+      await assertWorkerInvoke(agent.invoke('aworker_echo_with_storage', Buffer.alloc(0), {
         method: 'POST',
       }), Buffer.from('test-value'));
 
       // 读取共享 namespace kv storage 内容
-      await assertWorkerInvoke(agent.invoke('service_worker_echo_with_storage_shard', Buffer.alloc(0), {
+      await assertWorkerInvoke(agent.invoke('aworker_echo_with_storage_shard', Buffer.alloc(0), {
         method: 'POST',
       }), Buffer.from('test-value'));
 
       // 未设置共享 namespace，使用默认方式，无法共享数据
-      await assertWorkerInvoke(agent.invoke('service_worker_echo_without_storage_shard', Buffer.alloc(0), {
+      await assertWorkerInvoke(agent.invoke('aworker_echo_without_storage_shard', Buffer.alloc(0), {
         method: 'POST',
       }), Buffer.alloc(0));
     });

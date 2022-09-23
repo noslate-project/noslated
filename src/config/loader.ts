@@ -23,16 +23,12 @@ export function resolveEnvConfig() {
     envConfig.dirs.aliceSock = path.join(envConfig.dirs.aliceWork, 'socks');
   }
 
-  if (process.env.ALICE_PLATFORM_SERVER) {
-    envConfig.dirs.alicePlatformServer = process.env.ALICE_PLATFORM_SERVER;
-  }
-
   if (process.env.ALICE_LOG_LEVEL) {
     envConfig.logger.level = process.env.ALICE_LOG_LEVEL;
   }
 
-  if (process.env.ALICE_LOGDIR) {
-    envConfig.logger.dir = process.env.ALICE_LOGDIR;
+  if (process.env.NOSLATE_LOGDIR) {
+    envConfig.logger.dir = process.env.NOSLATE_LOGDIR;
   }
 
   // Debug version of Node.js may take longer time to bootstrap.
