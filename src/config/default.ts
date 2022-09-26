@@ -5,13 +5,13 @@ const projectRoot = path.resolve(__dirname, '../../');
 export default {
   projectRoot,
 
-  panel: {
-    dataPanelCount: 1,
-    controlPanelCount: 1,
-    panelFirstConnectionTimeout: 10_000,
+  plane: {
+    dataPlaneCount: 1,
+    controlPlaneCount: 1,
+    planeFirstConnectionTimeout: 10_000,
   },
 
-  controlPanel: {
+  controlPlane: {
     // worker launcher 扩容并发度
     expandConcurrency: 2,
     // worker launcher 扩容队列消费间隔
@@ -26,7 +26,7 @@ export default {
   aliceAddonType: 'Release',
   virtualMemoryPoolSize: '1gb',
   worker: {
-    controlPanelConnectTimeout: 10_000,
+    controlPlaneConnectTimeout: 10_000,
     defaultShrinkStrategy: 'LCC',
     gcLogDelay: 5 * 1000 * 60,
     reservationCountPerFunction: 0,

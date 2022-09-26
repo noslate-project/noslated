@@ -15,8 +15,8 @@ import assert from 'assert';
 import { CanonicalCode } from '#self/delegate/index';
 import { sleep } from '#self/lib/util';
 import { AliceAgent } from '#self/sdk/index';
-import { DataPanel } from '#self/data_panel';
-import { ControlPanel } from '#self/control_panel';
+import { DataPlane } from '#self/data_plane';
+import { ControlPlane } from '#self/control_plane';
 import { ContainerStatus } from '#self/lib/constants';
 import sinon, { SinonSpy } from 'sinon';
 
@@ -1034,8 +1034,8 @@ describe(common.testName(__filename), function() {
 
   let resourceServer: ResourceServer;
   let agent: AliceAgent;
-  let control: ControlPanel;
-  let data: DataPanel;
+  let control: ControlPlane;
+  let data: DataPlane;
   before(async () => {
     resourceServer = new ResourceServer();
     await resourceServer.start();

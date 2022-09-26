@@ -9,8 +9,8 @@ import mm from 'mm';
 import serveHandler from 'serve-handler';
 
 import { AliceAgent } from '#self/sdk/index';
-import { ControlPanel } from '#self/control_panel/index';
-import { DataPanel } from '#self/data_panel/index';
+import { ControlPlane } from '#self/control_plane/index';
+import { DataPlane } from '#self/data_plane/index';
 import { createDeferred, bufferFromStream } from '../lib/util';
 import { config } from '#self/config';
 import { startTurfD, stopTurfD } from '#self/lib/turf';
@@ -121,14 +121,14 @@ export async function testWorker(agent: AliceAgent, testProfile: any) {
 
 export async function startAllRoles(): Promise<Roles> {
   const agent = new AliceAgent();
-  const control = new ControlPanel(config);
-  const data = new DataPanel(config);
+  const control = new ControlPlane(config);
+  const data = new DataPlane(config);
 
   let readyCount = 0;
   const { resolve, promise } = createDeferred<Roles>();
-  control.once('newDataPanelClientReady', onNewClientReady.bind(undefined, 'control>data client'));
-  agent.once('newDataPanelClientReady', onNewClientReady.bind(undefined, 'agent>data client'));
-  agent.once('newControlPanelClientReady', onNewClientReady.bind(undefined, 'agent>ctrl client'));
+  control.once('newDataPlaneClientReady', onNewClientReady.bind(undefined, 'control>data client'));
+  agent.once('newDataPlaneClientReady', onNewClientReady.bind(undefined, 'agent>data client'));
+  agent.once('newControlPlaneClientReady', onNewClientReady.bind(undefined, 'agent>ctrl client'));
 
   function onNewClientReady(name: string) {
     console.log(`${name} connected!`);
@@ -170,15 +170,15 @@ export function mockClientCreatorForManager(ManagerClass: any) {
     async ready() { /* empty */ }
     async close() { /* empty */ }
   }
-  mm(ManagerClass.prototype, '_createPanelClient', () => new DummyClient());
+  mm(ManagerClass.prototype, '_createPlaneClient', () => new DummyClient());
   mm(ManagerClass.prototype, '_onClientReady', async () => {});
 }
 
 export const internetDescribe = process.env.ALICE_ENABLE_INTERNET_TEST === 'true' ? describe : describe.skip;
 
 export interface Roles {
-  data?: DataPanel;
-  control?: ControlPanel;
+  data?: DataPlane;
+  control?: ControlPlane;
   agent?: AliceAgent;
 }
 

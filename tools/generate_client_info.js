@@ -5,7 +5,7 @@ const path = require('path');
 
 const aliceVersion = require('#self/package.json').version;
 // do not use #self
-const constants = require('../src/control_panel/starter/constant').ENV;
+const constants = require('../src/control_plane/starter/constant').ENV;
 const content = `
 'use strict';
 

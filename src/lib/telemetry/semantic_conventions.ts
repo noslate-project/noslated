@@ -7,7 +7,7 @@ const DelegateMetricAttributes = {
   TRIGGER_METHOD: 'noslate.delegate.trigger_method',
 };
 
-const DataPanelMetrics = {
+const DataPlaneMetrics = {
   INVOKE_COUNT: 'noslate.data.invoke_count',
   INVOKE_DURATION: 'noslate.data.invoke_duration',
 
@@ -15,16 +15,16 @@ const DataPanelMetrics = {
   QUEUED_REQUEST_DURATION: 'noslate.data.queued_request_duration',
 };
 
-const PanelMetricAttributes = {
+const PlaneMetricAttributes = {
   FUNCTION_NAME: 'noslate.function_name',
   SERVICE_NAME: 'noslate.service_name',
 };
 
-const DataPanelMetricAttributes = {
+const DataPlaneMetricAttributes = {
   // TODO(chengzhong.wcz): invoke status code, etc.
 };
 
-const ControlPanelMetrics = {
+const ControlPlaneMetrics = {
   REPLICA_CPU_USER: 'noslate.control.replica_cpu_user',
   REPLICA_CPU_SYSTEM: 'noslate.control.replica_cpu_system',
   REPLICA_MEM_RSS: 'noslate.control.replica_mem_rss',
@@ -33,7 +33,7 @@ const ControlPanelMetrics = {
   FUNCTION_REPLICA_TOTAL_COUNT: 'noslate.control.function_replica_total_count',
 };
 
-const ControlPanelMetricAttributes = {
+const ControlPlaneMetricAttributes = {
   RUNTIME_TYPE: 'noslate.runtime_type',
   PROCESS_PID: 'noslate.process_pid',
   EXIT_CODE: 'noslate.exit_code',
@@ -54,13 +54,13 @@ export {
   DelegateMetrics,
   DelegateMetricAttributes,
 
-  PanelMetricAttributes,
+  PlaneMetricAttributes,
 
-  DataPanelMetrics,
-  DataPanelMetricAttributes,
+  DataPlaneMetrics,
+  DataPlaneMetricAttributes,
 
-  ControlPanelMetrics,
-  ControlPanelMetricAttributes,
+  ControlPlaneMetrics,
+  ControlPlaneMetricAttributes,
 
   WorkerMetrics,
   WorkerMetricsAttributes,

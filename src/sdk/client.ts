@@ -6,14 +6,14 @@ import loggers from '#self/lib/logger';
 import { tuplesToPairs, pairsToTuples, mapToPairs } from '#self/lib/rpc/key_value_pair';
 import { TriggerResponse, MetadataInit, Metadata } from '#self/delegate/request_response';
 import { bufferFromStream, DeepRequired, jsonClone } from '#self/lib/util';
-import { DataPanelClientManager } from './data_panel_client_manager';
-import { ControlPanelClientManager } from './control_panel_client_manager';
+import { DataPlaneClientManager } from './data_plane_client_manager';
+import { ControlPlaneClientManager } from './control_plane_client_manager';
 // json could not be loaded with #self.
 import kServiceProfileSchema from '../lib/json/service_profile_schema.json';
 import { Logger } from '#self/lib/loggers';
 import { RawFunctionProfile } from '#self/lib/json/function_profile';
 import { Mode } from '#self/lib/function_profile';
-import { ServiceProfileItem } from '#self/data_panel/service_selector';
+import { ServiceProfileItem } from '#self/data_plane/service_selector';
 import * as root from '#self/proto/root';
 import { kDefaultRequestId } from '#self/lib/constants';
 
@@ -21,8 +21,8 @@ import { kDefaultRequestId } from '#self/lib/constants';
  * Alice client
  */
 export class AliceClient extends EventEmitter {
-  dataPanelClientManager: DataPanelClientManager;
-  controlPanelClientManager: ControlPanelClientManager;
+  dataPlaneClientManager: DataPlaneClientManager;
+  controlPlaneClientManager: ControlPlaneClientManager;
   logger: Logger;
   validator: JSONValidator;
   functionProfiles: RawFunctionProfile[] | null;
@@ -37,8 +37,8 @@ export class AliceClient extends EventEmitter {
     loggers.setSink(loggers.getPrettySink('sdk.log'));
     dumpConfig('sdk', config);
 
-    this.dataPanelClientManager = new DataPanelClientManager(this, config);
-    this.controlPanelClientManager = new ControlPanelClientManager(this, config);
+    this.dataPlaneClientManager = new DataPlaneClientManager(this, config);
+    this.controlPlaneClientManager = new ControlPlaneClientManager(this, config);
     this.logger = loggers.get('alice client');
     this.validator = new JSONValidator();
 
@@ -57,12 +57,12 @@ export class AliceClient extends EventEmitter {
   async start() {
     this.logger.debug('starting...');
 
-    this.dataPanelClientManager.on('newClientReady', panel => this.emit('newDataPanelClientReady', panel));
-    this.controlPanelClientManager.on('newClientReady', panel => this.emit('newControlPanelClientReady', panel));
+    this.dataPlaneClientManager.on('newClientReady', plane => this.emit('newDataPlaneClientReady', plane));
+    this.controlPlaneClientManager.on('newClientReady', plane => this.emit('newControlPlaneClientReady', plane));
 
     await Promise.all([
-      this.dataPanelClientManager.ready(),
-      this.controlPanelClientManager.ready(),
+      this.dataPlaneClientManager.ready(),
+      this.controlPlaneClientManager.ready(),
     ]);
     this.logger.info('started.');
   }
@@ -73,8 +73,8 @@ export class AliceClient extends EventEmitter {
    */
   async close() {
     await Promise.all([
-      this.dataPanelClientManager.close(),
-      this.controlPanelClientManager.close(),
+      this.dataPlaneClientManager.close(),
+      this.controlPlaneClientManager.close(),
     ]);
   }
 
@@ -106,7 +106,7 @@ export class AliceClient extends EventEmitter {
    * @return {Promise<void>} The result.
    */
   async setDaprAdaptor(modulePath: string) {
-    await this.dataPanelClientManager.callToAllAvailableClients('setDaprAdaptor', [{ modulePath }], 'all');
+    await this.dataPlaneClientManager.callToAllAvailableClients('setDaprAdaptor', [{ modulePath }], 'all');
     this.daprAdaptorModulePath = modulePath;
   }
 
@@ -128,7 +128,7 @@ export class AliceClient extends EventEmitter {
       }
     });
 
-    const client = this.controlPanelClientManager.sample();
+    const client = this.controlPlaneClientManager.sample();
     envs = jsonClone(envs);
     for (const env of envs) {
       if (env.value === undefined || env.value === null) {
@@ -161,7 +161,7 @@ export class AliceClient extends EventEmitter {
    * @param {'IMMEDIATELY' | 'WAIT'} mode set mode
    */
   async setFunctionProfile(profiles: RawFunctionProfile[], mode: Mode = 'IMMEDIATELY') {
-    const client = this.controlPanelClientManager.sample();
+    const client = this.controlPlaneClientManager.sample();
     profiles = JSON.parse(JSON.stringify(profiles));
 
     // Set function profile. If failed, do not cache current `functionProfilesMode`
@@ -213,7 +213,7 @@ export class AliceClient extends EventEmitter {
       return item;
     });
 
-    await this.dataPanelClientManager.callToAllAvailableClients('setServiceProfiles', [{ profiles: serviceProfiles }], 'all');
+    await this.dataPlaneClientManager.callToAllAvailableClients('setServiceProfiles', [{ profiles: serviceProfiles }], 'all');
     this.serviceProfiles = serviceProfiles;
   }
 
@@ -238,7 +238,7 @@ export class AliceClient extends EventEmitter {
       this.useInspectorSet.delete(funcName);
     }
 
-    await this.dataPanelClientManager.callToAllAvailableClients('useInspector', [{ funcName, use }], 'all');
+    await this.dataPlaneClientManager.callToAllAvailableClients('useInspector', [{ funcName, use }], 'all');
   }
 
   /**
@@ -250,10 +250,10 @@ export class AliceClient extends EventEmitter {
    * @return {Promise<import('#self/delegate/request_response').TriggerResponse>} The invoke response.
    */
   async #invoke(type: InvokeType, name: string, data: Readable | Buffer, metadata?: InvokeMetadata): Promise<TriggerResponse> {
-    /** @type {DataPanelClient} */
-    const panel = this.dataPanelClientManager.sample();
-    if (panel == null) {
-      throw new Error('No activated data panel.');
+    /** @type {DataPlaneClient} */
+    const plane = this.dataPlaneClientManager.sample();
+    if (plane == null) {
+      throw new Error('No activated data plane.');
     }
 
     let body;
@@ -264,7 +264,7 @@ export class AliceClient extends EventEmitter {
       body = data;
     }
 
-    const result: DeepRequired<root.alice.data.IInvokeResponse> = await panel[type]({
+    const result: DeepRequired<root.alice.data.IInvokeResponse> = await plane[type]({
       name,
       url: metadata?.url,
       method: metadata?.method,

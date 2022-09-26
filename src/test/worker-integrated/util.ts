@@ -1,10 +1,10 @@
-import { ControlPanel } from '#self/control_panel';
+import { ControlPlane } from '#self/control_plane';
 import { turf } from '#self/lib/turf';
 import { TurfProcess } from '#self/lib/turf/types';
 import { TurfContainerStates } from '#self/lib/turf/wrapper';
 import assert from 'assert';
 
-export async function killWorker(control: ControlPanel, name: string) {
+export async function killWorker(control: ControlPlane, name: string) {
   const broker = Array.from(control.capacityManager.workerStatsSnapshot.brokers.values())[0];
   assert.ok(broker != null);
   assert.strictEqual(broker.name, name);

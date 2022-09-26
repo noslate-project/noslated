@@ -3,22 +3,22 @@ import mm from 'mm';
 import { AliceAgent } from '#self/sdk/index';
 import { testName, baselineDir, daprAdaptorDir } from '#self/test/common';
 import { config } from '#self/config';
-import { ControlPanel } from '#self/control_panel/index';
-import { ControlPanelClientManager } from '#self/sdk/control_panel_client_manager';
-import { DataPanelClientManager } from '#self/sdk/data_panel_client_manager';
-import { DataPanelClientManager as _DataPanelClientManager } from '#self/control_panel/data_panel_client/manager' ;
+import { ControlPlane } from '#self/control_plane/index';
+import { ControlPlaneClientManager } from '#self/sdk/control_plane_client_manager';
+import { DataPlaneClientManager } from '#self/sdk/data_plane_client_manager';
+import { DataPlaneClientManager as _DataPlaneClientManager } from '#self/control_plane/data_plane_client/manager' ;
 import { Guest } from '#self/lib/rpc/guest';
 import { mockClientCreatorForManager } from '#self/test/util';
 import { RawFunctionProfile } from '#self/lib/json/function_profile';
-import { DataPanel } from '#self/data_panel/index';
+import { DataPlane } from '#self/data_plane/index';
 import sinon from 'sinon';
 import { sleep } from '#self/lib/util';
 import _ from 'lodash';
 
 describe(testName(__filename), () => {
   let agent: AliceAgent;
-  let control: ControlPanel;
-  let data: DataPanel;
+  let control: ControlPlane;
+  let data: DataPlane;
 
   beforeEach(async () => {
     agent = new AliceAgent();
@@ -46,10 +46,10 @@ describe(testName(__filename), () => {
         },
       };
 
-      control = new ControlPanel(config);
+      control = new ControlPlane(config);
       const checkV8Options = control.herald.impl.checkV8Options;
       let errMessage = '';
-      mm(control.herald.impl, 'checkV8Options', function(this: ControlPanel,profiles: RawFunctionProfile[]) {
+      mm(control.herald.impl, 'checkV8Options', function(this: ControlPlane,profiles: RawFunctionProfile[]) {
         try {
           checkV8Options.call(this, profiles);
         } catch (e) {
@@ -57,8 +57,8 @@ describe(testName(__filename), () => {
           throw e;
         }
       });
-      mockClientCreatorForManager(DataPanelClientManager);
-      mockClientCreatorForManager(_DataPanelClientManager);
+      mockClientCreatorForManager(DataPlaneClientManager);
+      mockClientCreatorForManager(_DataPlaneClientManager);
       await control.ready();
       await agent.start();
 
@@ -80,10 +80,10 @@ describe(testName(__filename), () => {
         },
       };
 
-      control = new ControlPanel(config);
+      control = new ControlPlane(config);
       const checkV8Options = control.herald.impl.checkV8Options;
       let errMessage = '';
-      mm(control.herald.impl, 'checkV8Options', function(this: ControlPanel, profiles: RawFunctionProfile[]) {
+      mm(control.herald.impl, 'checkV8Options', function(this: ControlPlane, profiles: RawFunctionProfile[]) {
         try {
           checkV8Options.call(this, profiles);
         } catch (e) {
@@ -91,8 +91,8 @@ describe(testName(__filename), () => {
           throw e;
         }
       });
-      mockClientCreatorForManager(DataPanelClientManager);
-      mockClientCreatorForManager(_DataPanelClientManager);
+      mockClientCreatorForManager(DataPlaneClientManager);
+      mockClientCreatorForManager(_DataPlaneClientManager);
       await control.ready();
       await agent.start();
 
@@ -108,10 +108,10 @@ describe(testName(__filename), () => {
     }];
 
     it('should set platform environment variables even if no client connected', async () => {
-      mockClientCreatorForManager(ControlPanelClientManager);
-      mockClientCreatorForManager(DataPanelClientManager);
+      mockClientCreatorForManager(ControlPlaneClientManager);
+      mockClientCreatorForManager(DataPlaneClientManager);
       await agent.start();
-      agent.controlPanelClientManager.clients()[0].emit(Guest.events.CONNECTIVITY_STATE_CHANGED, Guest.connectivityState.CONNECTING);
+      agent.controlPlaneClientManager.clients()[0].emit(Guest.events.CONNECTIVITY_STATE_CHANGED, Guest.connectivityState.CONNECTING);
       await agent.setPlatformEnvironmentVariables(envs);
 
       assert.notStrictEqual(agent.platformEnvironmentVariables, envs);
@@ -119,9 +119,9 @@ describe(testName(__filename), () => {
     });
 
     it('should set platform environment variables', async () => {
-      control = new ControlPanel(config);
-      mockClientCreatorForManager(DataPanelClientManager);
-      mockClientCreatorForManager(_DataPanelClientManager);
+      control = new ControlPlane(config);
+      mockClientCreatorForManager(DataPlaneClientManager);
+      mockClientCreatorForManager(_DataPlaneClientManager);
       await control.ready();
       await agent.start();
 
@@ -136,9 +136,9 @@ describe(testName(__filename), () => {
     });
 
     it('should throw error if not string', async () => {
-      control = new ControlPanel(config);
-      mockClientCreatorForManager(DataPanelClientManager);
-      mockClientCreatorForManager(_DataPanelClientManager);
+      control = new ControlPlane(config);
+      mockClientCreatorForManager(DataPlaneClientManager);
+      mockClientCreatorForManager(_DataPlaneClientManager);
       await control.ready();
       await agent.start();
 
@@ -153,9 +153,9 @@ describe(testName(__filename), () => {
     });
 
     it('should throw error if reserved key hits', async () => {
-      control = new ControlPanel(config);
-      mockClientCreatorForManager(DataPanelClientManager);
-      mockClientCreatorForManager(_DataPanelClientManager);
+      control = new ControlPlane(config);
+      mockClientCreatorForManager(DataPlaneClientManager);
+      mockClientCreatorForManager(_DataPlaneClientManager);
       await control.ready();
       await agent.start();
 
@@ -172,8 +172,8 @@ describe(testName(__filename), () => {
 
   describe('.setDaprAdaptor()', () => {
     it('should set dapr adapter success', async () => {
-      control = new ControlPanel(config);
-      data = new DataPanel(config);
+      control = new ControlPlane(config);
+      data = new DataPlane(config);
 
       const spy = sinon.spy(data.dataFlowController.delegate, 'setDaprAdaptor');
 
@@ -191,8 +191,8 @@ describe(testName(__filename), () => {
     it('should set dapr adapter before agent start work', async () => {
       await agent.setDaprAdaptor(daprAdaptorDir);
 
-      control = new ControlPanel(config);
-      data = new DataPanel(config);
+      control = new ControlPlane(config);
+      data = new DataPlane(config);
 
       const spy = sinon.spy(data.dataFlowController.delegate, 'setDaprAdaptor');
 
@@ -206,9 +206,9 @@ describe(testName(__filename), () => {
       spy.restore();
     });
 
-    it('should set dapr adapter when data panel client error', async () => {
-      control = new ControlPanel(config);
-      data = new DataPanel(config);
+    it('should set dapr adapter when data plane client error', async () => {
+      control = new ControlPlane(config);
+      data = new DataPlane(config);
 
       await control.ready();
       await data.ready();
@@ -216,10 +216,10 @@ describe(testName(__filename), () => {
       await agent.start();
       await agent.setDaprAdaptor(daprAdaptorDir);
 
-      const dataClient = agent.dataPanelClientManager.sample()!;
+      const dataClient = agent.dataPlaneClientManager.sample()!;
       const spy = sinon.spy(data.dataFlowController.delegate, 'setDaprAdaptor');
 
-      // mock data panel client error, like: data panel restart ...
+      // mock data plane client error, like: data plane restart ...
       dataClient.emit('error');
 
       await sleep(1000);

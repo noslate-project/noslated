@@ -10,8 +10,8 @@ import { killWorker } from './util';
 import { once } from 'events';
 import path from 'path';
 import { AliceAgent } from '#self/sdk/index';
-import { ControlPanel } from '#self/control_panel';
-import { DataPanel } from '#self/data_panel';
+import { ControlPlane } from '#self/control_plane';
+import { DataPlane } from '#self/data_plane';
 
 const codeDir = path.join(FIXTURES_DIR, 'worker-integrated');
 
@@ -42,8 +42,8 @@ describe(common.testName(__filename), function() {
 
   let resourceServer: ResourceServer;
   let agent: AliceAgent;
-  let control: ControlPanel;
-  let data: DataPanel;
+  let control: ControlPlane;
+  let data: DataPlane;
   before(async () => {
     resourceServer = new ResourceServer();
     await resourceServer.start();

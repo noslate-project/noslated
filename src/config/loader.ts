@@ -70,20 +70,20 @@ export function resolveEnvConfig() {
     envConfig.virtualMemoryPoolSize = process.env.ALICE_VIRTUAL_MEMORY_POOL_SIZE;
   }
 
-  if (process.env.ALICE_DATA_PANEL_COUNT) {
-    envConfig.panel.dataPanelCount = Number.parseInt(process.env.ALICE_DATA_PANEL_COUNT);
+  if (process.env.ALICE_DATA_PLANE_COUNT) {
+    envConfig.plane.dataPlaneCount = Number.parseInt(process.env.ALICE_DATA_PLANE_COUNT);
   }
 
   if (process.env.ALICE_DEFAULT_SHRINK_STRATEGY) {
     envConfig.worker.defaultShrinkStrategy = process.env.ALICE_DEFAULT_SHRINK_STRATEGY;
   }
 
-  if (process.env.ALICE_CONTROL_PANEL_COUNT) {
-    envConfig.panel.controlPanelCount = Number.parseInt(process.env.ALICE_CONTROL_PANEL_COUNT);
+  if (process.env.ALICE_CONTROL_PLANE_COUNT) {
+    envConfig.plane.controlPlaneCount = Number.parseInt(process.env.ALICE_CONTROL_PLANE_COUNT);
   }
 
-  if (process.env.ALICE_CONTROL_PANEL_WORKER_CONNECT_TIMEOUT) {
-    envConfig.worker.controlPanelConnectTimeout = Number.parseInt(process.env.ALICE_CONTROL_PANEL_WORKER_CONNECT_TIMEOUT);
+  if (process.env.ALICE_CONTROL_PLANE_WORKER_CONNECT_TIMEOUT) {
+    envConfig.worker.controlPlaneConnectTimeout = Number.parseInt(process.env.ALICE_CONTROL_PLANE_WORKER_CONNECT_TIMEOUT);
   }
 
   return envConfig;

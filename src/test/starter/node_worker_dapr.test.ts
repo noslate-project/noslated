@@ -4,8 +4,8 @@ import * as common from '../common';
 import { startAllRoles, testWorker, FIXTURES_DIR, Roles } from '../util';
 import { startTurfD, stopTurfD } from '../../lib/turf';
 import { AliceAgent } from '#self/sdk/index';
-import { ControlPanel } from '#self/control_panel';
-import { DataPanel } from '#self/data_panel';
+import { ControlPlane } from '#self/control_plane';
+import { DataPlane } from '#self/data_plane';
 
 const workersDir = path.join(FIXTURES_DIR, 'starter');
 
@@ -99,8 +99,8 @@ const cases = [
 
 describe(common.testName(__filename), () => {
   let agent: AliceAgent;
-  let control: ControlPanel;
-  let data: DataPanel;
+  let control: ControlPlane;
+  let data: DataPlane;
 
   beforeEach(async () => {
     const roles = await startAllRoles() as Required<Roles>;

@@ -1,4 +1,4 @@
-import { ServiceType } from '#self/data_panel/service_selector';
+import { ServiceType } from '#self/data_plane/service_selector';
 import * as root from '#self/proto/root';
 
 export type NotNullableInterface<T> = {
