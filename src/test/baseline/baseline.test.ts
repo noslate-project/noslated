@@ -849,9 +849,9 @@ const cases = [
     expect: {},
   },
   {
-    name: 'node_worker_without_cgi_mode',
+    name: 'node_worker_without_disposable_true',
     profile: {
-      name: 'node_worker_without_cgi_mode',
+      name: 'node_worker_without_disposable_true',
       runtime: 'nodejs-v16',
       url: `file://${baselineDir}/node_worker_dapr`,
       handler: 'invoke.handler',
@@ -869,7 +869,7 @@ const cases = [
       }),
     },
     after: async (roles: Required<ProseContext<TurfContext>>) => {
-      const broker = roles.control.capacityManager.workerStatsSnapshot.getBroker('node_worker_without_cgi_mode', false)!;
+      const broker = roles.control.capacityManager.workerStatsSnapshot.getBroker('node_worker_without_disposable_true', false)!;
       assert.deepStrictEqual(broker.workers.size, 1);
       const worker = broker.workers.values().next().value;
       assert.deepStrictEqual(worker.containerStatus, ContainerStatus.Ready);
@@ -877,15 +877,15 @@ const cases = [
     }
   },
   {
-    name: 'node_worker_with_cgi_mode',
+    name: 'node_worker_with_disposable_true',
     profile: {
-      name: 'node_worker_with_cgi_mode',
+      name: 'node_worker_with_disposable_true',
       runtime: 'nodejs-v16',
       url: `file://${baselineDir}/node_worker_dapr`,
       handler: 'invoke.handler',
       signature: 'md5:234234',
       worker: {
-        useCGIMode: true
+        disposable: true
       }
     },
     input: {
@@ -900,7 +900,7 @@ const cases = [
       }),
     },
     after: async (roles: Required<ProseContext<TurfContext>>) => {
-      const broker = roles.control.capacityManager.workerStatsSnapshot.getBroker('node_worker_with_cgi_mode', false)!;
+      const broker = roles.control.capacityManager.workerStatsSnapshot.getBroker('node_worker_with_disposable_true', false)!;
       assert.deepStrictEqual(broker.workers.size, 1);
       const worker = broker.workers.values().next().value;
       assert.deepStrictEqual(worker.containerStatus, ContainerStatus.Stopped);
@@ -911,9 +911,9 @@ const cases = [
     }
   },
   {
-    name: 'aworker_without_cgi_mode',
+    name: 'aworker_without_disposable_true',
     profile: {
-      name: 'aworker_without_cgi_mode',
+      name: 'aworker_without_disposable_true',
       runtime: 'aworker',
       url: `file://${baselineDir}/aworker_dapr`,
       sourceFile: 'invoke.js',
@@ -928,7 +928,7 @@ const cases = [
       data: Buffer.from('{"appId":"hello-world","methodName":"echo","data":"foobar"}'),
     },
     after: async (roles: Required<ProseContext<TurfContext>>) => {
-      const broker = roles.control.capacityManager.workerStatsSnapshot.getBroker('aworker_without_cgi_mode', false)!;
+      const broker = roles.control.capacityManager.workerStatsSnapshot.getBroker('aworker_without_disposable_true', false)!;
       assert.deepStrictEqual(broker.workers.size, 1);
       const worker = broker.workers.values().next().value;
       assert.deepStrictEqual(worker.containerStatus, ContainerStatus.Ready);
@@ -936,15 +936,15 @@ const cases = [
     }
   },
   {
-    name: 'aworker_with_cgi_mode',
+    name: 'aworker_with_disposable_true',
     profile: {
-      name: 'aworker_with_cgi_mode',
+      name: 'aworker_with_disposable_true',
       runtime: 'aworker',
       url: `file://${baselineDir}/aworker_dapr`,
       sourceFile: 'invoke.js',
       signature: 'md5:234234',
       worker: {
-        useCGIMode: true
+        disposable: true
       }
     },
     input: {
@@ -956,7 +956,7 @@ const cases = [
       data: Buffer.from('{"appId":"hello-world","methodName":"echo","data":"foobar"}'),
     },
     after: async (roles: Required<ProseContext<TurfContext>>) => {
-      const broker = roles.control.capacityManager.workerStatsSnapshot.getBroker('aworker_with_cgi_mode', false)!;
+      const broker = roles.control.capacityManager.workerStatsSnapshot.getBroker('aworker_with_disposable_true', false)!;
       assert.deepStrictEqual(broker.workers.size, 1);
       const worker = broker.workers.values().next().value;
       assert.deepStrictEqual(worker.containerStatus, ContainerStatus.Stopped);

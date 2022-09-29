@@ -49,7 +49,7 @@ class Broker {
    * @param funcName The function name of this broker.
    * @param isInspector Whether it's using inspector or not.
    */
-  constructor(profiles: FunctionProfileManager, config: Config, funcName: string, isInspector: boolean, public useCGIMode: boolean = false) {
+  constructor(profiles: FunctionProfileManager, config: Config, funcName: string, isInspector: boolean, public disposable: boolean = false) {
     this.config = config;
     this.logger = new PrefixedLogger('worker_stats_snapshot broker', Broker.getKey(funcName, isInspector));
 
@@ -73,7 +73,7 @@ class Broker {
       return 1;
     }
 
-    if (this.useCGIMode) {
+    if (this.disposable) {
       return 0;
     }
 
@@ -90,7 +90,7 @@ class Broker {
       throw new Error(`No function profile named ${this.name}.`);
     }
 
-    this.workers.set(processName, new Worker(this.config, processName, credential, this.useCGIMode));
+    this.workers.set(processName, new Worker(this.config, processName, credential, this.disposable));
     this.startingPool.set(processName, {
       credential,
       estimateRequestLeft: this.data.worker?.maxActivateRequests,
@@ -141,8 +141,7 @@ class Broker {
    * @return {number} How much processes (workers) should be scale. (> 0 means expand, < 0 means shrink)
    */
   evaluateWaterLevel(expansionOnly = false) {
-    if(this.useCGIMode) {
-      this.logger.info(`broker [${this.name}] with CGI Mode waterLevel is: `, this.activeRequestCount / this.totalMaxActivateRequests);
+    if(this.disposable) {
       return 0;
     }
 

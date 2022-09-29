@@ -111,7 +111,7 @@ export class Worker extends EventEmitter {
    * @param {string} credential The worker's credential.
    * @param {number} maxActivateRequests Max activate request count for this worker.
    */
-  constructor(public broker: WorkerBroker, public delegate: AliceDelegateService, public name: string, public credential: string, public maxActivateRequests: number, public useCGIMode: boolean) {
+  constructor(public broker: WorkerBroker, public delegate: AliceDelegateService, public name: string, public credential: string, public maxActivateRequests: number, public disposable: boolean) {
     super();
     this.activeRequestCount = 0;
     this.logger = new PrefixedLogger('worker', this.name);
@@ -185,7 +185,7 @@ export class Worker extends EventEmitter {
   }
 
   continueConsumeQueue() {
-    if (this.useCGIMode) return;
+    if (this.disposable) return;
     if (this.trafficOff) return;
 
     if (this.activeRequestCount < this.maxActivateRequests) {
@@ -336,8 +336,8 @@ export class WorkerBroker extends Base {
       }).catch(err => {
         request.reject(err);
       }).finally(() => {
-        if (this.useCGIMode) {
-          this.afterCGIInvoke(notThatBusyWorker, request.metadata.requestId);
+        if (this.disposable) {
+          this.afterDisposableInvoke(notThatBusyWorker, request.metadata.requestId);
         }
       });
 
@@ -345,8 +345,8 @@ export class WorkerBroker extends Base {
         [PlaneMetricAttributes.FUNCTION_NAME]: this.name,
       });
 
-      // useCGIMode 只消费一个请求
-      if (this.useCGIMode) break;
+      // disposable 只消费一个请求
+      if (this.disposable) break;
     }
 
     if (!this.requestQueue.length) {
@@ -354,7 +354,7 @@ export class WorkerBroker extends Base {
     }
   }
 
-  async afterCGIInvoke(worker: Worker, requestId?: string) {
+  async afterDisposableInvoke(worker: Worker, requestId?: string) {
     this.removeWorker(worker.credential);
     await worker.closeTraffic();
     // 同步 RequestDrained
@@ -397,14 +397,14 @@ export class WorkerBroker extends Base {
     this.credentialStatusMap.set(credential, CredentialStatus.PENDING);
   }
 
-  get useCGIMode() {
+  get disposable() {
     const profile = this.profileManager.get(this.name);
 
     if (!profile) {
       return false;
     }
 
-    return profile.worker?.useCGIMode || false;
+    return profile.worker?.disposable || false;
   }
 
   /**
@@ -417,7 +417,7 @@ export class WorkerBroker extends Base {
       return this.config.worker.maxActivateRequests;
     }
 
-    if (this.useCGIMode) {
+    if (this.disposable) {
       return 1;
     }
 
@@ -461,7 +461,7 @@ export class WorkerBroker extends Base {
       return this.config.worker.reservationCountPerFunction;
     }
 
-    if (this.useCGIMode) {
+    if (this.disposable) {
       return 0;
     }
 
@@ -533,7 +533,7 @@ export class WorkerBroker extends Base {
       c.name,
       c.credential,
       this.maxActivateRequests,
-      this.useCGIMode
+      this.disposable
     );
 
     try {
@@ -675,8 +675,8 @@ export class WorkerBroker extends Base {
           // TODO(kaidi.zkd): do error log
           throw e;
         } finally {
-          if (this.useCGIMode) {
-            this.afterCGIInvoke(worker, metadata.requestId);
+          if (this.disposable) {
+            this.afterDisposableInvoke(worker, metadata.requestId);
           }
         }
 

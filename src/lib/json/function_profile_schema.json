@@ -82,9 +82,9 @@
           },
           "description": "The additional exec argv."
         },
-        "useCGIMode": {
+        "disposable": {
           "type": "boolean",
-          "description": "whether use CGI mode to process request"
+          "description": "whether worker destroy after one request finished"
         }
       },
       "additionalProperties": true

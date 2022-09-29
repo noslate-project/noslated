@@ -89,13 +89,13 @@ export class CapacityManager extends Base {
     functionName: string,
     count: number,
     options: ExpansionOptions,
-    useCGIMode: boolean = false,
+    disposable: boolean = false,
     toReserve: boolean = false
   ): Promise<void[]> {
     const { workerLauncher } = this.plane;
     const ret = [];
     for (let i = 0; i < count; i++) {
-      ret.push(workerLauncher.tryLaunch(functionName, options, useCGIMode, toReserve));
+      ret.push(workerLauncher.tryLaunch(functionName, options, disposable, toReserve));
     }
     return Promise.all(ret);
   }
@@ -120,8 +120,8 @@ export class CapacityManager extends Base {
         if (brokers[i].isInspector) {
           // inspect 模式不自动扩容
           deltas[i] = 0;
-        } else if (brokers[i].useCGIMode) {
-          // CGI 模式不自动扩容
+        } else if (brokers[i].disposable) {
+          // 即抛模式不自动扩容
           deltas[i] = 0;
         } else if (deltas[i] > 0) {
           const newDeltas = Math.floor(deltas[i] * rate);
@@ -149,7 +149,7 @@ export class CapacityManager extends Base {
             {
               inspect: brokers[i].isInspector,
             },
-            profile?.worker?.useCGIMode || false,
+            profile?.worker?.disposable || false,
             toReserve
           )
         );
@@ -183,7 +183,7 @@ export class CapacityManager extends Base {
         broker.removeItemFromStartingPool(worker.name);
       }
 
-      if (event === ContainerStatusReport.RequestDrained && worker.containerStatus === ContainerStatus.Stopped && worker.useCGIMode) {
+      if (event === ContainerStatusReport.RequestDrained && worker.containerStatus === ContainerStatus.Stopped && worker.disposable) {
         // wait next sync to gc worker data and related resources
         const now = performance.now();
 
@@ -191,10 +191,10 @@ export class CapacityManager extends Base {
 
         this.stopWorker(worker.name, report.requestId)
           .then(() => {
-            this.logger.info(`stop worker [${worker.name}] because container status is [${ContainerStatus[worker.containerStatus]}] and useCGIMode=true, cost: ${performance.now() - now}.`);
+            this.logger.info(`stop worker [${worker.name}] because container status is [${ContainerStatus[worker.containerStatus]}] and disposable=true, cost: ${performance.now() - now}.`);
           })
           .catch((error) => {
-            this.logger.error(`stop worker [${worker.name}] because container status is [${ContainerStatus[worker.containerStatus]}] and useCGIMode=true failed, wait sync to gc, cost: ${performance.now() - now}.`, error);
+            this.logger.error(`stop worker [${worker.name}] because container status is [${ContainerStatus[worker.containerStatus]}] and disposable=true failed, wait sync to gc, cost: ${performance.now() - now}.`, error);
           });
       }
     } else {
@@ -239,8 +239,8 @@ export class CapacityManager extends Base {
         continue;
       }
 
-      // CGI 模式不缩容
-      if (broker.useCGIMode) {
+      // 即抛模式不缩容
+      if (broker.disposable) {
         continue;
       }
 
@@ -293,7 +293,7 @@ export class CapacityManager extends Base {
       const reservationCount = profile?.worker?.reservationCount;
       if (reservationCount === 0) continue;
       if (reservationCount || reservationCountPerFunction) {
-        this.workerStatsSnapshot.getOrCreateBroker(profile.name, false, profile.worker?.useCGIMode);
+        this.workerStatsSnapshot.getOrCreateBroker(profile.name, false, profile.worker?.disposable);
       }
     }
 
@@ -373,7 +373,7 @@ export class CapacityManager extends Base {
 
     const broker = this.workerStatsSnapshot.getBroker(name, isInspect);
 
-    if (broker && broker.prerequestStartingPool() && !broker.useCGIMode) {
+    if (broker && broker.prerequestStartingPool() && !broker.disposable) {
       this.logger.info('Request(%s) queueing for func(%s, inspect %s) will not expand because StartingPool is still enough.', requestId, name, isInspect);
       return;
     }
@@ -389,7 +389,7 @@ export class CapacityManager extends Base {
         {
           inspect: isInspect,
         },
-        profile?.worker?.useCGIMode || false,
+        profile?.worker?.disposable || false,
         false,
         requestId
       );

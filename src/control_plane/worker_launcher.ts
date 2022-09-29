@@ -106,19 +106,19 @@ export class WorkerLauncher extends Base {
    * @param {{ inspect?: boolean }} options The options object.
    * @return {Promise<void>} The result.
    */
-  async tryLaunch(funcName: string, options: BaseOptions, useCGIMode: boolean = false, toReserve: boolean = false, requestId?: string) {
+  async tryLaunch(funcName: string, options: BaseOptions, disposable: boolean = false, toReserve: boolean = false, requestId?: string) {
     const { promise, resolve, reject } = createDeferred<void>();
     this.priorityLaunchQueue.enqueue({
       functionName: funcName,
       timestamp: performance.now(),
-      priority: useCGIMode ? TaskPriority.HIGH : (toReserve ? TaskPriority.LOW : TaskPriority.NORMAL),
-      useCGIMode,
+      priority: disposable ? TaskPriority.HIGH : (toReserve ? TaskPriority.LOW : TaskPriority.NORMAL),
+      disposable,
       options,
       requestId,
       processer: async (task: LaunchTask, queue: PriorityLaunchQueue) => {
-        this.logger.info('process launch request(%s) func(%s), useCGIMode(%s), priority(%s).',task.requestId, task.functionName, task.useCGIMode, TaskPriority[task.priority]);
+        this.logger.info('process launch request(%s) func(%s), disposable(%s), priority(%s).',task.requestId, task.functionName, task.disposable, TaskPriority[task.priority]);
         try {
-          await this.doTryLaunch(task.functionName, task.options, task.useCGIMode, task.requestId);
+          await this.doTryLaunch(task.functionName, task.options, task.disposable, task.requestId);
           resolve();
         } catch (error) {
           return reject(error);
@@ -135,7 +135,7 @@ export class WorkerLauncher extends Base {
    * @param {{ inspect?: boolean }} options The options object.
    * @return {Promise<void>} The result.
    */
-  async doTryLaunch(funcName: string, options: BaseOptions, useCGIMode: boolean, requestId?: string) {
+  async doTryLaunch(funcName: string, options: BaseOptions, disposable: boolean, requestId?: string) {
     let pprofile = this.functionProfile.get(funcName);
     if (!pprofile) {
       const err = new Error(`No function named ${funcName}.`);
@@ -150,7 +150,7 @@ export class WorkerLauncher extends Base {
     const { worker: { replicaCountLimit } } = profile;
 
     // get broker / virtualMemoryUsed / virtualMemoryPoolSize, etc.
-    const broker = capacityManager.workerStatsSnapshot.getOrCreateBroker(funcName, !!options.inspect, profile.worker?.useCGIMode);
+    const broker = capacityManager.workerStatsSnapshot.getOrCreateBroker(funcName, !!options.inspect, profile.worker?.disposable);
     if (!broker) {
       const err = new Error(`No broker named ${funcName}, ${JSON.stringify(options)}`);
       err.code = ErrorCode.kNoFunction;
@@ -207,10 +207,10 @@ export class WorkerLauncher extends Base {
       });
       const serverSockPath = (dataPlane as any).getServerSockPath();
 
-      this.snapshot.register(funcName, processName, credential, !!options.inspect, useCGIMode);
+      this.snapshot.register(funcName, processName, credential, !!options.inspect, disposable);
       await starter.start(serverSockPath, processName, credential, profile, bundlePath, options);
 
-      this.logger.info('worker(%s, %s, inspect %s, useCGIMode %s) started, cost: %s, related request(%s)', funcName, credential, options.inspect, useCGIMode, performance.now() - now, requestId);
+      this.logger.info('worker(%s, %s, inspect %s, disposable %s) started, cost: %s, related request(%s)', funcName, credential, options.inspect, disposable, performance.now() - now, requestId);
     } catch (e) {
       this.snapshot.unregister(funcName, processName, !!options.inspect);
       throw e;

@@ -304,7 +304,7 @@ export class DataFlowController extends BaseOf(EventEmitter) {
     return [ ...this.brokers.values() ].map(broker => ({
       functionName: broker.name,
       inspector: broker.options.inspect === true,
-      useCGIMode: broker.useCGIMode,
+      disposable: broker.disposable,
       workers: broker.workers.map(worker => ({
         name: worker.name,
         maxActivateRequests: worker.maxActivateRequests,
