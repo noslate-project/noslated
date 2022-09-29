@@ -60,5 +60,5 @@ message FunctionProfileWorker {
   repeated string v8Options = 6;
   string shrinkStrategy = 7;
   repeated string execArgv = 8;
-  bool useCGIMode = 9;
+  bool disposable = 9;
 }

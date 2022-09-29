@@ -13,7 +13,7 @@ message BrokerStats {
   string functionName = 1;
   bool inspector = 2;
   repeated WorkerStats workers = 3;
-  bool useCGIMode = 4;
+  bool disposable = 4;
 }
 
 message WorkerTrafficStatsSnapshotBroadcast {
