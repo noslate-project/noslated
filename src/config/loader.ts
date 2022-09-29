@@ -18,8 +18,8 @@ try {
 export function resolveEnvConfig() {
   const envConfig: typeof defaultConfig = { delegate: {}, dirs: {}, turf: {}, logger: {}, worker: {} } as any;
 
-  if (process.env.ALICE_WORKDIR) {
-    envConfig.dirs.aliceWork = process.env.ALICE_WORKDIR;
+  if (process.env.NOSLATED_WORKDIR) {
+    envConfig.dirs.aliceWork = process.env.NOSLATED_WORKDIR;
     envConfig.dirs.aliceSock = path.join(envConfig.dirs.aliceWork, 'socks');
   }
 
@@ -40,22 +40,22 @@ export function resolveEnvConfig() {
     envConfig.delegate.resourceAcquisitionTimeout = Number.parseInt(process.env.ALICE_DELEGATE_RAT);
   }
 
-  if (process.env.ALICE_MAX_ACTIVATE_REQUESTS) {
-    envConfig.worker.maxActivateRequests = Number.parseInt(process.env.ALICE_MAX_ACTIVATE_REQUESTS);
+  if (process.env.NOSLATED_MAX_ACTIVATE_REQUESTS) {
+    envConfig.worker.maxActivateRequests = Number.parseInt(process.env.NOSLATED_MAX_ACTIVATE_REQUESTS);
   }
 
-  if (process.env.ALICE_REPLICA_COUNT_LIMIT_PER_FUNCTION) {
-    envConfig.worker.replicaCountLimit = Number.parseInt(process.env.ALICE_REPLICA_COUNT_LIMIT_PER_FUNCTION);
+  if (process.env.NOSLATED_REPLICA_COUNT_LIMIT_PER_FUNCTION) {
+    envConfig.worker.replicaCountLimit = Number.parseInt(process.env.NOSLATED_REPLICA_COUNT_LIMIT_PER_FUNCTION);
   }
 
-  if (process.env.ALICE_WORKER_SHRINK_REDUNDANT_TIMES) {
+  if (process.env.NOSLATED_WORKER_SHRINK_REDUNDANT_TIMES) {
     envConfig.worker.shrinkRedundantTimes =
-        Number.parseInt(process.env.ALICE_WORKER_SHRINK_REDUNDANT_TIMES);
+        Number.parseInt(process.env.NOSLATED_WORKER_SHRINK_REDUNDANT_TIMES);
   }
 
-  if (process.env.ALICE_RESERVATION_WORKER_COUNT_PER_FUNCTION) {
+  if (process.env.NOSLATED_RESERVATION_WORKER_COUNT_PER_FUNCTION) {
     envConfig.worker.reservationCountPerFunction =
-        Number.parseInt(process.env.ALICE_RESERVATION_WORKER_COUNT_PER_FUNCTION);
+        Number.parseInt(process.env.NOSLATED_RESERVATION_WORKER_COUNT_PER_FUNCTION);
   }
 
   if (process.env.NATIVE_DEBUG) {
@@ -66,8 +66,8 @@ export function resolveEnvConfig() {
     envConfig.dispatchStrategy.idrs.idleDuration = Number.parseInt(process.env.ALICE_DISPATCH_STRATEGY_IDRS_MAX_IDLE);
   }
 
-  if (process.env.ALICE_VIRTUAL_MEMORY_POOL_SIZE) {
-    envConfig.virtualMemoryPoolSize = process.env.ALICE_VIRTUAL_MEMORY_POOL_SIZE;
+  if (process.env.NOSLATED_VIRTUAL_MEMORY_POOL_SIZE) {
+    envConfig.virtualMemoryPoolSize = process.env.NOSLATED_VIRTUAL_MEMORY_POOL_SIZE;
   }
 
   if (process.env.ALICE_DATA_PLANE_COUNT) {
@@ -91,11 +91,11 @@ export function resolveEnvConfig() {
 
 export function resolveConfig() {
   let envFileConfig = {};
-  if (process.env.ALICE_CONFIG_PATH) {
+  if (process.env.NOSLATED_CONFIG_PATH) {
     try {
-      envFileConfig = JSON.parse(fs.readFileSync(process.env.ALICE_CONFIG_PATH, 'utf8'));
+      envFileConfig = JSON.parse(fs.readFileSync(process.env.NOSLATED_CONFIG_PATH, 'utf8'));
     } catch (error) {
-      logger.warn(`load config from ${process.env.ALICE_CONFIG_PATH} failed, `, error);
+      logger.warn(`load config from ${process.env.NOSLATED_CONFIG_PATH} failed, `, error);
     }
   }
   const envConfig = resolveEnvConfig();
