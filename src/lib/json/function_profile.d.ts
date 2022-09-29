@@ -23,7 +23,7 @@ interface ProcessFunctionProfile {
     fastFailRequestsOnStarting?: boolean;
     v8Options?: string[];
     execArgv?: string[];
-    useCGIMode?: boolean;
+    disposable?: boolean;
   };
   environments?: {
     key: string;

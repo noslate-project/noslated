@@ -121,7 +121,7 @@ class Worker {
    * @param name The worker name (replica name).
    * @param credential The credential.
    */
-  constructor(config: Config, name: string, credential: string | null = null, public useCGIMode: boolean = false) {
+  constructor(config: Config, name: string, credential: string | null = null, public disposable: boolean = false) {
     this.#config = config;
     this.#name = name;
     this.#credential = credential;

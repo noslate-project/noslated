@@ -18,7 +18,7 @@ export class PriorityLaunchQueue {
 
     const preview: LaunchTask = this.#queue.front();
 
-    if (!preview.useCGIMode) {
+    if (!preview.disposable) {
       if (this.#runningCount >= this.#concurrency) return;
 
       this.#runningCount++;
@@ -28,7 +28,7 @@ export class PriorityLaunchQueue {
 
     await task.processer(task, this);
 
-    if (!preview.useCGIMode) {
+    if (!preview.disposable) {
       this.#runningCount --;
     }
   }
@@ -83,7 +83,7 @@ export interface LaunchTask {
   timestamp: number;
   priority: number;
   functionName: string;
-  useCGIMode: boolean;
+  disposable: boolean;
   options: BaseOptions;
   processer: TaskProcessor;
   requestId?: string;
