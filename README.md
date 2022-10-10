@@ -1,8 +1,8 @@
 # Noslated
 
-## 配置
+## Configuration
 
-请参考 `config/default.js`。若在开发阶段需要更改配置，请新建一个 `config/local.json`，并添加你需要修改的字段，如：
+Please refer to `config/default.js`. If you need to change the configuration in the development phase, please create a `config/local.json` and add the fields you need to modify, such as:
 
 ```json
 {
@@ -12,12 +12,17 @@
 }
 ```
 
-该配置表明，在启动 Noslated 的时候，自动启动 `turfd`。
+This configuration indicates that `turfd` is automatically started when Noslated is started.
 
-### 可配环境变量
 
-配置的最高优先级在环境变量，目前支持：
+### Configurable environment variables
+
+The highest priority of the configuration is the environment variable. Currently, it supports:
 
 + `NOSLATE_LOGDIR`
 + `NOSLATED_WORKDIR`
 + `NOSLATED_MAX_ACTIVATE_REQUESTS`
+
+## More
+
+https://noslate.midwayjs.org/docs/noslate_workers/noslated/intro
