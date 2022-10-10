@@ -1,11 +1,11 @@
 {
-  "name": "alice",
+  "name": "noslated",
   "version": "0.10.0",
-  "description": "Noslate Environment",
+  "description": "Noslate Container Deamon",
   "main": "index.js",
   "types": "./build/sdk/index.js",
   "files": [
-    "bin/alice_icu",
+    "bin/noslated_icu",
     "bin/control_plane",
     "bin/data_plane",
     "build/config",
@@ -33,7 +33,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git@github.com:noslate-project/alice.git"
+    "url": "git@github.com:noslate-project/noslated.git"
   },
   "author": "Noslate Team <noslate-support@list.alibaba-inc.com>",
   "dependencies": {

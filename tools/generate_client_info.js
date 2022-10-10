@@ -3,16 +3,16 @@
 const fs = require('fs');
 const path = require('path');
 
-const aliceVersion = require('#self/package.json').version;
+const noslatedVersion = require('#self/package.json').version;
 // do not use #self
 const constants = require('../src/control_plane/starter/constant').ENV;
 const content = `
 'use strict';
 
-Object.defineProperty(process.versions, 'alice', {
+Object.defineProperty(process.versions, 'noslated', {
   writable: false,
   configurable: true,
-  value: '${aliceVersion}',
+  value: '${noslatedVersion}',
 });
 
 module.exports = {
