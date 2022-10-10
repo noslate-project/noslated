@@ -14,7 +14,7 @@ grpc.setLogger(loggers.get('grpc'));
 grpc.setLogVerbosity(grpc.logVerbosity.ERROR);
 
 function loadDescriptor(includePaths: string[] = []) {
-  const protoDir = path.resolve(__dirname, '../../../proto/alice');
+  const protoDir = path.resolve(__dirname, '../../../proto/noslated');
   const files = [ protoDir, ...includePaths ].flatMap(dir => {
     const files = fs.readdirSync(dir).filter(it => it.endsWith('.proto'));
     return files.map(it => path.join(dir, it));

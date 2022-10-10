@@ -197,7 +197,7 @@ export class AliceDelegateService extends EventEmitter {
       serverPath = undefined;
     }
 
-    serverPath = serverPath ?? path.resolve('./aliced.sock');
+    serverPath = serverPath ?? path.resolve('./noslated.sock');
 
     this.#sharedState = new DelegateSharedState(options?.namespaceResolver ?? new DefaultNamespaceResolver(), serverPath);
 

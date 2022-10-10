@@ -1,7 +1,7 @@
 {
   'targets': [
     {
-      'target_name': 'alice',
+      'target_name': 'noslated',
       'type': 'none',
       'dependencies': [
         'copy_aworker_inspector_json',

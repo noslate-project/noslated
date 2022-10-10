@@ -4,7 +4,7 @@ all: tsc
 
 include ../build/Makefiles/toolchain.mk
 
-src/proto/root.d.ts: proto/alice/*.proto ../aworker/src/proto/*.proto tools/proto2ts.sh
+src/proto/root.d.ts: proto/noslated/*.proto ../aworker/src/proto/*.proto tools/proto2ts.sh
 	bash tools/proto2ts.sh
 
 test-proto:
@@ -50,8 +50,8 @@ jstest: tsc-test build clean-test node_modules
 ifeq ($(BUILDTYPE), Debug)
 jstest: export PATH:=$(BUILD_PROJ_DIR)/out/Debug:$(PATH)
 jstest: export NATIVE_DEBUG=1
-jstest: export ALICE_LOG_LEVEL=Debug
-jstest: export ALICE_SOCK_CONN_TIMEOUT=30000
+jstest: export NOSLATED_LOG_LEVEL=Debug
+jstest: export NOSLATED_SOCK_CONN_TIMEOUT=30000
 else
 jstest: export PATH:=$(BUILD_PROJ_DIR)/out/Release:$(PATH)
 endif
@@ -64,8 +64,8 @@ baselinetest: build node_modules clean-test
 ifeq ($(BUILDTYPE), Debug)
 baselinetest: export PATH:=$(BUILD_PROJ_DIR)/out/Debug:$(PATH)
 baselinetest: export NATIVE_DEBUG=1
-baselinetest: export ALICE_LOG_LEVEL=Debug
-baselinetest: export ALICE_SOCK_CONN_TIMEOUT=30000
+baselinetest: export NOSLATED_LOG_LEVEL=Debug
+baselinetest: export NOSLATED_SOCK_CONN_TIMEOUT=30000
 else
 baselinetest: export PATH:=$(BUILD_PROJ_DIR)/out/Release:$(PATH)
 endif
