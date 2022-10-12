@@ -17,7 +17,7 @@ export class NodejsStarter extends BaseStarter implements WorkerStarter {
 
   constructor(plane: ControlPlane, config: Config) {
     super('nodejs', 'node', 'node starter', plane, config);
-    this.binPath = BaseStarter.findRealBinPath('nodejs-v16', 'node');
+    this.binPath = BaseStarter.findRealBinPath('nodejs', 'node');
   }
 
   _initValidV8Options() {

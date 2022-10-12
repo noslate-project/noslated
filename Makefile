@@ -25,7 +25,7 @@ tsc-test: tsc node_modules src/proto/root.d.ts test-proto src/lib/json/inspector
 .PHONY: build
 build: tsc
 	$(MAKE) -C $(BUILD_PROJ_DIR) noslate turf
-	rm -f .turf/runtime/nodejs-v16/node; ln -s $(BUILD_PROJ_DIR)/out/$(BUILDTYPE)/node .turf/runtime/nodejs-v16/node
+	rm -f .turf/runtime/nodejs/node; ln -s $(BUILD_PROJ_DIR)/out/$(BUILDTYPE)/node .turf/runtime/nodejs/node
 	rm -f .turf/runtime/aworker/aworker; ln -s $(BUILD_PROJ_DIR)/out/$(BUILDTYPE)/aworker .turf/runtime/aworker/aworker
 
 node_modules: package.json

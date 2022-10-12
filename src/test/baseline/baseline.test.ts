@@ -25,7 +25,7 @@ const cases = [
     name: 'node_worker_echo',
     profile: {
       name: 'node_worker_echo',
-      runtime: 'nodejs-v16',
+      runtime: 'nodejs',
       url: `file://${baselineDir}/node_worker_echo`,
       handler: 'index.handler',
       signature: 'md5:234234',
@@ -44,7 +44,7 @@ const cases = [
     name: 'node_worker_echo_req_metadata',
     profile: {
       name: 'node_worker_echo_req_metadata',
-      runtime: 'nodejs-v16',
+      runtime: 'nodejs',
       url: `file://${baselineDir}/node_worker_echo`,
       handler: 'req_metadata.handler',
       signature: 'md5:234234',
@@ -81,7 +81,7 @@ const cases = [
     name: 'node_worker_echo_res_metadata',
     profile: {
       name: 'node_worker_echo_res_metadata',
-      runtime: 'nodejs-v16',
+      runtime: 'nodejs',
       url: `file://${baselineDir}/node_worker_echo`,
       handler: 'res_metadata.handler',
       signature: 'md5:234234',
@@ -111,7 +111,7 @@ const cases = [
     name: 'node_worker_echo_with_initializer',
     profile: {
       name: 'node_worker_echo_with_initializer',
-      runtime: 'nodejs-v16',
+      runtime: 'nodejs',
       url: `file://${baselineDir}/node_worker_echo`,
       handler: 'with_initializer.handler',
       initializer: 'with_initializer.initializer',
@@ -136,7 +136,7 @@ const cases = [
     name: 'node_worker_dapr_invoke',
     profile: {
       name: 'node_worker_dapr_invoke',
-      runtime: 'nodejs-v16',
+      runtime: 'nodejs',
       url: `file://${baselineDir}/node_worker_dapr`,
       handler: 'invoke.handler',
       signature: 'md5:234234',
@@ -157,7 +157,7 @@ const cases = [
     name: 'node_worker_dapr_invoke_non_200_status',
     profile: {
       name: 'node_worker_dapr_invoke',
-      runtime: 'nodejs-v16',
+      runtime: 'nodejs',
       url: `file://${baselineDir}/node_worker_dapr`,
       handler: 'invoke.handler',
       signature: 'md5:234234',
@@ -182,7 +182,7 @@ const cases = [
     name: 'node_worker_dapr_binding',
     profile: {
       name: 'node_worker_dapr_binding',
-      runtime: 'nodejs-v16',
+      runtime: 'nodejs',
       url: `file://${baselineDir}/node_worker_dapr`,
       handler: 'binding.handler',
       signature: 'md5:234234',
@@ -208,7 +208,7 @@ const cases = [
     name: 'node_worker_dapr_binding_non_200_status',
     profile: {
       name: 'node_worker_dapr_binding',
-      runtime: 'nodejs-v16',
+      runtime: 'nodejs',
       url: `file://${baselineDir}/node_worker_dapr`,
       handler: 'binding.handler',
       signature: 'md5:234234',
@@ -238,7 +238,7 @@ const cases = [
     name: 'node_worker_beacon',
     profile: {
       name: 'node_worker_beacon',
-      runtime: 'nodejs-v16',
+      runtime: 'nodejs',
       url: `file://${baselineDir}/node_worker_beacon`,
       handler: 'index.handler',
       signature: 'md5:200011',
@@ -593,7 +593,7 @@ const cases = [
     name: 'node_worker_echo_startup_fastfail',
     profile: {
       name: 'node_worker_echo',
-      runtime: 'nodejs-v16',
+      runtime: 'nodejs',
       url: `file://${baselineDir}/node_worker_echo`,
       handler: 'index.handler',
       signature: 'md5:234234',
@@ -634,7 +634,7 @@ const cases = [
     },
     profile: {
       name: 'node_worker_echo',
-      runtime: 'nodejs-v16',
+      runtime: 'nodejs',
       url: `file://${baselineDir}/node_worker_echo`,
       handler: 'index.handler',
       signature: 'md5:234234',
@@ -655,7 +655,7 @@ const cases = [
     name: 'node_worker_echo_url_404_fastfail',
     profile: {
       name: 'node_worker_echo',
-      runtime: 'nodejs-v16',
+      runtime: 'nodejs',
       url: `http://localhost:${ResourceServer.port}/404`,
       handler: 'index.handler',
       signature: 'md5:234234',
@@ -698,7 +698,7 @@ const cases = [
     name: 'node_worker_cwd',
     profile: {
       name: 'node_worker_cwd',
-      runtime: 'nodejs-v16',
+      runtime: 'nodejs',
       url: `file://${baselineDir}/node_worker_cwd_symbol_link`,
       handler: 'index.handler',
       signature: 'md5:234234',
@@ -715,7 +715,7 @@ const cases = [
     name: 'node_worker_env',
     profile: {
       name: 'node_worker_env',
-      runtime: 'nodejs-v16',
+      runtime: 'nodejs',
       url: `file://${baselineDir}/node_worker_env`,
       handler: 'index.handler',
       signature: 'md5:234234',
@@ -852,7 +852,7 @@ const cases = [
     name: 'node_worker_without_disposable_true',
     profile: {
       name: 'node_worker_without_disposable_true',
-      runtime: 'nodejs-v16',
+      runtime: 'nodejs',
       url: `file://${baselineDir}/node_worker_dapr`,
       handler: 'invoke.handler',
       signature: 'md5:234234',
@@ -880,7 +880,7 @@ const cases = [
     name: 'node_worker_with_disposable_true',
     profile: {
       name: 'node_worker_with_disposable_true',
-      runtime: 'nodejs-v16',
+      runtime: 'nodejs',
       url: `file://${baselineDir}/node_worker_dapr`,
       handler: 'invoke.handler',
       signature: 'md5:234234',
@@ -973,7 +973,7 @@ const cases = [
     name: 'node_worker_echo_with_request_id',
     profile: {
       name: 'node_worker_echo_with_request_id',
-      runtime: 'nodejs-v16',
+      runtime: 'nodejs',
       url: `file://${baselineDir}/node_worker_echo`,
       handler: 'index.handler',
       signature: 'md5:234234',

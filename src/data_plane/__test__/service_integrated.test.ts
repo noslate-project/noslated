@@ -66,7 +66,7 @@ describe(common.testName(__filename), function() {
     await agent.setFunctionProfile([
       {
         name: 'node_worker_echo',
-        runtime: 'nodejs-v16',
+        runtime: 'nodejs',
         url: `file://${baselineDir}/node_worker_echo`,
         handler: 'index.handler',
         signature: 'md5:234234',
@@ -98,7 +98,7 @@ describe(common.testName(__filename), function() {
     await agent.setFunctionProfile([
       {
         name: 'node_worker_echo',
-        runtime: 'nodejs-v16',
+        runtime: 'nodejs',
         url: `file://${baselineDir}/node_worker_echo`,
         handler: 'index.handler',
         signature: 'md5:234234',

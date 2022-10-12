@@ -15,7 +15,7 @@ import { createDeferred, sleep } from '#self/lib/util';
 
 const PROFILES = [{
   name: 'node-http-demo',
-  runtime: 'nodejs-v16',
+  runtime: 'nodejs',
   url: 'https://noslate-release.oss-cn-hangzhou.aliyuncs.com/demo/node-http-demo.zip',
   handler: 'index.handler',
   initializer: 'index.initializer',

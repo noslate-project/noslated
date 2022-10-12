@@ -19,7 +19,7 @@ const cases = [
     name: 'node_worker_echo_destroy_after_stopping',
     profile: {
       name: 'node_worker_echo',
-      runtime: 'nodejs-v16',
+      runtime: 'nodejs',
       url: `file://${baselineDir}/node_worker_echo`,
       handler: 'index.handler',
       signature: 'md5:234234',
@@ -52,7 +52,7 @@ const cases = [
     name: 'node_worker_echo_replica_limit_in_profile_exceeded',
     profile: {
       name: 'node_worker_echo',
-      runtime: 'nodejs-v16',
+      runtime: 'nodejs',
       url: `file://${baselineDir}/node_worker_echo`,
       handler: 'index.handler',
       signature: 'md5:234234',
@@ -76,7 +76,7 @@ const cases = [
     name: 'node_worker_echo_replica_limit_in_default_config_exceeded',
     profile: {
       name: 'node_worker_echo',
-      runtime: 'nodejs-v16',
+      runtime: 'nodejs',
       url: `file://${baselineDir}/node_worker_echo`,
       handler: 'index.handler',
       signature: 'md5:234234',
@@ -100,7 +100,7 @@ const cases = [
     name: 'node_worker_v8_options',
     profile: {
       name: 'node_worker_v8_options',
-      runtime: 'nodejs-v16',
+      runtime: 'nodejs',
       url: `file://${baselineDir}/node_worker_v8_options`,
       handler: 'index.handler',
       signature: 'md5:234234',
@@ -125,7 +125,7 @@ const cases = [
     name: 'node_worker_exec_argv',
     profile: {
       name: 'node_worker_exec_argv',
-      runtime: 'nodejs-v16',
+      runtime: 'nodejs',
       url: `file://${baselineDir}/node_worker_v8_options`,
       handler: 'index.handler',
       signature: 'md5:234234',

@@ -45,7 +45,7 @@
     }
   },
   "turf": {
-    "runtime": "nodejs-v16",
+    "runtime": "nodejs",
     "code": "code"
   }
 }

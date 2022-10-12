@@ -1,6 +1,6 @@
 import { DeepRequired } from '../util';
 
-export type RuntimeType = 'nodejs-v16' | 'aworker';
+export type RuntimeType = 'nodejs' | 'aworker';
 export type ShrinkStrategy = 'FILO' | 'FIFO' | 'LCC';
 
 /**
@@ -45,7 +45,7 @@ interface BaseFunctionProfile {
 }
 
 interface NodejsFunctionProfile extends BaseFunctionProfile, ProcessFunctionProfile {
-  runtime: 'nodejs-v16';
+  runtime: 'nodejs';
   handler: string;
   initializer?: string;
 }
