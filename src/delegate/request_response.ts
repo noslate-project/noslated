@@ -75,8 +75,8 @@ class TriggerResponse extends Readable {
   #metadata;
   constructor(init?: TriggerResponseInit) {
     super({
-      read: init?.read ?? (() => {}),
-      destroy: init?.destroy ?? (() => {}),
+      read: init?.read,
+      destroy: init?.destroy,
     });
     this.#status = init?.status ?? 200;
     let metadata = init?.metadata ?? {};
