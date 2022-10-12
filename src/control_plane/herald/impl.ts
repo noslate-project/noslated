@@ -56,7 +56,7 @@ export class HeraldImpl {
        */
       let runtime = profile?.runtime || 'aworker';
       switch (runtime) {
-        case 'nodejs-v16': runtime = 'nodejs'; break;
+        case 'nodejs': runtime = 'nodejs'; break;
         case 'aworker':
         default:
           runtime = 'aworker'; break;

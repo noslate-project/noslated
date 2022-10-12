@@ -69,7 +69,7 @@ describe(testName(__filename), () => {
     it('should not set profile due to invalid v8 options (nodejs)', async () => {
       const profile: any = {
         name: 'node_worker_v8_options',
-        runtime: 'nodejs-v16',
+        runtime: 'nodejs',
         url: `file://${baselineDir}/node_worker_v8_options`,
         handler: 'index.handler',
         signature: 'md5:234234',

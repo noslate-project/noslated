@@ -14,7 +14,7 @@ const cases = [
     name: 'node_worker_dapr_invoke_timeout',
     profile: {
       name: 'node_worker_dapr_invoke_timeout',
-      runtime: 'nodejs-v16',
+      runtime: 'nodejs',
       url: `file://${workersDir}/node_worker_dapr`,
       handler: 'timeout.handler',
       signature: 'md5:234234',
@@ -31,7 +31,7 @@ const cases = [
     name: 'node_worker_dapr_invoke_failure',
     profile: {
       name: 'node_worker_dapr_invoke_failure',
-      runtime: 'nodejs-v16',
+      runtime: 'nodejs',
       url: `file://${workersDir}/node_worker_dapr`,
       handler: 'failure.handler',
       signature: 'md5:234234',
@@ -48,7 +48,7 @@ const cases = [
     name: 'node_worker_dapr_binding',
     profile: {
       name: 'node_worker_dapr_binding',
-      runtime: 'nodejs-v16',
+      runtime: 'nodejs',
       url: `file://${workersDir}/node_worker_dapr`,
       handler: 'binding.handler',
       signature: 'md5:234234',
@@ -65,7 +65,7 @@ const cases = [
     name: 'node_worker_dapr_binding_timeout',
     profile: {
       name: 'node_worker_dapr_binding_timeout',
-      runtime: 'nodejs-v16',
+      runtime: 'nodejs',
       url: `file://${workersDir}/node_worker_dapr`,
       handler: 'binding_timeout.handler',
       signature: 'md5:234234',
@@ -82,7 +82,7 @@ const cases = [
     name: 'node_worker_dapr_binding_failure',
     profile: {
       name: 'node_worker_dapr_binding_failure',
-      runtime: 'nodejs-v16',
+      runtime: 'nodejs',
       url: `file://${workersDir}/node_worker_dapr`,
       handler: 'binding_failure.handler',
       signature: 'md5:234234',

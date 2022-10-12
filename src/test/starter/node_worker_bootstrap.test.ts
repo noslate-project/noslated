@@ -15,7 +15,7 @@ const cases = [
     name: 'node_worker_bootstrap_initializer_not_function',
     profile: {
       name: 'node_worker_bootstrap_initializer_not_function',
-      runtime: 'nodejs-v16',
+      runtime: 'nodejs',
       url: `file://${workersDir}/node_worker_bootstrap`,
       handler: 'not_functions.handler',
       initializer: 'not_functions.initializer',
@@ -42,7 +42,7 @@ const cases = [
     name: 'node_worker_bootstrap_handler_not_function',
     profile: {
       name: 'node_worker_bootstrap_handler_not_function',
-      runtime: 'nodejs-v16',
+      runtime: 'nodejs',
       url: `file://${workersDir}/node_worker_bootstrap`,
       handler: 'not_functions.handler',
       signature: 'md5:234234',
@@ -62,7 +62,7 @@ const cases = [
     name: 'node_worker_bootstrap_syntax_error_with_initializer',
     profile: {
       name: 'node_worker_bootstrap_syntax_error_with_initializer',
-      runtime: 'nodejs-v16',
+      runtime: 'nodejs',
       url: `file://${workersDir}/node_worker_bootstrap`,
       handler: 'syntax_error.handler',
       initializer: 'syntax_error.initializer',
@@ -89,7 +89,7 @@ const cases = [
     name: 'node_worker_bootstrap_syntax_error',
     profile: {
       name: 'node_worker_bootstrap_syntax_error',
-      runtime: 'nodejs-v16',
+      runtime: 'nodejs',
       url: `file://${workersDir}/node_worker_bootstrap`,
       handler: 'syntax_error.handler',
       signature: 'md5:234234',

@@ -14,7 +14,7 @@ const item = {
   name: 'node_worker_echo',
   profile: {
     name: 'node_worker_echo',
-    runtime: 'nodejs-v16',
+    runtime: 'nodejs',
     url: `file:///${common.baselineDir}/node_worker_echo`,
     handler: 'index.handler',
     signature: 'md5:234234',

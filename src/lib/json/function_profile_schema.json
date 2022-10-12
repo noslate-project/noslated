@@ -118,7 +118,7 @@
         },
         "runtime": {
           "type": "string",
-          "enum": [ "nodejs-v16" ],
+          "enum": [ "nodejs" ],
           "description": "the function runtime"
         },
         "url": {

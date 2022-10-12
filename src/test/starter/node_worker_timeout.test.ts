@@ -14,7 +14,7 @@ const cases = [
     name: 'node_worker_timeout_no_metadata',
     profile: {
       name: 'node_worker_timeout_no_metadata',
-      runtime: 'nodejs-v16',
+      runtime: 'nodejs',
       url: `file://${workersDir}/node_worker_timeout`,
       handler: 'no_metadata.handler',
       signature: 'md5:234234',

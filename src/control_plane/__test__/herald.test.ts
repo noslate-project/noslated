@@ -23,7 +23,7 @@ describe(testName(__filename), () => {
     it('should inspect current function profiles', async () => {
       const expectedProfile = {
         name: 'node_worker_echo',
-        runtime: 'nodejs-v16' as const,
+        runtime: 'nodejs' as const,
         url: `file://${baselineDir}/node_worker_echo`,
         handler: 'index.handler',
         signature: 'md5:234234',
