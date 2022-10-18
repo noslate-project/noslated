@@ -26,7 +26,7 @@ function getPrettySink(filename: string) {
   const { config } = require('#self/config');
   const midwayLogger: IMidwayLogger = MidwayLogger.createLogger(filename, {
     level: config.logger.level,
-    fileLogName: filename ?? 'alice.log',
+    fileLogName: filename ?? 'noslated.log',
     dir: config.logger.dir,
     // no need to pipe errors to a different file.
     disableError: true,

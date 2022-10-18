@@ -12,7 +12,7 @@ describe('test/lib/naming.test.js', () => {
       const name = naming.codeBundleName(funcName, signature, url);
       assert.strictEqual(
         name,
-        'ALICE-a.b_c_d_e_f_g_h_i_j_k-l_m_n_o_p_q_r_s_t_u.v_w_x_y_z_0_1_2_3_456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_-b3bec26c-md5:abcdef12345678901234567890abcdef');
+        'NOSLATED-a.b_c_d_e_f_g_h_i_j_k-l_m_n_o_p_q_r_s_t_u.v_w_x_y_z_0_1_2_3_456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_-b3bec26c-md5:abcdef12345678901234567890abcdef');
     });
   });
 

@@ -2,7 +2,7 @@ import _ from 'lodash';
 import * as root from '#self/proto/root';
 import { DeepRequired } from '#self/lib/util';
 
-type FunctionService = DeepRequired<root.alice.data.IFunctionService>;
+type FunctionService = DeepRequired<root.noslated.data.IFunctionService>;
 
 export type ServiceType = 'default' | 'proportional-load-balance';
 
@@ -15,7 +15,7 @@ export interface DefaultServiceSelector {
   functionName: string;
 }
 
-export interface ServiceProfileItem extends Omit<root.alice.data.IFunctionService, 'selectors' | 'selector'> {
+export interface ServiceProfileItem extends Omit<root.noslated.data.IFunctionService, 'selectors' | 'selector'> {
   name: string;
   type: ServiceType;
   selectors?: LoadBalanceSelector[];

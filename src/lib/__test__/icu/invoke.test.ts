@@ -33,8 +33,8 @@ describe(common.testName(__filename), function() {
   });
 
   it('invoke methods', async () => {
-    host.addService((grpcDescriptor as any).alice.test.TestService.service, {
-      async ping(call: ServerWritableStream<root.alice.test.IPing, root.alice.test.IPong>) {
+    host.addService((grpcDescriptor as any).noslated.test.TestService.service, {
+      async ping(call: ServerWritableStream<root.noslated.test.IPing, root.noslated.test.IPong>) {
         return { msg: call.request.msg };
       },
     });
@@ -42,7 +42,7 @@ describe(common.testName(__filename), function() {
     const cp = childProcess.spawn(process.execPath, [
       invokePath,
       '--sock', address,
-      '--service', 'alice.test.TestService',
+      '--service', 'noslated.test.TestService',
       '--include', path.resolve(FIXTURES_DIR, 'proto'),
       'ping', '{"msg": "foobar"}',
     ], {
@@ -65,7 +65,7 @@ describe(common.testName(__filename), function() {
     const cp = childProcess.spawn(process.execPath, [
       invokePath,
       '--sock', address,
-      '--service', 'alice.test.TestService',
+      '--service', 'noslated.test.TestService',
       '--include', path.resolve(FIXTURES_DIR, 'proto'),
       'non-exists', '{"msg": "foobar"}',
     ], {
@@ -81,6 +81,6 @@ describe(common.testName(__filename), function() {
     });
     await once(cp, 'exit');
 
-    assert.strictEqual(output.trim(), "IcuError: no method named 'non-exists' in service 'alice.test.TestService'.");
+    assert.strictEqual(output.trim(), "IcuError: no method named 'non-exists' in service 'noslated.test.TestService'.");
   });
 });

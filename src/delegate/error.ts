@@ -1,4 +1,4 @@
-export class AliceStreamError extends Error {
+export class NoslatedStreamError extends Error {
   constructor(message: string, name: string) {
     super(message);
     this.name = name;

@@ -13,7 +13,7 @@ import { AworkerFunctionProfile } from '#self/lib/json/function_profile';
 import { TurfState } from '#self/lib/turf/types';
 
 const SEED_CONTAINER_NAME = '___seed___';
-const SameOriginSharedDataRoot = '/tmp/alice-sosd';
+const SameOriginSharedDataRoot = '/tmp/noslated-sosd';
 
 export class AworkerStarter extends BaseStarter {
   static SEED_CONTAINER_NAME = SEED_CONTAINER_NAME;
@@ -62,7 +62,7 @@ export class AworkerStarter extends BaseStarter {
     this.logger.info('starting seed with options %j', commands);
 
     // Create the dummy empty bundle path.
-    const bundlePath = path.join(this.config.dirs.aliceWork, 'bundles', SEED_CONTAINER_NAME);
+    const bundlePath = path.join(this.config.dirs.noslatedWork, 'bundles', SEED_CONTAINER_NAME);
     fs.mkdirSync(path.join(bundlePath, 'code'), { recursive: true });
 
     await this.doStart(
@@ -137,7 +137,7 @@ export class AworkerStarter extends BaseStarter {
 
   async _init() {
     await super._init();
-    if (process.platform !== 'darwin' && !process.env.ALICE_FORCE_NON_SEED_MODE) {
+    if (process.platform !== 'darwin' && !process.env.NOSLATED_FORCE_NON_SEED_MODE) {
       await this.keepSeedAlive();
     }
   }

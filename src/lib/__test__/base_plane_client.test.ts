@@ -26,8 +26,8 @@ describe(common.testName(__filename), function() {
 
   describe('#ready()', () => {
     it('should start', async () => {
-      host.addService((grpcDescriptor as any).alice.test.TestService.service, {
-        async ping(call: ServerWritableStream<root.alice.test.IPing, root.alice.test.IPong>) {
+      host.addService((grpcDescriptor as any).noslated.test.TestService.service, {
+        async ping(call: ServerWritableStream<root.noslated.test.IPing, root.noslated.test.IPong>) {
           return { msg: call.request.msg };
         },
       });
@@ -36,7 +36,7 @@ describe(common.testName(__filename), function() {
       assert.strictEqual(client.role, 'foo');
       assert.strictEqual(client.planeId, 1);
 
-      client.addService((grpcDescriptor as any).alice.test.TestService);
+      client.addService((grpcDescriptor as any).noslated.test.TestService);
       await client.ready();
       const resp = await (client as any).ping({ msg: 'foo' });
       assert.strictEqual(resp.msg, 'foo');
@@ -56,14 +56,14 @@ describe(common.testName(__filename), function() {
       client = new BasePlaneClient('foo', address, 1, { plane: { planeFirstConnectionTimeout: 10_000 } } as Config);
       await sleep(500);
       host = new Host(address);
-      host.addService((grpcDescriptor as any).alice.test.TestService.service, {
-        async ping(call: ServerWritableStream<root.alice.test.IPing, root.alice.test.IPong>) {
+      host.addService((grpcDescriptor as any).noslated.test.TestService.service, {
+        async ping(call: ServerWritableStream<root.noslated.test.IPing, root.noslated.test.IPong>) {
           return { msg: call.request.msg };
         },
       });
       host.start();
       await client.ready();
-      client.addService((grpcDescriptor as any).alice.test.TestService);
+      client.addService((grpcDescriptor as any).noslated.test.TestService);
 
       assert.strictEqual(client.role, 'foo');
       assert.strictEqual(client.planeId, 1);

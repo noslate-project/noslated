@@ -1,7 +1,7 @@
 import { BasePlaneClientManager } from '#self/lib/base_plane_client_manager';
 import { ControlPlaneClient } from './control_plane_client';
 import loggers from '#self/lib/logger';
-import { AliceClient } from './client';
+import { NoslatedClient } from './client';
 import { Config } from '#self/config';
 
 /**
@@ -10,10 +10,10 @@ import { Config } from '#self/config';
 export class ControlPlaneClientManager extends BasePlaneClientManager {
   /**
    * constructor
-   * @param {import('./client').AliceClient} sdk The sdk client.
+   * @param {NoslatedClient} sdk The sdk client.
    * @param {typeof import('#self/config/default')} config The global config object.
    */
-  constructor(public sdk: AliceClient, config: Config) {
+  constructor(public sdk: NoslatedClient, config: Config) {
     super(
       config,
       config.plane.controlPlaneCount,

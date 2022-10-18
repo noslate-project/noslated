@@ -3,25 +3,25 @@ import { ServerUnaryCall } from '../rpc/util';
 
 export interface IDataPlane {
 
-  startWorkerFastFail(call: ServerUnaryCall<root.alice.data.IStartWorkerFastFailRequest>): Promise<void>;
+  startWorkerFastFail(call: ServerUnaryCall<root.noslated.data.IStartWorkerFastFailRequest>): Promise<void>;
 
-  reduceCapacity(call: ServerUnaryCall<root.alice.data.ICapacityReductionRequest>): Promise<root.alice.data.ICapacityReductionResponse>;
+  reduceCapacity(call: ServerUnaryCall<root.noslated.data.ICapacityReductionRequest>): Promise<root.noslated.data.ICapacityReductionResponse>;
 
-  setFunctionProfile(call: ServerUnaryCall<root.alice.ISetFunctionProfileRequest>):  Promise<root.alice.ISetFunctionProfileResponse>;
+  setFunctionProfile(call: ServerUnaryCall<root.noslated.ISetFunctionProfileRequest>):  Promise<root.noslated.ISetFunctionProfileResponse>;
 
-  setServiceProfiles(call: ServerUnaryCall<root.alice.data.IServiceProfilesAccessor>): Promise<void>;
+  setServiceProfiles(call: ServerUnaryCall<root.noslated.data.IServiceProfilesAccessor>): Promise<void>;
 
-  getServiceProfiles() : Promise<root.alice.data.IServiceProfilesAccessor>;
+  getServiceProfiles() : Promise<root.noslated.data.IServiceProfilesAccessor>;
 
-  useInspector(call: ServerUnaryCall<root.alice.data.IUseInspectorRequest>): Promise<void>;
+  useInspector(call: ServerUnaryCall<root.noslated.data.IUseInspectorRequest>): Promise<void>;
 
-  setDaprAdaptor(call: ServerUnaryCall<root.alice.data.ISetDaprAdaptorRequest>): Promise<{}>;
+  setDaprAdaptor(call: ServerUnaryCall<root.noslated.data.ISetDaprAdaptorRequest>): Promise<{}>;
 
-  setTracingCategories(call: ServerUnaryCall<root.alice.data.ISetTracingCategoriesRequest>): Promise<void>;
+  setTracingCategories(call: ServerUnaryCall<root.noslated.data.ISetTracingCategoriesRequest>): Promise<void>;
 
-  startInspector(call: ServerUnaryCall<root.alice.data.IStartInspectorRequest>): Promise<void>;
+  startInspector(call: ServerUnaryCall<root.noslated.data.IStartInspectorRequest>): Promise<void>;
 
-  registerWorkerCredential(call: ServerUnaryCall<root.alice.data.IRegisterWorkerCredentialRequest>): Promise<{}>;
+  registerWorkerCredential(call: ServerUnaryCall<root.noslated.data.IRegisterWorkerCredentialRequest>): Promise<{}>;
 
-  serverSockPath(): Promise<root.alice.data.IServerSockPathResponse>;
+  serverSockPath(): Promise<root.noslated.data.IServerSockPathResponse>;
 }

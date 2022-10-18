@@ -32,7 +32,7 @@ describe(common.testName(__filename), function() {
     guest.subscribe('foobar');
 
     await newSubscriberFuture;
-    host.broadcast('foobar', 'alice.KeyValuePair', { key: 'foo', value: 'bar' });
+    host.broadcast('foobar', 'noslated.KeyValuePair', { key: 'foo', value: 'bar' });
     const [ data ] = await foobarFuture;
     assert.strictEqual(data.key, 'foo');
     assert.strictEqual(data.value, 'bar');

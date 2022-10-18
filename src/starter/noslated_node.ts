@@ -1,4 +1,4 @@
-import { AliceClient, CanonicalCode } from './util';
+import { NoslatedClient, CanonicalCode } from './util';
 import starter, { OnInit, OnRequest } from './base_node';
 import { makeDapr } from './dapr';
 import { NaiveLogger, safeError } from './util';
@@ -10,7 +10,7 @@ import { TextDecoder, TextEncoder } from 'util';
 // Keep a reference to primordial process exit.
 const processExit = process.exit.bind(process);
 
-export class AliceNodeWorker {
+export class NoslatedNodeWorker {
   #client;
   #readableMap = new Map();
   #onInit;
@@ -19,7 +19,7 @@ export class AliceNodeWorker {
   #encoder = new TextEncoder();
   #decoder = new TextDecoder();
   constructor(serverPath: string, credential: string, onInit: OnInit, onRequest: OnRequest, logger: NaiveLogger) {
-    this.#client = new AliceClient(serverPath, credential, logger);
+    this.#client = new NoslatedClient(serverPath, credential, logger);
     this.#onInit = onInit;
     this.#baseRequest = onRequest;
     this.#client.onRequest = this.#onRequest;
@@ -29,7 +29,7 @@ export class AliceNodeWorker {
     this.#logger = logger;
   }
 
-  #onRequest: AliceClient['onRequest'] = (method, sid, metadata, hasInputData, hasOutputData, callback) => {
+  #onRequest: NoslatedClient['onRequest'] = (method, sid, metadata, hasInputData, hasOutputData, callback) => {
     this.#logger.debug('on request: method(%s), sid(%s, input %s, output %s), metadata(%o)', method, sid, hasInputData, hasOutputData, metadata);
     if (method === 'init') {
       const ctx = this.#makeContext();
@@ -68,7 +68,7 @@ export class AliceNodeWorker {
     callback(CanonicalCode.NOT_IMPLEMENTED);
   };
 
-  #onStreamPush: AliceClient['onStreamPush'] = (streamId, isEos, chunk, isError) => {
+  #onStreamPush: NoslatedClient['onStreamPush'] = (streamId, isEos, chunk, isError) => {
     this.#logger.debug('on stream push: id(%s), isEos(%s), isError(%s)', streamId, isEos, isError);
     const readable = this.#readableMap.get(streamId);
     if (readable == null) {
@@ -87,7 +87,7 @@ export class AliceNodeWorker {
     readable.push(chunk);
   };
 
-  #onCollectMetrics: AliceClient['onCollectMetrics'] = () => {
+  #onCollectMetrics: NoslatedClient['onCollectMetrics'] = () => {
     const heapStatistics = v8.getHeapStatistics();
 
     const labels = [
@@ -162,6 +162,6 @@ export class AliceNodeWorker {
 }
 
 starter(({ serverPath, credential, onInit, onRequest, logger = new NaiveLogger() }) => {
-  const client = new AliceNodeWorker(serverPath, credential, onInit, onRequest, logger);
+  const client = new NoslatedNodeWorker(serverPath, credential, onInit, onRequest, logger);
   client.start();
 });

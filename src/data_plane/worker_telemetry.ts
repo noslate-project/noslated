@@ -1,16 +1,16 @@
 import { Meter, ValueObserver, BatchObserverResult, Labels, Observation } from '@opentelemetry/api';
 import { WorkerMetrics, PlaneMetricAttributes } from '#self/lib/telemetry/semantic_conventions';
-import { AliceDelegateService } from '#self/delegate';
+import { NoslatedDelegateService } from '#self/delegate';
 import { DataFlowController } from './data_flow_controller';
 const logger = require('#self/lib/logger').get('worker telemetry');
 
 export class WorkerTelemetry {
   #meter: Meter;
-  #delegate: AliceDelegateService;
+  #delegate: NoslatedDelegateService;
   #dataFlowController: DataFlowController;
   #observerMap: Map<string, ValueObserver>  = new Map();
 
-  constructor(meter: Meter, delegate: AliceDelegateService, dataFlowController: DataFlowController) {
+  constructor(meter: Meter, delegate: NoslatedDelegateService, dataFlowController: DataFlowController) {
     this.#meter = meter;
     this.#delegate = delegate;
     this.#dataFlowController = dataFlowController;

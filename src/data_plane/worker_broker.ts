@@ -7,7 +7,7 @@ import { Base } from '#self/lib/sdk_base';
 import { PlaneMetricAttributes } from '#self/lib/telemetry/semantic_conventions';
 import { Readable } from 'stream';
 import { Metadata, MetadataInit, TriggerResponse } from '#self/delegate/request_response';
-import { AliceDelegateService } from '#self/delegate';
+import { NoslatedDelegateService } from '#self/delegate';
 import { PrefixedLogger } from '#self/lib/loggers';
 import { DataFlowController } from './data_flow_controller';
 import { FunctionProfileManager } from '#self/lib/function_profile';
@@ -106,12 +106,12 @@ export class Worker extends EventEmitter {
   /**
    * Constructor
    * @param {WorkerBroker} broker The parent worker broker object.
-   * @param {import('#self/delegate')} delegate The alice delegate object.
+   * @param {NoslatedDelegateService} delegate The noslated delegate object.
    * @param {string} name The worker's name.
    * @param {string} credential The worker's credential.
    * @param {number} maxActivateRequests Max activate request count for this worker.
    */
-  constructor(public broker: WorkerBroker, public delegate: AliceDelegateService, public name: string, public credential: string, public maxActivateRequests: number, public disposable: boolean) {
+  constructor(public broker: WorkerBroker, public delegate: NoslatedDelegateService, public name: string, public credential: string, public maxActivateRequests: number, public disposable: boolean) {
     super();
     this.activeRequestCount = 0;
     this.logger = new PrefixedLogger('worker', this.name);
@@ -208,7 +208,7 @@ interface PendingCredentials {
  */
 export class WorkerBroker extends Base {
   profileManager: FunctionProfileManager;
-  delegate: AliceDelegateService;
+  delegate: NoslatedDelegateService;
   host: Host;
   config: Config;
   logger: PrefixedLogger;
@@ -621,9 +621,9 @@ export class WorkerBroker extends Base {
 
   /**
    * Fast fail all pendings due to start error
-   * @param {import('#self/lib/proto/alice/data-plane').StartWorkerFastFailRequest} startWorkerFastFailRequest The fast fail request.
+   * @param {root.noslated.data.IStartWorkerFastFailRequest} startWorkerFastFailRequest The fast fail request.
    */
-  fastFailAllPendingsDueToStartError(startWorkerFastFailRequest: root.alice.data.IStartWorkerFastFailRequest) {
+  fastFailAllPendingsDueToStartError(startWorkerFastFailRequest: root.noslated.data.IStartWorkerFastFailRequest) {
     const { requestQueue } = this;
     this.requestQueue = [];
     const err = new Error(startWorkerFastFailRequest.displayMessage as string);

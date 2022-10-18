@@ -16,7 +16,7 @@ import { ServerWritableStream } from '@grpc/grpc-js';
 class Manager extends BasePlaneClientManager {
   _createPlaneClient(planeId: number) {
     const client = new BasePlaneClient('foo', address, planeId, this.config);
-    client.addService((grpcDescriptor as any).alice.test.TestService);
+    client.addService((grpcDescriptor as any).noslated.test.TestService);
     return client;
   }
 
@@ -50,14 +50,14 @@ describe(common.testName(__filename), function() {
 
   describe('#ready()', () => {
     it('should start', async () => {
-      manager = new Manager({ dirs: { aliceSock: addressDirname }, plane: { planeFirstConnectionTimeout: 1000 } } as Config, 2, loggers.get('manager'));
+      manager = new Manager({ dirs: { noslatedSock: addressDirname }, plane: { planeFirstConnectionTimeout: 1000 } } as Config, 2, loggers.get('manager'));
       await manager.ready();
     });
 
     it('should start timeout', async () => {
       await host.close();
 
-      manager = new Manager({ dirs: { aliceSock: addressDirname }, plane: { planeFirstConnectionTimeout: 1000 } } as Config, 2, loggers.get('manager'));
+      manager = new Manager({ dirs: { noslatedSock: addressDirname }, plane: { planeFirstConnectionTimeout: 1000 } } as Config, 2, loggers.get('manager'));
       await assert.rejects(manager.ready(), {
         message: /Timeout on waiting first plane client ready/,
       });
@@ -65,7 +65,7 @@ describe(common.testName(__filename), function() {
 
     it('should emit newClientReady', async () => {
       const clients: BasePlaneClient[] = [];
-      manager = new Manager({ dirs: { aliceSock: addressDirname }, plane: { planeFirstConnectionTimeout: 1000 } } as Config, 2, loggers.get('manager'));
+      manager = new Manager({ dirs: { noslatedSock: addressDirname }, plane: { planeFirstConnectionTimeout: 1000 } } as Config, 2, loggers.get('manager'));
       manager.on('newClientReady', client => {
         clients.push(client);
       });
@@ -79,13 +79,13 @@ describe(common.testName(__filename), function() {
 
   describe('#clients()', () => {
     it('should return all clients', async () => {
-      manager = new Manager({ dirs: { aliceSock: addressDirname }, plane: { planeFirstConnectionTimeout: 1000 } } as Config, 2, loggers.get('manager'));
+      manager = new Manager({ dirs: { noslatedSock: addressDirname }, plane: { planeFirstConnectionTimeout: 1000 } } as Config, 2, loggers.get('manager'));
       await manager.ready();
       assert.strictEqual(manager.clients().length, 2);
     });
 
     it('should return all clients even if host closed', async () => {
-      manager = new Manager({ dirs: { aliceSock: addressDirname }, plane: { planeFirstConnectionTimeout: 1000 } } as Config, 2, loggers.get('manager'));
+      manager = new Manager({ dirs: { noslatedSock: addressDirname }, plane: { planeFirstConnectionTimeout: 1000 } } as Config, 2, loggers.get('manager'));
 
       await manager.ready();
       assert.strictEqual(manager.clients().length, 2);
@@ -98,7 +98,7 @@ describe(common.testName(__filename), function() {
     });
 
     it('should return all clients even if one client failed', async () => {
-      manager = new Manager({ dirs: { aliceSock: addressDirname }, plane: { planeFirstConnectionTimeout: 1000 } } as Config, 2, loggers.get('manager'));
+      manager = new Manager({ dirs: { noslatedSock: addressDirname }, plane: { planeFirstConnectionTimeout: 1000 } } as Config, 2, loggers.get('manager'));
 
       await manager.ready();
       assert.strictEqual(manager.clients().length, 2);
@@ -111,14 +111,14 @@ describe(common.testName(__filename), function() {
 
   describe('#availableClients()', () => {
     it('should return all clients', async () => {
-      manager = new Manager({ dirs: { aliceSock: addressDirname }, plane: { planeFirstConnectionTimeout: 1000 } } as Config, 2, loggers.get('manager'));
+      manager = new Manager({ dirs: { noslatedSock: addressDirname }, plane: { planeFirstConnectionTimeout: 1000 } } as Config, 2, loggers.get('manager'));
       await manager.ready();
 
       assert.ok(manager.availableClients().length > 0);
     });
 
     it('should return no client', async () => {
-      manager = new Manager({ dirs: { aliceSock: addressDirname }, plane: { planeFirstConnectionTimeout: 1000 } } as Config, 2, loggers.get('manager'));
+      manager = new Manager({ dirs: { noslatedSock: addressDirname }, plane: { planeFirstConnectionTimeout: 1000 } } as Config, 2, loggers.get('manager'));
       await manager.ready();
 
       await host.close();
@@ -128,7 +128,7 @@ describe(common.testName(__filename), function() {
     });
 
     it('should return only one client', async () => {
-      manager = new Manager({ dirs: { aliceSock: addressDirname }, plane: { planeFirstConnectionTimeout: 1000 } } as Config, 2, loggers.get('manager'));
+      manager = new Manager({ dirs: { noslatedSock: addressDirname }, plane: { planeFirstConnectionTimeout: 1000 } } as Config, 2, loggers.get('manager'));
       await manager.ready();
 
       const availableClientsLength = manager.availableClients().length;
@@ -140,7 +140,7 @@ describe(common.testName(__filename), function() {
 
   describe('_onClientReady()', () => {
     it('should call _onClientReady() after client reconnected', async () => {
-      manager = new Manager({ dirs: { aliceSock: addressDirname }, plane: { planeFirstConnectionTimeout: 1000 } } as Config, 2, loggers.get('manager'));
+      manager = new Manager({ dirs: { noslatedSock: addressDirname }, plane: { planeFirstConnectionTimeout: 1000 } } as Config, 2, loggers.get('manager'));
       await manager.ready();
 
       await host.close();
@@ -167,14 +167,14 @@ describe(common.testName(__filename), function() {
 
   describe('sample()', () => {
     it('should sample()', async () => {
-      manager = new Manager({ dirs: { aliceSock: addressDirname }, plane: { planeFirstConnectionTimeout: 1000 } } as Config, 10, loggers.get('manager'));
+      manager = new Manager({ dirs: { noslatedSock: addressDirname }, plane: { planeFirstConnectionTimeout: 1000 } } as Config, 10, loggers.get('manager'));
       await manager.ready();
 
       assert(manager.availableClients().includes(manager.sample()!));
     });
 
     it('should sample() null', async () => {
-      manager = new Manager({ dirs: { aliceSock: addressDirname }, plane: { planeFirstConnectionTimeout: 1000 } } as Config, 2, loggers.get('manager'));
+      manager = new Manager({ dirs: { noslatedSock: addressDirname }, plane: { planeFirstConnectionTimeout: 1000 } } as Config, 2, loggers.get('manager'));
       await manager.ready();
       await host.close();
       await sleep(100);
@@ -185,13 +185,13 @@ describe(common.testName(__filename), function() {
 
   describe('#callToAllAvailableClients', () => {
     it('should call all clients', async () => {
-      host.addService((grpcDescriptor as any).alice.test.TestService.service, {
-        async ping(call: ServerWritableStream<root.alice.test.IPing, root.alice.test.IPong>) {
+      host.addService((grpcDescriptor as any).noslated.test.TestService.service, {
+        async ping(call: ServerWritableStream<root.noslated.test.IPing, root.noslated.test.IPong>) {
           return { msg: call.request.msg };
         },
       });
 
-      manager = new Manager({ dirs: { aliceSock: addressDirname }, plane: { planeFirstConnectionTimeout: 1000 } } as Config, 2, loggers.get('manager'));
+      manager = new Manager({ dirs: { noslatedSock: addressDirname }, plane: { planeFirstConnectionTimeout: 1000 } } as Config, 2, loggers.get('manager'));
       await manager.ready();
 
       const ret = await manager.callToAllAvailableClients('ping', [{ msg: 'hello' }], 'all');
@@ -199,13 +199,13 @@ describe(common.testName(__filename), function() {
     });
 
     it('should call no client', async () => {
-      host.addService((grpcDescriptor as any ).alice.test.TestService.service, {
-        async ping(call: ServerWritableStream<root.alice.test.IPing, root.alice.test.IPong>) {
+      host.addService((grpcDescriptor as any ).noslated.test.TestService.service, {
+        async ping(call: ServerWritableStream<root.noslated.test.IPing, root.noslated.test.IPong>) {
           return { msg: call.request.msg };
         },
       });
 
-      manager = new Manager({ dirs: { aliceSock: addressDirname }, plane: { planeFirstConnectionTimeout: 1000 } } as Config, 2, loggers.get('manager'));
+      manager = new Manager({ dirs: { noslatedSock: addressDirname }, plane: { planeFirstConnectionTimeout: 1000 } } as Config, 2, loggers.get('manager'));
       await manager.ready();
 
       await host.close();
@@ -216,13 +216,13 @@ describe(common.testName(__filename), function() {
     });
 
     it('should call all clients (allSettled)', async () => {
-      host.addService((grpcDescriptor as any ).alice.test.TestService.service, {
-        async ping(call: ServerWritableStream<root.alice.test.IPing, root.alice.test.IPong>) {
+      host.addService((grpcDescriptor as any ).noslated.test.TestService.service, {
+        async ping(call: ServerWritableStream<root.noslated.test.IPing, root.noslated.test.IPong>) {
           return { msg: call.request.msg };
         },
       });
 
-      manager = new Manager({ dirs: { aliceSock: addressDirname }, plane: { planeFirstConnectionTimeout: 1000 } } as Config, 2, loggers.get('manager'));
+      manager = new Manager({ dirs: { noslatedSock: addressDirname }, plane: { planeFirstConnectionTimeout: 1000 } } as Config, 2, loggers.get('manager'));
       await manager.ready();
 
       const ret = await manager.callToAllAvailableClients('ping', [{ msg: 'hello' }], 'allSettled');
@@ -231,8 +231,8 @@ describe(common.testName(__filename), function() {
 
     it('should call all clients (allSettled with error)', async () => {
       let pingTimes = 0;
-      host.addService((grpcDescriptor as any ).alice.test.TestService.service, {
-        async ping(call: ServerWritableStream<root.alice.test.IPing, root.alice.test.IPong>) {
+      host.addService((grpcDescriptor as any ).noslated.test.TestService.service, {
+        async ping(call: ServerWritableStream<root.noslated.test.IPing, root.noslated.test.IPong>) {
           pingTimes++;
           if (pingTimes === 1) {
             return { msg: call.request.msg };
@@ -243,7 +243,7 @@ describe(common.testName(__filename), function() {
       });
       host.once('error', () => {});
 
-      manager = new Manager({ dirs: { aliceSock: addressDirname }, plane: { planeFirstConnectionTimeout: 1000 } } as Config, 2, loggers.get('manager'));
+      manager = new Manager({ dirs: { noslatedSock: addressDirname }, plane: { planeFirstConnectionTimeout: 1000 } } as Config, 2, loggers.get('manager'));
       await manager.ready();
       // wait second client ready.
       await once(manager, 'newClientReady');
@@ -257,8 +257,8 @@ describe(common.testName(__filename), function() {
 
     it('should call all clients (all with error)', async () => {
       let pingTimes = 0;
-      host.addService((grpcDescriptor as any ).alice.test.TestService.service, {
-        async ping(call: ServerWritableStream<root.alice.test.IPing, root.alice.test.IPong>) {
+      host.addService((grpcDescriptor as any ).noslated.test.TestService.service, {
+        async ping(call: ServerWritableStream<root.noslated.test.IPing, root.noslated.test.IPong>) {
           pingTimes++;
           if (pingTimes === 1) {
             return { msg: call.request.msg };
@@ -269,7 +269,7 @@ describe(common.testName(__filename), function() {
       });
       host.once('error', () => {});
 
-      manager = new Manager({ dirs: { aliceSock: addressDirname }, plane: { planeFirstConnectionTimeout: 1000 } } as Config, 2, loggers.get('manager'));
+      manager = new Manager({ dirs: { noslatedSock: addressDirname }, plane: { planeFirstConnectionTimeout: 1000 } } as Config, 2, loggers.get('manager'));
       await manager.ready();
       // wait second client ready.
       await once(manager, 'newClientReady');

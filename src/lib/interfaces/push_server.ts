@@ -4,9 +4,9 @@ import * as root from '#self/proto/root';
 import { KVPairs } from "../rpc/key_value_pair";
 
 export interface IPushServer {
-  invoke(call: ServerWritableStream<root.alice.data.InvokeRequest, root.alice.data.InvokeResponse>): Promise<InvokeResponse>;
+  invoke(call: ServerWritableStream<root.noslated.data.InvokeRequest, root.noslated.data.InvokeResponse>): Promise<InvokeResponse>;
 
-  invokeService(call: ServerWritableStream<root.alice.data.InvokeRequest, root.alice.data.InvokeResponse>): Promise<InvokeResponse>;
+  invokeService(call: ServerWritableStream<root.noslated.data.InvokeRequest, root.noslated.data.InvokeResponse>): Promise<InvokeResponse>;
 }
 
 export interface InvokeResponse {

@@ -3,7 +3,7 @@ import path from 'path';
 import * as common from '../common';
 import { startAllRoles, testWorker, FIXTURES_DIR, Roles } from '../util';
 import { startTurfD, stopTurfD } from '../../lib/turf';
-import { AliceAgent } from '#self/sdk/index';
+import { NoslatedClient } from '#self/sdk/index';
 import { ControlPlane } from '#self/control_plane';
 import { DataPlane } from '#self/data_plane';
 
@@ -35,7 +35,7 @@ const cases = [
 ];
 
 describe(common.testName(__filename), () => {
-  let agent: AliceAgent;
+  let agent: NoslatedClient;
   let control: ControlPlane;
   let data: DataPlane;
 

@@ -16,21 +16,21 @@ describe(common.testName(__filename), () => {
     });
 
     it('should resolveConfig with config file', async () => {
-      process.env.ALICE_CONFIG_PATH = join(FIXTURES_DIR, 'mockConfig.json');
+      process.env.NOSLATED_CONFIG_PATH = join(FIXTURES_DIR, 'mockConfig.json');
 
       const config = resolveConfig();
 
       assert(config.virtualMemoryPoolSize, '16gb');
 
-      process.env.ALICE_CONFIG_PATH = undefined;
+      process.env.NOSLATED_CONFIG_PATH = undefined;
     });
 
     it('should resolveConfig when config file nonexist', async () => {
-      process.env.ALICE_CONFIG_PATH = '/nonexistfile';
+      process.env.NOSLATED_CONFIG_PATH = '/nonexistfile';
 
       resolveConfig();
 
-      process.env.ALICE_CONFIG_PATH = undefined;
+      process.env.NOSLATED_CONFIG_PATH = undefined;
     });
   });
 });

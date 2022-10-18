@@ -17,7 +17,7 @@ describe(common.testName(__filename), function() {
   this.timeout(30_000);
 
   const context: ProseContext<TelemetryContext> = {
-    /** @type {AliceAgent} */
+    /** @type {NoslatedClient} */
     agent: undefined,
     /** @type {otel.MeterProvider} */
     meterProvider: undefined,

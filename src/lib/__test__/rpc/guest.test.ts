@@ -27,13 +27,13 @@ describe(common.testName(__filename), function() {
     });
 
     it('Guest client shared channel', async () => {
-      host.addService((grpcDescriptor as any).alice.test.TestService.service, {
-        async ping(call: ServerWritableStream<root.alice.test.IPing, root.alice.test.IPong>) {
+      host.addService((grpcDescriptor as any).noslated.test.TestService.service, {
+        async ping(call: ServerWritableStream<root.noslated.test.IPing, root.noslated.test.IPong>) {
           return { msg: call.request.msg };
         },
       });
       guest = new Guest(address);
-      guest.addService((grpcDescriptor as any).alice.test.TestService as any);
+      guest.addService((grpcDescriptor as any).noslated.test.TestService as any);
       await guest.start();
       const resp = await (guest as any).ping({ msg: 'foo' });
       assert.strictEqual(resp.msg, 'foo');
@@ -49,7 +49,7 @@ describe(common.testName(__filename), function() {
       await newSubscriberFuture;
 
       const foobarFuture = once(guest, 'foobar');
-      host.broadcast('foobar', 'alice.KeyValuePair', { key: 'foo', value: 'bar' });
+      host.broadcast('foobar', 'noslated.KeyValuePair', { key: 'foo', value: 'bar' });
       await foobarFuture;
     });
 
@@ -63,7 +63,7 @@ describe(common.testName(__filename), function() {
         guest.subscribe('foobar');
 
         await newSubscriberFuture;
-        host.broadcast('foobar', 'alice.KeyValuePair', { key: 'foo', value: 'bar' });
+        host.broadcast('foobar', 'noslated.KeyValuePair', { key: 'foo', value: 'bar' });
         await foobarFuture;
       }
 
@@ -85,7 +85,7 @@ describe(common.testName(__filename), function() {
         // No need to re-subscribe
         await newSubscriberFuture;
         const foobarFuture = once(guest, 'foobar');
-        host.broadcast('foobar', 'alice.KeyValuePair', { key: 'foo', value: 'bar' });
+        host.broadcast('foobar', 'noslated.KeyValuePair', { key: 'foo', value: 'bar' });
         await foobarFuture;
       }
     });
@@ -144,7 +144,7 @@ describe(common.testName(__filename), function() {
     });
 
     it('Guest start before host starting', async () => {
-      const sockFile = `${config.dirs.aliceSock}/test.sock`;
+      const sockFile = `${config.dirs.noslatedSock}/test.sock`;
       const address = `unix://${sockFile}`;
       await fs.rm(sockFile);
       guest = new Guest(address);

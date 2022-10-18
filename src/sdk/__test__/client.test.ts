@@ -1,6 +1,6 @@
 import assert from 'assert';
 import mm from 'mm';
-import { AliceAgent } from '#self/sdk/index';
+import { NoslatedClient } from '#self/sdk/index';
 import { testName, baselineDir, daprAdaptorDir } from '#self/test/common';
 import { config } from '#self/config';
 import { ControlPlane } from '#self/control_plane/index';
@@ -16,12 +16,12 @@ import { sleep } from '#self/lib/util';
 import _ from 'lodash';
 
 describe(testName(__filename), () => {
-  let agent: AliceAgent;
+  let agent: NoslatedClient;
   let control: ControlPlane;
   let data: DataPlane;
 
   beforeEach(async () => {
-    agent = new AliceAgent();
+    agent = new NoslatedClient();
   });
 
   afterEach(async () => {
@@ -161,8 +161,8 @@ describe(testName(__filename), () => {
 
       assert.deepStrictEqual(control.platformEnvironmentVariables, {});
 
-      await assert.rejects(agent.setPlatformEnvironmentVariables([ ...envs, { key: 'ALICE_你瞅啥', value: '瞅你咋地' }]), {
-        message: /Platform environment variables' key can't start with ALICE_ and NOSLATE_. \(Failed: ALICE_你瞅啥\)/,
+      await assert.rejects(agent.setPlatformEnvironmentVariables([ ...envs, { key: 'NOSLATED_你瞅啥', value: '瞅你咋地' }]), {
+        message: /Platform environment variables' key can't start with NOSLATED_ and NOSLATE_. \(Failed: NOSLATED_你瞅啥\)/,
       });
 
       assert.deepStrictEqual(agent.platformEnvironmentVariables, []);

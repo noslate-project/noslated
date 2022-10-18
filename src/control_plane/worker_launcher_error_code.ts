@@ -1,3 +1,5 @@
+import * as root from '#self/proto/root';
+
 enum ErrorCode {
   kEnsureCodeError = 'ENOENSR',
   kInvalidRuntime = 'EIVDRTM',
@@ -12,9 +14,9 @@ enum ErrorCode {
  * @param {string} name The function name.
  * @param {bool} isInspector Whether it's using inspector.
  * @param {Error} err The error object.
- * @return {import('#self/lib/proto/alice/data-plane').StartWorkerFastFailRequest} The wrapped object.
+ * @return {root.noslated.data.StartWorkerFastFailRequest} The wrapped object.
  */
-function wrapLaunchErrorObject(name: string, isInspector: boolean, err: Error) {
+function wrapLaunchErrorObject(name: string, isInspector: boolean, err: Error): root.noslated.data.IStartWorkerFastFailRequest {
   let displayMessage;
   switch (err.code) {
     case ErrorCode.kEnsureCodeError: {
@@ -54,7 +56,7 @@ function wrapLaunchErrorObject(name: string, isInspector: boolean, err: Error) {
   }
 
   return {
-    type: err.code || '',
+    type: (err.code as string) || '',
     funcName: name,
     inspect: isInspector,
     message: err.message,

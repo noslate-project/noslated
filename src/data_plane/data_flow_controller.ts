@@ -1,7 +1,7 @@
 import { EventEmitter } from 'events';
 import fs from 'fs';
 import path from 'path';
-import { AliceDelegateService as AliceDelegate } from '#self/delegate/index';
+import { NoslatedDelegateService } from '#self/delegate/index';
 import { BaseOf } from '#self/lib/sdk_base';
 import { FunctionConfigBag } from './function_config';
 import { FunctionProfileManager, Mode } from '#self/lib/function_profile';
@@ -41,7 +41,7 @@ export class DataFlowController extends BaseOf(EventEmitter) {
   delegateSockPath: string;
   profileManager: FunctionProfileManager;
   namespaceResolver: NamespaceResolver;
-  delegate: AliceDelegate;
+  delegate: NoslatedDelegateService;
   inspectorAgent: InspectorAgent | null = null;
   functionConfigBag: FunctionConfigBag;
   brokers: Map<string, WorkerBroker>;
@@ -67,7 +67,7 @@ export class DataFlowController extends BaseOf(EventEmitter) {
     this.queuedRequestDurationRecorder = this.meter.createCounter(DataPlaneMetrics.QUEUED_REQUEST_DURATION, {});
 
     const delegateSockPath = this.delegateSockPath = path.join(
-      this.config.dirs.aliceSock,
+      this.config.dirs.noslatedSock,
       `dlgt-${getCurrentPlaneId()}.sock`);
 
     fs.mkdirSync(path.dirname(delegateSockPath), { recursive: true });
@@ -75,7 +75,7 @@ export class DataFlowController extends BaseOf(EventEmitter) {
     this.profileManager = new FunctionProfileManager(config);
 
     this.namespaceResolver = new NamespaceResolver(this);
-    this.delegate = new AliceDelegate(delegateSockPath, {
+    this.delegate = new NoslatedDelegateService(delegateSockPath, {
       meter: this.meter,
       namespaceResolver: this.namespaceResolver,
     });
@@ -123,17 +123,17 @@ export class DataFlowController extends BaseOf(EventEmitter) {
 
   /**
    * Close certain workers' traffic in one broker
-   * @param {import('#self/lib/proto/alice/data-plane').CapacityReductionBroker} broker The capacity reduction broker object in Protobuf.
+   * @param {root.noslated.data.ICapacityReductionBroker} broker The capacity reduction broker object in Protobuf.
    * @param {WorkerBroker} realBroker The real broker object with methods.
-   * @param {import('#self/lib/proto/alice/data-plane').CapacityReductionBroker} toBeClosed The capacity reduction broker object in Protobuf with closed workers.
+   * @param {root.noslated.data.ICapacityReductionBroker} toBeClosed The capacity reduction broker object in Protobuf with closed workers.
    * @return {Promise<void>} The result.
    */
   async closeCertainWorkersTrafficInOneBroker(
-    broker: root.alice.data.ICapacityReductionBroker,
+    broker: root.noslated.data.ICapacityReductionBroker,
     realBroker: WorkerBroker,
-    toBeClosed: root.alice.data.ICapacityReductionBroker
+    toBeClosed: root.noslated.data.ICapacityReductionBroker
   ) {
-    const close = async (realWorker: Worker, worker: root.alice.data.ICapacityReductionWorker, broker: WorkerBroker) => {
+    const close = async (realWorker: Worker, worker: root.noslated.data.ICapacityReductionWorker, broker: WorkerBroker) => {
       const closed = await realWorker.closeTraffic();
 
       if (closed) {
@@ -173,10 +173,10 @@ export class DataFlowController extends BaseOf(EventEmitter) {
 
   /**
    * Close traffic via workers
-   * @param {import('#self/lib/proto/alice/data-plane').CapacityReductionBroker[]} workersInfo The brokers including workers information.
-   * @return {Promise<import('#self/lib/proto/alice/data-plane').CapacityReductionBroker[]>} The brokers including workers that traffic closed.
+   * @param {root.noslated.data.ICapacityReductionBroker[]} workersInfo The brokers including workers information.
+   * @return {Promise<root.noslated.data.ICapacityReductionBroker[]>} The brokers including workers that traffic closed.
    */
-  async closeTraffic(workersInfo: root.alice.data.ICapacityReductionBroker[]) {
+  async closeTraffic(workersInfo: root.noslated.data.ICapacityReductionBroker[]) {
     const closed = [];
     const promises = [];
 
@@ -298,9 +298,9 @@ export class DataFlowController extends BaseOf(EventEmitter) {
 
   /**
    * Current workers' stats information.
-   * @type {import('#self/lib/proto/alice/data-plane-broadcast').BrokerStats[]} The brokers with workers' stats.
+   * @type {root.noslated.data.IBrokerStats[]} The brokers with workers' stats.
    */
-  get currentWorkersInformation() {
+  get currentWorkersInformation(): root.noslated.data.IBrokerStats[] {
     return [ ...this.brokers.values() ].map(broker => ({
       functionName: broker.name,
       inspector: broker.options.inspect === true,

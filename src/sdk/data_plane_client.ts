@@ -10,14 +10,14 @@ export class DataPlaneClient extends BasePlaneClient {
    * @param {typeof import('#self/config/default')} config The global config object.
    */
   constructor(planeId: number, config: Config) {
-    const heraldPath = path.join(config.dirs.aliceSock, `dp-${planeId}.sock`);
+    const heraldPath = path.join(config.dirs.noslatedSock, `dp-${planeId}.sock`);
     super('data plane client', heraldPath, planeId, config);
   }
 
   async _init() {
     this.addServices([
-      (descriptor as any).alice.data.DataPlane,
-      (descriptor as any).alice.data.PushServer,
+      (descriptor as any).noslated.data.DataPlane,
+      (descriptor as any).noslated.data.PushServer,
     ]);
     return super._init();
   }

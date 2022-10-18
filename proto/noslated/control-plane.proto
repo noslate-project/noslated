@@ -1,5 +1,5 @@
 syntax = "proto3";
-package alice.control;
+package noslated.control;
 
 import "common.proto";
 

@@ -1,7 +1,7 @@
 import type { aworker } from '#self/proto/aworker';
 import { STATUS_CODES } from 'http';
 import { Readable, Writable } from 'stream';
-import type { AliceNodeWorker } from './alice_node';
+import type { NoslatedNodeWorker } from './noslated_node';
 import { CanonicalCode } from './util';
 import { safeError } from './util';
 
@@ -78,7 +78,7 @@ export class ServerResponse extends Writable {
     this.#headerCallback(CanonicalCode.OK, null, params);
   };
 
-  constructor(worker: AliceNodeWorker, sid: number | null, headerCallback: (code: CanonicalCode, err: ErrorResponse | null, data: TriggerResponse | null) => void) {
+  constructor(worker: NoslatedNodeWorker, sid: number | null, headerCallback: (code: CanonicalCode, err: ErrorResponse | null, data: TriggerResponse | null) => void) {
     super({
       write: (chunk, encoding, callback) => {
         if (sid == null) {

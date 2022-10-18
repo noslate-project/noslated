@@ -14,7 +14,7 @@ import { config } from '#self/config';
 import assert from 'assert';
 import { CanonicalCode } from '#self/delegate/index';
 import { sleep } from '#self/lib/util';
-import { AliceAgent } from '#self/sdk/index';
+import { NoslatedClient } from '#self/sdk/index';
 import { DataPlane } from '#self/data_plane';
 import { ControlPlane } from '#self/control_plane';
 import { ContainerStatus } from '#self/lib/constants';
@@ -560,7 +560,7 @@ const cases = [
     },
     expect: {
       error: {
-        name: 'AliceError',
+        name: 'NoslatedError',
         message: /CanonicalCode::INTERNAL_ERROR/,
         code: CanonicalCode.INTERNAL_ERROR,
         peerStack: /Error: foobar\n\s+.+sync_uncaught.js:4:9/m,
@@ -582,7 +582,7 @@ const cases = [
     },
     expect: {
       error: {
-        name: 'AliceError',
+        name: 'NoslatedError',
         message: /CanonicalCode::INTERNAL_ERROR/,
         code: CanonicalCode.INTERNAL_ERROR,
         peerStack: /Error: foobar\n\s+.+promise_unhandled.js:4:36/m,
@@ -745,7 +745,7 @@ const cases = [
         POD_IP: address.ip(),
         foo: 'bar',
         NOSLATE_WORKER_ID: 'hello-world',
-        HOME: `${config.dirs.aliceWork}/bundles/bundle-name/code`,
+        HOME: `${config.dirs.noslatedWork}/bundles/bundle-name/code`,
       })),
     },
   },
@@ -791,7 +791,7 @@ const cases = [
         UNDEFINED: '',
         foo: 'bar',
         NOSLATE_WORKER_ID: 'hello-world-ii',
-        HOME: `${config.dirs.aliceWork}/bundles/bundle-name-ii/code`,
+        HOME: `${config.dirs.noslatedWork}/bundles/bundle-name-ii/code`,
       })),
     },
   },
@@ -1033,7 +1033,7 @@ describe(common.testName(__filename), function() {
   this.timeout(30_000);
 
   let resourceServer: ResourceServer;
-  let agent: AliceAgent;
+  let agent: NoslatedClient;
   let control: ControlPlane;
   let data: DataPlane;
   before(async () => {
@@ -1045,7 +1045,7 @@ describe(common.testName(__filename), function() {
     await resourceServer.close();
   });
 
-  for (const type of [ /* 'native', */ 'alice' ]) {
+  for (const type of [ /* 'native', */ 'noslated' ]) {
     describe(`${type} server`, () => {
       beforeEach(async () => {
         mm(config.delegate, 'type', type);
@@ -1077,7 +1077,7 @@ describe(common.testName(__filename), function() {
         _it(item.name, async () => {
           if (item.seed) {
             // Default CI is non seed mode. Mock it to seed mode and then restart all roles.
-            mm(process.env, 'ALICE_FORCE_NON_SEED_MODE', '');
+            mm(process.env, 'NOSLATED_FORCE_NON_SEED_MODE', '');
             await Promise.all([ data.close(), agent.close(), control.close() ]);
             ({ data, agent, control } = await startAllRoles() as Required<Roles>);
           }

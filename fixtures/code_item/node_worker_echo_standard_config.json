@@ -13,11 +13,11 @@
     "env": [
       "PATH=/bin:/usr/bin",
       "TERM=xterm",
-      "_ALICE_IPC_PATH=<replace me>",
-      "_ALICE_CODE_PATH=<replace me>",
-      "_ALICE_WORKER_CREDENTIAL=<replace me>",
-      "_ALICE_FUNC_HANDLER=with_initializer.handler",
-      "_ALICE_FUNC_INITIALIZER=with_initializer.initializer"
+      "_NOSLATED_IPC_PATH=<replace me>",
+      "_NOSLATED_CODE_PATH=<replace me>",
+      "_NOSLATED_WORKER_CREDENTIAL=<replace me>",
+      "_NOSLATED_FUNC_HANDLER=with_initializer.handler",
+      "_NOSLATED_FUNC_INITIALIZER=with_initializer.initializer"
     ],
     "noNewPrivileges": true
   },

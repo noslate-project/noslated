@@ -9,7 +9,7 @@ import { DelegateSharedState } from './delegate_shared_state';
 import { InvokeController } from './invoke_controller';
 import { ResourceStub } from './resource';
 import { DelegateMetrics } from '#self/lib/telemetry/semantic_conventions';
-import { AliceServer } from './alice_ipc';
+import { NoslatedServer } from './noslated_ipc';
 import { Readable } from 'stream';
 import { Metadata, MetadataInit } from './request_response';
 
@@ -30,7 +30,7 @@ export const Events = {
 
 type CommonCallback = (code: aworker.ipc.CanonicalCode, ...args: any[]) => void;
 
-export class AliceDelegateService extends EventEmitter {
+export class NoslatedDelegateService extends EventEmitter {
   /**
    * credential => CredentialRegistration
    * @type {Map<string, CredentialRegistration>}
@@ -210,7 +210,7 @@ export class AliceDelegateService extends EventEmitter {
     if (this.#sharedState.server) {
       return;
     }
-    const server = new AliceServer(this.#sharedState.serverPath, Logger.get('alice server'));
+    const server = new NoslatedServer(this.#sharedState.serverPath, Logger.get('noslated server'));
     server.onRequest = this.#onRequest;
     server.onDisconnect = this.#onDisconnect;
     this.#sharedState.server = server;
@@ -250,7 +250,7 @@ export class AliceDelegateService extends EventEmitter {
   }
 
   /**
-   * AliceDelegateService#setDaprAdaptor
+   * NoslatedDelegateService#setDaprAdaptor
    * @param {DaprAdaptor} adaptor the adaptor object
    */
   setDaprAdaptor(adaptor: any) {
@@ -261,7 +261,7 @@ export class AliceDelegateService extends EventEmitter {
   }
 
   /**
-   * AliceDelegateService#resetPeer
+   * NoslatedDelegateService#resetPeer
    * @param {string} credential the credential
    */
   resetPeer(credential: string) {
@@ -283,7 +283,7 @@ export class AliceDelegateService extends EventEmitter {
 
   #triggerPreamble = (credential: string, type?: aworker.ipc.CredentialTargetType) => {
     if (!this.#started()) {
-      throw new Error('alice server not started yet');
+      throw new Error('noslated server not started yet');
     }
     if (!this.#credentialsMap.has(credential)) {
       throw new Error('worker has not connected yet');
@@ -307,7 +307,7 @@ export class AliceDelegateService extends EventEmitter {
   };
 
   /**
-   * AliceDelegateService#trigger
+   * NoslatedDelegateService#trigger
    * @param {string} credential the credential
    * @param {string} method the method
    * @param {Buffer|Readable} data the data

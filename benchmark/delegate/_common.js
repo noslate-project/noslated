@@ -8,9 +8,9 @@ const { Readable } = require('stream');
 const fs = require('fs');
 const net = require('net');
 const Readline = require('readline');
-const { CanonicalCode } = require('#self/delegate/alice_ipc');
+const { CanonicalCode } = require('#self/delegate/noslated_ipc');
 
-const serverPath = './alice-benchmark.sock';
+const serverPath = './noslated-benchmark.sock';
 const serverPort = 'localhost:54433';
 const credentials = 'benchmark-cred';
 const PROTO_PATH = path.resolve(__dirname, '../fixtures/grpc-test.proto');
@@ -103,12 +103,12 @@ function createPlainHttp(filename, callback) {
 }
 
 function createDelegateChild(filename) {
-  process.env._ALICE_IPC_PATH = serverPath;
-  process.env._ALICE_CODE_PATH = __dirname;
-  process.env._ALICE_WORKER_CREDENTIAL = credentials;
-  process.env._ALICE_FUNC_INITIALIZER = `${path.basename(path.relative(__dirname, filename), '.js')}.initializer`;
-  process.env._ALICE_FUNC_HANDLER = `${path.basename(path.relative(__dirname, filename), '.js')}.handler`;
-  require('../../build/starter/alice_node');
+  process.env._NOSLATED_IPC_PATH = serverPath;
+  process.env._NOSLATED_CODE_PATH = __dirname;
+  process.env._NOSLATED_WORKER_CREDENTIAL = credentials;
+  process.env._NOSLATED_FUNC_INITIALIZER = `${path.basename(path.relative(__dirname, filename), '.js')}.initializer`;
+  process.env._NOSLATED_FUNC_HANDLER = `${path.basename(path.relative(__dirname, filename), '.js')}.handler`;
+  require('../../build/starter/noslated_node');
 }
 
 function createDelegate(filename, options, callback) {
@@ -120,7 +120,7 @@ function createDelegate(filename, options, callback) {
 
   function main(setup) {
     require('#self/lib/logger').setSink(require('#self/lib/logger').getPrettySink('benchmark.log'));
-    const { AliceDelegateService: DelegateService } = require('#self/delegate/index');
+    const { NoslatedDelegateService: DelegateService } = require('#self/delegate/index');
     const delegate = new DelegateService(serverPath);
     delegate.register(credentials);
     delegate.on('bind', async () => {
@@ -131,7 +131,7 @@ function createDelegate(filename, options, callback) {
     const cp = childProcess.fork(filename, [ 'child' ], {
       env: {
         ...process.env,
-        _ALICE_LOG_LEVEL: 'error',
+        _NOSLATED_LOG_LEVEL: 'error',
       },
       stdio: [ 'ignore', 'inherit', 'inherit', 'ipc' ],
     });

@@ -1,12 +1,12 @@
 import childProcess from 'child_process';
 import { EventEmitter, once } from 'events';
 import { aworker } from '../../proto/aworker';
-import { AliceClient } from '../alice_ipc';
+import { NoslatedClient } from '../noslated_ipc';
 
 const logger = require('#self/lib/logger').get('test-client');
 
 function child() {
-  let client: AliceClient;
+  let client: NoslatedClient;
   process.on('message', ({ type, args }: CallbackArgs) => {
     console.log('[CLIENT CHILD] client process received message', { type, args });
     if (type === 'connect') {
@@ -26,7 +26,7 @@ function child() {
     if (client != null) {
       return;
     }
-    client = new AliceClient(serverPath, credential);
+    client = new NoslatedClient(serverPath, credential);
     client.onCollectMetrics = () => {
       return {
         integerRecords: [

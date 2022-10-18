@@ -19,11 +19,11 @@ export default {
   },
 
   dirs: {
-    aliceSock: path.join(projectRoot, '.code/socks'),
-    aliceWork: path.join(projectRoot, '.code'),
+    noslatedSock: path.join(projectRoot, '.code/socks'),
+    noslatedWork: path.join(projectRoot, '.code'),
   },
 
-  aliceAddonType: 'Release',
+  noslatedAddonType: 'Release',
   virtualMemoryPoolSize: '1gb',
   worker: {
     controlPlaneConnectTimeout: 10_000,
@@ -33,13 +33,12 @@ export default {
     maxActivateRequests: 10,
     defaultInitializerTimeout: 10_000,
     replicaCountLimit: 10,
-    // Alice will check water level regularly. If water level is always too low
+    // Noslated will check water level regularly. If water level is always too low
     // in continuous `shrinkRedundantTimes` times, some worker(s) will be
     // shrinked.
     shrinkRedundantTimes: 60,
   },
   starter: {
-    // TODO(chengzhong.wcz): rename to aworker.
     aworker: {
       defaultSeedScript: null,
       defaultEnvirons: {},

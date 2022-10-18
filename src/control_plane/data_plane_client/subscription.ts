@@ -22,7 +22,7 @@ export class DataPlaneSubscription {
     this.logger = loggers.get('data plane subscription');
   }
 
-  async requestQueueing(requestQueueingRequest: NotNullableInterface<root.alice.data.IRequestQueueingBroadcast>) {
+  async requestQueueing(requestQueueingRequest: NotNullableInterface<root.noslated.data.IRequestQueueingBroadcast>) {
     const plane = this.plane;
     const { capacityManager } = plane;
     this.logger.info('received request queueing event (requestId: %s) for func(%s, inspect %s) with request count %d',
@@ -39,7 +39,7 @@ export class DataPlaneSubscription {
     }
   }
 
-  async workerTrafficStats(snapshot: root.alice.data.WorkerTrafficStatsSnapshot) {
+  async workerTrafficStats(snapshot: root.noslated.data.WorkerTrafficStatsSnapshot) {
     const { plane: { capacityManager } } = this;
 
     try {
@@ -50,7 +50,7 @@ export class DataPlaneSubscription {
     }
   }
 
-  async containerStatusReport(report: NotNullableInterface<root.alice.data.IContainerStatusReport>) {
+  async containerStatusReport(report: NotNullableInterface<root.noslated.data.IContainerStatusReport>) {
     const plane = this.plane;
     const { capacityManager } = plane;
 

@@ -1,5 +1,5 @@
 syntax = "proto3";
-package alice;
+package noslated;
 
 message Any {
   string typeUrl = 1;

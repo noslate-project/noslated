@@ -58,7 +58,7 @@ export class CapacityManager extends Base {
   /**
    * Sync worker data
    */
-  async syncWorkerData(data: root.alice.data.IBrokerStats[]) {
+  async syncWorkerData(data: root.noslated.data.IBrokerStats[]) {
     const psData = await turf.ps();
 
     if (!psData || psData.length === 0) {
@@ -169,7 +169,7 @@ export class CapacityManager extends Base {
     this.logger.info('worker(%s) with request(%s) stopped.', workerName, requestId);
   }
 
-  async updateWorkerContainerStatus(report: NotNullableInterface<root.alice.data.IContainerStatusReport>) {
+  async updateWorkerContainerStatus(report: NotNullableInterface<root.noslated.data.IContainerStatusReport>) {
     const { functionName, name, event, timestamp, isInspector } = report;
 
     const broker = this.workerStatsSnapshot.getBroker(functionName, isInspector);
@@ -363,9 +363,8 @@ export class CapacityManager extends Base {
 
   /**
    * Expend due to queueing request
-   * @param {{ data: import('#self/lib/proto/alice/data-plane-broadcast').RequestQueueingBroadcast, client: import('#self/control_plane/data_plane_client/client') }} task The task object.
    */
-  async expandDueToQueueingRequest(client: DataPlaneClient, request: NotNullableInterface<root.alice.data.IRequestQueueingBroadcast>) {
+  async expandDueToQueueingRequest(client: DataPlaneClient, request: NotNullableInterface<root.noslated.data.IRequestQueueingBroadcast>) {
     const { requestId, name, isInspect, stats } = request;
     const { brokers = [] } = stats || {};
 
@@ -417,7 +416,7 @@ export class CapacityManager extends Base {
 
 interface RequestQueueItem {
   client: DataPlaneClient;
-  data: NotNullableInterface<root.alice.data.IRequestQueueingBroadcast>;
+  data: NotNullableInterface<root.noslated.data.IRequestQueueingBroadcast>;
 }
 
 interface ExpansionOptions {

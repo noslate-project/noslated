@@ -1,4 +1,4 @@
-import { AliceClient, CanonicalCode } from '../delegate/alice_ipc';
+import { NoslatedClient, CanonicalCode } from '../delegate/noslated_ipc';
 
 const levels = [ 'debug', 'info', 'error' ] as const;
 type LogMethod = (...args: unknown[]) => void;
@@ -42,6 +42,6 @@ function safeError(error: unknown) {
 export {
   NaiveLogger,
   safeError,
-  AliceClient,
+  NoslatedClient,
   CanonicalCode,
 };

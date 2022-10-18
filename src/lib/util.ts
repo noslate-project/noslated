@@ -155,7 +155,7 @@ async function raceEvent(eventEmitter: EventEmitter, events: string[]) {
 }
 
 function getCurrentPlaneId() {
-  return Number.parseInt(process.env.ALICE_PLANE_ID ?? '0') || 0;
+  return Number.parseInt(process.env.NOSLATED_PLANE_ID ?? '0') || 0;
 }
 
 function structuredClone(value: unknown) {

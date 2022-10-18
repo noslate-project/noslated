@@ -6,14 +6,14 @@ import { assertInvokeService, Roles, startAllRoles } from '#self/test/util';
 import mm from 'mm';
 import { ControlPlane } from '#self/control_plane';
 import { DataPlane } from '../data_plane';
-import { AliceAgent } from '#self/sdk/index';
+import { NoslatedClient } from '#self/sdk/index';
 
 describe(common.testName(__filename), function() {
   // Debug version of Node.js may take longer time to bootstrap.
   this.timeout(30_000);
 
   let resourceServer: ResourceServer;
-  let agent: AliceAgent;
+  let agent: NoslatedClient;
   let control: ControlPlane;
   let data: DataPlane;
   before(async () => {

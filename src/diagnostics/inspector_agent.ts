@@ -1,6 +1,6 @@
 import { WebSocket } from 'ws';
 import { InspectorSocketServer } from './inspector_socket_server';
-import { AliceDelegateService, Events } from '#self/delegate/index';
+import { NoslatedDelegateService, Events } from '#self/delegate/index';
 import loggers from '#self/lib/logger';
 
 const logger = loggers.get('inspector_socket_server');
@@ -70,7 +70,7 @@ class InspectorAgent {
       this.#targets.set(target.id, {
         [CredentialSymbol]: cred,
         [ConnectedSessionIdsSymbol]: [],
-        description: 'alice worker',
+        description: 'noslated worker',
         devtoolsFrontendUrl: `devtools://devtools/bundled/js_app.html?experiments=true&v8only=true&ws=${webSocketAddress}`,
         devtoolsFrontendUrlCompat: `devtools://devtools/bundled/inspector.html?experiments=true&v8only=true&ws=${webSocketAddress}`,
         faviconUrl: 'https://nodejs.org/static/images/favicons/favicon.ico',
@@ -112,7 +112,7 @@ class InspectorAgent {
   /**
    * InspectorAgent#constructor
    */
-  constructor(delegate: AliceDelegateService, options?: { port: number }) {
+  constructor(delegate: NoslatedDelegateService, options?: { port: number }) {
     this.#delegate = delegate;
     this.#server = new InspectorSocketServer(this, options);
 

@@ -5,7 +5,7 @@ import { FunctionProfileManager } from '#self/lib/function_profile';
 import { Roles, startAllRoles } from '#self/test/util';
 import { startTurfD, stopTurfD } from '#self/lib/turf';
 import { PendingRequest, WorkerBroker } from '../worker_broker';
-import { AliceAgent } from '#self/sdk/index';
+import { NoslatedClient } from '#self/sdk/index';
 import { ControlPlane } from '#self/control_plane';
 import { DataPlane } from '../data_plane';
 import { kMegaBytes } from '#self/control_plane/constants';
@@ -43,7 +43,7 @@ const mockHost = {
 };
 
 describe(common.testName(__filename), () => {
-  let agent: AliceAgent;
+  let agent: NoslatedClient;
   let control: ControlPlane;
   let data: DataPlane;
 

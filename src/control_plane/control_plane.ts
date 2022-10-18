@@ -37,7 +37,7 @@ export class ControlPlane extends BaseOf(EventEmitter) {
     this.meter = getMeter();
     this.dataPlaneClientManager = new DataPlaneClientManager(this, config);
     this.herald = new Herald(this, config);
-    this.codeManager = new CodeManager(this.config.dirs.aliceWork);
+    this.codeManager = new CodeManager(this.config.dirs.noslatedWork);
     this.functionProfile = new FunctionProfileManager(config, this.onPresetFunctionProfile.bind(this));
     this.workerLauncher = new WorkerLauncher(this, config);
     this.capacityManager = new CapacityManager(this, config);

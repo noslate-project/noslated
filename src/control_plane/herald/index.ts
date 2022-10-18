@@ -17,7 +17,7 @@ export class Herald extends Host {
   impl: HeraldImpl;
 
   constructor(public plane: ControlPlane, public config: Config) {
-    const sockPath = path.join(config.dirs.aliceSock, `cp-${getCurrentPlaneId()}.sock`);
+    const sockPath = path.join(config.dirs.noslatedSock, `cp-${getCurrentPlaneId()}.sock`);
     fs.mkdirSync(path.dirname(sockPath), { recursive: true });
 
     super(`unix://${sockPath}`, logger);
@@ -25,7 +25,7 @@ export class Herald extends Host {
   }
 
   async ready() {
-    this.addService((descriptor as any).alice.control.ControlPlane.service, this.impl as any);
+    this.addService((descriptor as any).noslated.control.ControlPlane.service, this.impl as any);
     await super.start();
     logger.info(`listened at ${this.address}.`);
   }

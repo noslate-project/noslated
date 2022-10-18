@@ -1,11 +1,11 @@
 import { TurfContainerStates, TurfProcess } from '#self/lib/turf/types';
-import type { alice } from '#self/proto/root';
+import type { noslated } from '#self/proto/root';
 import { PrefixedLogger } from '#self/lib/loggers';
 import { Config } from '#self/config';
 import { ContainerStatus, ContainerStatusReport } from '#self/lib/constants';
 import { performance } from 'perf_hooks';
 
-export type WorkerStats = alice.data.IWorkerStats;
+export type WorkerStats = noslated.data.IWorkerStats;
 
 class WorkerAdditionalData {
   maxActivateRequests;

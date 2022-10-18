@@ -8,7 +8,7 @@ import { ResourceServer } from '#self/test/baseline/resource-server';
 import { turf, startTurfD, stopTurfD } from '#self/lib/turf';
 import type { Turf } from '#self/lib/turf/wrapper';
 import { testWorker, startAllRoles, Roles, ProseContext } from '#self/test/util';
-import { AliceAgent } from '#self/sdk/index';
+import { NoslatedClient } from '#self/sdk/index';
 import { ControlPlane } from '../control_plane';
 import { DataPlane } from '#self/data_plane';
 
@@ -460,7 +460,7 @@ describe(common.testName(__filename), function() {
   this.timeout(30_000);
 
   let resourceServer: ResourceServer;
-  let agent: AliceAgent;
+  let agent: NoslatedClient;
   let control: ControlPlane;
   let data: DataPlane;
 
@@ -502,7 +502,7 @@ describe(common.testName(__filename), function() {
     _it(item.name, async () => {
       if (item.seed) {
         // Default CI is non seed mode. Mock it to seed mode and then restart all roles.
-        mm(process.env, 'ALICE_FORCE_NON_SEED_MODE', '');
+        mm(process.env, 'NOSLATED_FORCE_NON_SEED_MODE', '');
         await Promise.all([ data.close(), agent.close(), control.close() ]);
         ({ data, agent, control } = await startAllRoles() as Required<Roles>);
       }

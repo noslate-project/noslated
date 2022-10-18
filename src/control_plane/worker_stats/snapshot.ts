@@ -48,7 +48,7 @@ export class WorkerStatsSnapshot extends BaseOf(EventEmitter) {
   /**
    * Sync data from data plane and turf ps.
    */
-  sync(syncData: root.alice.data.IBrokerStats[], psData: TurfProcess[], timestamp: number) {
+  sync(syncData: root.noslated.data.IBrokerStats[], psData: TurfProcess[], timestamp: number) {
     const newMap: Map<string, Broker> = new Map();
     for (const item of syncData) {
       const key = Broker.getKey(item.functionName!, item.inspector!);
@@ -132,7 +132,7 @@ export class WorkerStatsSnapshot extends BaseOf(EventEmitter) {
     }
   }
 
-  toProtobufObject(): root.alice.data.IBrokerStats[] {
+  toProtobufObject(): root.noslated.data.IBrokerStats[] {
     return [ ...this.brokers.values() ].map(broker => ({
       name: broker.name,
       inspector: broker.isInspector,

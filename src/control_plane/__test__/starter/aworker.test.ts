@@ -21,8 +21,8 @@ describe(common.testName(__filename), () => {
   };
 
   beforeEach(async () => {
-    mm(config.dirs, 'aliceWork', testUtil.TMP_DIR());
-    mm(process.env, 'ALICE_FORCE_NON_SEED_MODE', '');
+    mm(config.dirs, 'noslatedSock', testUtil.TMP_DIR());
+    mm(process.env, 'NOSLATED_FORCE_NON_SEED_MODE', '');
     await startTurfD();
   });
 

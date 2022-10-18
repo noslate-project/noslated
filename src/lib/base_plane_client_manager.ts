@@ -25,7 +25,7 @@ export class BasePlaneClientManager extends BaseOf(EventEmitter) {
   constructor(public config: Config, private sockCount: number, private logger: ILogger) {
     super();
 
-    this.sockDir = config.dirs.aliceSock;
+    this.sockDir = config.dirs.noslatedSock;
 
     this.#clients = [];
     this.#clientEvents = new WeakMap();

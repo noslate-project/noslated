@@ -9,7 +9,7 @@ import { ResourceServer } from '../baseline/resource-server';
 import { killWorker } from './util';
 import { once } from 'events';
 import path from 'path';
-import { AliceAgent } from '#self/sdk/index';
+import { NoslatedClient } from '#self/sdk/index';
 import { ControlPlane } from '#self/control_plane';
 import { DataPlane } from '#self/data_plane';
 
@@ -41,7 +41,7 @@ describe(common.testName(__filename), function() {
   this.timeout(30_000);
 
   let resourceServer: ResourceServer;
-  let agent: AliceAgent;
+  let agent: NoslatedClient;
   let control: ControlPlane;
   let data: DataPlane;
   before(async () => {

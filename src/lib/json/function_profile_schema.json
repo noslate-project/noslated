@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
-  "title": "Alice Function Metadata",
-  "description": "the metadata schema for Functions in Alice",
+  "title": "Noslated Function Metadata",
+  "description": "the metadata schema for Functions in Noslated",
   "type":"array",
   "uniqueItems": true,
   "additionalItems": false,

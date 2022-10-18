@@ -18,19 +18,19 @@ import * as root from '#self/proto/root';
 import { kDefaultRequestId } from '#self/lib/constants';
 
 /**
- * Alice client
+ * Noslated client
  */
-export class AliceClient extends EventEmitter {
+export class NoslatedClient extends EventEmitter {
   dataPlaneClientManager: DataPlaneClientManager;
   controlPlaneClientManager: ControlPlaneClientManager;
   logger: Logger;
   validator: JSONValidator;
   functionProfiles: RawFunctionProfile[] | null;
   functionProfilesMode: Mode;
-  serviceProfiles: root.alice.data.IFunctionService[] | null;
+  serviceProfiles: root.noslated.data.IFunctionService[] | null;
   useInspectorSet: Set<string>;
   daprAdaptorModulePath: string;
-  platformEnvironmentVariables: root.alice.IKeyValuePair[];
+  platformEnvironmentVariables: root.noslated.IKeyValuePair[];
 
   constructor() {
     super();
@@ -39,7 +39,7 @@ export class AliceClient extends EventEmitter {
 
     this.dataPlaneClientManager = new DataPlaneClientManager(this, config);
     this.controlPlaneClientManager = new ControlPlaneClientManager(this, config);
-    this.logger = loggers.get('alice client');
+    this.logger = loggers.get('noslated client');
     this.validator = new JSONValidator();
 
     this.functionProfiles = null;
@@ -51,7 +51,7 @@ export class AliceClient extends EventEmitter {
   }
 
   /**
-   * Start alice client
+   * Start noslated client
    * @return {Promise<void>} The result.
    */
   async start() {
@@ -68,7 +68,7 @@ export class AliceClient extends EventEmitter {
   }
 
   /**
-   * Close alice client
+   * Close noslated client
    * @return {Promise<void>} The result.
    */
   async close() {
@@ -112,15 +112,15 @@ export class AliceClient extends EventEmitter {
 
   /**
    * Set platform environment variables.
-   * @param {import('#self/lib/proto/alice/common').KeyValuePair[]} envs The environment variables pair.
+   * @param {root.noslated.IKeyValuePair[]} envs The environment variables pair.
    * @return {Promise<void>} The result.
    */
-  async setPlatformEnvironmentVariables(envs: root.alice.IKeyValuePair[]) {
+  async setPlatformEnvironmentVariables(envs: root.noslated.IKeyValuePair[]) {
     // wash envs and throw Error if neccessary
     envs.forEach(kv => {
-      if ((kv.key as string).startsWith('ALICE_') || (kv.key as string).startsWith('NOSLATE_')) {
+      if ((kv.key as string).startsWith('NOSLATED_') || (kv.key as string).startsWith('NOSLATE_')) {
         throw new Error(
-          `Platform environment variables' key can't start with ALICE_ and NOSLATE_. (Failed: ${kv.key})`);
+          `Platform environment variables' key can't start with NOSLATED_ and NOSLATE_. (Failed: ${kv.key})`);
       } if (typeof kv.value !== 'string' && kv.value !== undefined && kv.value !== null) {
         throw new Error(
           `Platform environment variables' value can't be out of string. (Failed: ${kv.key}, ` +
@@ -149,15 +149,15 @@ export class AliceClient extends EventEmitter {
 
   /**
    * Get platform environment variables.
-   * @return {import('#self/lib/proto/alice/common').KeyValuePair[]} envs The environment variables pair.
+   * @return {root.noslated.IKeyValuePair[]} envs The environment variables pair.
    */
-  getPlatformEnvironmentVariables() {
+  getPlatformEnvironmentVariables(): root.noslated.IKeyValuePair[] {
     return this.platformEnvironmentVariables;
   }
 
   /**
    * Set function profile.
-   * @param {import('#self/lib/json/function_profile').RawFunctionProfile[]} profiles function profile
+   * @param {RawFunctionProfile[]} profiles function profile
    * @param {'IMMEDIATELY' | 'WAIT'} mode set mode
    */
   async setFunctionProfile(profiles: RawFunctionProfile[], mode: Mode = 'IMMEDIATELY') {
@@ -193,8 +193,8 @@ export class AliceClient extends EventEmitter {
     this.validator.validate(profiles, kServiceProfileSchema);
     profiles = jsonClone(profiles);
 
-    const serviceProfiles: root.alice.data.IFunctionService[] = profiles.map(it => {
-      const item: root.alice.data.IFunctionService = {
+    const serviceProfiles: root.noslated.data.IFunctionService[] = profiles.map(it => {
+      const item: root.noslated.data.IFunctionService = {
         name: it.name,
         type: it.type
       };
@@ -264,7 +264,7 @@ export class AliceClient extends EventEmitter {
       body = data;
     }
 
-    const result: DeepRequired<root.alice.data.IInvokeResponse> = await plane[type]({
+    const result: DeepRequired<root.noslated.data.IInvokeResponse> = await plane[type]({
       name,
       url: metadata?.url,
       method: metadata?.method,
@@ -274,7 +274,7 @@ export class AliceClient extends EventEmitter {
       timeout: metadata?.timeout,
       body,
       requestId: metadata?.requestId ?? kDefaultRequestId
-    } as root.alice.data.IInvokeRequest, {
+    } as root.noslated.data.IInvokeRequest, {
       // TODO: proper deadline definition;
       deadline: Date.now() + (metadata?.timeout ?? 10_000) + 1_000,
     });

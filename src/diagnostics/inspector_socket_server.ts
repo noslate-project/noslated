@@ -7,7 +7,7 @@ import { Socket } from 'net';
 import { InspectorAgent } from './inspector_agent';
 import InspectorProtocolJson from '../lib/json/inspector_protocol.json';
 
-const debug = debuglog('alice:inspector_socket_server');
+const debug = debuglog('noslated:inspector_socket_server');
 const HttpPathMatcher = /^\/json(?:\/(list|protocol|version))?$/;
 const HandShakeFailedResponse = 'WebSockets request was expected';
 const kInspectorProtocolJsonText = JSON.stringify(InspectorProtocolJson);
@@ -39,7 +39,7 @@ class InspectorSocketServer {
     } else if (command === 'protocol') {
       body = kInspectorProtocolJsonText;
     } else if (command === 'version') {
-      body = '{"Browser": "node.js/v12.18.4 alice/","Protocol-Version": "1.3"}';
+      body = '{"Browser": "node.js/v12.18.4 noslated/","Protocol-Version": "1.3"}';
     }
 
     if (body.length > 0) {

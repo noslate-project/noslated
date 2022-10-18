@@ -3,14 +3,14 @@ import https from 'https';
 import { Readable, Writable } from 'stream';
 import { tryQ } from '../lib/util';
 import { TriggerResponse, Metadata, flattenKeyValuePairs } from './request_response';
-import { AliceStreamError } from './error';
+import { NoslatedStreamError } from './error';
 import { DelegateMetricAttributes } from '#self/lib/telemetry/semantic_conventions';
 import { Extension }  from './extension';
 import { aworker } from '../proto/aworker';
-import { keyValuePairsToObject, flattenToKeyValuePairs } from './alice_ipc';
+import { keyValuePairsToObject, flattenToKeyValuePairs } from './noslated_ipc';
 import { DelegateSharedState } from './delegate_shared_state';
 import { CredentialRegistration, WorkerState } from './registration';
-import { AliceDelegateService } from '.';
+import { NoslatedDelegateService } from '.';
 import { MetadataInit } from '#self/delegate/request_response';
 import { kDefaultRequestId } from '#self/lib/constants';
 
@@ -49,7 +49,7 @@ export class InvokeController {
   /**
    * @type {import('./index')}
    */
-  #delegate: AliceDelegateService;
+  #delegate: NoslatedDelegateService;
 
   /**
    * @type {import('./extension').Extension}
@@ -57,7 +57,7 @@ export class InvokeController {
   #extension: Extension;
 
   #sessionId;
-  constructor(sharedState: DelegateSharedState, registration: CredentialRegistration, delegate: AliceDelegateService) {
+  constructor(sharedState: DelegateSharedState, registration: CredentialRegistration, delegate: NoslatedDelegateService) {
     this.#sharedState = sharedState;
     this.#registration = registration;
     this.#sessionId = registration.sessionId;
@@ -337,7 +337,7 @@ export class InvokeController {
 
 
   /**
-   * AliceDelegateService#trigger
+   * NoslatedDelegateService#trigger
    * @param {string} method the method
    * @param {Buffer|Readable} data the data
    * @param {Metadata|object} [metadataInit] the metadata
@@ -509,7 +509,7 @@ export class InvokeController {
       destroy: (e: Error, cb: Function) => {
         logger.debug('stream writable write end, error?', e);
         this.#state.removeWritable(writable);
-        if (e instanceof AliceStreamError && e.name === 'PEER_CONNECTION_CLOSED') {
+        if (e instanceof NoslatedStreamError && e.name === 'PEER_CONNECTION_CLOSED') {
           return cb();
         }
         this.#closeStream(sid, /* isError */e !== undefined && e !== null)

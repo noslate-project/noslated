@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
-  "title": "Alice Service Metadata",
-  "description": "the metadata schema for services in Alice",
+  "title": "Noslated Service Metadata",
+  "description": "the metadata schema for services in Noslated",
   "type":"array",
   "uniqueItems": true,
   "additionalItems": false,
