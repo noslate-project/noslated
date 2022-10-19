@@ -679,7 +679,7 @@ describe(common.testName(__filename), () => {
   });
 });
 
-function updateWorkerContainerStatus(snapshot: WorkerStatsSnapshot, report: NotNullableInterface<root.alice.data.IContainerStatusReport>) {
+function updateWorkerContainerStatus(snapshot: WorkerStatsSnapshot, report: NotNullableInterface<root.noslated.data.IContainerStatusReport>) {
   const { functionName, isInspector, name, event, timestamp } = report;
 
   const worker = snapshot.getWorker(functionName, isInspector, name);

@@ -1,5 +1,5 @@
 import _ from 'lodash';
-import { AliceStreamError } from './error';
+import { NoslatedStreamError } from './error';
 
 import type { Readable, Writable } from 'stream';
 import type { ClientRequest } from 'http';
@@ -78,7 +78,7 @@ class WorkerState {
       item.destroy();
     }
     for (const item of writables) {
-      item.destroy(new AliceStreamError('Peer connection closed', 'PEER_CONNECTION_CLOSED'));
+      item.destroy(new NoslatedStreamError('Peer connection closed', 'PEER_CONNECTION_CLOSED'));
     }
     for (const item of fetchRequests) {
       item.destroy(new Error('aborted'));

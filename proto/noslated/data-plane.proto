@@ -1,5 +1,5 @@
 syntax = "proto3";
-package alice.data;
+package noslated.data;
 
 import "common.proto";
 

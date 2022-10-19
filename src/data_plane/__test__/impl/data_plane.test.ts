@@ -23,7 +23,7 @@ describe(common.testName(__filename), () => {
   daemonProse(roles);
   beforeEach(async () => {
     guest = new Guest(roles.data!.host.address);
-    guest.addService((descriptor as any).alice.data.DataPlane);
+    guest.addService((descriptor as any).noslated.data.DataPlane);
     await guest.start();
   });
   afterEach(async () => {

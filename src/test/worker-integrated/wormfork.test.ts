@@ -75,7 +75,7 @@ describe(common.testName(__filename), function() {
 
   beforeEach(async () => {
     // Default CI is non seed mode. Mock it to seed mode and then restart all roles.
-    mm(process.env, 'ALICE_FORCE_NON_SEED_MODE', '');
+    mm(process.env, 'NOSLATED_FORCE_NON_SEED_MODE', '');
   });
   afterEach(async () => {
     mm.restore();

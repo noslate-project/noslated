@@ -25,8 +25,8 @@ describe(common.testName(__filename), function() {
   });
 
   it('Host#addService delegation', async () => {
-    host.addService((grpcDescriptor as any).alice.test.TestService.service, {
-      async ping(call: ServerWritableStream<root.alice.test.IPing, root.alice.test.IPong>) {
+    host.addService((grpcDescriptor as any).noslated.test.TestService.service, {
+      async ping(call: ServerWritableStream<root.noslated.test.IPing, root.noslated.test.IPong>) {
         if (call.request.msg === 'error') {
           throw new RpcError('foobar');
         }
@@ -35,7 +35,7 @@ describe(common.testName(__filename), function() {
     });
 
     guest = new Guest(address);
-    guest.addService((grpcDescriptor as any).alice.test.TestService);
+    guest.addService((grpcDescriptor as any).noslated.test.TestService);
     await guest.start();
 
     const resp = await (guest as any).ping({ msg: 'foo' });
@@ -45,14 +45,14 @@ describe(common.testName(__filename), function() {
   });
 
   it('Host#addService unexpected error', async () => {
-    host.addService((grpcDescriptor as any).alice.test.TestService.service, {
+    host.addService((grpcDescriptor as any).noslated.test.TestService.service, {
       async ping() {
         throw new Error('foobar');
       },
     });
 
     guest = new Guest(address);
-    guest.addService((grpcDescriptor as any).alice.test.TestService);
+    guest.addService((grpcDescriptor as any).noslated.test.TestService);
     await guest.start();
 
     await assert.rejects((guest as any).ping({ msg: 'error' }), /Error: 2 UNKNOWN: foobar/);

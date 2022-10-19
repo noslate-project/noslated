@@ -1,12 +1,12 @@
 import assert from 'assert';
 import * as common from '#self/test/common';
 import { TestClient } from './test-client';
-import { AliceDelegateService } from '#self/delegate/index';
+import { NoslatedDelegateService } from '#self/delegate/index';
 import path from 'path';
 
 describe(common.testName(__filename), () => {
   let client: TestClient | null;
-  let delegate: AliceDelegateService | null;
+  let delegate: NoslatedDelegateService | null;
 
   afterEach(async () => {
     await client?.close();
@@ -22,7 +22,7 @@ describe(common.testName(__filename), () => {
     // const clientOnDisconnect = new assert.CallTracker();
     const serverOnDisconnect = new assert.CallTracker();
 
-    delegate = new AliceDelegateService();
+    delegate = new NoslatedDelegateService();
     delegate.register('foobar');
     delegate.on('bind', serverOnBind.calls(cred => {
       assert.strictEqual(cred, 'foobar');
@@ -57,7 +57,7 @@ describe(common.testName(__filename), () => {
     const serverOnBind = new assert.CallTracker();
     const serverOnDisconnect = new assert.CallTracker();
 
-    delegate = new AliceDelegateService();
+    delegate = new NoslatedDelegateService();
     delegate.register('foobar', { preemptive: true });
 
     // Both 'bind' and 'disconnect' should be emitted once.
@@ -104,7 +104,7 @@ describe(common.testName(__filename), () => {
   });
 
   it('should cancel requests on client disconnected for resetPeer', async () => {
-    delegate = new AliceDelegateService();
+    delegate = new NoslatedDelegateService();
     delegate.register('foobar');
     delegate.start();
 
@@ -133,7 +133,7 @@ describe(common.testName(__filename), () => {
   });
 
   it('should reset requests on client disconnected for peer disconnected', async () => {
-    delegate = new AliceDelegateService();
+    delegate = new NoslatedDelegateService();
     delegate.register('foobar');
     delegate.start();
 
@@ -162,7 +162,7 @@ describe(common.testName(__filename), () => {
   });
 
   it('should reset requests on client disconnected for client closed', async () => {
-    delegate = new AliceDelegateService();
+    delegate = new NoslatedDelegateService();
     delegate.register('foobar');
     delegate.start();
 
@@ -191,12 +191,12 @@ describe(common.testName(__filename), () => {
   });
 
   describe('setDaprAdaptor', () => {
-    let delegate: AliceDelegateService;
+    let delegate: NoslatedDelegateService;
     let oldMod: any;
     let newMod: any;
 
     before(() => {
-      delegate = new AliceDelegateService();
+      delegate = new NoslatedDelegateService();
     });
 
     it('should setDaprAdaptor work', async () => {

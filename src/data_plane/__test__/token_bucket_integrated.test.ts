@@ -4,7 +4,7 @@ import { startTurfD, stopTurfD } from '#self/lib/turf';
 import { assertInvoke, Roles, startAllRoles } from '#self/test/util';
 import FakeTimer, { Clock } from '@sinonjs/fake-timers';
 import mm from 'mm';
-import { AliceAgent } from '#self/sdk/index';
+import { NoslatedClient } from '#self/sdk/index';
 import { ControlPlane } from '#self/control_plane';
 import { DataPlane } from '../data_plane';
 
@@ -12,7 +12,7 @@ describe(common.testName(__filename), function() {
   // Debug version of Node.js may take longer time to bootstrap.
   this.timeout(30_000);
 
-  let agent: AliceAgent;
+  let agent: NoslatedClient;
   let control: ControlPlane;
   let data: DataPlane;
   /** @type {FakeTimer.Clock} */

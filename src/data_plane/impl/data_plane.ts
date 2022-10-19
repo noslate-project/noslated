@@ -26,7 +26,7 @@ export class DataPlaneImpl implements IDataPlane {
    * @param call The call object.
    * @return The result.
    */
-  async startWorkerFastFail(call: ServerUnaryCall<root.alice.data.IStartWorkerFastFailRequest>): Promise<void> {
+  async startWorkerFastFail(call: ServerUnaryCall<root.noslated.data.IStartWorkerFastFailRequest>): Promise<void> {
     const { request } = call;
     rpcAssert(request.funcName);
     rpcAssert(request.inspect != null);
@@ -41,7 +41,7 @@ export class DataPlaneImpl implements IDataPlane {
    * @param call The call object.
    * @return The result.
    */
-  async reduceCapacity(call: ServerUnaryCall<root.alice.data.ICapacityReductionRequest>): Promise<root.alice.data.ICapacityReductionResponse> {
+  async reduceCapacity(call: ServerUnaryCall<root.noslated.data.ICapacityReductionRequest>): Promise<root.noslated.data.ICapacityReductionResponse> {
     const brokers = call.request.brokers ?? [];
     const closed = await this.dataFlowController.closeTraffic(brokers);
     return { brokers: closed };
@@ -52,7 +52,7 @@ export class DataPlaneImpl implements IDataPlane {
    * @param call The call object.
    * @return The result.
    */
-  async setFunctionProfile(call: ServerUnaryCall<root.alice.ISetFunctionProfileRequest>):  Promise<root.alice.ISetFunctionProfileResponse> {
+  async setFunctionProfile(call: ServerUnaryCall<root.noslated.ISetFunctionProfileRequest>):  Promise<root.noslated.ISetFunctionProfileResponse> {
     const profiles = (call.request.profiles ?? []) as RawFunctionProfile[];
     const mode = call.request.mode ?? 'WAIT';
     rpcAssert(mode === 'IMMEDIATELY' || mode === 'WAIT');
@@ -73,7 +73,7 @@ export class DataPlaneImpl implements IDataPlane {
    * Set service profile
    * @param call The call object.
    */
-  async setServiceProfiles(call: ServerUnaryCall<root.alice.data.IServiceProfilesAccessor>): Promise<void> {
+  async setServiceProfiles(call: ServerUnaryCall<root.noslated.data.IServiceProfilesAccessor>): Promise<void> {
     const profiles = call.request.profiles ?? [];
 
     const profilesByMap = profiles.map(it => {
@@ -83,14 +83,14 @@ export class DataPlaneImpl implements IDataPlane {
       };
 
       if (it.selector) {
-        item.selector = pairsToMap(it.selector as NotNullableInterface<root.alice.IKeyValuePair>[]) as Record<'functionName', string>;
+        item.selector = pairsToMap(it.selector as NotNullableInterface<root.noslated.IKeyValuePair>[]) as Record<'functionName', string>;
       }
       if (it.selectors) {
         item.selectors = it.selectors.map(it => {
 
           return {
             proportion: it.proportion || 0,
-            selector: pairsToMap(it.selector as NotNullableInterface<root.alice.IKeyValuePair>[]) as Record<'functionName', string>
+            selector: pairsToMap(it.selector as NotNullableInterface<root.noslated.IKeyValuePair>[]) as Record<'functionName', string>
           };
         });
       }
@@ -106,11 +106,11 @@ export class DataPlaneImpl implements IDataPlane {
     }
   }
 
-  async getServiceProfiles() : Promise<root.alice.data.IServiceProfilesAccessor> {
+  async getServiceProfiles() : Promise<root.noslated.data.IServiceProfilesAccessor> {
     let profiles = this.dataFlowController.serviceSelector.toJSON();
 
-    const profilesAccessor: root.alice.data.IFunctionService[] = profiles.map(it => {
-      const item: root.alice.data.IFunctionService = {
+    const profilesAccessor: root.noslated.data.IFunctionService[] = profiles.map(it => {
+      const item: root.noslated.data.IFunctionService = {
         name: it.name,
         type: it.type
       };
@@ -136,7 +136,7 @@ export class DataPlaneImpl implements IDataPlane {
   /**
    * Set whether a function is using inspector (this is sent from SDK)
    */
-  async useInspector(call: ServerUnaryCall<root.alice.data.IUseInspectorRequest>): Promise<void> {
+  async useInspector(call: ServerUnaryCall<root.noslated.data.IUseInspectorRequest>): Promise<void> {
     const { funcName, use } = call.request;
     rpcAssert(funcName != null);
     rpcAssert(use != null);
@@ -148,7 +148,7 @@ export class DataPlaneImpl implements IDataPlane {
   /**
    * Set Dapr adapter
    */
-  async setDaprAdaptor(call: ServerUnaryCall<root.alice.data.ISetDaprAdaptorRequest>) {
+  async setDaprAdaptor(call: ServerUnaryCall<root.noslated.data.ISetDaprAdaptorRequest>) {
     const { modulePath } = call.request;
     rpcAssert(modulePath);
     let mod = null;
@@ -177,7 +177,7 @@ export class DataPlaneImpl implements IDataPlane {
     return {};
   }
 
-  async setTracingCategories(call: ServerUnaryCall<root.alice.data.ISetTracingCategoriesRequest>): Promise<void> {
+  async setTracingCategories(call: ServerUnaryCall<root.noslated.data.ISetTracingCategoriesRequest>): Promise<void> {
     const { functionName, inspect } = call.request;
     const categories = call.request.categories ?? [];
     rpcAssert(functionName);
@@ -195,7 +195,7 @@ export class DataPlaneImpl implements IDataPlane {
     }));
   }
 
-  async startInspector(call: ServerUnaryCall<root.alice.data.IStartInspectorRequest>): Promise<void> {
+  async startInspector(call: ServerUnaryCall<root.noslated.data.IStartInspectorRequest>): Promise<void> {
     const { functionName, inspect } = call.request;
     rpcAssert(functionName);
 
@@ -211,7 +211,7 @@ export class DataPlaneImpl implements IDataPlane {
   /**
    * Register worker credential
    */
-  async registerWorkerCredential(call: ServerUnaryCall<root.alice.data.IRegisterWorkerCredentialRequest>) {
+  async registerWorkerCredential(call: ServerUnaryCall<root.noslated.data.IRegisterWorkerCredentialRequest>) {
     const { funcName, processName, credential, inspect } = call.request;
     rpcAssert(funcName != null && processName != null  && credential != null && inspect != null );
     this.dataFlowController.registerWorkerCredential(funcName, processName, credential, { inspect: !!inspect });
@@ -220,9 +220,9 @@ export class DataPlaneImpl implements IDataPlane {
 
   /**
    * Returns the server sock path
-   * @return {Promise<import('#self/lib/proto/alice/data-plane').ServerSockPathResponse>} The result.
+   * @return {root.noslated.data.IServerSockPathResponse} The result.
    */
-  async serverSockPath() {
+  async serverSockPath(): Promise<root.noslated.data.IServerSockPathResponse> {
     return {
       path: this.dataFlowController.delegate.serverSockPath(),
     };

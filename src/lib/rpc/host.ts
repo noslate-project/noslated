@@ -31,8 +31,8 @@ export class Host extends EventEmitter {
 
   #address: string;
   #server: Server;
-  #subscriberMap: Map<string, ServerDuplexStream<root.alice.IRequest, root.alice.ISubscriptionChunk>[]> = new Map();
-  #callMap: WeakMap<ServerDuplexStream<root.alice.IRequest, root.alice.ISubscriptionChunk>, { subscribedEvents: Set<string> }> = new WeakMap();
+  #subscriberMap: Map<string, ServerDuplexStream<root.noslated.IRequest, root.noslated.ISubscriptionChunk>[]> = new Map();
+  #callMap: WeakMap<ServerDuplexStream<root.noslated.IRequest, root.noslated.ISubscriptionChunk>, { subscribedEvents: Set<string> }> = new WeakMap();
   #logger;
 
   constructor(address: string, logger = console) {
@@ -40,7 +40,7 @@ export class Host extends EventEmitter {
     this.#address = address;
     this.#logger = logger;
     this.#server = new Server(kDefaultChannelOptions);
-    const Host = (descriptor as any).alice.Host.service;
+    const Host = (descriptor as any).noslated.Host.service;
     this.#server.addService(Host, delegateServiceImplementations(Host, {
       connect: this.#onConnection,
     }, this.#onerror));
@@ -50,7 +50,7 @@ export class Host extends EventEmitter {
     this.#logger.error('unexpected error on host', err);
   }
 
-  #onConnection = (call: ServerDuplexStream<root.alice.IRequest, root.alice.ISubscriptionChunk>) => {
+  #onConnection = (call: ServerDuplexStream<root.noslated.IRequest, root.noslated.ISubscriptionChunk>) => {
     this.#callMap.set(call, {
       subscribedEvents: new Set(),
     });
@@ -74,7 +74,7 @@ export class Host extends EventEmitter {
     this.emit(Host.events.NEW_CONNECTION);
   }
 
-  #onDisconnect = (call: ServerDuplexStream<root.alice.IRequest, root.alice.ISubscriptionChunk>) => {
+  #onDisconnect = (call: ServerDuplexStream<root.noslated.IRequest, root.noslated.ISubscriptionChunk>) => {
     const item = this.#callMap.get(call);
 
     if (!item) {
@@ -93,7 +93,7 @@ export class Host extends EventEmitter {
   /**
    * subscribe true/false 代表是订阅还是取消订阅
    */
-  #subscribe = (call: ServerDuplexStream<root.alice.IRequest, root.alice.ISubscriptionChunk>, { eventName, subscribe }: root.alice.ISubscriptionRequest) => {
+  #subscribe = (call: ServerDuplexStream<root.noslated.IRequest, root.noslated.ISubscriptionChunk>, { eventName, subscribe }: root.noslated.ISubscriptionRequest) => {
     const item = this.#callMap.get(call);
 
     if (!item) {
@@ -122,14 +122,14 @@ export class Host extends EventEmitter {
     }
   }
 
-  #addSubscriber = (eventName: string, call: ServerDuplexStream<root.alice.IRequest, root.alice.ISubscriptionChunk>) => {
+  #addSubscriber = (eventName: string, call: ServerDuplexStream<root.noslated.IRequest, root.noslated.ISubscriptionChunk>) => {
     const subscribers = mapGetOrDefault(this.#subscriberMap, eventName, []);
     subscribers.push(call);
 
     this.emit(Host.events.NEW_SUBSCRIBER, eventName);
   }
 
-  #removeSubscriber = (eventName: string, call: ServerDuplexStream<root.alice.IRequest, root.alice.ISubscriptionChunk>) => {
+  #removeSubscriber = (eventName: string, call: ServerDuplexStream<root.noslated.IRequest, root.noslated.ISubscriptionChunk>) => {
     const subscribers = mapGetOrDefault(this.#subscriberMap, eventName, []);
     const idx = subscribers.indexOf(call);
     if (idx >= 0) {
@@ -137,13 +137,13 @@ export class Host extends EventEmitter {
     }
   }
 
-  _livenessProbe = (call: ServerDuplexStream<root.alice.ILivenessProbeRequest, root.alice.ISubscriptionChunk>) => {
+  _livenessProbe = (call: ServerDuplexStream<root.noslated.ILivenessProbeRequest, root.noslated.ISubscriptionChunk>) => {
     call.write({
       timestamp: Date.now(),
       events: [
         {
           name: HostEvents.LIVENESS,
-          data: Any.pack<root.alice.ILivenessProbeEventData>('alice.LivenessProbeEventData', {
+          data: Any.pack<root.noslated.ILivenessProbeEventData>('noslated.LivenessProbeEventData', {
             timestamp: Date.now(),
             component_liveness: {
               key: 'host',

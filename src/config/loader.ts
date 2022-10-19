@@ -19,12 +19,12 @@ export function resolveEnvConfig() {
   const envConfig: typeof defaultConfig = { delegate: {}, dirs: {}, turf: {}, logger: {}, worker: {} } as any;
 
   if (process.env.NOSLATED_WORKDIR) {
-    envConfig.dirs.aliceWork = process.env.NOSLATED_WORKDIR;
-    envConfig.dirs.aliceSock = path.join(envConfig.dirs.aliceWork, 'socks');
+    envConfig.dirs.noslatedWork = process.env.NOSLATED_WORKDIR;
+    envConfig.dirs.noslatedSock = path.join(envConfig.dirs.noslatedWork, 'socks');
   }
 
-  if (process.env.ALICE_LOG_LEVEL) {
-    envConfig.logger.level = process.env.ALICE_LOG_LEVEL;
+  if (process.env.NOSLATED_LOG_LEVEL) {
+    envConfig.logger.level = process.env.NOSLATED_LOG_LEVEL;
   }
 
   if (process.env.NOSLATE_LOGDIR) {
@@ -32,12 +32,12 @@ export function resolveEnvConfig() {
   }
 
   // Debug version of Node.js may take longer time to bootstrap.
-  if (process.env.ALICE_SOCK_CONN_TIMEOUT) {
-    envConfig.delegate.sockConnectTimeout = Number.parseInt(process.env.ALICE_SOCK_CONN_TIMEOUT);
+  if (process.env.NOSLATED_SOCK_CONN_TIMEOUT) {
+    envConfig.delegate.sockConnectTimeout = Number.parseInt(process.env.NOSLATED_SOCK_CONN_TIMEOUT);
   }
 
-  if (process.env.ALICE_DELEGATE_RAT) {
-    envConfig.delegate.resourceAcquisitionTimeout = Number.parseInt(process.env.ALICE_DELEGATE_RAT);
+  if (process.env.NOSLATED_DELEGATE_RAT) {
+    envConfig.delegate.resourceAcquisitionTimeout = Number.parseInt(process.env.NOSLATED_DELEGATE_RAT);
   }
 
   if (process.env.NOSLATED_MAX_ACTIVATE_REQUESTS) {
@@ -59,31 +59,31 @@ export function resolveEnvConfig() {
   }
 
   if (process.env.NATIVE_DEBUG) {
-    envConfig.aliceAddonType = 'Debug';
+    envConfig.noslatedAddonType = 'Debug';
   }
 
-  if (process.env.ALICE_DISPATCH_STRATEGY_IDRS_MAX_IDLE) {
-    envConfig.dispatchStrategy.idrs.idleDuration = Number.parseInt(process.env.ALICE_DISPATCH_STRATEGY_IDRS_MAX_IDLE);
+  if (process.env.NOSLATED_DISPATCH_STRATEGY_IDRS_MAX_IDLE) {
+    envConfig.dispatchStrategy.idrs.idleDuration = Number.parseInt(process.env.NOSLATED_DISPATCH_STRATEGY_IDRS_MAX_IDLE);
   }
 
   if (process.env.NOSLATED_VIRTUAL_MEMORY_POOL_SIZE) {
     envConfig.virtualMemoryPoolSize = process.env.NOSLATED_VIRTUAL_MEMORY_POOL_SIZE;
   }
 
-  if (process.env.ALICE_DATA_PLANE_COUNT) {
-    envConfig.plane.dataPlaneCount = Number.parseInt(process.env.ALICE_DATA_PLANE_COUNT);
+  if (process.env.NOSLATED_DATA_PLANE_COUNT) {
+    envConfig.plane.dataPlaneCount = Number.parseInt(process.env.NOSLATED_DATA_PLANE_COUNT);
   }
 
-  if (process.env.ALICE_DEFAULT_SHRINK_STRATEGY) {
-    envConfig.worker.defaultShrinkStrategy = process.env.ALICE_DEFAULT_SHRINK_STRATEGY;
+  if (process.env.NOSLATED_DEFAULT_SHRINK_STRATEGY) {
+    envConfig.worker.defaultShrinkStrategy = process.env.NOSLATED_DEFAULT_SHRINK_STRATEGY;
   }
 
-  if (process.env.ALICE_CONTROL_PLANE_COUNT) {
-    envConfig.plane.controlPlaneCount = Number.parseInt(process.env.ALICE_CONTROL_PLANE_COUNT);
+  if (process.env.NOSLATED_CONTROL_PLANE_COUNT) {
+    envConfig.plane.controlPlaneCount = Number.parseInt(process.env.NOSLATED_CONTROL_PLANE_COUNT);
   }
 
-  if (process.env.ALICE_CONTROL_PLANE_WORKER_CONNECT_TIMEOUT) {
-    envConfig.worker.controlPlaneConnectTimeout = Number.parseInt(process.env.ALICE_CONTROL_PLANE_WORKER_CONNECT_TIMEOUT);
+  if (process.env.NOSLATED_CONTROL_PLANE_WORKER_CONNECT_TIMEOUT) {
+    envConfig.worker.controlPlaneConnectTimeout = Number.parseInt(process.env.NOSLATED_CONTROL_PLANE_WORKER_CONNECT_TIMEOUT);
   }
 
   return envConfig;
@@ -104,7 +104,7 @@ export function resolveConfig() {
 
 export function dumpConfig(name: string, config: typeof defaultConfig) {
   try {
-    const runDir = path.join(config.dirs.aliceWork, 'run');
+    const runDir = path.join(config.dirs.noslatedWork, 'run');
     fs.mkdirSync(runDir, { recursive: true });
     fs.writeFileSync(path.join(runDir, `${name}.config.json`), JSON.stringify(config, null, 2));
   } catch { /** do nothing */ }

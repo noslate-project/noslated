@@ -58,16 +58,16 @@ export class DataPlaneClientManager extends BasePlaneClientManager {
    * @return {object} Containers that can be reduced.
    */
   async reduceCapacity(data: any): Promise<any[]> {
-    const ret: root.alice.data.ICapacityReductionResponse[] = await this.callToAllAvailableClients('reduceCapacity', [ data ], 'all');
+    const ret: root.noslated.data.ICapacityReductionResponse[] = await this.callToAllAvailableClients('reduceCapacity', [ data ], 'all');
     return _.flatten(ret.filter(data => data.brokers && data.brokers.length).map(data => data.brokers));
   }
 
   /**
    * Register a worker credential to a random data plane.
-   * @param {import('#self/lib/proto/alice/data-plane').RegisterWorkerCredentialRequest} msg -
+   * @param {root.noslated.data.IRegisterWorkerCredentialRequest} msg -
    * @return {Promise<DataPlaneClient>} The selected data plane guest.
    */
-  async registerWorkerCredential(msg: root.alice.data.IRegisterWorkerCredentialRequest) {
+  async registerWorkerCredential(msg: root.noslated.data.IRegisterWorkerCredentialRequest) {
     const dp = this.sample();
     if (!dp) {
       throw new Error('No available data plane.');

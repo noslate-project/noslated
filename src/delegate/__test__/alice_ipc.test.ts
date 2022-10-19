@@ -1,4 +1,4 @@
-import { AliceClient, AliceServer, CanonicalCode, MessageParser } from '#self/delegate/alice_ipc';
+import { NoslatedClient, NoslatedServer, CanonicalCode, MessageParser } from '#self/delegate/noslated_ipc';
 import { aworker } from '#self/proto/aworker';
 import assert from 'assert';
 import os from 'os';
@@ -8,15 +8,15 @@ const serverPath = `/${os.tmpdir()}/test.sock`;
 
 describe(testName(__filename), () => {
   describe('ipc', () => {
-    let server: AliceServer;
-    let client: AliceClient;
+    let server: NoslatedServer;
+    let client: NoslatedClient;
     afterEach(() => {
       server?.close();
       client?.close();
     });
 
     it('should throw on start', async () => {
-      server = new AliceServer('/tmp/invalid/server/path');
+      server = new NoslatedServer('/tmp/invalid/server/path');
       await assert.rejects(server.start(), 'should fail to start');
 
       // no need to be closed.
@@ -24,7 +24,7 @@ describe(testName(__filename), () => {
     });
 
     it('should connect and request', async () => {
-      server = new AliceServer(serverPath);
+      server = new NoslatedServer(serverPath);
       server.onRequest = (sessionId, op, params, callback) => {
         if (op !== 'Credentials') {
           return callback(CanonicalCode.NOT_IMPLEMENTED);
@@ -36,18 +36,18 @@ describe(testName(__filename), () => {
       };
       await server.start();
 
-      client = new AliceClient(serverPath, 'foobar');
+      client = new NoslatedClient(serverPath, 'foobar');
       await client.start();
     });
 
-    describe('AliceServer', () => {
+    describe('NoslatedServer', () => {
       let sessionId: number = -1;
       beforeEach(() => {
         sessionId = -1;
       });
 
       function createSimpleServer() {
-        server = new AliceServer(serverPath);
+        server = new NoslatedServer(serverPath);
         server.onRequest = (sid, op, params, callback) => {
           if (op !== 'Credentials') {
             return callback(CanonicalCode.NOT_IMPLEMENTED);
@@ -64,7 +64,7 @@ describe(testName(__filename), () => {
         createSimpleServer();
         await server.start();
 
-        client = new AliceClient(serverPath, 'foobar');
+        client = new NoslatedClient(serverPath, 'foobar');
         await client.start();
         client.onRequest = (method, streamId, metadata, hasInputData, hasOutputData, callback) => {
           if (method !== 'test') {
@@ -101,7 +101,7 @@ describe(testName(__filename), () => {
         createSimpleServer();
         await server.start();
 
-        client = new AliceClient(serverPath, 'foobar');
+        client = new NoslatedClient(serverPath, 'foobar');
         await client.start();
         let cb: any;
         client.onRequest = (method, streamId, metadata, hasInputData, hasOutputData, callback) => {
@@ -151,7 +151,7 @@ describe(testName(__filename), () => {
         createSimpleServer();
         await server.start();
 
-        client = new AliceClient(serverPath, 'foobar');
+        client = new NoslatedClient(serverPath, 'foobar');
         await client.start();
 
         const events: string[] = [];

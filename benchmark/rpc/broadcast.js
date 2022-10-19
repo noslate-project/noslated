@@ -38,7 +38,7 @@ async function main({ n }) {
   });
   bench.start();
   for (let i = 0; i < n; i++) {
-    host.broadcast('foobar', 'alice.KeyValuePair', { key: 'foo', value: 'bar' });
+    host.broadcast('foobar', 'noslated.KeyValuePair', { key: 'foo', value: 'bar' });
   }
 }
 

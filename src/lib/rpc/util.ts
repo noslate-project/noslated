@@ -94,7 +94,7 @@ function delegateServiceImplementations(serviceDefinition: grpc.ServiceDefinitio
 const kDefaultChannelOptions = config.grpc.channelOptions;
 
 const { root, grpcDescriptor } = loadDescriptor();
-const RequestType = (root as any).nested.alice.RequestType as typeof protoRoot.alice.RequestType;
+const RequestType = (root as any).nested.noslated.RequestType as typeof protoRoot.noslated.RequestType;
 const HostEvents = {
   LIVENESS: 'host.liveness',
 };

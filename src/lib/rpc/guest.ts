@@ -29,7 +29,7 @@ export class Guest extends EventEmitter {
   #hostClient: IHostClient;
   #clients: Map<ServiceClientConstructor, ServiceClient> = new Map();
   /** @type {grpc.ClientDuplexStream} */
-  #streamClient: ClientDuplexStream<root.alice.IRequest, root.alice.ISubscriptionChunk> | null;
+  #streamClient: ClientDuplexStream<root.noslated.IRequest, root.noslated.ISubscriptionChunk> | null;
   #streamClientInitTimeoutMs;
 
   /** @type {Set<string>} */
@@ -39,7 +39,7 @@ export class Guest extends EventEmitter {
   constructor(address: string, options?: GuestOptions) {
     super();
     this.#address = address;
-    this.#hostClient = new (descriptor as any).alice.Host(this.#address, credentials.createInsecure(), {
+    this.#hostClient = new (descriptor as any).noslated.Host(this.#address, credentials.createInsecure(), {
       ...kDefaultChannelOptions,
       'grpc.enable_http_proxy': 0,
       'grpc.initial_reconnect_backoff_ms': options?.initialReconnectBackoffMs ?? 100,

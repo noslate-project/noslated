@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 
-const BUNDLE_PREFIX = 'ALICE';
+const BUNDLE_PREFIX = 'NOSLATED';
 
 export function normalizeFuncNameToName(funcName: string) {
   return funcName.replace(/[^0-9a-zA-Z_\-\.]/g, '_');

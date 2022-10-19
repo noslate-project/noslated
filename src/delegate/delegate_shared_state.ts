@@ -1,4 +1,4 @@
-import { AliceServer } from './alice_ipc';
+import { NoslatedServer } from './noslated_ipc';
 import type { NamespaceResolver } from './namespace';
 import { Meter, Counter, ValueRecorder } from '@opentelemetry/api';
 
@@ -8,7 +8,7 @@ class DelegateSharedState {
   daprAdaptor: any = null;
 
   #serverPath;
-  server!: AliceServer | null;
+  server!: NoslatedServer | null;
 
   /**
    * MARK: - Metrics

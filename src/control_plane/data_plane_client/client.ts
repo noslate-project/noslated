@@ -10,7 +10,7 @@ export class DataPlaneClient extends BasePlaneClient {
   subscription: Subscription | null;
 
   constructor(private manager: DataPlaneClientManager, planeId: number, config: Config) {
-    const dataPlaneSockPath = path.join(config.dirs.aliceSock, `dp-${planeId}.sock`);
+    const dataPlaneSockPath = path.join(config.dirs.noslatedSock, `dp-${planeId}.sock`);
     super('data plane guest', dataPlaneSockPath, planeId, config);
     this.#serverSockPath = '';
     this.subscription = null;
@@ -19,7 +19,7 @@ export class DataPlaneClient extends BasePlaneClient {
   async _init() {
     // descriptor 未生成符合 ServiceClientConstructor 的定义
     // import { ProtoGrpcType } from 'src/proto/data-plane'
-    this.addService((descriptor as any).alice.data.DataPlane);
+    this.addService((descriptor as any).noslated.data.DataPlane);
     await super._init();
     this.subscription = new Subscription(this.manager, this);
     this.subscription.subscribe();

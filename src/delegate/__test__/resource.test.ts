@@ -2,7 +2,7 @@ import assert from 'assert';
 import { once } from 'events' ;
 import * as common from '#self/test/common';
 import { TestClient } from './test-client';
-import { AliceDelegateService } from '#self/delegate/index';
+import { NoslatedDelegateService } from '#self/delegate/index';
 import { ResourcePutAction } from '#self/delegate/index';
 import { ResourceStub } from '#self/delegate/resource';
 import { DefaultNamespaceResolver } from '#self/delegate/namespace';
@@ -201,7 +201,7 @@ describe(common.testName(__filename), () => {
 
   describe('basic operations', () => {
     let client: TestClient | null;
-    let delegate: AliceDelegateService | null;
+    let delegate: NoslatedDelegateService | null;
     afterEach(async () => {
       await client?.close();
       delegate?.close();
@@ -214,7 +214,7 @@ describe(common.testName(__filename), () => {
 
     it('should acquire and release resources', async () => {
       const resolver = new DefaultNamespaceResolver();
-      delegate = new AliceDelegateService({ namespaceResolver: resolver } as any);
+      delegate = new NoslatedDelegateService({ namespaceResolver: resolver } as any);
       delegate.register(cred);
       delegate.start();
 
@@ -246,7 +246,7 @@ describe(common.testName(__filename), () => {
     });
 
     it('should publish resource notifications', async () => {
-      delegate = new AliceDelegateService();
+      delegate = new NoslatedDelegateService();
       delegate.register(cred);
       delegate.start();
 
@@ -292,7 +292,7 @@ describe(common.testName(__filename), () => {
 
   describe('multiple clients', () => {
     let clients: TestClient[] = [];
-    let delegate: AliceDelegateService | null;
+    let delegate: NoslatedDelegateService | null;
     /** @type {fakeTimers.Clock} */
     let clock: Clock;
     afterEach(async () => {
@@ -309,7 +309,7 @@ describe(common.testName(__filename), () => {
 
     it('should acquire and release resources', async () => {
       const resolver = new DefaultNamespaceResolver();
-      delegate = new AliceDelegateService({ namespaceResolver: resolver } as any);
+      delegate = new NoslatedDelegateService({ namespaceResolver: resolver } as any);
       delegate.start();
 
       delegate.register(cred1);
@@ -361,7 +361,7 @@ describe(common.testName(__filename), () => {
         toFake: ['setTimeout'],
       });
       const resolver = new DefaultNamespaceResolver();
-      delegate = new AliceDelegateService({ namespaceResolver: resolver } as any);
+      delegate = new NoslatedDelegateService({ namespaceResolver: resolver } as any);
       delegate.start();
 
       delegate.register(cred1);

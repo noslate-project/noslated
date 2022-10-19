@@ -19,8 +19,8 @@ export class DataPlaneHost extends Host {
 
   async start(dataFlowController: DataFlowController) {
     this.dataFlowController = dataFlowController;
-    this.addService((descriptor as any).alice.data.DataPlane.service, new DataPlaneImpl(dataFlowController, this.config) as any);
-    this.addService((descriptor as any).alice.data.PushServer.service, new PushServerImpl(dataFlowController, this.config) as any);
+    this.addService((descriptor as any).noslated.data.DataPlane.service, new DataPlaneImpl(dataFlowController, this.config) as any);
+    this.addService((descriptor as any).noslated.data.PushServer.service, new PushServerImpl(dataFlowController, this.config) as any);
     return super.start();
   }
 
@@ -29,8 +29,8 @@ export class DataPlaneHost extends Host {
    * @param {import('./worker_broker').WorkerBroker} workerBroker -
    * @param {*} brokerStats -
    */
-  async broadcastRequestQueueing(workerBroker: WorkerBroker, brokerStats: root.alice.data.IBrokerStats, requestId: string) {
-    return this.broadcast('requestQueueing', 'alice.data.RequestQueueingBroadcast', {
+  async broadcastRequestQueueing(workerBroker: WorkerBroker, brokerStats: root.noslated.data.IBrokerStats, requestId: string) {
+    return this.broadcast('requestQueueing', 'noslated.data.RequestQueueingBroadcast', {
       name: workerBroker.name,
       isInspect: !!workerBroker.options.inspect,
       stats: {
@@ -41,16 +41,16 @@ export class DataPlaneHost extends Host {
     });
   }
 
-  async broadcastWorkerTrafficStats(brokerStats: root.alice.data.IBrokerStats) {
+  async broadcastWorkerTrafficStats(brokerStats: root.noslated.data.IBrokerStats) {
     await this.broadcast(
       'workerTrafficStats',
-      'alice.data.WorkerTrafficStatsSnapshotBroadcast', brokerStats);
+      'noslated.data.WorkerTrafficStatsSnapshotBroadcast', brokerStats);
   }
 
-  async broadcastContainerStatusReport(report: root.alice.data.IContainerStatusReport) {
+  async broadcastContainerStatusReport(report: root.noslated.data.IContainerStatusReport) {
     await this.broadcast(
       'containerStatusReport',
-      'alice.data.ContainerStatusReport', report
+      'noslated.data.ContainerStatusReport', report
     );
   }
 }

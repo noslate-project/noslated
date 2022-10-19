@@ -13,7 +13,7 @@ export class ControlPlaneClient extends BasePlaneClient {
    * @param {typeof import('#self/config/default')} config The global config object.
    */
   constructor(planeId: number, config: Config) {
-    const heraldPath = path.join(config.dirs.aliceSock, `cp-${planeId}.sock`);
+    const heraldPath = path.join(config.dirs.noslatedSock, `cp-${planeId}.sock`);
     super('control plane client', heraldPath, planeId, config);
   }
 
@@ -22,7 +22,7 @@ export class ControlPlaneClient extends BasePlaneClient {
    * @return {Promise<void>} void
    */
   async _init() {
-    this.addService((descriptor as any).alice.control.ControlPlane);
+    this.addService((descriptor as any).noslated.control.ControlPlane);
     await super._init();
   }
 }

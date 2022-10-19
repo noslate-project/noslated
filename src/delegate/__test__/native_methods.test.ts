@@ -2,12 +2,12 @@ import assert from 'assert';
 import { once } from 'events';
 import * as common from '#self/test/common';
 import { TestClient } from './test-client';
-import { AliceDelegateService } from '#self/delegate/index';
+import { NoslatedDelegateService } from '#self/delegate/index';
 import { WorkerMetricsAttributes, WorkerMetrics } from '#self/lib/telemetry/semantic_conventions';
 
 describe(common.testName(__filename), () => {
   let client: TestClient | null;
-  let delegate: AliceDelegateService | null;
+  let delegate: NoslatedDelegateService | null;
   afterEach(async () => {
     await client?.close();
     delegate?.close();
@@ -15,7 +15,7 @@ describe(common.testName(__filename), () => {
     delegate = null;
   });
   it('should call client methods', async () => {
-    delegate = new AliceDelegateService();
+    delegate = new NoslatedDelegateService();
     delegate.register('foobar');
     delegate.start();
 

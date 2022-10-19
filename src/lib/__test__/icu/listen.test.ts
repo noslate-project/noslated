@@ -52,7 +52,7 @@ describe(common.testName(__filename), function() {
     const foobarFuture = once(readline, 'foobar');
 
     await newSubscriberFuture;
-    host.broadcast('foobar', 'alice.KeyValuePair', { key: 'foo', value: 'bar' });
+    host.broadcast('foobar', 'noslated.KeyValuePair', { key: 'foo', value: 'bar' });
     const [{ data }] = await foobarFuture;
     const parsed = JSON.parse(data);
 

@@ -5,7 +5,7 @@ export type NotNullableInterface<T> = {
   [P in keyof T]-?: NonNullable<T[P]>;
 };
 
-export interface IFunctionServiceSelectorMap extends Omit<root.alice.data.IFunctionService, 'selectors' | 'selector'> {
+export interface IFunctionServiceSelectorMap extends Omit<root.noslated.data.IFunctionService, 'selectors' | 'selector'> {
   name: string;
   type: ServiceType;
   selectors?: { [key: string]: string; }[];

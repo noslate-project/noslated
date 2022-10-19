@@ -8,7 +8,7 @@ import util from 'util';
 import mm from 'mm';
 import serveHandler from 'serve-handler';
 
-import { AliceAgent } from '#self/sdk/index';
+import { NoslatedClient } from '#self/sdk/index';
 import { ControlPlane } from '#self/control_plane/index';
 import { DataPlane } from '#self/data_plane/index';
 import { createDeferred, bufferFromStream } from '../lib/util';
@@ -107,20 +107,20 @@ export async function assertWorkerInvoke(invokePromise: Promise<any>, expected: 
   await assertWorkerResponse(response, expected);
 }
 
-export async function assertInvoke(agent: AliceAgent, name: string, testProfile: any) {
+export async function assertInvoke(agent: NoslatedClient, name: string, testProfile: any) {
   await assertWorkerInvoke(agent.invoke(name, testProfile.input.data, testProfile.input.metadata), testProfile.expect);
 }
 
-export async function assertInvokeService(agent: AliceAgent, name: string, testProfile: any) {
+export async function assertInvokeService(agent: NoslatedClient, name: string, testProfile: any) {
   await assertWorkerInvoke(agent.invokeService(name, testProfile.input.data, testProfile.input.metadata), testProfile.expect);
 }
 
-export async function testWorker(agent: AliceAgent, testProfile: any) {
+export async function testWorker(agent: NoslatedClient, testProfile: any) {
   await assertWorkerInvoke(agent.invoke(testProfile.profile.name, testProfile.input.data, testProfile.input.metadata), testProfile.expect);
 }
 
 export async function startAllRoles(): Promise<Roles> {
-  const agent = new AliceAgent();
+  const agent = new NoslatedClient();
   const control = new ControlPlane(config);
   const data = new DataPlane(config);
 
@@ -174,12 +174,12 @@ export function mockClientCreatorForManager(ManagerClass: any) {
   mm(ManagerClass.prototype, '_onClientReady', async () => {});
 }
 
-export const internetDescribe = process.env.ALICE_ENABLE_INTERNET_TEST === 'true' ? describe : describe.skip;
+export const internetDescribe = process.env.NOSLATED_ENABLE_INTERNET_TEST === 'true' ? describe : describe.skip;
 
 export interface Roles {
   data?: DataPlane;
   control?: ControlPlane;
-  agent?: AliceAgent;
+  agent?: NoslatedClient;
 }
 
 export interface TurfContext {

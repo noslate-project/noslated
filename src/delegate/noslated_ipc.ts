@@ -6,7 +6,7 @@ import { aworker } from '../proto/aworker';
 export type CanonicalCode = aworker.ipc.CanonicalCode;
 export const CanonicalCode = aworker.ipc.CanonicalCode;
 
-const kShouldVerifyProtocol = process.env.ALICE_INTERCEPTOR_VERIFY === 'true';
+const kShouldVerifyProtocol = process.env.NOSLATED_INTERCEPTOR_VERIFY === 'true';
 
 type RequestKind = aworker.ipc.RequestKind;
 const RequestKind = aworker.ipc.RequestKind;
@@ -14,13 +14,13 @@ const RequestKind = aworker.ipc.RequestKind;
 type MessageKind = aworker.ipc.MessageKind;
 const MessageKind = aworker.ipc.MessageKind;
 
-const ALICE_CONNECT_TIMEOUT_MS = 5000;
-const ALICE_STREAM_PUSH_TIMEOUT_MS = 30000;
-const ALICE_RESOURCE_NOTIFICATION_TIMEOUT_MS = 2000;
-const ALICE_COLLECT_METRICS_TIMEOUT_MS = 2000;
-const ALICE_INSPECTOR_TIMEOUT_MS = 60000;
-const ALICE_DEFAULT_REQUEST_TIMEOUT_MS = 10_000;
-const ALICE_SEND_BEACON_TIMEOUT_MS = 10_000;
+const NOSLATED_CONNECT_TIMEOUT_MS = 5000;
+const NOSLATED_STREAM_PUSH_TIMEOUT_MS = 30000;
+const NOSLATED_RESOURCE_NOTIFICATION_TIMEOUT_MS = 2000;
+const NOSLATED_COLLECT_METRICS_TIMEOUT_MS = 2000;
+const NOSLATED_INSPECTOR_TIMEOUT_MS = 60000;
+const NOSLATED_DEFAULT_REQUEST_TIMEOUT_MS = 10_000;
+const NOSLATED_SEND_BEACON_TIMEOUT_MS = 10_000;
 
 const kRequestKindDataMap: { [key: number]: [any, any] } = {
   [RequestKind.Trigger]: [aworker.ipc.TriggerRequestMessage, aworker.ipc.TriggerResponseMessage],
@@ -46,12 +46,12 @@ const kRequestKindDataMap: { [key: number]: [any, any] } = {
   [RequestKind.TracingStop]: [aworker.ipc.TracingStopRequestMessage, aworker.ipc.TracingStopResponseMessage],
 };
 
-export class AliceError extends Error {
+export class NoslatedError extends Error {
   peerStack?: string;
   operation: string;
   constructor(public code: CanonicalCode, public kind: RequestKind, message: string = '') {
-    super(`Alice request failed: CanonicalCode::${CanonicalCode[code]} request kind(${RequestKind[kind]}), ${message}`);
-    this.name = 'AliceError';
+    super(`Noslated request failed: CanonicalCode::${CanonicalCode[code]} request kind(${RequestKind[kind]}), ${message}`);
+    this.name = 'NoslatedError';
     this.operation = RequestKind[kind];
   }
 }
@@ -66,7 +66,7 @@ const kNoopLogger = {
   error: console.error,
 };
 
-export class AliceServer {
+export class NoslatedServer {
   private _nextSessionId = new IdGenerator();
   private _server: net.Server;
   private _sessions: Map<number, Session> = new Map();
@@ -164,7 +164,7 @@ export class AliceServer {
       isEos,
       isError,
       data,
-    }, ALICE_STREAM_PUSH_TIMEOUT_MS);
+    }, NOSLATED_STREAM_PUSH_TIMEOUT_MS);
   }
 
   async collectMetrics(sessionId: number) {
@@ -173,7 +173,7 @@ export class AliceServer {
     const result = await session.request<
       aworker.ipc.ICollectMetricsRequestMessage,
       aworker.ipc.ICollectMetricsResponseMessage
-    >(kind, {}, ALICE_COLLECT_METRICS_TIMEOUT_MS);
+    >(kind, {}, NOSLATED_COLLECT_METRICS_TIMEOUT_MS);
 
     return {
       integerRecords: result.integerRecords?.map(it => {
@@ -195,7 +195,7 @@ export class AliceServer {
     >(kind, {
       resourceId,
       token,
-    }, ALICE_RESOURCE_NOTIFICATION_TIMEOUT_MS);
+    }, NOSLATED_RESOURCE_NOTIFICATION_TIMEOUT_MS);
   }
 
   async inspectorStart(sessionId: number) {
@@ -204,7 +204,7 @@ export class AliceServer {
     return session.request<
       aworker.ipc.IInspectorStartRequestMessage,
       aworker.ipc.IInspectorStartResponseMessage
-    >(kind, {}, ALICE_INSPECTOR_TIMEOUT_MS);
+    >(kind, {}, NOSLATED_INSPECTOR_TIMEOUT_MS);
   }
 
   async inspectorStartSession(sessionId: number, inspectorSessionId: number, targetId: string) {
@@ -216,7 +216,7 @@ export class AliceServer {
     >(kind, {
       sessionId: inspectorSessionId,
       targetId,
-    }, ALICE_INSPECTOR_TIMEOUT_MS);
+    }, NOSLATED_INSPECTOR_TIMEOUT_MS);
   }
 
   async inspectorEndSession(sessionId: number, inspectorSessionId: number) {
@@ -227,7 +227,7 @@ export class AliceServer {
       aworker.ipc.IInspectorEndSessionResponseMessage
     >(kind, {
       sessionId: inspectorSessionId,
-    }, ALICE_INSPECTOR_TIMEOUT_MS);
+    }, NOSLATED_INSPECTOR_TIMEOUT_MS);
   }
 
   async inspectorGetTargets(sessionId: number) {
@@ -236,7 +236,7 @@ export class AliceServer {
     const result = await session.request<
       aworker.ipc.IInspectorGetTargetsRequestMessage,
       aworker.ipc.IInspectorGetTargetsResponseMessage
-    >(kind, {}, ALICE_INSPECTOR_TIMEOUT_MS);
+    >(kind, {}, NOSLATED_INSPECTOR_TIMEOUT_MS);
 
     return result.targets ?? [];
   }
@@ -250,7 +250,7 @@ export class AliceServer {
     >(kind, {
       sessionId: inspectorSessionId,
       message: message,
-    }, ALICE_INSPECTOR_TIMEOUT_MS);
+    }, NOSLATED_INSPECTOR_TIMEOUT_MS);
   }
 
   async tracingStart(sessionId: number, categories: string[]) {
@@ -261,7 +261,7 @@ export class AliceServer {
       aworker.ipc.ITracingStartResponseMessage
     >(kind, {
       categories,
-    }, ALICE_INSPECTOR_TIMEOUT_MS);
+    }, NOSLATED_INSPECTOR_TIMEOUT_MS);
   }
 
   async tracingStop(sessionId: number) {
@@ -270,11 +270,11 @@ export class AliceServer {
     return session.request<
       aworker.ipc.ITracingStopRequestMessage,
       aworker.ipc.ITracingStopResponseMessage
-    >(kind, {}, ALICE_INSPECTOR_TIMEOUT_MS);
+    >(kind, {}, NOSLATED_INSPECTOR_TIMEOUT_MS);
   }
 
   terminateSession(sessionId: number) {
-    this._closeSession(sessionId, new AliceError(CanonicalCode.CANCELLED, aworker.ipc.RequestKind.Nil, 'Session terminated'));
+    this._closeSession(sessionId, new NoslatedError(CanonicalCode.CANCELLED, aworker.ipc.RequestKind.Nil, 'Session terminated'));
   }
 
   unref() {
@@ -319,7 +319,7 @@ export class AliceServer {
   private _getSession(sessionId: number, kind: RequestKind) {
     const session = this._sessions.get(sessionId);
     if (session == null) {
-      throw new AliceError(CanonicalCode.CONNECTION_RESET, kind, 'session not connected');
+      throw new NoslatedError(CanonicalCode.CONNECTION_RESET, kind, 'session not connected');
     }
     return session;
   }
@@ -332,7 +332,7 @@ export class AliceServer {
   }
 }
 
-export class AliceClient {
+export class NoslatedClient {
   private _socket?: net.Socket;
   private _session?: Session;
   onRequest?: (method: string, streamId: number | undefined | null, metadata: aworker.ipc.ITriggerMetadata, hasInputData: boolean, hasOutputData: boolean, callback: any) => void;
@@ -358,7 +358,7 @@ export class AliceClient {
       >(RequestKind.Credentials, {
         type: aworker.ipc.CredentialTargetType.Data,
         cred: this._credential,
-      }, ALICE_CONNECT_TIMEOUT_MS);
+      }, NOSLATED_CONNECT_TIMEOUT_MS);
     } catch (e) {
       this._session.destroy();
       throw e;
@@ -366,12 +366,12 @@ export class AliceClient {
   }
 
   close() {
-    this._session?.destroy(new AliceError(CanonicalCode.CANCELLED, aworker.ipc.RequestKind.Nil, 'Session terminated'));
+    this._session?.destroy(new NoslatedError(CanonicalCode.CANCELLED, aworker.ipc.RequestKind.Nil, 'Session terminated'));
   }
 
   streamPush(streamId: number, isEos: boolean, data: Uint8Array | null, isError: boolean) {
     if (this._session == null) {
-      throw new Error('Alice client not connected');
+      throw new Error('Noslated client not connected');
     }
     return this._session.request<
       aworker.ipc.IStreamPushRequestMessage,
@@ -381,12 +381,12 @@ export class AliceClient {
       isEos,
       isError,
       data,
-    }, ALICE_STREAM_PUSH_TIMEOUT_MS);
+    }, NOSLATED_STREAM_PUSH_TIMEOUT_MS);
   }
 
   daprInvoke(appId: string, methodName: string, data: Uint8Array, timeout: number) {
     if (this._session == null) {
-      throw new Error('Alice client not connected');
+      throw new Error('Noslated client not connected');
     }
     return this._session.request<
       aworker.ipc.IDaprInvokeRequestMessage,
@@ -400,7 +400,7 @@ export class AliceClient {
 
   daprBinding(name: string, metadata: string, operation: string, data: Uint8Array, timeout: number) {
     if (this._session == null) {
-      throw new Error('Alice client not connected');
+      throw new Error('Noslated client not connected');
     }
     return this._session.request<
       aworker.ipc.IDaprBindingRequestMessage,
@@ -416,7 +416,7 @@ export class AliceClient {
 
   extensionBinding(name: string, metadata: string, operation: string, data: Uint8Array | null) {
     if (this._session == null) {
-      throw new Error('Alice client not connected');
+      throw new Error('Noslated client not connected');
     }
 
     return this._session.request<
@@ -427,12 +427,12 @@ export class AliceClient {
       metadata,
       operation,
       data
-    }, ALICE_SEND_BEACON_TIMEOUT_MS);
+    }, NOSLATED_SEND_BEACON_TIMEOUT_MS);
   }
 
   resourcePut(resourceId: string, action: aworker.ipc.ResourcePutAction, token?: string) {
     if (this._session == null) {
-      throw new Error('Alice client not connected');
+      throw new Error('Noslated client not connected');
     }
 
     return this._session.request<
@@ -442,7 +442,7 @@ export class AliceClient {
       resourceId,
       action,
       token,
-    }, ALICE_RESOURCE_NOTIFICATION_TIMEOUT_MS);
+    }, NOSLATED_RESOURCE_NOTIFICATION_TIMEOUT_MS);
   }
 
   private _onClose = () => {
@@ -521,7 +521,7 @@ class Session {
     this._interceptor = new ProtocolInterceptor(this._socket, kShouldVerifyProtocol, this._onData);
   }
 
-  request<T, R>(kind: RequestKind, body: T, timeoutMs: number = ALICE_DEFAULT_REQUEST_TIMEOUT_MS): Promise<R> {
+  request<T, R>(kind: RequestKind, body: T, timeoutMs: number = NOSLATED_DEFAULT_REQUEST_TIMEOUT_MS): Promise<R> {
     const messageType = kRequestKindDataMap[kind][0];
     const requestId = this._nextRequestId.next();
     this._logger.debug('request: session(%s) kind(%s), id(%s)', this.sid, kind, requestId);
@@ -529,7 +529,7 @@ class Session {
     this._writeRequest(kind, requestId, content);
     const deferred = createDeferred<R>();
     const timer = setTimeout(() => {
-      deferred.reject(new AliceError(CanonicalCode.TIMEOUT, kind, 'Request Timeout'));
+      deferred.reject(new NoslatedError(CanonicalCode.TIMEOUT, kind, 'Request Timeout'));
     }, timeoutMs);
     this._requestMap.set(requestId, {
       kind,
@@ -621,7 +621,7 @@ class Session {
       record.deferred.resolve(message.content);
     } else {
       const errorResp: aworker.ipc.IErrorResponseMessage = message.content;
-      const error = new AliceError(message.code, message.requestKind, errorResp.message ?? 'Request failed');
+      const error = new NoslatedError(message.code, message.requestKind, errorResp.message ?? 'Request failed');
       error.peerStack = errorResp.stack ?? error.stack;
       record.deferred.reject(error);
     }
@@ -635,7 +635,7 @@ class Session {
         /**
          * If the session is closed without any error, it must be closed on the other side.
          */
-        error = new AliceError(CanonicalCode.CONNECTION_RESET, record.kind, 'Session closed')
+        error = new NoslatedError(CanonicalCode.CONNECTION_RESET, record.kind, 'Session closed')
       }
       record.deferred.reject(error);
     }

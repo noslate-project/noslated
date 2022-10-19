@@ -29,10 +29,10 @@ export class HeraldImpl {
 
   /**
    * Set worker environment variables.
-   * @param {{ request: import('#self/lib/proto/alice/control-plane').SetPlatformEnvironmentVariablesRequest }} call The call object.
-   * @return {Promise<import('#self/lib/proto/alice/common').SetPlatformEnvironmentVariablesResponse>} The result.
+   * @param {ServerWritableStream<root.noslated.control.SetPlatformEnvironmentVariablesRequest, root.noslated.control.SetPlatformEnvironmentVariablesResponse>} call The call object.
+   * @return {Promise<root.noslated.control.ISetPlatformEnvironmentVariablesResponse>} The result.
    */
-  async setPlatformEnvironmentVariables(call: ServerWritableStream<root.alice.control.SetPlatformEnvironmentVariablesRequest, root.alice.control.SetPlatformEnvironmentVariablesResponse>) {
+  async setPlatformEnvironmentVariables(call: ServerWritableStream<root.noslated.control.SetPlatformEnvironmentVariablesRequest, root.noslated.control.SetPlatformEnvironmentVariablesResponse>): Promise<root.noslated.control.ISetPlatformEnvironmentVariablesResponse> {
     const { envs } = call.request;
 
     this.logger.info('Setting platform environment variables %o.', envs);
@@ -47,7 +47,7 @@ export class HeraldImpl {
     };
   }
 
-  checkV8Options(profiles: root.alice.IFunctionProfile[]) {
+  checkV8Options(profiles: root.noslated.IFunctionProfile[]) {
     for (const profile of profiles) {
       const v8Options = profile?.worker?.v8Options || [];
 
@@ -67,10 +67,10 @@ export class HeraldImpl {
 
   /**
    * Set function profile
-   * @param {{ request: import('#self/lib/proto/alice/common').SetFunctionProfileRequest }} call The call object.
-   * @return {Promise<import('#self/lib/proto/alice/common').SetFunctionProfileResponse>} The result.
+   * @param {ServerWritableStream<root.noslated.SetFunctionProfileRequest, root.noslated.SetFunctionProfileResponse>} call The call object.
+   * @return {Promise<root.noslated.ISetFunctionProfileResponse>} The result.
    */
-  async setFunctionProfile(call: ServerWritableStream<root.alice.SetFunctionProfileRequest, root.alice.SetFunctionProfileResponse>) {
+  async setFunctionProfile(call: ServerWritableStream<root.noslated.SetFunctionProfileRequest, root.noslated.SetFunctionProfileResponse>): Promise<root.noslated.ISetFunctionProfileResponse> {
     const orig = this.plane.functionProfile.profile.map(p => p.toJSON());
     const { profiles = [], mode } = call.request;
     this.logger.info('Setting function profiles with %s, count: %d', mode, profiles.length);
@@ -157,9 +157,9 @@ export class HeraldImpl {
 
   /**
    * Get control plane's worker stats snapshot
-   * @return {Promise<import('#self/lib/proto/alice/control-plane').WorkerStatsSnapshotResponse>} The result.
+   * @return {Promise<root.noslated.control.IWorkerStatsSnapshotResponse>} The result.
    */
-  async getWorkerStatsSnapshot() {
+  async getWorkerStatsSnapshot(): Promise<root.noslated.control.IWorkerStatsSnapshotResponse> {
     const abstract = this.plane.capacityManager.workerStatsSnapshot;
     return { brokers: abstract.toProtobufObject() };
   }

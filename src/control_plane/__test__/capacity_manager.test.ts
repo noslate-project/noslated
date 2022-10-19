@@ -16,7 +16,7 @@ import * as starters from '#self/control_plane/starter/index';
 import { turf } from '#self/lib/turf';
 import { CapacityManager } from '#self/control_plane/capacity_manager';
 import { TurfContainerStates, TurfProcess } from '#self/lib/turf/types';
-import { alice } from '#self/proto/root';
+import { noslated } from '#self/proto/root';
 import { ContainerStatus, ContainerStatusReport } from '#self/lib/constants';
 import { performance } from 'perf_hooks';
 
@@ -121,7 +121,7 @@ describe(common.testName(__filename), () => {
 
       const sync = capacityManager.workerStatsSnapshot.sync.bind(capacityManager.workerStatsSnapshot);
       const correct = capacityManager.workerStatsSnapshot.correct.bind(capacityManager.workerStatsSnapshot);
-      mm(capacityManager.workerStatsSnapshot, 'sync', async (data: alice.data.IBrokerStats[], _psData: TurfProcess[]) => {
+      mm(capacityManager.workerStatsSnapshot, 'sync', async (data: noslated.data.IBrokerStats[], _psData: TurfProcess[]) => {
         assert.deepStrictEqual(psData, _psData);
         assert.deepStrictEqual(data, [ brokerData1 ]);
         syncCalled = true;

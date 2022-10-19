@@ -24,13 +24,13 @@ export class PushServerImpl implements IPushServer {
     this.requestLogger = new RequestLogger();
   }
 
-  async #invoke(type: string, { name, body, url, method, headers, baggage, timeout, requestId }: NotNullableInterface<root.alice.data.IInvokeRequest>) {
+  async #invoke(type: string, { name, body, url, method, headers, baggage, timeout, requestId }: NotNullableInterface<root.noslated.data.IInvokeRequest>) {
     const start = Date.now();
     const metadata = new Metadata({
       url,
       method,
-      headers: pairsToTuples(headers as NotNullableInterface<root.alice.IKeyValuePair>[] ?? []),
-      baggage: pairsToTuples(baggage as NotNullableInterface<root.alice.IKeyValuePair>[] ?? []),
+      headers: pairsToTuples(headers as NotNullableInterface<root.noslated.IKeyValuePair>[] ?? []),
+      baggage: pairsToTuples(baggage as NotNullableInterface<root.noslated.IKeyValuePair>[] ?? []),
       // TODO: negotiate with deadline;
       timeout,
       requestId
@@ -65,13 +65,13 @@ export class PushServerImpl implements IPushServer {
     }
   }
 
-  async invoke(call: ServerWritableStream<root.alice.data.InvokeRequest, root.alice.data.InvokeResponse>): Promise<InvokeResponse> {
+  async invoke(call: ServerWritableStream<root.noslated.data.InvokeRequest, root.noslated.data.InvokeResponse>): Promise<InvokeResponse> {
     const { name, body, url, method, headers, baggage, timeout, requestId } = call.request;
-    return this.#invoke('invoke', { name, body, url, method, headers, baggage, timeout, requestId } as NotNullableInterface<root.alice.data.IInvokeRequest>);
+    return this.#invoke('invoke', { name, body, url, method, headers, baggage, timeout, requestId } as NotNullableInterface<root.noslated.data.IInvokeRequest>);
   }
 
-  async invokeService(call: ServerWritableStream<root.alice.data.InvokeRequest, root.alice.data.InvokeResponse>): Promise<InvokeResponse> {
+  async invokeService(call: ServerWritableStream<root.noslated.data.InvokeRequest, root.noslated.data.InvokeResponse>): Promise<InvokeResponse> {
     const { name, body, url, method, headers, baggage, timeout, requestId } = call.request;
-    return this.#invoke('invokeService', { name, body, url, method, headers, baggage, timeout, requestId } as NotNullableInterface<root.alice.data.IInvokeRequest>);
+    return this.#invoke('invokeService', { name, body, url, method, headers, baggage, timeout, requestId } as NotNullableInterface<root.noslated.data.IInvokeRequest>);
   }
 }

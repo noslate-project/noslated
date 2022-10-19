@@ -1,4 +1,4 @@
-import { AliceClient } from './util';
+import { NoslatedClient } from './util';
 
 function objectToKeyValueMap(object: object) {
   const entries = Object.entries(object)
@@ -117,7 +117,7 @@ class Response {
   }
 }
 
-export function makeDapr(client: AliceClient) {
+export function makeDapr(client: NoslatedClient) {
   return {
     '1.0': {
       ServiceRequest,

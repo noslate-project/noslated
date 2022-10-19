@@ -19,7 +19,7 @@ export class DataPlane extends Base {
     dumpConfig('sdk', config);
 
     this.logger = loggers.get('data plane');
-    const sockPath = path.join(config.dirs.aliceSock, `dp-${getCurrentPlaneId()}.sock`);
+    const sockPath = path.join(config.dirs.noslatedSock, `dp-${getCurrentPlaneId()}.sock`);
     fs.mkdirSync(path.dirname(sockPath), { recursive: true });
 
     this.host = new DataPlaneHost(`unix://${sockPath}`, this.config);

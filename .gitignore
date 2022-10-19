@@ -6,8 +6,6 @@ out
 *.out
 core.*
 
-aliced
-aliced_g
 core
 *.pyc
 
@@ -15,7 +13,7 @@ core
 
 node_modules
 .code/cd-*
-.code/ALICE-*
+.code/NOSLATED-*
 .code/bundles
 .code/caches
 .code/logs

@@ -12,7 +12,7 @@ describe(testName(__filename), () => {
 
   beforeEach(async () => {
     guest = new Guest(roles.control!.herald.address);
-    guest.addService((descriptor as any).alice.control.ControlPlane);
+    guest.addService((descriptor as any).noslated.control.ControlPlane);
     await guest.start();
   });
   afterEach(async () => {

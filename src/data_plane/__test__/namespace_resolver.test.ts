@@ -6,7 +6,7 @@ import * as assert from 'assert';
 import { startTurfD, stopTurfD, turf } from '#self/lib/turf';
 import { assertWorkerInvoke, Roles, startAllRoles } from '#self/test/util';
 import { DataPlane } from '../data_plane';
-import { AliceAgent } from '#self/sdk';
+import { NoslatedClient } from '#self/sdk';
 import { ControlPlane } from '#self/control_plane';
 import { kMegaBytes } from '#self/control_plane/constants';
 
@@ -44,7 +44,7 @@ describe(common.testName(__filename), () => {
 
   describe('Namespace', () => {
     let data: DataPlane;
-    let agent: AliceAgent;
+    let agent: NoslatedClient;
     let control: ControlPlane;
 
     beforeEach(async () => {
