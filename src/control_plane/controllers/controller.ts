@@ -54,7 +54,7 @@ export class BaseController implements IController {
     }
 
     /**
-    * Try expansion
+    * Try batchLaunch
     * @param {string} functionName The function name.
     * @param {number} count How many processes would be started.
     * @param {{ inspect?: boolean }} options The options.
@@ -147,7 +147,7 @@ export class BaseController implements IController {
                 const realWorker = this.plane.capacityManager.workerStatsSnapshot.getWorker(broker.functionName, broker.inspector, worker.name);
                 if (realWorker?.credential !== worker.credential) continue;
                 up.push(worker.name);
-                kill.push(this.plane.capacityManager.stopWorker(worker.name));
+                kill.push(this.stopWorker(worker.name));
             }
         }
 
@@ -163,6 +163,38 @@ export class BaseController implements IController {
     async stopWorker(workerName: string, requestId?: string) {
         await this.turf.stop(workerName);
         this.logger.info('worker(%s) with request(%s) stopped.', workerName, requestId);
+    }
+
+
+    /**
+     * Force dismiss all workers in certain brokers.
+     * @param {string[]} names The broker names.
+     * @return {Promise<void>} The result.
+     */
+    async forceDismissAllWorkersInCertainBrokers(names: string[]) {
+        if (!Array.isArray(names)) names = [names];
+        const { workerStatsSnapshot } = this.plane.capacityManager;
+        const promises = [];
+
+        this.logger.info('Up to force dismiss all workers in broker', names);
+        for (const name of names) {
+            const brokers = [workerStatsSnapshot.getBroker(name, false), workerStatsSnapshot.getBroker(name, true)];
+            for (const broker of brokers) {
+                if (!broker) continue;
+                const { workers } = broker;
+                for (const workerName of workers.keys()) {
+                    promises.push(this.stopWorker(workerName));
+                }
+            }
+        }
+
+        const results = await Promise.allSettled(promises);
+        for (const ret of results) {
+            if (ret.status === 'rejected') {
+                this.logger.warn('Failed to force dismiss worker.', ret.reason);
+            }
+        }
+        this.logger.info(names, 'dismissed.');
     }
 }
 

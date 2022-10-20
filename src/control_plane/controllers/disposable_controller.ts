@@ -20,7 +20,7 @@ export class DisposableController extends BaseController {
 
             worker.requestId = requestId;
 
-            this.plane.capacityManager.stopWorker(worker.name, requestId)
+            this.stopWorker(worker.name, requestId)
                 .then(() => {
                     this.logger.info(`stop worker [${worker.name}] because container status is [${ContainerStatus[worker.containerStatus]}] and disposable=true, cost: ${performance.now() - now}.`);
                 })

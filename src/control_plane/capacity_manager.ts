@@ -50,13 +50,6 @@ export class CapacityManager extends Base {
   }
 
   /**
-   * Sync worker data
-   */
-  async syncWorkerData(data: root.noslated.data.IBrokerStats[]) {
-    return this.plane.stateManager.syncWorkerData(data);
-  }
-
-  /**
    * 预估扩缩容指标
    * @param {Broker[]} brokers 
    * @returns 
@@ -186,32 +179,6 @@ export class CapacityManager extends Base {
     return [...this.workerStatsSnapshot.brokers.values()].reduce((memo, broker) => (memo + broker.virtualMemory), 0);
   }
 
-  /**
-   * Try expansion
-   * @param {string} functionName The function name.
-   * @param {number} count How many processes would be started.
-   * @param {{ inspect?: boolean }} options The options.
-   * @return {Promise<undefined[]>} The result.
-   */
-  async tryExpansion(
-    functionName: string,
-    count: number,
-    options: ExpansionOptions,
-    disposable: boolean = false,
-    toReserve: boolean = false
-  ): Promise<void[]> {
-    return this.plane.controller.tryBatchLaunch(functionName, count, options, disposable, toReserve);
-  }
-
-  /**
-   * Destory worker.
-   * @param {string} workerName The worker name to be destroyed.
-   * @return {Promise<void>} The result.
-   */
-  async stopWorker(workerName: string, requestId?: string) {
-    return await this.plane.controller.stopWorker(workerName, requestId);
-  }
-
   async updateWorkerContainerStatus(report: NotNullableInterface<root.noslated.data.IContainerStatusReport>) {
     const { functionName, name, event, timestamp, isInspector } = report;
 
@@ -232,7 +199,7 @@ export class CapacityManager extends Base {
 
         worker.requestId = report.requestId;
 
-        this.stopWorker(worker.name, report.requestId)
+        this.plane.controller.stopWorker(worker.name, report.requestId)
           .then(() => {
             this.logger.info(`stop worker [${worker.name}] because container status is [${ContainerStatus[worker.containerStatus]}] and disposable=true, cost: ${performance.now() - now}.`);
           })
@@ -245,37 +212,6 @@ export class CapacityManager extends Base {
     }
   }
 
-
-  /**
-   * Force dismiss all workers in certain brokers.
-   * @param {string[]} names The broker names.
-   * @return {Promise<void>} The result.
-   */
-  async forceDismissAllWorkersInCertainBrokers(names: string[]) {
-    if (!Array.isArray(names)) names = [names];
-    const { workerStatsSnapshot } = this;
-    const promises = [];
-
-    this.logger.info('Up to force dismiss all workers in broker', names);
-    for (const name of names) {
-      const brokers = [workerStatsSnapshot.getBroker(name, false), workerStatsSnapshot.getBroker(name, true)];
-      for (const broker of brokers) {
-        if (!broker) continue;
-        const { workers } = broker;
-        for (const workerName of workers.keys()) {
-          promises.push(this.stopWorker(workerName));
-        }
-      }
-    }
-
-    const results = await Promise.allSettled(promises);
-    for (const ret of results) {
-      if (ret.status === 'rejected') {
-        this.logger.warn('Failed to force dismiss worker.', ret.reason);
-      }
-    }
-    this.logger.info(names, 'dismissed.');
-  }
 
   /**
    * Expend due to queueing request
@@ -322,21 +258,14 @@ export class CapacityManager extends Base {
     // update current workers data
     try {
       if (brokers) {
-        await this.syncWorkerData(brokers);
+        await this.plane.stateManager.syncWorkerData(brokers);
       }
     } catch (e) {
       this.logger.warn('Failed to sync data.', e);
     }
     this.logger.info('worker data synchronized after launch worker(%s)', name);
   }
-
 }
-
-interface ExpansionOptions {
-  inspect?: boolean;
-}
-
-
 
 export type Delta = {
   count: number;

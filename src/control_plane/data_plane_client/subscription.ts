@@ -44,7 +44,7 @@ export class DataPlaneSubscription {
     const { plane: { capacityManager } } = this;
 
     try {
-      await capacityManager.syncWorkerData(snapshot.brokers);
+      await this.plane.stateManager.syncWorkerData(snapshot.brokers);
       await capacityManager.autoScale();
     } catch (e) {
       this.logger.error('Failed to process capacityManager.syncWorkerData / capacityManager.autoScale', e);

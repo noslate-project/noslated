@@ -320,7 +320,7 @@ const cases = [
       },
     },
     after: async ({ control }: Required<ProseContext<{ turf: Turf }>>) => {
-      await control.capacityManager.tryExpansion('aworker_echo', 1, { inspect: false });
+      await control.controller.tryBatchLaunch('aworker_echo', 1, { inspect: false });
       const broker = control.capacityManager.workerStatsSnapshot.getBroker('aworker_echo', false)!;
       while (true) {
         if (broker.workerCount !== 2) {
@@ -369,7 +369,7 @@ const cases = [
       },
     },
     after: async ({ control }: Required<ProseContext<{ turf: Turf }>>) => {
-      await control.capacityManager.tryExpansion('aworker_echo', 1, { inspect: false });
+      await control.controller.tryBatchLaunch('aworker_echo', 1, { inspect: false });
       const broker = control.capacityManager.workerStatsSnapshot.getBroker('aworker_echo', false)!;
       while (true) {
         if (broker.workerCount !== 2) {
@@ -421,7 +421,7 @@ const cases = [
       },
     },
     after: async ({ control }: Required<ProseContext<{ turf: Turf }>>) => {
-      await control.capacityManager.tryExpansion('aworker_echo', 1, { inspect: false });
+      await control.controller.tryBatchLaunch('aworker_echo', 1, { inspect: false });
       const broker = control.capacityManager.workerStatsSnapshot.getBroker('aworker_echo', false)!;
       while (true) {
         if (broker.workerCount !== 2) {
