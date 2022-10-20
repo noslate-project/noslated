@@ -36,7 +36,19 @@ class Worker {
   #latestUpdateContainerStatusTimestamp: number;
 
   get containerStatus() {
-    return this.#containerStatus
+    return this.#containerStatus;
+  }
+
+  set containerStatus(val) {
+    this.#containerStatus = val;
+  }
+
+  get latestUpdateContainerStatusTimestamp() {
+    return this.#latestUpdateContainerStatusTimestamp;
+  }
+
+  set latestUpdateContainerStatusTimestamp(val) {
+    this.#latestUpdateContainerStatusTimestamp = val;
   }
 
   /**
