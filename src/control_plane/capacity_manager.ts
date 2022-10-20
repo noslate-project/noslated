@@ -67,7 +67,7 @@ export class CapacityManager extends Base {
 
     // 若扩缩容后小于预留数，则强行扩缩容至预留数。
     for (const broker of brokers) {
-      // CGI 模式和 inspect 不预留
+      // disposable 模式和 inspect 不预留
       if (broker.isInspector || broker.disposable) {
         continue;
       }

@@ -10,10 +10,10 @@ export class DisposableController extends BaseController {
 
     constructor(public plane: ControlPlane) {
         super(plane);
-        this.logger = loggers.get("CGI controller");
+        this.logger = loggers.get("disposable controller");
     }
 
-    async stopCGIWorkerByEvent(worker: Worker, event: string, requestId: string) {
+    async stopDisposableWorkerByEvent(worker: Worker, event: string, requestId: string) {
         if (event === ContainerStatusReport.RequestDrained && worker.containerStatus === ContainerStatus.Stopped && worker.disposable) {
             // wait next sync to gc worker data and related resources
             const now = performance.now();

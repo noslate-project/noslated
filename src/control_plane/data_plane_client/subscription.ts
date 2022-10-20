@@ -74,7 +74,7 @@ export class DataPlaneSubscription {
     }
 
     try {
-      await plane.disposableController.stopCGIWorkerByEvent(worker, event, report.requestId);
+      await plane.disposableController.stopDisposableWorkerByEvent(worker, event, report.requestId);
     } catch (error) {
       this.logger.error(`Failed to process containerStatusReport [${JSON.stringify(report)}].`, error);
     }

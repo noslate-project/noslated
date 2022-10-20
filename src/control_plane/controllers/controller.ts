@@ -112,7 +112,7 @@ export class BaseController implements IController {
                 continue;
             }
 
-            // CGI 模式不缩容
+            // disposable 模式不缩容
             if (broker.disposable) {
                 continue;
             }
