@@ -17,7 +17,7 @@ import path from 'path';
 const { baselineDir, daprAdaptorDir } = common;
 
 describe(common.testName(__filename), () => {
-  const roles: ProseContext<{}> = {};
+  const roles: ProseContext = {};
   let guest: Guest;
 
   daemonProse(roles);

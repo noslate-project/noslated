@@ -1,5 +1,5 @@
 src/starter/generated.js
-src/proto/*.js
+src/proto/*
 fixtures
 
 # container dir

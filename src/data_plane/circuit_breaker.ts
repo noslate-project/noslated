@@ -1,7 +1,7 @@
-import EventEmitter from "events";
+import EventEmitter from 'events';
 import os from 'os';
 import _ from 'lodash';
-import { DataFlowController } from "./data_flow_controller";
+import { DataFlowController } from './data_flow_controller';
 
 const logger = require('#self/lib/logger').get('system circuit breaker');
 

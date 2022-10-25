@@ -133,9 +133,7 @@ export class Worker extends EventEmitter {
     }
 
     const { promise, resolve } = utils.createDeferred();
-    let downToZero: (...args: any[]) => void;
-
-    downToZero = () => {
+    const downToZero: (...args: any[]) => void = () => {
       resolve(true);
     };
 
@@ -170,8 +168,6 @@ export class Worker extends EventEmitter {
     let ret;
     try {
       ret = await this.delegate.trigger(this.credential, 'invoke', inputStream, metadata || { requestId });
-    } catch (e) {
-      throw e;
     } finally {
       this.activeRequestCount--;
       if (this.activeRequestCount === 0) {
@@ -572,7 +568,7 @@ export class WorkerBroker extends Base {
   getAvailableWorker() {
     if (!this.workers.length) return null;
 
-    let worker = _.maxBy(this.workers.filter(w => !w.trafficOff), w => (w.maxActivateRequests - w.activeRequestCount));
+    const worker = _.maxBy(this.workers.filter(w => !w.trafficOff), w => (w.maxActivateRequests - w.activeRequestCount));
     if (worker && worker.maxActivateRequests > worker.activeRequestCount) {
       return worker;
     }
@@ -671,9 +667,6 @@ export class WorkerBroker extends Base {
 
         try {
           output = await worker.pipe(inputStream, metadata);
-        } catch (e) {
-          // TODO(kaidi.zkd): do error log
-          throw e;
         } finally {
           if (this.disposable) {
             this.afterDisposableInvoke(worker, metadata.requestId);

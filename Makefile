@@ -36,7 +36,7 @@ node_modules: package.json
 lint: jslint
 
 .PHONY: jslint jslint-fix
-jslint: $(BUILD_NODE_MODULES)
+jslint: $(BUILD_NODE_MODULES) node_modules
 	$(ESLINT) --report-unused-disable-directives .
 
 .PHONY: test sanitytest

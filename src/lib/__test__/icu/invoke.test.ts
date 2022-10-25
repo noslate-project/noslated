@@ -18,7 +18,7 @@ describe(common.testName(__filename), function() {
 
   let host: Host;
   let guest: Guest;
-  let cleanup: Function | undefined;
+  let cleanup: (() => unknown) | undefined;
 
   beforeEach(async () => {
     cleanup = undefined;

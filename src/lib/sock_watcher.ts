@@ -19,7 +19,7 @@ if (os.platform() === 'darwin') {
 
     interval() {
       const { listener } = this;
-      fs.readdir(this.dir, (err, files) => {  // eslint-disable-line
+      fs.readdir(this.dir, (err, files) => {
         if (err) {
           this.emit('error', err);
           this.timer = setTimeout(this.interval.bind(this), 1000);

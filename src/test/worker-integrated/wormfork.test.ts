@@ -82,7 +82,7 @@ describe(common.testName(__filename), function() {
   });
 
   describe('default seed', () => {
-    const ctx: ProseContext<{}> = {};
+    const ctx: ProseContext = {};
     daemonProse(ctx);
 
     for (const item of defaultSeedCases) {

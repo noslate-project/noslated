@@ -36,8 +36,6 @@ internetDescribe('devtool', () => {
       data = ret.data.toString();
       assert(data.includes('404'));
       assert.strictEqual(ret.status, 404);
-    } catch (e) {
-      throw e;
     } finally {
       child.kill('SIGKILL');
     }

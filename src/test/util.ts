@@ -55,7 +55,7 @@ export const stopResourceServer = () => {
 
 export function closeAutoProcessRecyclingStrategy(item: any) {
   item.autoProcessRecyclingStrategy.end();
-};
+}
 
 export async function assertWorkerResponse(response: TriggerResponse, expected: any) {
   if (expected.status !== undefined) {
@@ -191,4 +191,4 @@ export interface TelemetryContext {
   processor?: TestProcessor;
 }
 
-export type ProseContext<T> = T & Roles;
+export type ProseContext<T = unknown> = T & Roles;

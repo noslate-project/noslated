@@ -36,6 +36,7 @@ function getPrettySink(filename: string) {
   return midwayLogger;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface Logger extends Sink {}
 class Logger {
   category: string;
@@ -62,6 +63,7 @@ class Logger {
   }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface PrefixedLogger extends Sink {}
 class PrefixedLogger {
   logger: Logger;

@@ -349,7 +349,7 @@ class Broker {
     const worker = this.workers.get(workerName);
 
     worker?.updateContainerStatus(status, performance.now());
-  };
+  }
 
   /**
    * Get the map key by function name and `isInspector`.

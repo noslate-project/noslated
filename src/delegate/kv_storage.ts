@@ -5,16 +5,16 @@ import Loggers from '#self/lib/logger';
 
 const logger = Loggers.get('kv-storages');
 
-let kPerNamespaceCapacity = config.delegate.kvStoragePerNamespaceCapacity;
-let kPerNamespaceMaxSize = config.delegate.kvStoragePerNamespaceMaxSize;
-let kPerNamespaceMaxByteLength = config.delegate.kvStoragePerNamespaceMaxByteLength;
+const kPerNamespaceCapacity = config.delegate.kvStoragePerNamespaceCapacity;
+const kPerNamespaceMaxSize = config.delegate.kvStoragePerNamespaceMaxSize;
+const kPerNamespaceMaxByteLength = config.delegate.kvStoragePerNamespaceMaxByteLength;
 
 export class KvStorage {
   size = 0;
   sink = new Map<string, LRU<string, Uint8Array>>();
 
   getStore(namespace: string) {
-    let store = this.sink.get(namespace);
+    const store = this.sink.get(namespace);
     if (store != null) {
       return store;
     }

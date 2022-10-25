@@ -33,7 +33,7 @@ export class PriorityLaunchQueue {
     }
   }
 
-  constructor(concurrency: number, interval: number = 0) {
+  constructor(concurrency: number, interval = 0) {
     this.#concurrency = concurrency;
     this.#runningCount = 0;
     this.#queue = new PriorityQueue<LaunchTask>(compare);

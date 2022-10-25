@@ -14,7 +14,7 @@ describe('test/lib/util.test.js', () => {
     it('should return number', () => {
       for (let i = 0; i < 100; i++) {
         const idx = i;
-        const ret = util.tryQ(function() {
+        const ret = util.tryQ(() => {
           return idx;
         });
         assert(idx === ret);
@@ -22,12 +22,12 @@ describe('test/lib/util.test.js', () => {
     });
 
     it('should return undefined', () => {
-      const ret = util.tryQ(function() {});
+      const ret = util.tryQ(() => {});
       assert(ret === undefined);
     });
 
     it('should return null', () => {
-      const ret = util.tryQ(function() { return null; });
+      const ret = util.tryQ(() => { return null; });
       assert(ret === null);
     });
 
@@ -94,7 +94,7 @@ describe('test/lib/util.test.js', () => {
 
       const origJoin = path.join;
       const origUnlink = fs.promises.unlink;
-      let origZip: string = '';
+      let origZip = '';
       mm(path, 'join', (...args: any[]) => {
         const ret = origJoin(...args);
         if (args[args.length - 1].endsWith('.zip')) {
@@ -173,7 +173,7 @@ describe('test/lib/util.test.js', () => {
       const target = path.join(testUtil.TMP_DIR(), 'tarball3');
 
       const origJoin = path.join;
-      let origZip: string = '';
+      let origZip = '';
       mm(path, 'join', (...args: any[]) => {
         const ret = origJoin(...args);
         if (args[args.length - 1].endsWith('.zip')) {
@@ -184,7 +184,7 @@ describe('test/lib/util.test.js', () => {
 
       await assert.rejects(async () => {
         await util.downloadZipAndExtractToDir(tarball, target);
-      }, /End\-of\-central\-directory[\w\W]+unzip:[\w\W]+cannot find zipfile directory in one of/);
+      }, /End-of-central-directory[\w\W]+unzip:[\w\W]+cannot find zipfile directory in one of/);
 
       assert.throws(() => { fs.accessSync(origZip); }, /no such file or directory/);
     });

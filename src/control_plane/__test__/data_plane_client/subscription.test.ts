@@ -34,7 +34,7 @@ function waitForAtLeastOneSubscriber(host: Host, name: string) {
 }
 
 describe(common.testName(__filename), () => {
-  const roles: ProseContext<{}> = {};
+  const roles: ProseContext = {};
   daemonProse(roles);
 
   describe('workerTrafficStats', () => {

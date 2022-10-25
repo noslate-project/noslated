@@ -5,11 +5,11 @@ import { Guest } from '#self/lib/rpc/guest';
 import { HostEvents } from '#self/lib/rpc/util';
 import { address, once } from './util';
 
-describe(common.testName(__filename), function() {
+describe(common.testName(__filename), () => {
   let host: Host;
   /** @type {Guest} */
   let guest: Guest;
-  let cleanup: Function | undefined;
+  let cleanup: (() => unknown) | undefined;
 
   beforeEach(async () => {
     cleanup = undefined;

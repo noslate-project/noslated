@@ -1,7 +1,7 @@
-import { TriggerResponse } from "#self/delegate/request_response";
+import { TriggerResponse } from '#self/delegate/request_response';
 import { ServerWritableStream } from '@grpc/grpc-js';
 import * as root from '#self/proto/root';
-import { KVPairs } from "../rpc/key_value_pair";
+import { KVPairs } from '../rpc/key_value_pair';
 
 export interface IPushServer {
   invoke(call: ServerWritableStream<root.noslated.data.InvokeRequest, root.noslated.data.InvokeResponse>): Promise<InvokeResponse>;

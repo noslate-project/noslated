@@ -81,7 +81,7 @@ export class WorkerStatsSnapshot extends BaseOf(EventEmitter) {
   /**
    * Get or create broker by function name and `isInspector`.
    */
-  getOrCreateBroker(functionName: string, isInspector: boolean, disposable: boolean = false): Broker | null {
+  getOrCreateBroker(functionName: string, isInspector: boolean, disposable = false): Broker | null {
     let broker = this.getBroker(functionName, isInspector);
     if (broker) return broker;
     if (!this.profiles.get(functionName)) return null;
@@ -106,7 +106,7 @@ export class WorkerStatsSnapshot extends BaseOf(EventEmitter) {
    * @param {string} credential The credential.
    * @param {boolean} isInspector Whether it's using inspector or not.
    */
-  register(funcName: string, processName: string, credential: string, isInspector: boolean, disposable: boolean = false) {
+  register(funcName: string, processName: string, credential: string, isInspector: boolean, disposable = false) {
     const broker = this.getOrCreateBroker(funcName, isInspector, disposable);
     if (!broker) {
       throw new Error(`No function named ${funcName} in function profile.`);

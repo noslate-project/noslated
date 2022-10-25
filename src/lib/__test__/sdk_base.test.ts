@@ -3,7 +3,7 @@ import { EventEmitter } from 'events';
 import { Base, BaseOf } from '#self/lib/sdk_base';
 import * as common from '#self/test/common';
 
-describe(common.testName(__filename), function() {
+describe(common.testName(__filename), () => {
   it('Base ready & close', async () => {
     class Foo extends Base {
       initCount = 0;

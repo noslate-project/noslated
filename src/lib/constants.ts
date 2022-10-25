@@ -4,7 +4,7 @@ export enum ContainerStatus {
   PendingStop = 3,
   Stopped = 4,
   Unknown = 5
-};
+}
 
 export enum ContainerStatusReport {
   ContainerInstalled = 'ContainerInstalled',

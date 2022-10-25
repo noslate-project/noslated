@@ -46,7 +46,7 @@ export class Any<T = unknown> {
   }
 
   toObject() {
-    return this.#Type.toObject(this.object as unknown as Message<{}>);
+    return this.#Type.toObject(this.object as unknown as Message<any>);
   }
 
   toJSON() {

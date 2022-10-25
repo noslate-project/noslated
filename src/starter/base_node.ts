@@ -142,4 +142,4 @@ export default function starter(startClient: (init: StartClientInit) => void) {
     },
     logger,
   });
-};
+}
