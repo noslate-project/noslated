@@ -141,8 +141,7 @@ export class DataFlowController extends BaseOf(EventEmitter) {
           functionName: broker.name,
           isInspector: broker.options.inspect === true,
           name: realWorker.name,
-          event: ContainerStatusReport.RequestDrained,
-          timestamp: performance.now()
+          event: ContainerStatusReport.RequestDrained
         });
 
         toBeClosed?.workers?.push(worker);
@@ -224,7 +223,6 @@ export class DataFlowController extends BaseOf(EventEmitter) {
         functionName: broker.name,
         name: worker.name,
         event: ContainerStatusReport.ContainerDisconnected,
-        timestamp: performance.now(),
         isInspector: broker.options.inspect === true
       });
     }

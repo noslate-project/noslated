@@ -17,8 +17,7 @@ import { turf } from '#self/lib/turf';
 import { CapacityManager } from '#self/control_plane/capacity_manager';
 import { TurfContainerStates, TurfProcess } from '#self/lib/turf/types';
 import { noslated } from '#self/proto/root';
-import { ContainerStatus, ContainerStatusReport } from '#self/lib/constants';
-import { performance } from 'perf_hooks';
+import { ContainerStatus, ContainerStatusReport, ControlPanelEvent } from '#self/lib/constants';
 
 describe(common.testName(__filename), () => {
   const brokerData1 = {
@@ -125,7 +124,7 @@ describe(common.testName(__filename), () => {
         assert.deepStrictEqual(psData, _psData);
         assert.deepStrictEqual(data, [ brokerData1 ]);
         syncCalled = true;
-        return sync(data, _psData, Date.now());
+        return sync(data, _psData);
       });
       mm(capacityManager.workerStatsSnapshot, 'correct', async () => {
         correctCalled = true;
@@ -262,7 +261,6 @@ describe(common.testName(__filename), () => {
         name: 'hello',
         isInspector: false,
         event: ContainerStatusReport.ContainerInstalled,
-        timestamp: performance.now(),
         requestId: ''
       });
 
@@ -271,7 +269,6 @@ describe(common.testName(__filename), () => {
         name: 'foo',
         isInspector: false,
         event: ContainerStatusReport.ContainerInstalled,
-        timestamp: performance.now(),
         requestId: ''
       });
 
@@ -280,7 +277,6 @@ describe(common.testName(__filename), () => {
         name: 'coco',
         isInspector: false,
         event: ContainerStatusReport.ContainerInstalled,
-        timestamp: performance.now(),
         requestId: ''
       });
 
@@ -289,7 +285,6 @@ describe(common.testName(__filename), () => {
         name: 'alibaba',
         isInspector: false,
         event: ContainerStatusReport.ContainerInstalled,
-        timestamp: performance.now(),
         requestId: ''
       });
 
@@ -300,7 +295,8 @@ describe(common.testName(__filename), () => {
   describe('#tryExpansion()', () => {
     it('should try expansion', async () => {
       let called = 0;
-      mm(capacityManager.plane.workerLauncher, 'tryLaunch', async (name: any, options: any) => {
+      mm(capacityManager.plane.workerLauncher, 'tryLaunch', async (event: ControlPanelEvent, name: any, options: any) => {
+        assert.strictEqual(event, ControlPanelEvent.Expand);
         assert.strictEqual(name, 'func');
         assert.deepStrictEqual(options, { inspect: true });
         called++;
@@ -309,7 +305,8 @@ describe(common.testName(__filename), () => {
       assert.strictEqual(called, 10);
 
       called = 0;
-      mm(capacityManager.plane.workerLauncher, 'tryLaunch', async (name: any, options: any) => {
+      mm(capacityManager.plane.workerLauncher, 'tryLaunch', async (event: ControlPanelEvent, name: any, options: any) => {
+        assert.strictEqual(event, ControlPanelEvent.Expand);
         assert.strictEqual(name, 'func');
         assert.deepStrictEqual(options, { inspect: false });
         called++;
@@ -443,7 +440,6 @@ describe(common.testName(__filename), () => {
           name: 'hello',
           isInspector: false,
           event: ContainerStatusReport.ContainerInstalled,
-          timestamp: performance.now(),
           requestId: ''
         });
 
@@ -452,7 +448,6 @@ describe(common.testName(__filename), () => {
           name: 'foo',
           isInspector: false,
           event: ContainerStatusReport.ContainerInstalled,
-          timestamp: performance.now(),
           requestId: ''
         });
 
@@ -461,7 +456,6 @@ describe(common.testName(__filename), () => {
           name: 'coco',
           isInspector: false,
           event: ContainerStatusReport.ContainerInstalled,
-          timestamp: performance.now(),
         requestId: ''
         });
 
@@ -470,7 +464,6 @@ describe(common.testName(__filename), () => {
           name: 'cocos',
           isInspector: false,
           event: ContainerStatusReport.ContainerInstalled,
-          timestamp: performance.now(),
         requestId: ''
         });
 
@@ -479,7 +472,7 @@ describe(common.testName(__filename), () => {
           name: 'alibaba',
           isInspector: false,
           event: ContainerStatusReport.ContainerInstalled,
-          timestamp: performance.now(),
+
         requestId: ''
         });
 
@@ -495,7 +488,8 @@ describe(common.testName(__filename), () => {
         let tryLaunchCalled = 0;
         let reduceCapacityCalled = 0;
         let stopWorkerCalled = 0;
-        mm(capacityManager.plane.workerLauncher, 'tryLaunch', async (name: any, options: any) => {
+        mm(capacityManager.plane.workerLauncher, 'tryLaunch', async (event: ControlPanelEvent, name: any, options: any) => {
+          assert.strictEqual(event, ControlPanelEvent.Expand);
           assert.strictEqual(name, 'func');
           assert.deepStrictEqual(options, { inspect: false });
           tryLaunchCalled++;
@@ -575,7 +569,6 @@ describe(common.testName(__filename), () => {
         name: 'hello',
         isInspector: false,
         event: ContainerStatusReport.ContainerInstalled,
-        timestamp: performance.now(),
         requestId: ''
       });
 
@@ -584,7 +577,6 @@ describe(common.testName(__filename), () => {
         name: 'foo',
         isInspector: false,
         event: ContainerStatusReport.ContainerInstalled,
-        timestamp: performance.now(),
         requestId: ''
       });
 
@@ -593,7 +585,6 @@ describe(common.testName(__filename), () => {
         name: 'coco',
         isInspector: false,
         event: ContainerStatusReport.ContainerInstalled,
-        timestamp: performance.now(),
         requestId: ''
       });
 
@@ -602,7 +593,6 @@ describe(common.testName(__filename), () => {
         name: 'cocos',
         isInspector: false,
         event: ContainerStatusReport.ContainerInstalled,
-        timestamp: performance.now(),
         requestId: ''
       });
 
@@ -611,7 +601,6 @@ describe(common.testName(__filename), () => {
         name: 'alibaba',
         isInspector: false,
         event: ContainerStatusReport.ContainerInstalled,
-        timestamp: performance.now(),
         requestId: ''
       });
 

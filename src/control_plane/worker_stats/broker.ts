@@ -1,11 +1,10 @@
 import { Config } from '#self/config';
-import { ContainerStatus } from '#self/lib/constants';
+import { ContainerStatus, ContainerStatusReport, ControlPanelEvent } from '#self/lib/constants';
 import { FunctionProfileManager } from '#self/lib/function_profile';
 import { RawFunctionProfile } from '#self/lib/json/function_profile';
 import { PrefixedLogger } from '#self/lib/loggers';
 import { turf } from '#self/lib/turf';
 import { TurfProcess } from '#self/lib/turf/types';
-import { performance } from 'perf_hooks';
 import { Worker, WorkerStats } from './worker';
 
 enum WaterLevelAction {
@@ -236,7 +235,7 @@ class Broker {
    * @param workers The workers.
    * @param psData The turf ps data.
    */
-  sync(workers: WorkerStats[], psData: TurfProcess[], timestamp: number) {
+  sync(workers: WorkerStats[], psData: TurfProcess[]) {
     this.data = this.profiles?.get(this.name)?.toJSON(true) || null;
 
     /**
@@ -250,13 +249,13 @@ class Broker {
         continue;
       }
 
-      worker.sync(item, psData, timestamp);
+      worker.sync(item, psData);
       newMap.set(item.name, worker);
       this.workers.delete(item.name!);
     }
 
     for (const item of this.workers.values()) {
-      item.sync(null, psData, timestamp);
+      item.sync(null, psData);
       newMap.set(item.name, item);
     }
 
@@ -345,10 +344,10 @@ class Broker {
     return this.workers.get(processName) || null;
   }
 
-  updateWorkerContainerStatus(workerName: string, status: ContainerStatus) {
+  updateWorkerContainerStatus(workerName: string, status: ContainerStatus, event: ControlPanelEvent | ContainerStatusReport) {
     const worker = this.workers.get(workerName);
 
-    worker?.updateContainerStatus(status, performance.now());
+    worker?.updateContainerStatus(status, event);
   }
 
   /**
@@ -465,7 +464,7 @@ class Broker {
     }
 
     workers.forEach((worker) => {
-      this.updateWorkerContainerStatus(worker.name, ContainerStatus.PendingStop);
+      this.updateWorkerContainerStatus(worker.name, ContainerStatus.PendingStop, ControlPanelEvent.Shrink);
     });
 
     return workers;

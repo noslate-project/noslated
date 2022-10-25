@@ -12,4 +12,17 @@ export enum ContainerStatusReport {
   ContainerDisconnected = 'ContainerDisconnected'
 }
 
+export enum ControlPanelEvent {
+  Shrink = 'Shrink',
+  Expand = 'Expand',
+  RequestQueueExpand = 'RequestQueueExpand'
+}
+
+export enum TurfStatusEvent {
+  StatusNull = 'StatusNull',
+  StatusUnknown = 'StatusUnknown',
+  StatusStopped = 'StatusStopped',
+  ConnectTimeout = 'ConnectTimeout'
+}
+
 export const kDefaultRequestId = 'unknown';

@@ -54,6 +54,8 @@ export class DataPlaneSubscription {
     const plane = this.plane;
     const { capacityManager } = plane;
 
+    this.logger.info(`receive container status report: ${Date.now()}, ${report.requestId}, ${report.functionName}, ${report.name}, ${report.isInspector}, ${report.event}`);
+
     try {
       await capacityManager.updateWorkerContainerStatus(report);
     } catch (error) {
