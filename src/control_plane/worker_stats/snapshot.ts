@@ -48,7 +48,7 @@ export class WorkerStatsSnapshot extends BaseOf(EventEmitter) {
   /**
    * Sync data from data plane and turf ps.
    */
-  sync(syncData: root.noslated.data.IBrokerStats[], psData: TurfProcess[], timestamp: number) {
+  sync(syncData: root.noslated.data.IBrokerStats[], psData: TurfProcess[]) {
     const newMap: Map<string, Broker> = new Map();
     for (const item of syncData) {
       const key = Broker.getKey(item.functionName!, item.inspector!);
@@ -58,13 +58,13 @@ export class WorkerStatsSnapshot extends BaseOf(EventEmitter) {
         continue;
       }
 
-      broker.sync(item.workers!, psData, timestamp);
+      broker.sync(item.workers!, psData);
       newMap.set(key, broker);
       this.brokers.delete(key);
     }
 
     for (const [ key, value ] of this.brokers.entries()) {
-      value.sync([], psData, timestamp);
+      value.sync([], psData);
       newMap.set(key, value);
     }
 

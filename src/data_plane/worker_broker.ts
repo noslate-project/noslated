@@ -359,7 +359,6 @@ export class WorkerBroker extends Base {
       isInspector: this.options.inspect === true,
       name: worker.name,
       event: ContainerStatusReport.RequestDrained,
-      timestamp: performance.now(),
       requestId
     });
   }
@@ -545,8 +544,7 @@ export class WorkerBroker extends Base {
         functionName: this.name,
         isInspector: this.options.inspect === true,
         name: worker.name,
-        event: ContainerStatusReport.ContainerInstalled,
-        timestamp: performance.now()
+        event: ContainerStatusReport.ContainerInstalled
       });
     } catch (e) {
       this.logger.error('Unexpected error on invokeing initializer', e);
