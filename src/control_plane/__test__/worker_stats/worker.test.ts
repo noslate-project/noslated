@@ -6,7 +6,7 @@ import * as common from '#self/test/common';
 import { config } from '#self/config';
 import { FunctionProfileManager as ProfileManager } from '#self/lib/function_profile';
 import { TurfContainerStates } from '#self/lib/turf';
-import { ContainerStatus, ContainerStatusReport } from '#self/lib/constants';
+import { ContainerStatus, ContainerStatusReport, ControlPanelEvent } from '#self/lib/constants';
 import { performance } from 'perf_hooks';
 import sinon from 'sinon';
 import { AworkerFunctionProfile } from '#self/lib/json/function_profile';
@@ -63,7 +63,7 @@ describe(common.testName(__filename), () => {
   describe('.sync()', () => {
     it('should sync data (null)', () => {
       const worker = new Worker(config, 'hello', 'world');
-      worker.sync(null, [{ name: 'hello', status: TurfContainerStates.stopped, pid: 1 }], performance.now());
+      worker.sync(null, [{ name: 'hello', status: TurfContainerStates.stopped, pid: 1 }]);
       assert.deepStrictEqual(_.omit(worker.toJSON(), [ 'registerTime' ]), {
         name: 'hello',
         credential: 'world',
@@ -77,7 +77,7 @@ describe(common.testName(__filename), () => {
 
     it('should sync data', () => {
       const worker = new Worker(config, 'hello', 'world');
-      worker.sync({ name: 'hello', maxActivateRequests: 10, activeRequestCount: 5 }, [{ name: 'hello', status: TurfContainerStates.stopped, pid: 1 }], performance.now());
+      worker.sync({ name: 'hello', maxActivateRequests: 10, activeRequestCount: 5 }, [{ name: 'hello', status: TurfContainerStates.stopped, pid: 1 }]);
       assert.deepStrictEqual(_.omit(worker.toJSON(), [ 'registerTime' ]), {
         name: 'hello',
         credential: 'world',
@@ -98,8 +98,7 @@ describe(common.testName(__filename), () => {
       const worker = new Worker(config, 'hello', 'world');
       worker.sync(
         { name: 'hello', maxActivateRequests: 10, activeRequestCount: 5 },
-        [{ name: 'helloo', status: TurfContainerStates.stopped, pid: 1 }],
-        performance.now()
+        [{ name: 'helloo', status: TurfContainerStates.stopped, pid: 1 }]
       );
       assert.deepStrictEqual(_.omit(worker.toJSON(), [ 'registerTime' ]), {
         name: 'hello',
@@ -119,8 +118,7 @@ describe(common.testName(__filename), () => {
       const worker = new Worker(config, 'hello', 'world');
       worker.sync(
         { name: 'hello', maxActivateRequests: 10, activeRequestCount: 5 },
-        [{ name: 'hello', status: TurfContainerStates.stopped, pid: 1 }],
-        performance.now()
+        [{ name: 'hello', status: TurfContainerStates.stopped, pid: 1 }]
       );
       assert.deepStrictEqual(_.omit(JSON.parse(JSON.stringify(worker)), [ 'registerTime' ]), {
         name: 'hello',
@@ -137,8 +135,7 @@ describe(common.testName(__filename), () => {
 
       worker.sync(
         { name: 'hello', maxActivateRequests: 10, activeRequestCount: 5 },
-        [{ name: 'helloo', status: TurfContainerStates.stopped, pid: 1 }],
-        performance.now()
+        [{ name: 'helloo', status: TurfContainerStates.stopped, pid: 1 }]
       );
 
       assert.deepStrictEqual(_.omit(JSON.parse(JSON.stringify(worker)), [ 'registerTime', 'firstUnknownTime' ]), {
@@ -159,8 +156,7 @@ describe(common.testName(__filename), () => {
       const worker = new Worker(config, 'hello', 'world');
       worker.sync(
         { name: 'hello', maxActivateRequests: 10, activeRequestCount: 5 },
-        [{ name: 'helloo', status: TurfContainerStates.stopped, pid: 1 }],
-        performance.now()
+        [{ name: 'helloo', status: TurfContainerStates.stopped, pid: 1 }]
       );
       assert.deepStrictEqual(_.omit(JSON.parse(JSON.stringify(worker)), [ 'registerTime', 'firstUnknownTime' ]), {
         name: 'hello',
@@ -177,8 +173,7 @@ describe(common.testName(__filename), () => {
 
       worker.sync(
         { name: 'hello', maxActivateRequests: 10, activeRequestCount: 5 },
-        [{ name: 'hello', status: TurfContainerStates.stopped, pid: 1 }],
-        performance.now()
+        [{ name: 'hello', status: TurfContainerStates.stopped, pid: 1 }]
       );
       assert.deepStrictEqual(_.omit(JSON.parse(JSON.stringify(worker)), [ 'registerTime' ]), {
         name: 'hello',
@@ -208,7 +203,7 @@ describe(common.testName(__filename), () => {
       const data = { name: 'hello', maxActivateRequests: 10, activeRequestCount: 5 };
       const worker = new Worker(config, 'hello', 'world');
 
-      worker.sync(data, [], performance.now());
+      worker.sync(data, []);
       assert.strictEqual(worker.containerStatus, ContainerStatus.Created);
 
       const std = [
@@ -221,11 +216,11 @@ describe(common.testName(__filename), () => {
       ];
 
       for (let i = 0; i < statuses.length; i++) {
-        worker.sync(data, [{ pid: 1, status: statuses[i], name: 'hello' }], performance.now());
+        worker.sync(data, [{ pid: 1, status: statuses[i], name: 'hello' }]);
         assert.strictEqual(worker.containerStatus, std[i]);
       }
 
-      worker.sync(data, [], performance.now());
+      worker.sync(data, []);
       // 已经 Stopped，状态不会变化，不会回退到旧的值，只能进入 Unknown 状态
       assert.strictEqual(worker.containerStatus, ContainerStatus.Stopped);
     });
@@ -234,9 +229,9 @@ describe(common.testName(__filename), () => {
       const data = { name: 'hello', maxActivateRequests: 10, activeRequestCount: 5 };
       const worker = new Worker(config, 'hello', 'world');
 
-      worker.updateContainerStatus(ContainerStatus.Ready, performance.now());
+      worker.updateContainerStatus(ContainerStatus.Ready, ContainerStatusReport.ContainerInstalled);
 
-      worker.sync(data, [], performance.now());
+      worker.sync(data, []);
 
       assert.strictEqual(worker.containerStatus, ContainerStatus.Stopped);
     });
@@ -247,24 +242,24 @@ describe(common.testName(__filename), () => {
       const data = { name: 'hello', maxActivateRequests: 10, activeRequestCount: 5 };
       const worker = new Worker(config, 'hello', 'world');
 
-      worker.sync(data, [], performance.now());
+      worker.sync(data, []);
       assert.strictEqual(worker.containerStatus, ContainerStatus.Created);
       assert.strictEqual(worker.isInitializating(), true);
 
-      worker.sync(data, [{ name: 'hello', status: TurfContainerStates.running, pid: 1 }], performance.now());
+      worker.sync(data, [{ name: 'hello', status: TurfContainerStates.running, pid: 1 }]);
 
       assert.strictEqual(worker.containerStatus, ContainerStatus.Created);
 
-      worker.updateContainerStatusByEvent(ContainerStatusReport.ContainerInstalled, performance.now());
+      worker.updateContainerStatusByEvent(ContainerStatusReport.ContainerInstalled);
 
       assert.strictEqual(worker.containerStatus, ContainerStatus.Ready);
       assert.strictEqual(worker.isRunning(), true);
 
-      worker.updateContainerStatus(ContainerStatus.PendingStop, performance.now());
+      worker.updateContainerStatus(ContainerStatus.PendingStop, ControlPanelEvent.Shrink);
 
       assert.strictEqual(worker.containerStatus, ContainerStatus.PendingStop);
 
-      worker.updateContainerStatusByEvent(ContainerStatusReport.RequestDrained, performance.now());
+      worker.updateContainerStatusByEvent(ContainerStatusReport.RequestDrained);
 
       assert.strictEqual(worker.containerStatus, ContainerStatus.Stopped);
     });
@@ -273,21 +268,21 @@ describe(common.testName(__filename), () => {
       const data = { name: 'hello', maxActivateRequests: 10, activeRequestCount: 5 };
       const worker = new Worker(config, 'hello', 'world');
 
-      worker.sync(data, [], performance.now());
+      worker.sync(data, []);
       assert.strictEqual(worker.containerStatus, ContainerStatus.Created);
 
-      worker.sync(data, [{ name: 'hello', status: TurfContainerStates.forkwait, pid: 1 }], performance.now());
+      worker.sync(data, [{ name: 'hello', status: TurfContainerStates.forkwait, pid: 1 }]);
       assert.strictEqual(worker.containerStatus, ContainerStatus.Created);
 
-      worker.sync(data, [{ name: 'hello', status: TurfContainerStates.running, pid: 1 }], performance.now());
+      worker.sync(data, [{ name: 'hello', status: TurfContainerStates.running, pid: 1 }]);
 
       assert.strictEqual(worker.containerStatus, ContainerStatus.Created);
 
-      worker.updateContainerStatusByEvent(ContainerStatusReport.ContainerInstalled, performance.now());
+      worker.updateContainerStatusByEvent(ContainerStatusReport.ContainerInstalled);
 
       assert.strictEqual(worker.containerStatus, ContainerStatus.Ready);
 
-      worker.updateContainerStatusByEvent(ContainerStatusReport.ContainerDisconnected, performance.now());
+      worker.updateContainerStatusByEvent(ContainerStatusReport.ContainerDisconnected);
 
       assert.strictEqual(worker.containerStatus, ContainerStatus.Stopped);
     });
@@ -296,34 +291,34 @@ describe(common.testName(__filename), () => {
       const data = { name: 'hello', maxActivateRequests: 10, activeRequestCount: 5 };
       const worker = new Worker(config, 'hello', 'world');
 
-      worker.sync(data, [], performance.now());
+      worker.sync(data, []);
       assert.strictEqual(worker.containerStatus, ContainerStatus.Created);
 
-      worker.updateContainerStatusByEvent(ContainerStatusReport.ContainerInstalled, performance.now());
+      worker.updateContainerStatusByEvent(ContainerStatusReport.ContainerInstalled);
 
       assert.strictEqual(worker.containerStatus, ContainerStatus.Ready);
 
-      worker.sync(data, [{ name: 'hello', status: TurfContainerStates.stopped, pid: 1 }], performance.now() - 1000);
+      worker.sync(data, [{ name: 'hello', status: TurfContainerStates.stopped, pid: 1 }]);
 
       assert.strictEqual(worker.containerStatus, ContainerStatus.Stopped);
 
-      worker.updateContainerStatus(ContainerStatus.Created, performance.now());
+      worker.updateContainerStatus(ContainerStatus.Created, ControlPanelEvent.Expand);
 
       assert.strictEqual(worker.containerStatus, ContainerStatus.Stopped);
 
-      worker.updateContainerStatus(ContainerStatus.PendingStop, performance.now());
+      worker.updateContainerStatus(ContainerStatus.PendingStop, ControlPanelEvent.Shrink);
 
       assert.strictEqual(worker.containerStatus, ContainerStatus.Stopped);
 
-      worker.updateContainerStatusByEvent(ContainerStatusReport.ContainerDisconnected, performance.now());
+      worker.updateContainerStatusByEvent(ContainerStatusReport.ContainerDisconnected);
 
       assert.strictEqual(worker.containerStatus, ContainerStatus.Stopped);
 
-      worker.sync(data, [{ name: 'hello', status: TurfContainerStates.unknown, pid: 1 }], performance.now());
+      worker.sync(data, [{ name: 'hello', status: TurfContainerStates.unknown, pid: 1 }]);
 
       assert.strictEqual(worker.containerStatus, ContainerStatus.Unknown);
 
-      worker.sync(data, [{ name: 'hello', status: TurfContainerStates.stopped, pid: 1 }], performance.now());
+      worker.sync(data, [{ name: 'hello', status: TurfContainerStates.stopped, pid: 1 }]);
 
       assert.strictEqual(worker.containerStatus, ContainerStatus.Unknown);
     });
@@ -332,7 +327,7 @@ describe(common.testName(__filename), () => {
       const worker = new Worker(config, 'hello', 'world');
       assert.strictEqual(worker.containerStatus, ContainerStatus.Created);
 
-      worker.updateContainerStatusByEvent('Unsupported' as ContainerStatusReport, performance.now());
+      worker.updateContainerStatusByEvent('Unsupported' as ContainerStatusReport);
       assert.strictEqual(worker.containerStatus, ContainerStatus.Unknown);
     });
   });
@@ -352,7 +347,7 @@ describe(common.testName(__filename), () => {
       const data = { name: 'hello', maxActivateRequests: 10, activeRequestCount: 5 };
       const worker = new Worker(config, 'hello', 'world');
 
-      worker.sync(data, [{ pid: 1, status: TurfContainerStates.starting, name: 'hello' }], performance.now());
+      worker.sync(data, [{ pid: 1, status: TurfContainerStates.starting, name: 'hello' }]);
 
       assert.strictEqual(worker.turfContainerStates, TurfContainerStates.starting);
       assert.strictEqual(worker.containerStatus, ContainerStatus.Created);
@@ -360,7 +355,7 @@ describe(common.testName(__filename), () => {
       clock.tick(config.worker.controlPlaneConnectTimeout + 1000);
       const spy = sinon.spy(worker.logger, 'error');
 
-      worker.sync(data, [{ pid: 1, status: TurfContainerStates.running, name: 'hello' }], performance.now());
+      worker.sync(data, [{ pid: 1, status: TurfContainerStates.running, name: 'hello' }]);
 
       assert.strictEqual(worker.turfContainerStates, TurfContainerStates.running);
       assert.strictEqual(worker.containerStatus, ContainerStatus.Stopped);
@@ -373,7 +368,7 @@ describe(common.testName(__filename), () => {
     it('without data', () => {
       const worker = new Worker(config, 'hello', 'world');
 
-      worker.sync(null, [{ pid: 1, status: TurfContainerStates.starting, name: 'hello' }], performance.now());
+      worker.sync(null, [{ pid: 1, status: TurfContainerStates.starting, name: 'hello' }]);
 
       assert.strictEqual(worker.turfContainerStates, TurfContainerStates.starting);
       assert.strictEqual(worker.containerStatus, ContainerStatus.Created);
@@ -381,7 +376,7 @@ describe(common.testName(__filename), () => {
       clock.tick(config.worker.controlPlaneConnectTimeout + 1000);
       const spy = sinon.spy(worker.logger, 'error');
 
-      worker.sync(null, [{ pid: 1, status: TurfContainerStates.running, name: 'hello' }], performance.now());
+      worker.sync(null, [{ pid: 1, status: TurfContainerStates.running, name: 'hello' }]);
 
       assert.strictEqual(worker.turfContainerStates, TurfContainerStates.running);
       assert.strictEqual(worker.containerStatus, ContainerStatus.Stopped);
@@ -394,7 +389,7 @@ describe(common.testName(__filename), () => {
     it('created to stop when unsupported state timeout', () => {
       const worker = new Worker(config, 'hello', 'world');
 
-      worker.sync(null, [{ pid: 1, status: TurfContainerStates.starting, name: 'hello' }], performance.now());
+      worker.sync(null, [{ pid: 1, status: TurfContainerStates.starting, name: 'hello' }]);
 
       assert.strictEqual(worker.turfContainerStates, TurfContainerStates.starting);
       assert.strictEqual(worker.containerStatus, ContainerStatus.Created);
@@ -402,7 +397,7 @@ describe(common.testName(__filename), () => {
       clock.tick(config.worker.controlPlaneConnectTimeout + 1000);
       const spy = sinon.spy(worker.logger, 'error');
 
-      worker.sync(null, [{ pid: 1, status: 'unsupported' as TurfContainerStates, name: 'hello' }], performance.now());
+      worker.sync(null, [{ pid: 1, status: 'unsupported' as TurfContainerStates, name: 'hello' }]);
 
       assert.strictEqual(worker.containerStatus, ContainerStatus.Stopped);
 
@@ -414,16 +409,16 @@ describe(common.testName(__filename), () => {
     it('do nothing when unsupported state', () => {
       const worker = new Worker(config, 'hello', 'world');
 
-      worker.sync(null, [{ pid: 1, status: TurfContainerStates.running, name: 'hello' }], performance.now());
+      worker.sync(null, [{ pid: 1, status: TurfContainerStates.running, name: 'hello' }]);
 
       assert.strictEqual(worker.turfContainerStates, TurfContainerStates.running);
       assert.strictEqual(worker.containerStatus, ContainerStatus.Created);
 
-      worker.updateContainerStatus(ContainerStatus.Ready, performance.now());
+      worker.updateContainerStatus(ContainerStatus.Ready, ContainerStatusReport.ContainerInstalled);
 
       clock.tick(config.worker.controlPlaneConnectTimeout + 1000);
 
-      worker.sync(null, [{ pid: 1, status: 'unsupported' as TurfContainerStates, name: 'hello' }], performance.now());
+      worker.sync(null, [{ pid: 1, status: 'unsupported' as TurfContainerStates, name: 'hello' }]);
 
       assert.strictEqual(worker.containerStatus, ContainerStatus.Ready);
     });
