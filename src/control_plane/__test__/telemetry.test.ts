@@ -1,7 +1,7 @@
 import assert from 'assert';
 import { once } from 'events';
-import otel from '@opentelemetry/api';
-import { MeterProvider } from '@opentelemetry/metrics';
+import { metrics } from '@opentelemetry/api-metrics';
+import { MeterProvider } from '@opentelemetry/sdk-metrics';
 import { turf } from '#self/lib/turf';
 import { bufferFromStream } from '#self/lib/util';
 import { TurfContainerStates } from '#self/lib/turf/wrapper';
@@ -12,32 +12,31 @@ import {
 } from '#self/lib/telemetry/semantic_conventions';
 import { daemonProse, ProseContext, TelemetryContext } from '#self/test/util';
 import * as common from '#self/test/common';
-import { TestProcessor, forceExport, getMetricRecords, nodeJsWorkerTestItem } from '#self/test/telemetry-util';
+import { TestMetricReader, getMetricRecords, nodeJsWorkerTestItem } from '#self/test/telemetry-util';
 
 describe(common.testName(__filename), function() {
   // Debug version of Node.js may take longer time to bootstrap.
   this.timeout(30_000);
 
   const context: ProseContext<TelemetryContext> = {
-    agent: undefined,
     meterProvider: undefined,
-    processor: undefined,
+    metricReader: undefined,
   };
 
   beforeEach(async () => {
-    context.processor = new TestProcessor();
-    // NOTE: Processor is named as Batcher in 0.10.2
-    context.meterProvider = new MeterProvider({ batcher: context.processor } as any);
-    otel.metrics.setGlobalMeterProvider(context.meterProvider);
+    context.metricReader = new TestMetricReader();
+    context.meterProvider = new MeterProvider();
+    context.meterProvider!.addMetricReader(context.metricReader!);
+    metrics.setGlobalMeterProvider(context.meterProvider);
   });
   afterEach(() => {
     // disable current global provider so that we can set global meter provider again.
-    otel.metrics.disable();
+    metrics.disable();
   });
   daemonProse(context);
 
   it('should collect replica metrics', async () => {
-    const { agent, meterProvider, processor } = context;
+    const { agent, metricReader } = context;
 
     await agent!.setFunctionProfile([ nodeJsWorkerTestItem.profile ] as any);
     const data = Buffer.from('foobar');
@@ -46,12 +45,9 @@ describe(common.testName(__filename), function() {
     const buffer = await bufferFromStream(response!);
     assert.strictEqual(buffer.toString('utf8'), 'foobar');
 
-    // There is a bug in batch observer in 0.10.2
-    // See https://github.com/open-telemetry/opentelemetry-js/pull/1470
-    await forceExport(meterProvider!);
-    await forceExport(meterProvider!);
+    const result = await metricReader!.collect();
     {
-      const records = getMetricRecords(processor as any,
+      const records = getMetricRecords<number>(result,
         ControlPlaneMetrics.FUNCTION_REPLICA_TOTAL_COUNT,
         {
           [PlaneMetricAttributes.FUNCTION_NAME]: nodeJsWorkerTestItem.name,
@@ -59,13 +55,13 @@ describe(common.testName(__filename), function() {
         });
 
       assert.strictEqual(records.length, 1);
-      assert.strictEqual(records[0].aggregator.toPoint().value, 1);
+      assert.strictEqual(records[0].value, 1);
     }
   });
 
   const replicaResourceUsageProse = process.platform === 'linux' ? it : it.skip;
   replicaResourceUsageProse('should collect replica exit count', async () => {
-    const { agent, control, meterProvider, processor }: any = context;
+    const { agent, control, metricReader }: any = context;
 
     await agent.setFunctionProfile([ nodeJsWorkerTestItem.profile ]);
     const data = Buffer.from('foobar');
@@ -82,9 +78,9 @@ describe(common.testName(__filename), function() {
 
     await once(control.capacityManager.workerStatsSnapshot, 'workerStopped');
 
-    await forceExport(meterProvider);
+    const result = await metricReader!.collect();
     {
-      const records = getMetricRecords(processor,
+      const records = getMetricRecords<number>(result,
         ControlPlaneMetrics.FUNCTION_REPLICA_EXIT_COUNT,
         {
           [PlaneMetricAttributes.FUNCTION_NAME]: nodeJsWorkerTestItem.name,
@@ -94,12 +90,12 @@ describe(common.testName(__filename), function() {
           [ControlPlaneMetricAttributes.EXIT_REASON]: '',
         });
       assert.strictEqual(records.length, 1);
-      assert.strictEqual(records[0].aggregator.toPoint().value, 1);
+      assert.strictEqual(records[0].value, 1);
     }
   });
 
   replicaResourceUsageProse('should collect replica resource usage', async () => {
-    const { agent, control, meterProvider, processor }: any = context;
+    const { agent, control, metricReader }: any = context;
 
     await agent.setFunctionProfile([ nodeJsWorkerTestItem.profile ]);
     const data = Buffer.from('foobar');
@@ -122,10 +118,7 @@ describe(common.testName(__filename), function() {
     assert.ok(state != null);
     const pid = state.pid;
 
-    // There is a bug in batch observer in 0.10.2
-    // See https://github.com/open-telemetry/opentelemetry-js/pull/1470
-    await forceExport(meterProvider);
-    await forceExport(meterProvider);
+    const result = await metricReader!.collect();
 
     [
       ControlPlaneMetrics.REPLICA_CPU_USER,
@@ -133,7 +126,7 @@ describe(common.testName(__filename), function() {
       ControlPlaneMetrics.REPLICA_MEM_RSS,
       ControlPlaneMetrics.REPLICA_MEM_VM,
     ].forEach(metric => {
-      const records = getMetricRecords(processor,
+      const records = getMetricRecords<number>(result,
         metric,
         {
           [PlaneMetricAttributes.FUNCTION_NAME]: nodeJsWorkerTestItem.name,
@@ -141,7 +134,7 @@ describe(common.testName(__filename), function() {
           [ControlPlaneMetricAttributes.PROCESS_PID]: `${pid}`,
         });
       assert.strictEqual(records.length, 1, `expect ${metric}`);
-      assert.ok(records[0].aggregator.toPoint().value >= 0, `expect ${metric} value`);
+      assert.ok(records[0].value >= 0, `expect ${metric} value`);
     });
   });
 });

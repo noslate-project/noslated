@@ -15,8 +15,8 @@ import { createDeferred, bufferFromStream } from '../lib/util';
 import { config } from '#self/config';
 import { startTurfD, stopTurfD } from '#self/lib/turf';
 import { TriggerResponse } from '#self/delegate/request_response';
-import { TestProcessor } from './telemetry-util';
-import { MeterProvider } from '@opentelemetry/metrics';
+import { TestMetricReader } from './telemetry-util';
+import { MeterProvider } from '@opentelemetry/sdk-metrics';
 import { Turf } from '#self/lib/turf/wrapper';
 
 export function TMP_DIR() {
@@ -188,7 +188,7 @@ export interface TurfContext {
 
 export interface TelemetryContext {
   meterProvider?: MeterProvider;
-  processor?: TestProcessor;
+  metricReader?: TestMetricReader;
 }
 
 export type ProseContext<T = unknown> = T & Roles;

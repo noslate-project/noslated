@@ -3,7 +3,6 @@ import { once } from 'events';
 import * as common from '#self/test/common';
 import { TestClient } from './test-client';
 import { NoslatedDelegateService } from '#self/delegate/index';
-import { WorkerMetricsAttributes, WorkerMetrics } from '#self/lib/telemetry/semantic_conventions';
 
 describe(common.testName(__filename), () => {
   let client: TestClient | null;

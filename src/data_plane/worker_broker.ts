@@ -337,7 +337,7 @@ export class WorkerBroker extends Base {
         }
       });
 
-      this.dataFlowController.queuedRequestDurationRecorder.add(Date.now() - request.startEpoch, {
+      this.dataFlowController.queuedRequestDurationHistogram.record(Date.now() - request.startEpoch, {
         [PlaneMetricAttributes.FUNCTION_NAME]: this.name,
       });
 
@@ -592,7 +592,7 @@ export class WorkerBroker extends Base {
       this.logger.debug('A request wait timeout.');
       this.requestQueue = this.requestQueue.filter(r => r !== request);
       request.reject(new Error(`Timeout for waiting worker in ${metadata.timeout}ms, request(${request.requestId}).`));
-      this.dataFlowController.queuedRequestDurationRecorder.add(Date.now() - request.startEpoch, {
+      this.dataFlowController.queuedRequestDurationHistogram.record(Date.now() - request.startEpoch, {
         [PlaneMetricAttributes.FUNCTION_NAME]: this.name,
       });
     });
@@ -624,7 +624,7 @@ export class WorkerBroker extends Base {
     for (const pendingRequest of requestQueue) {
       pendingRequest.stopTimer();
       pendingRequest.reject(err);
-      this.dataFlowController.queuedRequestDurationRecorder.add(Date.now() - pendingRequest.startEpoch, {
+      this.dataFlowController.queuedRequestDurationHistogram.record(Date.now() - pendingRequest.startEpoch, {
         [PlaneMetricAttributes.FUNCTION_NAME]: this.name,
       });
     }

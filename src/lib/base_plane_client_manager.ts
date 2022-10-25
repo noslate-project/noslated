@@ -171,7 +171,7 @@ export class BasePlaneClientManager extends BaseOf(EventEmitter) {
         promises.push(client[func].call(client, ...args));
       }
     }
-    return await Promise[promiseMethod](promises);
+    return await (Promise as any)[promiseMethod](promises);
   }
 
   /**
