@@ -1,8 +1,7 @@
-// TODO(chengzhong.wcz): upgrade to latest @opentelemetry/api-metrics
-import api from '@opentelemetry/api';
+import { metrics } from '@opentelemetry/api-metrics';
 const version = require('#self/package.json').version;
 
 export function getMeter() {
-  const meter = api.metrics.getMeter('noslated', version);
+  const meter = metrics.getMeter('noslated', version);
   return meter;
 }

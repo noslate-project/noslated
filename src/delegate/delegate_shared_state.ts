@@ -1,6 +1,6 @@
 import { NoslatedServer } from './noslated_ipc';
 import type { NamespaceResolver } from './namespace';
-import { Meter, Counter, ValueRecorder } from '@opentelemetry/api';
+import { Meter, Counter, Histogram } from '@opentelemetry/api-metrics';
 
 class DelegateSharedState {
   #namespaceResolver: NamespaceResolver;
@@ -16,7 +16,7 @@ class DelegateSharedState {
    */
   meter: Meter | undefined;
   triggerCounter: Counter | undefined;
-  triggerDurationRecorder: ValueRecorder | undefined;
+  triggerDurationHistogram: Histogram | undefined;
 
   constructor(namespaceResolver: NamespaceResolver, serverPath: string) {
     this.#namespaceResolver = namespaceResolver;

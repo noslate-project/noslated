@@ -17,7 +17,7 @@ import { WorkerTelemetry } from './worker_telemetry';
 import { NamespaceResolver } from './namespace_resolver';
 import { Host } from '#self/lib/rpc/host';
 import { Config } from '#self/config';
-import { Meter } from '@opentelemetry/api';
+import { Meter } from '@opentelemetry/api-metrics';
 import * as root from '#self/proto/root';
 import { RawFunctionProfile } from '#self/lib/json/function_profile';
 import { Readable } from 'stream';
@@ -32,10 +32,10 @@ const logger = require('#self/lib/logger').get('data flow controller');
  */
 export class DataFlowController extends BaseOf(EventEmitter) {
   #invokeCounter;
-  #invokeDurationRecorder;
+  #invokeDurationHistogram;
 
   queuedRequestCounter;
-  queuedRequestDurationRecorder;
+  queuedRequestDurationHistogram;
 
   meter: Meter;
   delegateSockPath: string;
@@ -59,12 +59,10 @@ export class DataFlowController extends BaseOf(EventEmitter) {
 
     this.meter = getMeter();
     this.#invokeCounter = this.meter.createCounter(DataPlaneMetrics.INVOKE_COUNT, {});
-    // TODO: histogram
-    this.#invokeDurationRecorder = this.meter.createCounter(DataPlaneMetrics.INVOKE_DURATION, {});
+    this.#invokeDurationHistogram = this.meter.createHistogram(DataPlaneMetrics.INVOKE_DURATION, {});
 
     this.queuedRequestCounter = this.meter.createCounter(DataPlaneMetrics.QUEUED_REQUEST_COUNT, {});
-    // TODO: histogram
-    this.queuedRequestDurationRecorder = this.meter.createCounter(DataPlaneMetrics.QUEUED_REQUEST_DURATION, {});
+    this.queuedRequestDurationHistogram = this.meter.createHistogram(DataPlaneMetrics.QUEUED_REQUEST_DURATION, {});
 
     const delegateSockPath = this.delegateSockPath = path.join(
       this.config.dirs.noslatedSock,
@@ -465,7 +463,7 @@ export class DataFlowController extends BaseOf(EventEmitter) {
         [PlaneMetricAttributes.FUNCTION_NAME]: name,
         [PlaneMetricAttributes.SERVICE_NAME]: serviceName,
       });
-      this.#invokeDurationRecorder.add(endTime - startTime, {
+      this.#invokeDurationHistogram.record(endTime - startTime, {
         [PlaneMetricAttributes.FUNCTION_NAME]: name,
         [PlaneMetricAttributes.SERVICE_NAME]: serviceName,
       });

@@ -1,4 +1,4 @@
-import { Meter, ValueObserver, BatchObserverResult, Labels, Observation } from '@opentelemetry/api';
+import { BatchObservableResult, Meter, ObservableGauge } from '@opentelemetry/api-metrics';
 import { WorkerMetrics, PlaneMetricAttributes } from '#self/lib/telemetry/semantic_conventions';
 import { NoslatedDelegateService } from '#self/delegate';
 import { DataFlowController } from './data_flow_controller';
@@ -8,39 +8,20 @@ export class WorkerTelemetry {
   #meter: Meter;
   #delegate: NoslatedDelegateService;
   #dataFlowController: DataFlowController;
-  #observerMap: Map<string, ValueObserver>  = new Map();
+  #observables: Map<string, ObservableGauge>  = new Map();
 
   constructor(meter: Meter, delegate: NoslatedDelegateService, dataFlowController: DataFlowController) {
     this.#meter = meter;
     this.#delegate = delegate;
     this.#dataFlowController = dataFlowController;
 
-    this.#observerMap.set(WorkerMetrics.TOTAL_HEAP_SIZE, this.#meter.createValueObserver(WorkerMetrics.TOTAL_HEAP_SIZE));
-    this.#observerMap.set(WorkerMetrics.USED_HEAP_SIZE, this.#meter.createValueObserver(WorkerMetrics.USED_HEAP_SIZE));
+    this.#observables.set(WorkerMetrics.TOTAL_HEAP_SIZE, this.#meter.createObservableGauge(WorkerMetrics.TOTAL_HEAP_SIZE));
+    this.#observables.set(WorkerMetrics.USED_HEAP_SIZE, this.#meter.createObservableGauge(WorkerMetrics.USED_HEAP_SIZE));
 
-    // Latest OpenTelemetry Meter#createBatchObserver doesn't require name as
-    // first parameter
-    if (this.#meter.createBatchObserver.length === 1) {
-      (this.#meter as any).createBatchObserver(async (batchObserverResult: BatchObserverResult) => {
-        const series = await this.onObservation();
-        series.forEach(({ labels, observations }) => {
-          batchObserverResult.observe(labels, observations);
-        });
-      });
-    } else {
-      // The name parameter is actually no meaning.
-      this.#meter.createBatchObserver('noslate.data.batch_observer', async batchObserverResult => {
-        const series = await this.onObservation();
-        series.forEach(({ labels, observations }) => {
-          batchObserverResult.observe(labels, observations);
-        });
-      });
-    }
+    this.#meter.addBatchObservableCallback(this.onObservation, Array.from(this.#observables.values()));
   }
 
-  onObservation = async () => {
-    const observations: MetricItem[] = [];
-
+  onObservation = async (batchObservableResult: BatchObservableResult) => {
     await Promise.all(Array.from(this.#dataFlowController.brokers.values()).flatMap(broker => {
       const functionName = broker.name;
       // TODO(chengzhong.wcz): runtime type;
@@ -51,33 +32,21 @@ export class WorkerTelemetry {
           metrics = await this.#delegate.collectMetrics(worker.credential);
         } catch (e) {
           logger.warn(`Failed to collect metrics for worker ${worker.name}.`, e);
-          return null;
+          return;
         }
 
         for (const item of (metrics?.integerRecords || [])) {
-          const observer = this.#observerMap.get(item.name);
-          if (observer == null) {
+          const observable = this.#observables.get(item.name);
+          if (observable == null) {
             continue;
           }
 
-          observations.push({
-            labels: {
-              ...item.labels,
-              [PlaneMetricAttributes.FUNCTION_NAME]: functionName,
-            },
-            observations: [
-              observer.observation(item.value as number),
-            ],
+          batchObservableResult.observe(observable, item.value, {
+            ...item.labels,
+            [PlaneMetricAttributes.FUNCTION_NAME]: functionName,
           });
         }
-      }).filter(o => o);
+      })
     }));
-
-    return observations;
   }
-}
-
-interface MetricItem {
-  labels: Labels;
-  observations: Observation[];
 }

@@ -1,7 +1,6 @@
-import { hrTime } from '@opentelemetry/core';
-import { Batcher } from '@opentelemetry/metrics/build/src/export/Batcher';
 import { baselineDir } from '#self/test/common';
-import { MeterProvider, MetricRecord } from '@opentelemetry/metrics';
+import { CollectionResult, DataPoint, MetricReader } from '@opentelemetry/sdk-metrics';
+import { MetricAttributes } from '@opentelemetry/api-metrics';
 
 export const nodeJsWorkerTestItem = {
   name: 'node_worker_echo',
@@ -24,57 +23,12 @@ export const serverlessWorkerTestItem = {
   },
 };
 
-/** Basic aggregator for LastValue which keeps the last recorded value. */
-class LastValueAggregator {
-  _current = 0;
-  _lastUpdateTime = [ 0, 0 ];
-
-  update(value: any) {
-    this._current = value;
-    this._lastUpdateTime = hrTime();
-  }
-
-  toPoint() {
-    return {
-      value: this._current,
-      timestamp: this._lastUpdateTime,
-    };
-  }
+export class TestMetricReader extends MetricReader {
+  protected async onForceFlush(): Promise<void> {}
+  protected async onShutdown(): Promise<void> {}
 }
 
-
-/**
- * Processor which retains all dimensions/labels. It accepts all records and
- * passes them for exporting.
- */
-export class TestProcessor extends Batcher {
-  aggregatorFor(): any {
-    return new LastValueAggregator();
-  }
-
-  process(record: MetricRecord) {
-    const labels = Object.entries(record.labels)
-      .map(it => `${it[0]}=${it[1]}`)
-      .join(',');
-    this._batchMap.set(record.descriptor.name + labels, record);
-  }
-
-  checkPointSet() {
-    return Array.from(this._batchMap.values());
-  }
-}
-
-/**
- *
- * @param {import('@opentelemetry/metrics).MeterProvider} meterProvider -
- */
-export async function forceExport(meterProvider: MeterProvider) {
-  return Promise.all(Array.from(meterProvider['_meters'].values()).map((it: any) => {
-    return it.collect();
-  }));
-}
-
-function labelObjectEquals(lhs: { [x: string]: any; }, rhs: { [x: string]: any; }) {
+function attributesEquals(lhs: { [x: string]: any; }, rhs: { [x: string]: any; }) {
   const lhsKeys = Object.keys(lhs).sort();
   const rhsKeys = Object.keys(rhs).sort();
   if (lhsKeys.length !== rhsKeys.length) {
@@ -90,15 +44,16 @@ function labelObjectEquals(lhs: { [x: string]: any; }, rhs: { [x: string]: any; 
   return true;
 }
 
-/**
- *
- * @param {TestProcessor} processor -
- * @param {string} name -
- * @param {object} labels -
- */
-export function getMetricRecords(processor: { checkPointSet: () => any; }, name: any, labels: any) {
-  const checkpointSet = processor.checkPointSet();
-  return checkpointSet.filter((it: { descriptor: { name: any; }; labels: any; }) => {
-    return it.descriptor.name === name && labelObjectEquals(it.labels, labels);
-  });
+export function getMetricRecords<T>(result: CollectionResult, name: any, attributes: MetricAttributes) {
+  if (result.errors.length) {
+    throw new AggregateError(result.errors);
+  }
+  return result.resourceMetrics.scopeMetrics.flatMap(it => it.metrics)
+    .filter(metric => {
+      return metric.descriptor.name === name;
+    })
+    .flatMap<DataPoint<T>>(it => it.dataPoints as unknown as DataPoint<T>[])
+    .filter(it => {
+      return attributesEquals(it.attributes, attributes);
+    });
 }

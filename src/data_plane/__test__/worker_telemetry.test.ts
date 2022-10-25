@@ -1,6 +1,6 @@
 import assert from 'assert';
-import otel from '@opentelemetry/api';
-import { MeterProvider } from '@opentelemetry/metrics';
+import { metrics } from '@opentelemetry/api-metrics';
+import { MeterProvider } from '@opentelemetry/sdk-metrics';
 
 import { turf } from '#self/lib/turf';
 import { bufferFromStream } from '#self/lib/util';
@@ -12,7 +12,7 @@ import {
 
 import { daemonProse, TelemetryContext, ProseContext } from '#self/test/util';
 import * as common from '#self/test/common';
-import { TestProcessor, forceExport, getMetricRecords, nodeJsWorkerTestItem, serverlessWorkerTestItem } from '#self/test/telemetry-util';
+import { TestMetricReader, getMetricRecords, nodeJsWorkerTestItem, serverlessWorkerTestItem } from '#self/test/telemetry-util';
 import { TurfContainerStates } from '#self/lib/turf';
 
 describe(common.testName(__filename), function() {
@@ -20,24 +20,18 @@ describe(common.testName(__filename), function() {
   this.timeout(30_000);
 
   const context: ProseContext<TelemetryContext> = {
-    /** @type {NoslatedClient} */
-    agent: undefined,
-    /** @type {otel.MeterProvider} */
     meterProvider: undefined,
-    /** @type {TestProcessor} */
-    processor: undefined,
-    /** @type {import('#self/data_plane/data_plane').DataPlane} */
-    data: undefined,
+    metricReader: undefined,
   };
   beforeEach(async () => {
-    context.processor = new TestProcessor();
-    // NOTE: Processor is named as Batcher in 0.10.2
-    context.meterProvider = new MeterProvider({ batcher: context.processor } as any);
-    otel.metrics.setGlobalMeterProvider(context.meterProvider);
+    context.metricReader = new TestMetricReader();
+    context.meterProvider = new MeterProvider();
+    context.meterProvider.addMetricReader(context.metricReader!);
+    metrics.setGlobalMeterProvider(context.meterProvider);
   });
   afterEach(() => {
     // disable current global provider so that we can set global meter provider again.
-    otel.metrics.disable();
+    metrics.disable();
   });
   daemonProse(context);
 
@@ -46,7 +40,7 @@ describe(common.testName(__filename), function() {
     [ 'Serverless Worker', serverlessWorkerTestItem ],
   ].forEach(([ name, testItem ]: any[]) => {
     it(`collect ${name} metrics`, async () => {
-      const { agent, meterProvider, processor, data: dataPlane } = context;
+      const { agent, metricReader, data: dataPlane } = context;
 
       await agent!.setFunctionProfile([ testItem.profile ]);
 
@@ -69,10 +63,9 @@ describe(common.testName(__filename), function() {
       assert.ok(state != null);
       const pid = state.pid;
 
-      await forceExport(meterProvider!);
-      await forceExport(meterProvider!);
+      const result = await metricReader!.collect();
       {
-        const records = getMetricRecords(processor!, WorkerMetrics.TOTAL_HEAP_SIZE, {
+        const records = getMetricRecords<number>(result, WorkerMetrics.TOTAL_HEAP_SIZE, {
           [PlaneMetricAttributes.FUNCTION_NAME]: testItem.name,
           [WorkerMetricsAttributes.WORKER_PID]: `${pid}`,
         });
@@ -80,7 +73,7 @@ describe(common.testName(__filename), function() {
       }
 
       {
-        const records = getMetricRecords(processor!, WorkerMetrics.USED_HEAP_SIZE, {
+        const records = getMetricRecords<number>(result, WorkerMetrics.USED_HEAP_SIZE, {
           [PlaneMetricAttributes.FUNCTION_NAME]: testItem.name,
           [WorkerMetricsAttributes.WORKER_PID]: `${pid}`,
         });

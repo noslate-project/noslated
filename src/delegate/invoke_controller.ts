@@ -440,7 +440,7 @@ export class InvokeController {
     this.#sharedState.triggerCounter!.add(1, {
       [DelegateMetricAttributes.TRIGGER_METHOD]: method,
     });
-    this.#sharedState.triggerDurationRecorder!.record(endTime - startTime, {
+    this.#sharedState.triggerDurationHistogram!.record(endTime - startTime, {
       [DelegateMetricAttributes.TRIGGER_METHOD]: method,
     });
 
