@@ -41,7 +41,7 @@ describe(testName(__filename), () => {
     });
 
     describe('NoslatedServer', () => {
-      let sessionId: number = -1;
+      let sessionId = -1;
       beforeEach(() => {
         sessionId = -1;
       });
@@ -126,7 +126,7 @@ describe(testName(__filename), () => {
         assert(sessionId >= 0);
         const ret = server.trigger(sessionId, 'test', {}, false, true, 2000);
 
-        let streamId = ret.sid;
+        const streamId = ret.sid;
         assert(streamId != null);
 
         let times = 2;

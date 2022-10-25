@@ -1,0 +1,14 @@
+{
+  "extends": "./node_modules/mwts/",
+  "env": {
+    "browser": true,
+    "node": true,
+    "serviceworker": true
+  },
+  "globals": {
+    "aworker": "readonly"
+  },
+  "rules": {
+    "prettier/prettier": "off"
+  }
+}

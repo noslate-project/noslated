@@ -3,8 +3,8 @@ import crypto from 'crypto';
 const BUNDLE_PREFIX = 'NOSLATED';
 
 export function normalizeFuncNameToName(funcName: string) {
-  return funcName.replace(/[^0-9a-zA-Z_\-\.]/g, '_');
-};
+  return funcName.replace(/[^0-9a-zA-Z_\-.]/g, '_');
+}
 
 /**
  * codeBundleName
@@ -19,7 +19,7 @@ export function codeBundleName(funcName: string, signature: string, url: string)
   const urlHash = hash.digest('hex').substring(0, 8);
   const baseName = normalizeFuncNameToName(funcName);
   return `${BUNDLE_PREFIX}-${baseName}-${urlHash}-${signature}`;
-};
+}
 
 /**
  * processName
@@ -32,7 +32,7 @@ export function processName(funcName: string): string {
   const first7 = hash.digest('hex').substring(0, 7);
 
   return `${normalizeFuncNameToName(funcName)}-${first7}`;
-};
+}
 
 /**
  * credential
@@ -41,4 +41,4 @@ export function processName(funcName: string): string {
  */
 export function credential(funcName: string): string {
   return `${funcName}-${crypto.randomUUID()}`;
-};
+}

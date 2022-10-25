@@ -90,9 +90,9 @@ export function BaseOf<TBase extends Constructor>(BaseClass: TBase): BaseConstru
 class EmptyClass {}
 export const Base = BaseOf(EmptyClass);
 
-type Constructor = new (...args: any[]) => {};
+type Constructor = new (...args: any[]) => any;
 
-type BaseConstructor<T = {}> = new (...args: any[]) => T;
+type BaseConstructor<T = unknown> = new (...args: any[]) => T;
 
 export interface IBase {
   get isReady(): boolean;

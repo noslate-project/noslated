@@ -126,8 +126,8 @@ export class InvokeController {
         break;
       default:
     }
-    let originHeaders = params.headers;
-    let headers = keyValuePairsToObject(originHeaders);
+    const originHeaders = params.headers;
+    const headers = keyValuePairsToObject(originHeaders);
 
     let readable: Readable | undefined = undefined;
     let sid = params.sid;
@@ -148,12 +148,12 @@ export class InvokeController {
       method: params.method,
       headers,
     }, res => {
-      let originHeaders = res.rawHeaders.concat([
+      const originHeaders = res.rawHeaders.concat([
         'x-anc-remote-address', `${res.socket.remoteAddress}`,
         'x-anc-remote-family', `${res.socket.remoteFamily}`,
         'x-anc-remote-port', `${res.socket.remotePort}`,
       ]);
-      let headers = flattenToKeyValuePairs(originHeaders);
+      const headers = flattenToKeyValuePairs(originHeaders);
       callback(CanonicalCode.OK, null, {
         status: res.statusCode,
         headers,
@@ -355,7 +355,7 @@ export class InvokeController {
       throw new TypeError(`expect a buffer or readable stream of data, but got ${data[Symbol.toStringTag] || typeof data}`);
     }
 
-    let metadataUrl: string = '';
+    let metadataUrl = '';
     let metadataMethod = '';
     let metadataHeaders: string[] = [];
     let metadataBaggage: string[] = [];
@@ -468,7 +468,7 @@ export class InvokeController {
 
     const readable = new kReadable({
       read() {},
-      destroy: (e: Error, cb: Function) => {
+      destroy: (e: Error, cb: (error?: Error | null) => void) => {
         logger.debug('stream readable destroying, error?', e);
         this.#state.removeReadable(sid);
         cb(e);
@@ -491,7 +491,7 @@ export class InvokeController {
       kWritable = Writable;
     }
     const writable = new kWritable({
-      write: (chunk: Buffer, encoding: string, cb: Function) => {
+      write: (chunk: Buffer, encoding: string, cb: (error?: Error | null) => void) => {
         // TODO: encoding
         if (encoding !== 'buffer') {
           return cb(new TypeError('expect buffer encoding on writable'));
@@ -506,7 +506,7 @@ export class InvokeController {
             }
           );
       },
-      destroy: (e: Error, cb: Function) => {
+      destroy: (e: Error, cb: (error?: Error | null) => void) => {
         logger.debug('stream writable write end, error?', e);
         this.#state.removeWritable(writable);
         if (e instanceof NoslatedStreamError && e.name === 'PEER_CONNECTION_CLOSED') {

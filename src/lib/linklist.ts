@@ -27,22 +27,22 @@ export class LinkList<T> {
    * to string.
    */
   toString(): string {
-    let str = "[";
+    let str = '[';
     let first = true;
 
     for (let node = this._head.next; node !== this._tail; node = node?.next) {
       if (!first) {
-        str += " -> \n  ";
+        str += ' -> \n  ';
       } else {
-        str += " ";
+        str += ' ';
         first = false;
       }
 
-      if (typeof node?.value === "string") {
+      if (typeof node?.value === 'string') {
         str += '"' + node.value + '"';
-      } else if (typeof node?.value === "object") {
+      } else if (typeof node?.value === 'object') {
         if (node.value === null) {
-          str += "null";
+          str += 'null';
         } else {
           str += `${node.value}`;
         }
@@ -51,7 +51,7 @@ export class LinkList<T> {
       }
     }
 
-    str += " ]";
+    str += ' ]';
 
     return str;
   }
@@ -98,7 +98,7 @@ export class LinkList<T> {
    * @param pos
    */
   valueAt(pos: number): T | undefined {
-    let node = this.nodeAt(pos);
+    const node = this.nodeAt(pos);
 
     if (null === node) {
       return undefined;
@@ -121,7 +121,7 @@ export class LinkList<T> {
 
     node!.prev!.next = node?.next;
     node!.next!.prev = node?.prev;
-    var value = node?.value;
+    const value = node?.value;
     node = undefined;
 
     this.length--;
@@ -169,7 +169,7 @@ export class LinkList<T> {
     this._tail.prev = back?.prev;
     this._tail.prev!.next = this._tail;
 
-    var value = back?.value;
+    const value = back?.value;
     back = undefined;
 
     this.length--;
@@ -191,7 +191,7 @@ export class LinkList<T> {
     this._head.next = front?.next;
     this._head.next!.prev = this._head;
 
-    let value = front?.value;
+    const value = front?.value;
     front = undefined;
 
     this.length--;

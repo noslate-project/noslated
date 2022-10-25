@@ -174,7 +174,6 @@ export class BasePlaneClientManager extends BaseOf(EventEmitter) {
     return await Promise[promiseMethod](promises);
   }
 
-  // eslint-disable-next-line
   /**
    * Create a plane client belong to current client manager.
    * @protected

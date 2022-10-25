@@ -15,13 +15,13 @@ export interface IDataPlane {
 
   useInspector(call: ServerUnaryCall<root.noslated.data.IUseInspectorRequest>): Promise<void>;
 
-  setDaprAdaptor(call: ServerUnaryCall<root.noslated.data.ISetDaprAdaptorRequest>): Promise<{}>;
+  setDaprAdaptor(call: ServerUnaryCall<root.noslated.data.ISetDaprAdaptorRequest>): Promise<unknown>;
 
   setTracingCategories(call: ServerUnaryCall<root.noslated.data.ISetTracingCategoriesRequest>): Promise<void>;
 
   startInspector(call: ServerUnaryCall<root.noslated.data.IStartInspectorRequest>): Promise<void>;
 
-  registerWorkerCredential(call: ServerUnaryCall<root.noslated.data.IRegisterWorkerCredentialRequest>): Promise<{}>;
+  registerWorkerCredential(call: ServerUnaryCall<root.noslated.data.IRegisterWorkerCredentialRequest>): Promise<unknown>;
 
   serverSockPath(): Promise<root.noslated.data.IServerSockPathResponse>;
 }

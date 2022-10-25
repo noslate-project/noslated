@@ -1,4 +1,4 @@
-import EventEmitter from "events";
+import EventEmitter from 'events';
 import path from 'path';
 import { Meter, NoopMeter } from '@opentelemetry/api';
 import Logger from '../lib/logger';

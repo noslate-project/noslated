@@ -89,8 +89,8 @@ export class CapacityManager extends Base {
     functionName: string,
     count: number,
     options: ExpansionOptions,
-    disposable: boolean = false,
-    toReserve: boolean = false
+    disposable = false,
+    toReserve = false
   ): Promise<void[]> {
     const { workerLauncher } = this.plane;
     const ret = [];

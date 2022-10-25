@@ -106,7 +106,7 @@ export class WorkerLauncher extends Base {
    * @param {{ inspect?: boolean }} options The options object.
    * @return {Promise<void>} The result.
    */
-  async tryLaunch(funcName: string, options: BaseOptions, disposable: boolean = false, toReserve: boolean = false, requestId?: string) {
+  async tryLaunch(funcName: string, options: BaseOptions, disposable = false, toReserve = false, requestId?: string) {
     const { promise, resolve, reject } = createDeferred<void>();
     this.priorityLaunchQueue.enqueue({
       functionName: funcName,
@@ -136,7 +136,7 @@ export class WorkerLauncher extends Base {
    * @return {Promise<void>} The result.
    */
   async doTryLaunch(funcName: string, options: BaseOptions, disposable: boolean, requestId?: string) {
-    let pprofile = this.functionProfile.get(funcName);
+    const pprofile = this.functionProfile.get(funcName);
     if (!pprofile) {
       const err = new Error(`No function named ${funcName}.`);
       err.code = ErrorCode.kNoFunction;

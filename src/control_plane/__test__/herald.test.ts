@@ -5,7 +5,7 @@ import { Guest } from '#self/lib/rpc/guest';
 import { descriptor } from '#self/lib/rpc/util';
 
 describe(testName(__filename), () => {
-  const roles: ProseContext<{}> = {};
+  const roles: ProseContext = {};
   let guest: Guest;
 
   daemonProse(roles);

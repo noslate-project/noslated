@@ -34,7 +34,7 @@ export class CodeManager extends EventEmitter {
   }
 
   getHTTPCacheDir(url: string) {
-    return path.join(this.workDir, 'caches', url.replace(/[^0-9a-zA-Z_\-\.]/g, '_'));
+    return path.join(this.workDir, 'caches', url.replace(/[^0-9a-zA-Z_\-.]/g, '_'));
   }
 
   async ensureFromHTTP(url: string, bundlePath: string) {

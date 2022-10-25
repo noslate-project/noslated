@@ -1,8 +1,8 @@
 export class TokenBucket {
-  #tokenCount: number = 0;
-  #maxTokenCount: number = 0;
+  #tokenCount = 0;
+  #maxTokenCount = 0;
   #config: TokenBucketConfig;
-  #started: boolean = false;
+  #started = false;
 
   #refill = () => {
     if (this.#config.tokensPerFill) {

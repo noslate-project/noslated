@@ -49,7 +49,7 @@ const kRequestKindDataMap: { [key: number]: [any, any] } = {
 export class NoslatedError extends Error {
   peerStack?: string;
   operation: string;
-  constructor(public code: CanonicalCode, public kind: RequestKind, message: string = '') {
+  constructor(public code: CanonicalCode, public kind: RequestKind, message = '') {
     super(`Noslated request failed: CanonicalCode::${CanonicalCode[code]} request kind(${RequestKind[kind]}), ${message}`);
     this.name = 'NoslatedError';
     this.operation = RequestKind[kind];
@@ -699,7 +699,7 @@ export class MessageParser {
     }
     let res = this._bufs.shift()!;
     if (res.byteLength < byteLength) {
-      let pendingBufs = [res];
+      const pendingBufs = [res];
       let totalByteLength = res.byteLength
       for (; totalByteLength < byteLength;) {
         const next = this._bufs.shift()!;
@@ -709,8 +709,8 @@ export class MessageParser {
       res = Buffer.concat(pendingBufs, totalByteLength);
     }
     if (res.byteLength > byteLength) {
-      let view = Buffer.from(res.buffer, res.byteOffset, byteLength);
-      let unconsumed = Buffer.from(res.buffer, res.byteOffset + byteLength, res.byteLength - byteLength);
+      const view = Buffer.from(res.buffer, res.byteOffset, byteLength);
+      const unconsumed = Buffer.from(res.buffer, res.byteOffset + byteLength, res.byteLength - byteLength);
       this._bufs.unshift(unconsumed);
       res = view;
     }
