@@ -16,20 +16,19 @@ export class StateManager {
 
   updateContainerStatusByReport(worker: Worker, report: NotNullableInterface<root.noslated.data.IContainerStatusReport>) {
 
-    const { event, timestamp } = report;
+    const { event } = report;
 
     const statusTo: ContainerStatus = this.#setStatusToByEvent(event);
 
-    worker.logger.info(`update status to [${ContainerStatus[statusTo]}] from [${ContainerStatus[worker.containerStatus]}] by event [${event}] at [${timestamp}].`);
+    worker.logger.info(`update status to [${ContainerStatus[statusTo]}] from [${ContainerStatus[worker.containerStatus]}] by event [${event}].`);
 
     if (statusTo < worker.containerStatus) return;
 
     const oldStatus = worker.containerStatus;
 
     worker.containerStatus = statusTo;
-    worker.latestUpdateContainerStatusTimestamp = timestamp;
 
-    worker.logger.info(`set new container status [${ContainerStatus[statusTo]}] from [${ContainerStatus[oldStatus]}] on [${timestamp}].`);
+    worker.logger.info(`set new container status [${ContainerStatus[statusTo]}] from [${ContainerStatus[oldStatus]}].`);
   }
 
   #setStatusToByEvent(event: string) {
@@ -51,7 +50,7 @@ export class StateManager {
     }
 
     const timestamp = performance.now();
-    this.plane.capacityManager.workerStatsSnapshot.sync(data, psData, timestamp);
+    this.plane.capacityManager.workerStatsSnapshot.sync(data, psData);
     await this.plane.capacityManager.workerStatsSnapshot.correct();
   }
 

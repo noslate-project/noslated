@@ -93,7 +93,6 @@ describe(common.testName(__filename), () => {
                 functionName: 'func',
                 name: 'worker1',
                 isInspector: true,
-                timestamp: performance.now(),
                 event: ContainerStatusReport.ContainerInstalled,
                 requestId: ''
             });
@@ -104,7 +103,6 @@ describe(common.testName(__filename), () => {
                 functionName: 'func',
                 name: 'worker1',
                 isInspector: true,
-                timestamp: performance.now(),
                 event: ContainerStatusReport.RequestDrained,
                 requestId: ''
             });
@@ -115,7 +113,6 @@ describe(common.testName(__filename), () => {
                 functionName: 'func',
                 name: 'worker1',
                 isInspector: true,
-                timestamp: performance.now(),
                 event: ContainerStatusReport.ContainerDisconnected,
                 requestId: ''
             });
@@ -126,7 +123,6 @@ describe(common.testName(__filename), () => {
                 functionName: 'func',
                 name: 'worker1',
                 isInspector: true,
-                timestamp: performance.now(),
                 event: '赢',
                 requestId: ''
             });
@@ -157,12 +153,10 @@ describe(common.testName(__filename), () => {
 
             assert(worker);
 
-            const timestamp = performance.now();
             stateManager.updateContainerStatusByReport(worker, {
                 functionName: 'func',
                 name: 'worker1',
                 isInspector: true,
-                timestamp,
                 event: ContainerStatusReport.RequestDrained,
                 requestId: ''
             });
@@ -173,13 +167,11 @@ describe(common.testName(__filename), () => {
                 functionName: 'func',
                 name: 'worker1',
                 isInspector: true,
-                timestamp: performance.now(),
                 event: ContainerStatusReport.ContainerInstalled,
                 requestId: ''
             });
 
             assert.strictEqual(worker.containerStatus, ContainerStatus.Stopped);
-            assert.strictEqual(worker.latestUpdateContainerStatusTimestamp, timestamp);
         });
     });
 

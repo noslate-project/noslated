@@ -5,6 +5,7 @@ import { Logger } from '#self/lib/loggers';
 import { Turf } from '#self/lib/turf/wrapper';
 import { ControlPlane } from '../control_plane';
 import { Delta } from '../capacity_manager';
+import { ControlPanelEvent } from '#self/lib/constants';
 
 export interface IController {
 
@@ -70,7 +71,7 @@ export class BaseController implements IController {
         const { workerLauncher } = this.plane;
         const ret = [];
         for (let i = 0; i < count; i++) {
-            ret.push(workerLauncher.tryLaunch(functionName, options, disposable, toReserve));
+            ret.push(workerLauncher.tryLaunch(ControlPanelEvent.Expand, functionName, options, disposable, toReserve));
         }
         return Promise.all(ret);
     }

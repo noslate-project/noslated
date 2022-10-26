@@ -39,15 +39,7 @@ class Worker {
   set containerStatus(val) {
     this.#containerStatus = val;
   }
-
-  get latestUpdateContainerStatusTimestamp() {
-    return this.#latestUpdateContainerStatusTimestamp;
-  }
-
-  set latestUpdateContainerStatusTimestamp(val) {
-    this.#latestUpdateContainerStatusTimestamp = val;
-  }
-
+  
   /**
    * The container states.
    */
