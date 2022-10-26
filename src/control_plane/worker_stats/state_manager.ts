@@ -1,8 +1,6 @@
-import { NotNullableInterface } from "#self/lib/interfaces";
+import { NotNullableInterface } from '#self/lib/interfaces';
 import * as root from '#self/proto/root';
-import { Worker } from "./worker";
-import { ContainerStatus, ContainerStatusReport } from "#self/lib/constants";
-import { Broker } from './broker';
+import { ContainerStatus, ContainerStatusReport } from '#self/lib/constants';
 import { performance } from 'perf_hooks';
 import { ControlPlane } from '../control_plane';
 import { Logger, loggers } from '#self/lib/loggers';
@@ -14,15 +12,28 @@ export class StateManager {
     this.logger = loggers.get('state manager');
   }
 
-  updateContainerStatusByReport(worker: Worker, report: NotNullableInterface<root.noslated.data.IContainerStatusReport>) {
+  updateContainerStatusByReport(report: NotNullableInterface<root.noslated.data.IContainerStatusReport>) {
+    const { functionName, name, event, isInspector } = report;
 
-    const { event } = report;
+    const broker = this.plane.capacityManager.workerStatsSnapshot.getBroker(functionName, isInspector);
+    const worker = this.plane.capacityManager.workerStatsSnapshot.getWorker(functionName, isInspector, name);
+
+    if (!broker || !worker) {
+      this.logger.warn('containerStatusReport report [%o] skip because no broker and worker related.', report);
+      return;
+    }
+
+    // 如果已经 ready，则从 starting pool 中移除
+    if (worker.containerStatus === ContainerStatus.Ready) {
+      broker.removeItemFromStartingPool(worker.name);
+    }
 
     const statusTo: ContainerStatus = this.#setStatusToByEvent(event);
 
     worker.logger.info(`update status to [${ContainerStatus[statusTo]}] from [${ContainerStatus[worker.containerStatus]}] by event [${event}].`);
 
-    if (statusTo < worker.containerStatus) return;
+    // Stopped 和 Unknown 都是终止状态，不允许转向其他状态
+    if (worker.containerStatus >= ContainerStatus.Stopped || statusTo < worker.containerStatus) return;
 
     const oldStatus = worker.containerStatus;
 

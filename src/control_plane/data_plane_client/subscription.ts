@@ -5,7 +5,6 @@ import { ControlPlane } from '../control_plane';
 import { Logger } from '#self/lib/loggers';
 import * as root from '#self/proto/root';
 import { NotNullableInterface } from '#self/lib/interfaces';
-import { ContainerStatus } from '#self/lib/constants';
 
 export class DataPlaneSubscription {
   static SubscriptionNames = [
@@ -53,28 +52,11 @@ export class DataPlaneSubscription {
 
   async containerStatusReport(report: NotNullableInterface<root.noslated.data.IContainerStatusReport>) {
     const plane = this.plane;
-    const { capacityManager } = plane;
 
-
-    const { functionName, name, event, isInspector } = report;
-
-    const broker = capacityManager.workerStatsSnapshot.getBroker(functionName, isInspector);
-    const worker = capacityManager.workerStatsSnapshot.getWorker(functionName, isInspector, name);
-
-    if (!broker || !worker) {
-      this.logger.warn('containerStatusReport report [%o] skip because no broker and worker related.', report);
-      return;
-    }
-
-    plane.stateManager.updateContainerStatusByReport(worker, report);
-
-    // 如果已经 ready，则从 starting pool 中移除
-    if (worker.containerStatus === ContainerStatus.Ready) {
-      broker.removeItemFromStartingPool(worker.name);
-    }
+    plane.stateManager.updateContainerStatusByReport(report);
 
     try {
-      await plane.disposableController.stopDisposableWorkerByEvent(worker, event, report.requestId);
+      await plane.disposableController.tryStopDisposableWorkerByReport(report);
     } catch (error) {
       this.logger.error(`Failed to process containerStatusReport [${JSON.stringify(report)}].`, error);
     }
