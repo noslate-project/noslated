@@ -1,4 +1,3 @@
-import { TriggerResponse } from '#self/delegate/request_response';
 import { ServerWritableStream } from '@grpc/grpc-js';
 import * as root from '#self/proto/root';
 import { KVPairs } from '../rpc/key_value_pair';

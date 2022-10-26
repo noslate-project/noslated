@@ -10,7 +10,7 @@ import { turf, startTurfD, stopTurfD } from '#self/lib/turf';
 import * as testUtil from '#self/test/util';
 import { ControlPlane } from '#self/control_plane/control_plane';
 import { TurfContainerStates, TurfProcess } from '#self/lib/turf/types';
-import FakeTimers, { Clock } from '@sinonjs/fake-timers';
+import FakeTimers from '@sinonjs/fake-timers';
 import { sleep } from '#self/lib/util';
 
 const conditionalDescribe = (process.platform === 'darwin' ? describe.skip : describe);

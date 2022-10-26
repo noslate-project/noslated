@@ -1,0 +1,37 @@
+name: Deploy API Docs to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    name: Deploy API Docs to GitHub Pages
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Repo
+        run: sudo curl -sLo /usr/bin/repo https://storage.googleapis.com/git-repo-downloads/repo && sudo chmod +x /usr/bin/repo && sudo chmod 777 /usr/bin/repo
+      - name: Install Ninja
+        run: sudo apt-get install ninja-build -y
+      - name: Init noslate-project
+        run: mkdir noslate-project && cd noslate-project && repo init -u https://github.com/noslate-project/manifest.git && repo sync
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+      - name: Install dependencies
+        working-directory: noslate-project/noslated
+        run: npm install
+      - name: Build website
+        working-directory: noslate-project/noslated
+        run: npm run build:docs
+
+      # Docs: https://github.com/peaceiris/actions-gh-pages#%EF%B8%8F-docusaurus
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          force_orphan: true
+          # Build output to publish to the `gh-pages` branch:
+          publish_dir: noslate-project/noslated/docs
+          user_name: 'github-actions[bot]'
+          user_email: 'github-actions[bot]@users.noreply.github.com'
