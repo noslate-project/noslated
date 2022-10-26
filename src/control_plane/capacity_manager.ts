@@ -12,7 +12,7 @@ import * as root from '#self/proto/root';
 import { performance } from 'perf_hooks';
 import { NotNullableInterface } from '#self/lib/interfaces';
 import { ContainerStatus, ContainerStatusReport, ControlPanelEvent } from '#self/lib/constants';
-
+import _ from 'lodash';
 /**
  * CapacityManager
  */
