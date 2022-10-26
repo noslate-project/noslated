@@ -1,5 +1,3 @@
-import cp from 'child_process';
-
 /**
  * @enum
  */

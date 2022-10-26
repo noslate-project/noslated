@@ -5,7 +5,6 @@ import { createDeferred } from '#self/lib/util';
 import { daemonProse, ProseContext } from '#self/test/util';
 import { turf, TurfContainerStates } from '#self/lib/turf';
 import { Host } from '#self/lib/rpc/host';
-import { performance } from 'perf_hooks';
 import { ContainerStatusReport } from '#self/lib/constants';
 
 /**

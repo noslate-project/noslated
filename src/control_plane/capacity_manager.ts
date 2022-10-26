@@ -12,7 +12,6 @@ import { FunctionProfileManager } from '#self/lib/function_profile';
 import { Turf } from '#self/lib/turf/wrapper';
 import { DataPlaneClient } from './data_plane_client/client';
 import * as root from '#self/proto/root';
-import _ from 'lodash';
 import { performance } from 'perf_hooks';
 import { NotNullableInterface } from '#self/lib/interfaces';
 import { ContainerStatus, ContainerStatusReport, ControlPanelEvent } from '#self/lib/constants';

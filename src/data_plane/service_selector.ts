@@ -1,8 +1,5 @@
 import _ from 'lodash';
 import * as root from '#self/proto/root';
-import { DeepRequired } from '#self/lib/util';
-
-type FunctionService = DeepRequired<root.noslated.data.IFunctionService>;
 
 export type ServiceType = 'default' | 'proportional-load-balance';
 
