@@ -157,7 +157,7 @@ export class Turf {
       if (match == null) {
         return obj;
       }
-      let [ /** match */, name, value ] = match;
+      const [ /** match */, name, value ] = match;
       if (name === 'pid' || name.startsWith('stat.') || name.startsWith('rusage.')) {
         obj[name] = Number.parseInt(value);
       } else {

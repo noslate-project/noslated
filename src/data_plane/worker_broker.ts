@@ -133,9 +133,7 @@ export class Worker extends EventEmitter {
     }
 
     const { promise, resolve } = utils.createDeferred();
-    let downToZero: (...args: any[]) => void;
-
-    downToZero = () => {
+    const downToZero: (...args: any[]) => void = () => {
       resolve(true);
     };
 
@@ -170,8 +168,6 @@ export class Worker extends EventEmitter {
     let ret;
     try {
       ret = await this.delegate.trigger(this.credential, 'invoke', inputStream, metadata || { requestId });
-    } catch (e) {
-      throw e;
     } finally {
       this.activeRequestCount--;
       if (this.activeRequestCount === 0) {
@@ -341,7 +337,7 @@ export class WorkerBroker extends Base {
         }
       });
 
-      this.dataFlowController.queuedRequestDurationRecorder.add(Date.now() - request.startEpoch, {
+      this.dataFlowController.queuedRequestDurationHistogram.record(Date.now() - request.startEpoch, {
         [PlaneMetricAttributes.FUNCTION_NAME]: this.name,
       });
 
@@ -363,7 +359,6 @@ export class WorkerBroker extends Base {
       isInspector: this.options.inspect === true,
       name: worker.name,
       event: ContainerStatusReport.RequestDrained,
-      timestamp: performance.now(),
       requestId
     });
   }
@@ -549,8 +544,7 @@ export class WorkerBroker extends Base {
         functionName: this.name,
         isInspector: this.options.inspect === true,
         name: worker.name,
-        event: ContainerStatusReport.ContainerInstalled,
-        timestamp: performance.now()
+        event: ContainerStatusReport.ContainerInstalled
       });
     } catch (e) {
       this.logger.error('Unexpected error on invokeing initializer', e);
@@ -572,7 +566,7 @@ export class WorkerBroker extends Base {
   getAvailableWorker() {
     if (!this.workers.length) return null;
 
-    let worker = _.maxBy(this.workers.filter(w => !w.trafficOff), w => (w.maxActivateRequests - w.activeRequestCount));
+    const worker = _.maxBy(this.workers.filter(w => !w.trafficOff), w => (w.maxActivateRequests - w.activeRequestCount));
     if (worker && worker.maxActivateRequests > worker.activeRequestCount) {
       return worker;
     }
@@ -598,7 +592,7 @@ export class WorkerBroker extends Base {
       this.logger.debug('A request wait timeout.');
       this.requestQueue = this.requestQueue.filter(r => r !== request);
       request.reject(new Error(`Timeout for waiting worker in ${metadata.timeout}ms, request(${request.requestId}).`));
-      this.dataFlowController.queuedRequestDurationRecorder.add(Date.now() - request.startEpoch, {
+      this.dataFlowController.queuedRequestDurationHistogram.record(Date.now() - request.startEpoch, {
         [PlaneMetricAttributes.FUNCTION_NAME]: this.name,
       });
     });
@@ -630,7 +624,7 @@ export class WorkerBroker extends Base {
     for (const pendingRequest of requestQueue) {
       pendingRequest.stopTimer();
       pendingRequest.reject(err);
-      this.dataFlowController.queuedRequestDurationRecorder.add(Date.now() - pendingRequest.startEpoch, {
+      this.dataFlowController.queuedRequestDurationHistogram.record(Date.now() - pendingRequest.startEpoch, {
         [PlaneMetricAttributes.FUNCTION_NAME]: this.name,
       });
     }
@@ -671,9 +665,6 @@ export class WorkerBroker extends Base {
 
         try {
           output = await worker.pipe(inputStream, metadata);
-        } catch (e) {
-          // TODO(kaidi.zkd): do error log
-          throw e;
         } finally {
           if (this.disposable) {
             this.afterDisposableInvoke(worker, metadata.requestId);

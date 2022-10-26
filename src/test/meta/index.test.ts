@@ -38,7 +38,10 @@ describe(common.testName(__filename), () => {
       'src',
       'tools',
       'typings',
+      'LICENSE',
       'Makefile',
+      'noslated.gyp',
+      'package-lock.json',
       'package.json',
       'README.md',
 

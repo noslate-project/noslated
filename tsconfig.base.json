@@ -5,7 +5,7 @@
 
     "target": "esnext",
     "module": "commonjs",
-    "lib": ["ES2020"],
+    "lib": ["ES2021"],
     "allowJs": true,
 
     "outDir": "./build",

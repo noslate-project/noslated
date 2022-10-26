@@ -15,7 +15,7 @@ import * as root from '#self/proto/root';
 import _ from 'lodash';
 import { performance } from 'perf_hooks';
 import { NotNullableInterface } from '#self/lib/interfaces';
-import { ContainerStatus, ContainerStatusReport } from '#self/lib/constants';
+import { ContainerStatus, ContainerStatusReport, ControlPanelEvent } from '#self/lib/constants';
 
 /**
  * CapacityManager
@@ -180,13 +180,13 @@ export class CapacityManager extends Base {
   }
 
   async updateWorkerContainerStatus(report: NotNullableInterface<root.noslated.data.IContainerStatusReport>) {
-    const { functionName, name, event, timestamp, isInspector } = report;
+    const { functionName, name, event, isInspector } = report;
 
     const broker = this.workerStatsSnapshot.getBroker(functionName, isInspector);
     const worker = this.workerStatsSnapshot.getWorker(functionName, isInspector, name);
 
     if (broker && worker) {
-      worker.updateContainerStatusByEvent(event as ContainerStatusReport, timestamp);
+      worker.updateContainerStatusByEvent(event as ContainerStatusReport);
 
       // 如果已经 ready，则从 starting pool 中移除
       if (worker.containerStatus === ContainerStatus.Ready) {
@@ -237,6 +237,7 @@ export class CapacityManager extends Base {
       const now = performance.now();
 
       await this.plane.workerLauncher.tryLaunch(
+        ControlPanelEvent.RequestQueueExpand,
         name,
         {
           inspect: isInspect,

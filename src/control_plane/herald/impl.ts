@@ -85,7 +85,7 @@ export class HeraldImpl {
     }
 
     let error;
-    let dataSet: boolean = false;
+    let dataSet = false;
     try {
       await this.plane.functionProfile.set(profiles as RawFunctionProfile[], mode as Mode);
       await this.plane.dataPlaneClientManager.ready();

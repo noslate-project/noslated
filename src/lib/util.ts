@@ -133,18 +133,17 @@ async function downloadZipAndExtractToDir(url: string, dir: string) {
 
 async function raceEvent(eventEmitter: EventEmitter, events: string[]) {
   const deferred = createDeferred<[string, any[]]>();
-  let off: () => void;
+  const off: () => void = () => {
+    events.forEach((it, idx) => {
+      eventEmitter.off(it, callbacks[idx]);
+    });
+  };
   const callbacks = events.map(it => {
     return (...args: unknown[]) => {
       off();
       deferred.resolve([ it, args ]);
     };
   });
-  off = () => {
-    events.forEach((it, idx) => {
-      eventEmitter.off(it, callbacks[idx]);
-    });
-  };
 
   events.forEach((it, idx) => {
     eventEmitter.once(it, callbacks[idx]);

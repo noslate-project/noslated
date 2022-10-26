@@ -353,7 +353,7 @@ describe(common.testName(__filename), () => {
           brokerData,
           [
             { pid: 2, name: 'hello', status: TurfContainerStates.running },
-          ], performance.now()
+          ]
         );
 
         assert.deepStrictEqual(workerStatsSnapshot.toProtobufObject(), [{
@@ -399,7 +399,7 @@ describe(common.testName(__filename), () => {
           ],
           [
             { pid: 1, name: 'foooo', status: TurfContainerStates.running },
-          ], performance.now());
+          ]);
 
         // hoho should be ignored
         assert.strictEqual(workerStatsSnapshot.brokers.size, 2);
@@ -444,7 +444,6 @@ describe(common.testName(__filename), () => {
           functionName: 'func',
           name: 'hello',
           isInspector: true,
-          timestamp: performance.now(),
           event: ContainerStatusReport.ContainerInstalled,
           requestId: ''
         });
@@ -453,7 +452,7 @@ describe(common.testName(__filename), () => {
           brokerData,
           [
             { pid: 2, name: 'hello', status: TurfContainerStates.running },
-          ], performance.now()
+          ]
         );
 
         const _turfContainerStateses = [ TurfContainerStates.running, null ];
@@ -500,7 +499,7 @@ describe(common.testName(__filename), () => {
           [
             { pid: 1, name: 'foooo', status: TurfContainerStates.running },
             { pid: 2, name: 'hello', status: TurfContainerStates.starting },
-          ], Date.now()
+          ]
         );
 
         const brokers = [
@@ -540,7 +539,7 @@ describe(common.testName(__filename), () => {
           [
             { pid: 1, name: 'foooo', status: TurfContainerStates.stopped },
             { pid: 2, name: 'hello', status: TurfContainerStates.stopping },
-          ], Date.now()
+          ]
         );
 
         const _turfContainerStates = [ TurfContainerStates.stopping, TurfContainerStates.stopped ];
@@ -586,7 +585,6 @@ describe(common.testName(__filename), () => {
           functionName: 'func',
           isInspector: true,
           event: ContainerStatusReport.ContainerInstalled,
-          timestamp: performance.now(),
           name: 'hello',
           requestId: ''
         });
@@ -595,7 +593,6 @@ describe(common.testName(__filename), () => {
           functionName: 'func',
           isInspector: false,
           event: ContainerStatusReport.ContainerDisconnected,
-          timestamp: performance.now(),
           name: 'foooo',
           requestId: ''
         });
@@ -620,7 +617,7 @@ describe(common.testName(__filename), () => {
           brokerData,
           [
             { pid: 2, name: 'hello', status: TurfContainerStates.unknown },
-          ], Date.now()
+          ]
         );
 
         // 回收 Unknown
@@ -639,7 +636,7 @@ describe(common.testName(__filename), () => {
 
         await profileManager.set([], 'WAIT');
 
-        workerStatsSnapshot.sync([], [], Date.now());
+        workerStatsSnapshot.sync([], []);
 
         // 配置更新后，回收无用 borker
         await workerStatsSnapshot.correct();
@@ -680,12 +677,12 @@ describe(common.testName(__filename), () => {
 });
 
 function updateWorkerContainerStatus(snapshot: WorkerStatsSnapshot, report: NotNullableInterface<root.noslated.data.IContainerStatusReport>) {
-  const { functionName, isInspector, name, event, timestamp } = report;
+  const { functionName, isInspector, name, event } = report;
 
   const worker = snapshot.getWorker(functionName, isInspector, name);
 
   if (worker) {
-    worker.updateContainerStatusByEvent(event as ContainerStatusReport, timestamp);
+    worker.updateContainerStatusByEvent(event as ContainerStatusReport);
 
     // 如果已经 ready，则从 starting pool 中移除
     if (worker.containerStatus === ContainerStatus.Ready) {

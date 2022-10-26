@@ -15,8 +15,8 @@ import { createDeferred, bufferFromStream } from '../lib/util';
 import { config } from '#self/config';
 import { startTurfD, stopTurfD } from '#self/lib/turf';
 import { TriggerResponse } from '#self/delegate/request_response';
-import { TestProcessor } from './telemetry-util';
-import { MeterProvider } from '@opentelemetry/metrics';
+import { TestMetricReader } from './telemetry-util';
+import { MeterProvider } from '@opentelemetry/sdk-metrics';
 import { Turf } from '#self/lib/turf/wrapper';
 
 export function TMP_DIR() {
@@ -55,7 +55,7 @@ export const stopResourceServer = () => {
 
 export function closeAutoProcessRecyclingStrategy(item: any) {
   item.autoProcessRecyclingStrategy.end();
-};
+}
 
 export async function assertWorkerResponse(response: TriggerResponse, expected: any) {
   if (expected.status !== undefined) {
@@ -188,7 +188,7 @@ export interface TurfContext {
 
 export interface TelemetryContext {
   meterProvider?: MeterProvider;
-  processor?: TestProcessor;
+  metricReader?: TestMetricReader;
 }
 
-export type ProseContext<T> = T & Roles;
+export type ProseContext<T = unknown> = T & Roles;

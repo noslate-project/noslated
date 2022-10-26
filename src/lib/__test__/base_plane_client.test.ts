@@ -6,7 +6,7 @@ import * as common from '#self/test/common';
 import { Host } from '#self/lib/rpc/host';
 import * as root from '../../proto/test';
 import { ServerWritableStream } from '@grpc/grpc-js';
-import { Config } from "#self/config";
+import { Config } from '#self/config';
 
 describe(common.testName(__filename), function() {
   let client: BasePlaneClient;

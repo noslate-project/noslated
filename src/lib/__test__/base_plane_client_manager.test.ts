@@ -1,5 +1,5 @@
-import assert from "assert";
-import path from "path";
+import assert from 'assert';
+import path from 'path';
 import { sleep } from '#self/lib/util';
 import { address, grpcDescriptor, once } from './rpc/util';
 import { BasePlaneClient } from '#self/lib/base_plane_client';
@@ -9,7 +9,7 @@ import { createDeferred } from '#self/lib/util';
 import { Guest } from '#self/lib/rpc/guest';
 import { Host } from '#self/lib/rpc/host';
 import loggers from '#self/lib/logger';
-import { Config } from "#self/config";
+import { Config } from '#self/config';
 import * as root from '../../proto/test';
 import { ServerWritableStream } from '@grpc/grpc-js';
 

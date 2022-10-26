@@ -16,6 +16,7 @@ import { WorkerStatsSnapshot } from './worker_stats';
 import { kMemoryLimit } from './constants';
 import { LaunchTask, PriorityLaunchQueue, TaskPriority } from './priority_launch_queue';
 import { performance } from 'perf_hooks';
+import { ControlPanelEvent } from '#self/lib/constants';
 
 export interface WorkerStarter {
   start(serverSockPath: string, name: string, credential: string, profile: RawFunctionProfile, bundlePath: string, options: BaseOptions): Promise<void>;
@@ -106,7 +107,7 @@ export class WorkerLauncher extends Base {
    * @param {{ inspect?: boolean }} options The options object.
    * @return {Promise<void>} The result.
    */
-  async tryLaunch(funcName: string, options: BaseOptions, disposable: boolean = false, toReserve: boolean = false, requestId?: string) {
+  async tryLaunch(event: ControlPanelEvent, funcName: string, options: BaseOptions, disposable = false, toReserve = false, requestId?: string) {
     const { promise, resolve, reject } = createDeferred<void>();
     this.priorityLaunchQueue.enqueue({
       functionName: funcName,
@@ -116,7 +117,7 @@ export class WorkerLauncher extends Base {
       options,
       requestId,
       processer: async (task: LaunchTask, queue: PriorityLaunchQueue) => {
-        this.logger.info('process launch request(%s) func(%s), disposable(%s), priority(%s).',task.requestId, task.functionName, task.disposable, TaskPriority[task.priority]);
+        this.logger.info('process launch event(%s), request(%s) func(%s), disposable(%s), priority(%s).', event, task.requestId, task.functionName, task.disposable, TaskPriority[task.priority]);
         try {
           await this.doTryLaunch(task.functionName, task.options, task.disposable, task.requestId);
           resolve();
@@ -136,7 +137,7 @@ export class WorkerLauncher extends Base {
    * @return {Promise<void>} The result.
    */
   async doTryLaunch(funcName: string, options: BaseOptions, disposable: boolean, requestId?: string) {
-    let pprofile = this.functionProfile.get(funcName);
+    const pprofile = this.functionProfile.get(funcName);
     if (!pprofile) {
       const err = new Error(`No function named ${funcName}.`);
       err.code = ErrorCode.kNoFunction;
@@ -210,7 +211,7 @@ export class WorkerLauncher extends Base {
       this.snapshot.register(funcName, processName, credential, !!options.inspect, disposable);
       await starter.start(serverSockPath, processName, credential, profile, bundlePath, options);
 
-      this.logger.info('worker(%s, %s, inspect %s, disposable %s) started, cost: %s, related request(%s)', funcName, credential, options.inspect, disposable, performance.now() - now, requestId);
+      this.logger.info('worker(%s, $s, %s, inspect %s, disposable %s) started, cost: %s, related request(%s)', funcName, processName, credential, options.inspect, disposable, performance.now() - now, requestId);
     } catch (e) {
       this.snapshot.unregister(funcName, processName, !!options.inspect);
       throw e;

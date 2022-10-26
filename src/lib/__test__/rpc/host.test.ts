@@ -7,10 +7,10 @@ import { address, grpcDescriptor, once } from './util';
 import * as root from '../../../proto/test';
 import { ServerWritableStream } from '@grpc/grpc-js';
 
-describe(common.testName(__filename), function() {
+describe(common.testName(__filename), () => {
   let host: Host;
   let guest: Guest | null;
-  let cleanup: Function | undefined;
+  let cleanup: (() => unknown) | undefined;
 
   beforeEach(async () => {
     cleanup = undefined;

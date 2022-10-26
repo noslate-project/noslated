@@ -1,6 +1,6 @@
-import EventEmitter from "events";
+import EventEmitter from 'events';
 import path from 'path';
-import { Meter, NoopMeter } from '@opentelemetry/api';
+import { Meter, createNoopMeter } from '@opentelemetry/api-metrics';
 import Logger from '../lib/logger';
 import { aworker } from '../proto/aworker';
 import { CredentialRegistration } from './registration';
@@ -201,9 +201,9 @@ export class NoslatedDelegateService extends EventEmitter {
 
     this.#sharedState = new DelegateSharedState(options?.namespaceResolver ?? new DefaultNamespaceResolver(), serverPath);
 
-    this.#sharedState.meter = options?.meter ?? new NoopMeter();
-    this.#sharedState.triggerCounter = this.#sharedState.meter.createCounter(DelegateMetrics.TRIGGER_COUNT, {});
-    this.#sharedState.triggerDurationRecorder = this.#sharedState.meter.createValueRecorder(DelegateMetrics.TRIGGER_DURATION, {});
+    this.#sharedState.meter = options?.meter ?? createNoopMeter();
+    this.#sharedState.triggerCounter = this.#sharedState.meter!.createCounter(DelegateMetrics.TRIGGER_COUNT, {});
+    this.#sharedState.triggerDurationHistogram = this.#sharedState.meter!.createHistogram(DelegateMetrics.TRIGGER_DURATION, {});
   }
 
   start() {

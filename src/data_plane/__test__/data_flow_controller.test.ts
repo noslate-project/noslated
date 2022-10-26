@@ -10,7 +10,7 @@ describe(common.testName(__filename), function() {
   // Debug version of Node.js may take longer time to bootstrap.
   this.timeout(30_000);
 
-  const roles: ProseContext<{}> = {};
+  const roles: ProseContext = {};
   let guest: Guest;
   daemonProse(roles);
   beforeEach(async () => {

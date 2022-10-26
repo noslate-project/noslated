@@ -24,7 +24,7 @@ export interface ServiceProfileItem extends Omit<root.noslated.data.IFunctionSer
 
 enum ServiceTypes {
   ProportionalLoadBalance = 'proportional-load-balance',
-};
+}
 
 class ServiceSelector {
   map: Map<string, ServiceProfileItem>;

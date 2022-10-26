@@ -36,7 +36,7 @@ node_modules: package.json
 lint: jslint
 
 .PHONY: jslint jslint-fix
-jslint: $(BUILD_NODE_MODULES)
+jslint: $(BUILD_NODE_MODULES) node_modules
 	$(ESLINT) --report-unused-disable-directives .
 
 .PHONY: test sanitytest
@@ -69,6 +69,7 @@ baselinetest: export NOSLATED_SOCK_CONN_TIMEOUT=30000
 else
 baselinetest: export PATH:=$(BUILD_PROJ_DIR)/out/Release:$(PATH)
 endif
+baselinetest: export PATH:=$(shell pwd)/node_modules/.bin:$(PATH)
 baselinetest:
 	npm run test -- -g 'baseline'
 
@@ -80,6 +81,7 @@ benchmarktest: export NATIVE_DEBUG=1
 else
 benchmarktest: export PATH:=$(BUILD_PROJ_DIR)/out/Release:$(PATH)
 endif
+benchmarktest: export PATH:=$(shell pwd)/node_modules/.bin:$(PATH)
 benchmarktest: build node_modules clean-test
 	node benchmark/run test all
 

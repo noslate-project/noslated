@@ -7,7 +7,7 @@ import { config } from '#self/config';
 import { FunctionProfileManager as ProfileManager } from '#self/lib/function_profile';
 import { turf, TurfContainerStates } from '#self/lib/turf';
 import { AworkerFunctionProfile, ShrinkStrategy } from '#self/lib/json/function_profile';
-import { ContainerStatus } from '#self/lib/constants';
+import { ContainerStatus, ContainerStatusReport, ControlPanelEvent, TurfStatusEvent } from '#self/lib/constants';
 import sinon from 'sinon';
 import pedding from 'pedding';
 import { performance } from 'perf_hooks';
@@ -261,11 +261,11 @@ describe(common.testName(__filename), () => {
         }], [
           { pid: 1, name: 'foo', status: TurfContainerStates.running },
           { pid: 2, name: 'hello', status: TurfContainerStates.running },
-        ], performance.now());
+        ]);
 
         // 更新到运行状态
         broker.workers.forEach((worker) => {
-          worker.updateContainerStatus(ContainerStatus.Ready, performance.now());
+          worker.updateContainerStatus(ContainerStatus.Ready, ContainerStatusReport.ContainerInstalled);
         });
 
         assert.deepStrictEqual(broker.mostIdleNWorkers(1), [{ name: 'foo', credential: 'bar' }]);
@@ -292,7 +292,7 @@ describe(common.testName(__filename), () => {
 
         // 更新到运行状态
         broker.workers.forEach((worker) => {
-          worker.updateContainerStatus(ContainerStatus.Ready, performance.now());
+          worker.updateContainerStatus(ContainerStatus.Ready, ContainerStatusReport.ContainerInstalled);
         });
 
         broker.sync([{
@@ -306,7 +306,7 @@ describe(common.testName(__filename), () => {
         }], [
           { pid: 1, name: 'foo', status: TurfContainerStates.running },
           { pid: 2, name: 'hello', status: TurfContainerStates.running },
-        ], performance.now());
+        ]);
 
         assert.deepStrictEqual(broker.mostIdleNWorkers(1), [{ name: 'hello', credential: 'world' }]);
         assert.deepStrictEqual(broker.mostIdleNWorkers(2), [
@@ -338,7 +338,7 @@ describe(common.testName(__filename), () => {
 
         // 更新到运行状态
         broker.workers.forEach((worker) => {
-          worker.updateContainerStatus(ContainerStatus.Ready, performance.now());
+          worker.updateContainerStatus(ContainerStatus.Ready, ContainerStatusReport.ContainerInstalled);
         });
 
         broker.sync([{
@@ -352,7 +352,7 @@ describe(common.testName(__filename), () => {
         }], [
           { pid: 1, name: 'foo', status: TurfContainerStates.running },
           { pid: 2, name: 'hello', status: TurfContainerStates.running },
-        ], performance.now());
+        ]);
 
         assert.deepStrictEqual(broker.mostIdleNWorkers(1), [{ name: 'foo', credential: 'bar' }]);
         assert.deepStrictEqual(broker.mostIdleNWorkers(2), [
@@ -384,7 +384,7 @@ describe(common.testName(__filename), () => {
 
         // 更新到运行状态
         broker.workers.forEach((worker) => {
-          worker.updateContainerStatus(ContainerStatus.Ready, performance.now());
+          worker.updateContainerStatus(ContainerStatus.Ready, ContainerStatusReport.ContainerInstalled);
         });
 
         broker.sync([
@@ -401,7 +401,7 @@ describe(common.testName(__filename), () => {
         ], [
           { pid: 1, name: 'foo', status: TurfContainerStates.running },
           { pid: 2, name: 'hello', status: TurfContainerStates.running },
-        ], performance.now());
+        ]);
 
         assert.deepStrictEqual(broker.mostIdleNWorkers(1), [{ name: 'foo', credential: 'bar' }]);
         assert.deepStrictEqual(broker.mostIdleNWorkers(2), [
@@ -442,14 +442,14 @@ describe(common.testName(__filename), () => {
         }], [
           { pid: 1, name: 'foo', status: TurfContainerStates.stopped },
           { pid: 2, name: 'hello', status: TurfContainerStates.running },
-        ], performance.now());
+        ]);
 
         // 更新到运行状态
         broker.workers.forEach((worker) => {
           if (worker.turfContainerStates === TurfContainerStates.stopped) {
-            worker.updateContainerStatus(ContainerStatus.Stopped, performance.now());
+            worker.updateContainerStatus(ContainerStatus.Stopped, TurfStatusEvent.StatusStopped);
           } else {
-            worker.updateContainerStatus(ContainerStatus.Ready, performance.now());
+            worker.updateContainerStatus(ContainerStatus.Ready, ContainerStatusReport.ContainerInstalled);
           }
         });
 
@@ -479,11 +479,11 @@ describe(common.testName(__filename), () => {
         }], [
           { pid: 1, name: 'foo', status: TurfContainerStates.running },
           { pid: 2, name: 'hello', status: TurfContainerStates.running },
-        ], performance.now());
+        ]);
 
         // 更新到运行状态
         broker.workers.forEach((worker) => {
-          worker.updateContainerStatus(ContainerStatus.Ready, performance.now());
+          worker.updateContainerStatus(ContainerStatus.Ready, ContainerStatusReport.ContainerInstalled);
         });
 
         assert.deepStrictEqual(broker.newestNWorkers(1), [{ name: 'foo', credential: 'bar' }]);
@@ -511,7 +511,7 @@ describe(common.testName(__filename), () => {
 
         // 更新到运行状态
         broker.workers.forEach((worker) => {
-          worker.updateContainerStatus(ContainerStatus.Ready, performance.now());
+          worker.updateContainerStatus(ContainerStatus.Ready, ContainerStatusReport.ContainerInstalled);
         });
 
         broker.sync([
@@ -528,7 +528,7 @@ describe(common.testName(__filename), () => {
         ], [
           { pid: 1, name: 'foo', status: TurfContainerStates.running },
           { pid: 2, name: 'hello', status: TurfContainerStates.running },
-        ], performance.now());
+        ]);
 
         assert.deepStrictEqual(broker.newestNWorkers(1), [{ name: 'foo', credential: 'bar' }]);
         assert.deepStrictEqual(broker.newestNWorkers(2), [
@@ -570,14 +570,14 @@ describe(common.testName(__filename), () => {
         }], [
           { pid: 1, name: 'foo', status: TurfContainerStates.stopped },
           { pid: 2, name: 'hello', status: TurfContainerStates.running },
-        ], performance.now());
+        ]);
 
         // 更新到运行状态
         broker.workers.forEach((worker) => {
           if (worker.turfContainerStates === TurfContainerStates.stopped) {
-            worker.updateContainerStatus(ContainerStatus.Stopped, performance.now());
+            worker.updateContainerStatus(ContainerStatus.Stopped, TurfStatusEvent.StatusStopped);
           } else {
-            worker.updateContainerStatus(ContainerStatus.Ready, performance.now());
+            worker.updateContainerStatus(ContainerStatus.Ready, ContainerStatusReport.ContainerInstalled);
           }
         });
 
@@ -607,11 +607,11 @@ describe(common.testName(__filename), () => {
         }], [
           { pid: 1, name: 'foo', status: TurfContainerStates.running },
           { pid: 2, name: 'hello', status: TurfContainerStates.running },
-        ], performance.now());
+        ]);
 
         // 更新到运行状态
         broker.workers.forEach((worker) => {
-          worker.updateContainerStatus(ContainerStatus.Ready, performance.now());
+          worker.updateContainerStatus(ContainerStatus.Ready, ContainerStatusReport.ContainerInstalled);
         });
 
         assert.deepStrictEqual(broker.oldestNWorkers(1), [{ name: 'hello', credential: 'world' }]);
@@ -645,7 +645,7 @@ describe(common.testName(__filename), () => {
 
         // 更新到运行状态
         broker.workers.forEach((worker) => {
-          worker.updateContainerStatus(ContainerStatus.Ready, performance.now());
+          worker.updateContainerStatus(ContainerStatus.Ready, ContainerStatusReport.ContainerInstalled);
         });
 
         broker.sync([
@@ -662,7 +662,7 @@ describe(common.testName(__filename), () => {
         ], [
           { pid: 1, name: 'foo', status: TurfContainerStates.running },
           { pid: 2, name: 'hello', status: TurfContainerStates.running },
-        ], performance.now());
+        ]);
 
         assert.deepStrictEqual(broker.oldestNWorkers(1), [{ name: 'hello', credential: 'world' }]);
         assert.deepStrictEqual(broker.oldestNWorkers(2), [
@@ -704,14 +704,14 @@ describe(common.testName(__filename), () => {
         }], [
           { pid: 1, name: 'foo', status: TurfContainerStates.stopped },
           { pid: 2, name: 'hello', status: TurfContainerStates.running },
-        ], performance.now());
+        ]);
 
         // 更新到运行状态
         broker.workers.forEach((worker) => {
           if (worker.turfContainerStates === TurfContainerStates.stopped) {
-            worker.updateContainerStatus(ContainerStatus.Stopped, performance.now());
+            worker.updateContainerStatus(ContainerStatus.Stopped, TurfStatusEvent.StatusStopped);
           } else {
-            worker.updateContainerStatus(ContainerStatus.Ready, performance.now());
+            worker.updateContainerStatus(ContainerStatus.Ready, ContainerStatusReport.ContainerInstalled);
           }
         });
 
@@ -729,8 +729,9 @@ describe(common.testName(__filename), () => {
         broker.register('hello', 'world');
         broker.register('foo', 'bar');
 
-        broker.updateWorkerContainerStatus('foo', ContainerStatus.Ready);
-        broker.updateWorkerContainerStatus('hello', ContainerStatus.Ready);
+        // TODO: 这么做不合法，需要调整测试用例
+        broker.updateWorkerContainerStatus('foo', ContainerStatus.Ready, ControlPanelEvent.RequestQueueExpand);
+        broker.updateWorkerContainerStatus('hello', ContainerStatus.Ready, ControlPanelEvent.RequestQueueExpand);
 
         broker.sync([{
           name: 'hello',
@@ -743,7 +744,7 @@ describe(common.testName(__filename), () => {
         }], [
           { pid: 1, name: 'foo', status: TurfContainerStates.running },
           { pid: 2, name: 'hello', status: TurfContainerStates.stopped },
-        ], performance.now());
+        ]);
         broker.redundantTimes = 60;
         assert.strictEqual(broker.evaluateWaterLevel(), -1);
       });
@@ -753,8 +754,8 @@ describe(common.testName(__filename), () => {
         broker.register('hello', 'world');
         broker.register('foo', 'bar');
 
-        broker.updateWorkerContainerStatus('foo', ContainerStatus.Ready);
-        broker.updateWorkerContainerStatus('hello', ContainerStatus.Ready);
+        broker.updateWorkerContainerStatus('foo', ContainerStatus.Ready, ControlPanelEvent.RequestQueueExpand);
+        broker.updateWorkerContainerStatus('hello', ContainerStatus.Ready, ControlPanelEvent.RequestQueueExpand);
 
         broker.sync([{
           name: 'hello',
@@ -767,7 +768,7 @@ describe(common.testName(__filename), () => {
         }], [
           { pid: 1, name: 'foo', status: TurfContainerStates.stopped },
           { pid: 2, name: 'hello', status: TurfContainerStates.running },
-        ], performance.now());
+        ]);
         assert.strictEqual(broker.evaluateWaterLevel(), 3);
       });
 
@@ -777,7 +778,7 @@ describe(common.testName(__filename), () => {
         broker.register('foo', 'bar');
 
         // 只启动一个
-        broker.updateWorkerContainerStatus('hello', ContainerStatus.Ready);
+        broker.updateWorkerContainerStatus('hello', ContainerStatus.Ready, ControlPanelEvent.RequestQueueExpand);
 
         broker.sync([{
           name: 'hello',
@@ -786,7 +787,7 @@ describe(common.testName(__filename), () => {
         }], [
           { pid: 1, name: 'foo', status: TurfContainerStates.running },
           { pid: 2, name: 'hello', status: TurfContainerStates.running },
-        ], performance.now());
+        ]);
         assert.strictEqual(broker.evaluateWaterLevel(), 0);
       });
 
@@ -795,7 +796,7 @@ describe(common.testName(__filename), () => {
         broker.register('hello', 'world');
         broker.register('foo', 'bar');
 
-        broker.updateWorkerContainerStatus('hello', ContainerStatus.Ready);
+        broker.updateWorkerContainerStatus('hello', ContainerStatus.Ready, ControlPanelEvent.RequestQueueExpand);
 
         broker.sync([{
           name: 'hello',
@@ -804,7 +805,7 @@ describe(common.testName(__filename), () => {
         }], [
           { pid: 1, name: 'foo', status: TurfContainerStates.running },
           { pid: 2, name: 'hello', status: TurfContainerStates.running },
-        ], performance.now());
+        ]);
 
         // for (let i = 0; i < 10; i++) assert(broker.prerequestStartingPool());
 
@@ -834,7 +835,7 @@ describe(common.testName(__filename), () => {
         const broker = new Broker(profileManager!, config, 'func', false);
         broker.register('hello', 'world');
 
-        broker.updateWorkerContainerStatus('hello', ContainerStatus.Ready);
+        broker.updateWorkerContainerStatus('hello', ContainerStatus.Ready, ControlPanelEvent.RequestQueueExpand);
 
         broker.sync([{
           name: 'hello',
@@ -842,7 +843,7 @@ describe(common.testName(__filename), () => {
           activeRequestCount: 4,
         }], [
           { pid: 2, name: 'hello', status: TurfContainerStates.running },
-        ], performance.now());
+        ]);
 
         assert.strictEqual(broker.evaluateWaterLevel(), 0);
       });
@@ -852,8 +853,8 @@ describe(common.testName(__filename), () => {
         broker.register('hello', 'world');
         broker.register('foo', 'bar');
 
-        broker.updateWorkerContainerStatus('foo', ContainerStatus.Ready);
-        broker.updateWorkerContainerStatus('hello', ContainerStatus.Ready);
+        broker.updateWorkerContainerStatus('foo', ContainerStatus.Ready, ControlPanelEvent.RequestQueueExpand);
+        broker.updateWorkerContainerStatus('hello', ContainerStatus.Ready, ControlPanelEvent.RequestQueueExpand);
 
         broker.sync([{
           name: 'hello',
@@ -866,7 +867,7 @@ describe(common.testName(__filename), () => {
         }], [
           { pid: 1, name: 'foo', status: TurfContainerStates.running },
           { pid: 2, name: 'hello', status: TurfContainerStates.running },
-        ], performance.now());
+        ]);
         assert.strictEqual(broker.evaluateWaterLevel(), 1);
       });
 
@@ -875,8 +876,8 @@ describe(common.testName(__filename), () => {
         broker.register('hello', 'world');
         broker.register('foo', 'bar');
 
-        broker.updateWorkerContainerStatus('foo', ContainerStatus.Ready);
-        broker.updateWorkerContainerStatus('hello', ContainerStatus.Ready);
+        broker.updateWorkerContainerStatus('foo', ContainerStatus.Ready, ControlPanelEvent.RequestQueueExpand);
+        broker.updateWorkerContainerStatus('hello', ContainerStatus.Ready, ControlPanelEvent.RequestQueueExpand);
 
         broker.sync([{
           name: 'hello',
@@ -889,7 +890,7 @@ describe(common.testName(__filename), () => {
         }], [
           { pid: 1, name: 'foo', status: TurfContainerStates.running },
           { pid: 2, name: 'hello', status: TurfContainerStates.running },
-        ], performance.now());
+        ]);
         assert.strictEqual(broker.evaluateWaterLevel(), 0);
       });
 
@@ -899,8 +900,8 @@ describe(common.testName(__filename), () => {
         broker.register('hello', 'world');
         broker.register('foo', 'bar');
 
-        broker.updateWorkerContainerStatus('foo', ContainerStatus.Ready);
-        broker.updateWorkerContainerStatus('hello', ContainerStatus.Ready);
+        broker.updateWorkerContainerStatus('foo', ContainerStatus.Ready, ControlPanelEvent.RequestQueueExpand);
+        broker.updateWorkerContainerStatus('hello', ContainerStatus.Ready, ControlPanelEvent.RequestQueueExpand);
 
         broker.sync([{
           name: 'hello',
@@ -913,7 +914,7 @@ describe(common.testName(__filename), () => {
         }], [
           { pid: 1, name: 'foo', status: TurfContainerStates.running },
           { pid: 2, name: 'hello', status: TurfContainerStates.running },
-        ], performance.now());
+        ]);
         broker.redundantTimes = 60;
         assert.strictEqual(broker.evaluateWaterLevel(), -1);
       });
@@ -924,8 +925,8 @@ describe(common.testName(__filename), () => {
         broker.register('hello', 'world');
         broker.register('foo', 'bar');
 
-        broker.updateWorkerContainerStatus('foo', ContainerStatus.Ready);
-        broker.updateWorkerContainerStatus('hello', ContainerStatus.Ready);
+        broker.updateWorkerContainerStatus('foo', ContainerStatus.Ready, ControlPanelEvent.RequestQueueExpand);
+        broker.updateWorkerContainerStatus('hello', ContainerStatus.Ready, ControlPanelEvent.RequestQueueExpand);
 
         broker.sync([{
           name: 'hello',
@@ -939,7 +940,7 @@ describe(common.testName(__filename), () => {
         }], [
           { pid: 1, name: 'foo', status: TurfContainerStates.running },
           { pid: 2, name: 'hello', status: TurfContainerStates.running },
-        ], performance.now());
+        ]);
         broker.redundantTimes = 60;
         assert.strictEqual(broker.evaluateWaterLevel(), -1);
       });
@@ -949,8 +950,8 @@ describe(common.testName(__filename), () => {
         broker.register('hello', 'world');
         broker.register('foo', 'bar');
 
-        broker.updateWorkerContainerStatus('foo', ContainerStatus.Ready);
-        broker.updateWorkerContainerStatus('hello', ContainerStatus.Ready);
+        broker.updateWorkerContainerStatus('foo', ContainerStatus.Ready, ControlPanelEvent.RequestQueueExpand);
+        broker.updateWorkerContainerStatus('hello', ContainerStatus.Ready, ControlPanelEvent.RequestQueueExpand);
 
         broker.sync([{
           name: 'hello',
@@ -963,7 +964,7 @@ describe(common.testName(__filename), () => {
         }], [
           { pid: 1, name: 'foo', status: TurfContainerStates.running },
           { pid: 2, name: 'hello', status: TurfContainerStates.running },
-        ], performance.now());
+        ]);
         broker.redundantTimes = 60;
         assert.strictEqual(broker.evaluateWaterLevel(), -2);
       });
@@ -973,8 +974,8 @@ describe(common.testName(__filename), () => {
         broker.register('hello', 'world');
         broker.register('foo', 'bar');
 
-        broker.updateWorkerContainerStatus('foo', ContainerStatus.Ready);
-        broker.updateWorkerContainerStatus('hello', ContainerStatus.Ready);
+        broker.updateWorkerContainerStatus('foo', ContainerStatus.Ready, ControlPanelEvent.RequestQueueExpand);
+        broker.updateWorkerContainerStatus('hello', ContainerStatus.Ready, ControlPanelEvent.RequestQueueExpand);
 
         broker.sync([{
           name: 'hello',
@@ -987,7 +988,7 @@ describe(common.testName(__filename), () => {
         }], [
           { pid: 1, name: 'foo', status: TurfContainerStates.running },
           { pid: 2, name: 'hello', status: TurfContainerStates.running },
-        ], performance.now());
+        ]);
         broker.redundantTimes = 60;
         assert.strictEqual(broker.evaluateWaterLevel(), -1);
       });
@@ -997,8 +998,8 @@ describe(common.testName(__filename), () => {
         broker.register('hello', 'world');
         broker.register('foo', 'bar');
 
-        broker.updateWorkerContainerStatus('foo', ContainerStatus.Ready);
-        broker.updateWorkerContainerStatus('hello', ContainerStatus.Ready);
+        broker.updateWorkerContainerStatus('foo', ContainerStatus.Ready, ControlPanelEvent.RequestQueueExpand);
+        broker.updateWorkerContainerStatus('hello', ContainerStatus.Ready, ControlPanelEvent.RequestQueueExpand);
 
         broker.sync([{
           name: 'hello',
@@ -1011,7 +1012,7 @@ describe(common.testName(__filename), () => {
         }], [
           { pid: 1, name: 'foo', status: TurfContainerStates.running },
           { pid: 2, name: 'hello', status: TurfContainerStates.running },
-        ], performance.now());
+        ]);
         broker.redundantTimes = 60;
         assert.strictEqual(broker.evaluateWaterLevel(true), 0);
       });
@@ -1021,8 +1022,8 @@ describe(common.testName(__filename), () => {
         broker.register('hello', 'world');
         broker.register('foo', 'bar');
 
-        broker.updateWorkerContainerStatus('foo', ContainerStatus.Ready);
-        broker.updateWorkerContainerStatus('hello', ContainerStatus.Ready);
+        broker.updateWorkerContainerStatus('foo', ContainerStatus.Ready, ControlPanelEvent.RequestQueueExpand);
+        broker.updateWorkerContainerStatus('hello', ContainerStatus.Ready, ControlPanelEvent.RequestQueueExpand);
 
         broker.sync([{
           name: 'hello',
@@ -1035,7 +1036,7 @@ describe(common.testName(__filename), () => {
         }], [
           { pid: 1, name: 'foo', status: TurfContainerStates.running },
           { pid: 2, name: 'hello', status: TurfContainerStates.running },
-        ], performance.now());
+        ]);
 
         broker.redundantTimes = 60;
         assert.strictEqual(broker.evaluateWaterLevel(), 0);
@@ -1055,10 +1056,10 @@ describe(common.testName(__filename), () => {
           });
           broker.register(String(i), String(i));
 
-          broker.updateWorkerContainerStatus(String(i), ContainerStatus.Ready);
+          broker.updateWorkerContainerStatus(String(i), ContainerStatus.Ready, ControlPanelEvent.RequestQueueExpand);
           turfItems.push({ pid: i, name: String(i), status: TurfContainerStates.running });
         }
-        broker.sync(mocked, turfItems, performance.now());
+        broker.sync(mocked, turfItems);
         assert.strictEqual(broker.evaluateWaterLevel(), 9);
       });
 
@@ -1074,10 +1075,10 @@ describe(common.testName(__filename), () => {
             activeRequestCount: 10,
           });
           broker.register(String(i), String(i));
-          broker.updateWorkerContainerStatus(String(i), ContainerStatus.Ready);
+          broker.updateWorkerContainerStatus(String(i), ContainerStatus.Ready, ControlPanelEvent.RequestQueueExpand);
           turfItems.push({ pid: i, name: String(i), status: TurfContainerStates.running });
         }
-        broker.sync(mocked, turfItems, performance.now());
+        broker.sync(mocked, turfItems);
         assert.strictEqual(broker.evaluateWaterLevel(), 5);
       });
     });
@@ -1089,8 +1090,8 @@ describe(common.testName(__filename), () => {
         broker.register('hello', 'world');
         broker.register('foo', 'bar');
 
-        broker.updateWorkerContainerStatus('hello', ContainerStatus.Ready);
-        broker.updateWorkerContainerStatus('foo', ContainerStatus.Ready);
+        broker.updateWorkerContainerStatus('hello', ContainerStatus.Ready, ControlPanelEvent.RequestQueueExpand);
+        broker.updateWorkerContainerStatus('foo', ContainerStatus.Ready, ControlPanelEvent.RequestQueueExpand);
 
         broker.sync([{
           name: 'hello',
@@ -1103,14 +1104,14 @@ describe(common.testName(__filename), () => {
         }], [
           { pid: 1, name: 'foo', status: TurfContainerStates.running },
           { pid: 2, name: 'hello', status: TurfContainerStates.running },
-        ], performance.now());
+        ]);
       });
 
       describe('.belongsToFunctionProfile()', () => {
         it('should belong', async () => {
           assert.strictEqual(broker.belongsToFunctionProfile(), true);
           await profileManager!.set([], 'WAIT');
-          broker.sync([], [], performance.now());
+          broker.sync([], []);
           assert.strictEqual(broker.belongsToFunctionProfile(), false);
         });
       });
@@ -1138,7 +1139,7 @@ describe(common.testName(__filename), () => {
           }], [
             { pid: 1, name: 'foo', status: TurfContainerStates.running },
             { pid: 2, name: 'hello', status: TurfContainerStates.stopped },
-          ], performance.now());
+          ]);
 
           assert.strictEqual(broker.workerCount, 1);
         });
@@ -1172,7 +1173,7 @@ describe(common.testName(__filename), () => {
             { pid: 1, name: 'foo', status: TurfContainerStates.running },
             { pid: 2, name: 'hello', status: TurfContainerStates.stopped },
             { pid: 3, name: 'coco', status: TurfContainerStates.running },
-          ], performance.now());
+          ]);
           assert.strictEqual(broker.virtualMemory, 512000000);
         });
       });
@@ -1183,7 +1184,7 @@ describe(common.testName(__filename), () => {
           broker.register('coco', 'nut');
           assert.strictEqual(broker.totalMaxActivateRequests, 20);
 
-          broker.updateWorkerContainerStatus('coco', ContainerStatus.Ready);
+          broker.updateWorkerContainerStatus('coco', ContainerStatus.Ready, ControlPanelEvent.RequestQueueExpand);
 
           broker.sync([{
             name: 'hello',
@@ -1201,7 +1202,7 @@ describe(common.testName(__filename), () => {
             { pid: 1, name: 'foo', status: TurfContainerStates.running },
             { pid: 2, name: 'hello', status: TurfContainerStates.stopped },
             { pid: 3, name: 'coco', status: TurfContainerStates.running },
-          ], performance.now());
+          ]);
           assert.strictEqual(broker.totalMaxActivateRequests, 20);
         });
       });
@@ -1212,7 +1213,7 @@ describe(common.testName(__filename), () => {
           broker.register('coco', 'nut');
           assert.strictEqual(broker.activeRequestCount, 11);
 
-          broker.updateWorkerContainerStatus('coco', ContainerStatus.Ready);
+          broker.updateWorkerContainerStatus('coco', ContainerStatus.Ready, ControlPanelEvent.RequestQueueExpand);
 
           broker.sync([{
             name: 'hello',
@@ -1230,7 +1231,7 @@ describe(common.testName(__filename), () => {
             { pid: 1, name: 'foo', status: TurfContainerStates.running },
             { pid: 2, name: 'hello', status: TurfContainerStates.stopped },
             { pid: 3, name: 'coco', status: TurfContainerStates.running },
-          ], performance.now());
+          ]);
           assert.strictEqual(broker.activeRequestCount, 6);
         });
       });
@@ -1241,7 +1242,7 @@ describe(common.testName(__filename), () => {
           broker.register('coco', 'nut');
           assert.strictEqual(broker.waterLevel, 0.55);
 
-          broker.updateWorkerContainerStatus('coco', ContainerStatus.Ready);
+          broker.updateWorkerContainerStatus('coco', ContainerStatus.Ready, ControlPanelEvent.RequestQueueExpand);
 
           broker.sync([{
             name: 'hello',
@@ -1259,7 +1260,7 @@ describe(common.testName(__filename), () => {
             { pid: 1, name: 'foo', status: TurfContainerStates.running },
             { pid: 2, name: 'hello', status: TurfContainerStates.stopped },
             { pid: 3, name: 'coco', status: TurfContainerStates.running },
-          ], performance.now());
+          ]);
 
           assert.strictEqual(broker.waterLevel, 0.3);
         });
@@ -1380,7 +1381,7 @@ describe(common.testName(__filename), () => {
         broker.register('hello', 'world');
         broker.register('foo', 'bar');
 
-        broker.updateWorkerContainerStatus('hello', ContainerStatus.Ready);
+        broker.updateWorkerContainerStatus('hello', ContainerStatus.Ready, ControlPanelEvent.RequestQueueExpand);
 
         broker.sync([{
           name: 'hello',
@@ -1393,7 +1394,7 @@ describe(common.testName(__filename), () => {
         }], [
           { pid: 1, name: 'foo', status: TurfContainerStates.running },
           { pid: 2, name: 'hello', status: TurfContainerStates.running },
-        ], performance.now());
+        ]);
 
         assert.strictEqual(broker.startingPool.size, 1);
         assert.deepStrictEqual(broker.startingPool.get('foo'), {
@@ -1433,7 +1434,7 @@ describe(common.testName(__filename), () => {
         broker.register('hello', 'world');
         broker.register('foo', 'bar');
 
-        broker.updateWorkerContainerStatus('hello', ContainerStatus.Ready);
+        broker.updateWorkerContainerStatus('hello', ContainerStatus.Ready, ControlPanelEvent.RequestQueueExpand);
 
         await profileManager!.set([], 'WAIT');
 
@@ -1448,7 +1449,7 @@ describe(common.testName(__filename), () => {
         }], [
           { pid: 1, name: 'foo', status: TurfContainerStates.running },
           { pid: 2, name: 'hello', status: TurfContainerStates.running },
-        ], performance.now());
+        ]);
 
         assert.strictEqual(broker.startingPool.size, 1);
         assert.deepStrictEqual(broker.startingPool.get('foo'), {
@@ -1491,8 +1492,8 @@ describe(common.testName(__filename), () => {
         broker.register('foo', 'bar');
         broker.data = null;
 
-        broker.updateWorkerContainerStatus('hello', ContainerStatus.Ready);
-        broker.updateWorkerContainerStatus('foo', ContainerStatus.Ready);
+        broker.updateWorkerContainerStatus('hello', ContainerStatus.Ready, ControlPanelEvent.RequestQueueExpand);
+        broker.updateWorkerContainerStatus('foo', ContainerStatus.Ready, ControlPanelEvent.RequestQueueExpand);
 
         broker.sync([{
           name: 'hello',
@@ -1505,7 +1506,7 @@ describe(common.testName(__filename), () => {
         }], [
           { pid: 1, name: 'foo', status: TurfContainerStates.running },
           { pid: 2, name: 'hello', status: TurfContainerStates.running },
-        ], performance.now());
+        ]);
 
         const workers = broker.shrinkDraw(1);
 
@@ -1518,8 +1519,8 @@ describe(common.testName(__filename), () => {
         broker.register('hello', 'world');
         broker.register('foo', 'bar');
 
-        broker.updateWorkerContainerStatus('hello', ContainerStatus.Ready);
-        broker.updateWorkerContainerStatus('foo', ContainerStatus.Ready);
+        broker.updateWorkerContainerStatus('hello', ContainerStatus.Ready, ControlPanelEvent.RequestQueueExpand);
+        broker.updateWorkerContainerStatus('foo', ContainerStatus.Ready, ControlPanelEvent.RequestQueueExpand);
 
         broker.sync([{
           name: 'hello',
@@ -1532,7 +1533,7 @@ describe(common.testName(__filename), () => {
         }], [
           { pid: 1, name: 'foo', status: TurfContainerStates.running },
           { pid: 2, name: 'hello', status: TurfContainerStates.running },
-        ], performance.now());
+        ]);
 
         broker.data = {
           ...funcData[0],
@@ -1559,8 +1560,8 @@ describe(common.testName(__filename), () => {
         broker.register('hello', 'world');
         broker.register('foo', 'bar');
 
-        broker.updateWorkerContainerStatus('hello', ContainerStatus.Ready);
-        broker.updateWorkerContainerStatus('foo', ContainerStatus.Ready);
+        broker.updateWorkerContainerStatus('hello', ContainerStatus.Ready, ControlPanelEvent.RequestQueueExpand);
+        broker.updateWorkerContainerStatus('foo', ContainerStatus.Ready, ControlPanelEvent.RequestQueueExpand);
 
         broker.sync([{
           name: 'hello',
@@ -1573,7 +1574,7 @@ describe(common.testName(__filename), () => {
         }], [
           { pid: 1, name: 'foo', status: TurfContainerStates.running },
           { pid: 2, name: 'hello', status: TurfContainerStates.running },
-        ], performance.now());
+        ]);
 
         broker.data = {
           ...funcData[0],
@@ -1601,8 +1602,8 @@ describe(common.testName(__filename), () => {
         await sleep(100);
         broker.register('foo', 'bar');
 
-        broker.updateWorkerContainerStatus('hello', ContainerStatus.Ready);
-        broker.updateWorkerContainerStatus('foo', ContainerStatus.Ready);
+        broker.updateWorkerContainerStatus('hello', ContainerStatus.Ready, ControlPanelEvent.RequestQueueExpand);
+        broker.updateWorkerContainerStatus('foo', ContainerStatus.Ready, ControlPanelEvent.RequestQueueExpand);
 
         broker.sync([{
           name: 'hello',
@@ -1615,7 +1616,7 @@ describe(common.testName(__filename), () => {
         }], [
           { pid: 1, name: 'foo', status: TurfContainerStates.running },
           { pid: 2, name: 'hello', status: TurfContainerStates.running },
-        ], performance.now());
+        ]);
 
         broker.data = {
           ...funcData[0],
@@ -1643,8 +1644,8 @@ describe(common.testName(__filename), () => {
         await sleep(100);
         broker.register('foo', 'bar');
 
-        broker.updateWorkerContainerStatus('hello', ContainerStatus.Ready);
-        broker.updateWorkerContainerStatus('foo', ContainerStatus.Ready);
+        broker.updateWorkerContainerStatus('hello', ContainerStatus.Ready, ControlPanelEvent.RequestQueueExpand);
+        broker.updateWorkerContainerStatus('foo', ContainerStatus.Ready, ControlPanelEvent.RequestQueueExpand);
 
         broker.sync([{
           name: 'hello',
@@ -1657,7 +1658,7 @@ describe(common.testName(__filename), () => {
         }], [
           { pid: 1, name: 'foo', status: TurfContainerStates.running },
           { pid: 2, name: 'hello', status: TurfContainerStates.running },
-        ], performance.now());
+        ]);
 
         broker.data = {
           ...funcData[0],

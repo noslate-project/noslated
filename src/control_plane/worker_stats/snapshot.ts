@@ -48,7 +48,7 @@ export class WorkerStatsSnapshot extends BaseOf(EventEmitter) {
   /**
    * Sync data from data plane and turf ps.
    */
-  sync(syncData: root.noslated.data.IBrokerStats[], psData: TurfProcess[], timestamp: number) {
+  sync(syncData: root.noslated.data.IBrokerStats[], psData: TurfProcess[]) {
     const newMap: Map<string, Broker> = new Map();
     for (const item of syncData) {
       const key = Broker.getKey(item.functionName!, item.inspector!);
@@ -58,13 +58,13 @@ export class WorkerStatsSnapshot extends BaseOf(EventEmitter) {
         continue;
       }
 
-      broker.sync(item.workers!, psData, timestamp);
+      broker.sync(item.workers!, psData);
       newMap.set(key, broker);
       this.brokers.delete(key);
     }
 
     for (const [ key, value ] of this.brokers.entries()) {
-      value.sync([], psData, timestamp);
+      value.sync([], psData);
       newMap.set(key, value);
     }
 
@@ -81,7 +81,7 @@ export class WorkerStatsSnapshot extends BaseOf(EventEmitter) {
   /**
    * Get or create broker by function name and `isInspector`.
    */
-  getOrCreateBroker(functionName: string, isInspector: boolean, disposable: boolean = false): Broker | null {
+  getOrCreateBroker(functionName: string, isInspector: boolean, disposable = false): Broker | null {
     let broker = this.getBroker(functionName, isInspector);
     if (broker) return broker;
     if (!this.profiles.get(functionName)) return null;
@@ -106,7 +106,7 @@ export class WorkerStatsSnapshot extends BaseOf(EventEmitter) {
    * @param {string} credential The credential.
    * @param {boolean} isInspector Whether it's using inspector or not.
    */
-  register(funcName: string, processName: string, credential: string, isInspector: boolean, disposable: boolean = false) {
+  register(funcName: string, processName: string, credential: string, isInspector: boolean, disposable = false) {
     const broker = this.getOrCreateBroker(funcName, isInspector, disposable);
     if (!broker) {
       throw new Error(`No function named ${funcName} in function profile.`);

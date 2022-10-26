@@ -4,12 +4,25 @@ export enum ContainerStatus {
   PendingStop = 3,
   Stopped = 4,
   Unknown = 5
-};
+}
 
 export enum ContainerStatusReport {
   ContainerInstalled = 'ContainerInstalled',
   RequestDrained = 'RequestDrained',
   ContainerDisconnected = 'ContainerDisconnected'
+}
+
+export enum ControlPanelEvent {
+  Shrink = 'Shrink',
+  Expand = 'Expand',
+  RequestQueueExpand = 'RequestQueueExpand'
+}
+
+export enum TurfStatusEvent {
+  StatusNull = 'StatusNull',
+  StatusUnknown = 'StatusUnknown',
+  StatusStopped = 'StatusStopped',
+  ConnectTimeout = 'ConnectTimeout'
 }
 
 export const kDefaultRequestId = 'unknown';

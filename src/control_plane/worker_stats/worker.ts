@@ -2,8 +2,7 @@ import { TurfContainerStates, TurfProcess } from '#self/lib/turf/types';
 import type { noslated } from '#self/proto/root';
 import { PrefixedLogger } from '#self/lib/loggers';
 import { Config } from '#self/config';
-import { ContainerStatus, ContainerStatusReport } from '#self/lib/constants';
-import { performance } from 'perf_hooks';
+import { ContainerStatus, ContainerStatusReport, TurfStatusEvent, ControlPanelEvent } from '#self/lib/constants';
 
 export type WorkerStats = noslated.data.IWorkerStats;
 
@@ -32,8 +31,6 @@ class Worker {
   }
 
   #containerStatus: ContainerStatus;
-
-  #latestUpdateContainerStatusTimestamp: number;
 
   get containerStatus() {
     return this.#containerStatus;
@@ -142,7 +139,6 @@ class Worker {
     this.#pid = null;
     this.#data = null;
     this.#containerStatus = ContainerStatus.Created;
-    this.#latestUpdateContainerStatusTimestamp = performance.now();
 
     this.#registerTime = Date.now();
 
@@ -170,14 +166,14 @@ class Worker {
    * @param data The data object.
    * @param psData The turf ps data.
    */
-  sync(data: WorkerStats | null, psData: TurfProcess[], timestamp: number) {
+  sync(data: WorkerStats | null, psData: TurfProcess[]) {
     if (data === null) {
       this.logger.debug('Sync with null.');
     }
 
     this.#data = data ? new WorkerAdditionalData(data) : null;
     const found = Worker.findPsData(psData, this.name);
-    this.switchTo(found, timestamp);
+    this.switchTo(found);
     this.#pid = found?.pid || null;
     this.#turfContainerStates = found?.status || null;
   }
@@ -187,7 +183,7 @@ class Worker {
    * Switch worker's status to another via a state machine.
    * @param found The found ps data.
    */
-  switchTo(found: TurfProcess | null, timestamp: number) {
+  switchTo(found: TurfProcess | null) {
     const turfState = found?.status || null;
 
     switch (turfState) {
@@ -196,29 +192,29 @@ class Worker {
       case TurfContainerStates.cloning:
       case TurfContainerStates.running: {
         if (Date.now() - this.#registerTime > this.#config.worker.controlPlaneConnectTimeout && this.#containerStatus === ContainerStatus.Created) {
-          this.updateContainerStatus(ContainerStatus.Stopped, timestamp);
+          this.updateContainerStatus(ContainerStatus.Stopped, TurfStatusEvent.ConnectTimeout);
           this.logger.error('switch worker container status to [Stopped], because connect timeout.');
         }
         // always be Created, wait dp ContainerInstalled to Ready
         break;
       }
       case TurfContainerStates.unknown: {
-        this.updateContainerStatus(ContainerStatus.Unknown, timestamp);
+        this.updateContainerStatus(ContainerStatus.Unknown, TurfStatusEvent.StatusUnknown);
         this.logger.error('switch worker container status to [Unknown], because turf state is unknown.');
         break;
       }
       case TurfContainerStates.stopping:
       case TurfContainerStates.stopped: {
         this.logger.error('switch worker container status to [Stopped], because turf state is stopped/stopping.');
-        this.updateContainerStatus(ContainerStatus.Stopped, timestamp);
+        this.updateContainerStatus(ContainerStatus.Stopped, TurfStatusEvent.StatusStopped);
         break;
       }
       case null: {
         // 只有 Ready 运行时无法找到的情况视为异常
         // 其他情况不做处理
         if (this.#containerStatus === ContainerStatus.Ready) {
-          this.updateContainerStatus(ContainerStatus.Stopped, timestamp);
           this.logger.error('switch worker container status to [Stopped], because sandbox disappeared.');
+          this.updateContainerStatus(ContainerStatus.Stopped, TurfStatusEvent.StatusNull);
         }
         break;
       }
@@ -229,7 +225,7 @@ class Worker {
         this.logger.info('found turf state: ', turfState);
 
         if (Date.now() - this.#registerTime > this.#config.worker.controlPlaneConnectTimeout && this.#containerStatus === ContainerStatus.Created) {
-          this.updateContainerStatus(ContainerStatus.Stopped, timestamp);
+          this.updateContainerStatus(ContainerStatus.Stopped, TurfStatusEvent.ConnectTimeout);
           this.logger.error('switch worker container status to [Stopped], because connect timeout.');
         }
     }
@@ -246,7 +242,7 @@ class Worker {
     return this.#containerStatus === ContainerStatus.Created;
   }
 
-  updateContainerStatusByEvent(event: ContainerStatusReport, timestamp: number) {
+  updateContainerStatusByEvent(event: ContainerStatusReport) {
     let statusTo: ContainerStatus = ContainerStatus.Unknown;
 
     if (event === ContainerStatusReport.ContainerInstalled) {
@@ -257,19 +253,20 @@ class Worker {
       statusTo = ContainerStatus.Unknown;
     }
 
-    this.logger.info(`update status to [${ContainerStatus[statusTo]}] from [${ContainerStatus[this.#containerStatus]}] by event [${event}] at [${timestamp}].`);
-    this.updateContainerStatus(statusTo, timestamp);
+    this.updateContainerStatus(statusTo, event);
   }
 
-  updateContainerStatus(status: ContainerStatus, timestamp: number) {
-    if (status < this.#containerStatus) return;
+  updateContainerStatus(status: ContainerStatus, event: TurfStatusEvent | ContainerStatusReport | ControlPanelEvent) {
+    if (status < this.#containerStatus) {
+      this.logger.info(`update container status [${ContainerStatus[status]}] from [${ContainerStatus[this.#containerStatus]}] by event [${event}] on [${Date.now()}] is illegal.`);
+      return;
+    }
 
     const oldStatus = this.#containerStatus;
 
     this.#containerStatus = status;
-    this.#latestUpdateContainerStatusTimestamp = timestamp;
 
-    this.logger.info(`set new container status [${ContainerStatus[status]}] from [${ContainerStatus[oldStatus]}] on [${timestamp}].`);
+    this.logger.info(`update container status [${ContainerStatus[status]}] from [${ContainerStatus[oldStatus]}] by event [${event}] on [${Date.now()}].`);
   }
 }
 

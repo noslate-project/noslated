@@ -107,7 +107,7 @@ export class DataPlaneImpl implements IDataPlane {
   }
 
   async getServiceProfiles() : Promise<root.noslated.data.IServiceProfilesAccessor> {
-    let profiles = this.dataFlowController.serviceSelector.toJSON();
+    const profiles = this.dataFlowController.serviceSelector.toJSON();
 
     const profilesAccessor: root.noslated.data.IFunctionService[] = profiles.map(it => {
       const item: root.noslated.data.IFunctionService = {

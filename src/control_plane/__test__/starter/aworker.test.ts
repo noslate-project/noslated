@@ -45,8 +45,6 @@ describe(common.testName(__filename), () => {
           state: 'forkwait',
           status: '0',
         });
-      } catch (e) {
-        throw e;
       } finally {
         await aworker?.close();
       }
@@ -130,8 +128,6 @@ describe(common.testName(__filename), () => {
           } as any,
           bundlePath,
           {});
-      } catch (e) {
-        throw e;
       } finally {
         await aworker?.close();
       }
@@ -175,8 +171,6 @@ describe(common.testName(__filename), () => {
           } as any,
           bundlePath,
           {});
-      } catch (e) {
-        throw e;
       } finally {
         await aworker?.close();
       }

@@ -34,7 +34,7 @@ function waitForAtLeastOneSubscriber(host: Host, name: string) {
 }
 
 describe(common.testName(__filename), () => {
-  const roles: ProseContext<{}> = {};
+  const roles: ProseContext = {};
   daemonProse(roles);
 
   describe('workerTrafficStats', () => {
@@ -143,7 +143,6 @@ describe(common.testName(__filename), () => {
         functionName: 'func',
         name: 'hello',
         isInspector: false,
-        timestamp: performance.now(),
         event: ContainerStatusReport.ContainerInstalled,
         requestId: ''
       });
@@ -152,7 +151,6 @@ describe(common.testName(__filename), () => {
         functionName: 'func',
         name: 'foo',
         isInspector: false,
-        timestamp: performance.now(),
         event: ContainerStatusReport.ContainerInstalled,
         requestId: ''
       });

@@ -1,4 +1,5 @@
 import cp from 'child_process';
+import path from 'path';
 import { config } from '#self/config';
 
 const logger = require('../logger').get('turf/index');
@@ -9,9 +10,18 @@ let turfDCP: cp.ChildProcess | undefined;
 export const turf = new (require('./wrapper')).Turf(turfPath);
 export { TurfContainerStates } from './types';
 
+function refreshTurfWorkspace() {
+  const TURF_WORKDIR = process.env.TURF_WORKDIR!;
+  for (const dir of ['overlay', 'sandbox']) {
+    const absDir = path.join(TURF_WORKDIR, dir);
+    cp.execSync(`rm -rf ${absDir}/*`);
+  }
+}
+
 /* istanbul ignore next */
 export function startTurfD() {
   logger.info('Starting turf...');
+  refreshTurfWorkspace();
   const turfd = turfDCP = cp.spawn(turfPath, [ '-D', '-f' ], {
     cwd: process.cwd(),
     env: process.env,
@@ -56,4 +66,5 @@ export async function stopTurfD() {
     turfDCP.kill('SIGKILL');
     turfDCP = undefined;
   }
+  refreshTurfWorkspace();
 }

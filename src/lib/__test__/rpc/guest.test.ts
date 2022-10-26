@@ -11,7 +11,7 @@ import { ServerWritableStream } from '@grpc/grpc-js';
 
 const fs = require('fs').promises;
 
-describe(common.testName(__filename), function() {
+describe(common.testName(__filename), () => {
   describe('basic operations', () => {
     let host: Host;
     let guest: Guest;
@@ -96,7 +96,7 @@ describe(common.testName(__filename), function() {
     this.timeout(10_000);
 
     let guest: Guest;
-    let cleanup: Function | undefined;
+    let cleanup: (() => unknown) | undefined;
 
     beforeEach(async () => {
       cleanup = undefined;
