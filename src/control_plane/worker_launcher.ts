@@ -116,7 +116,7 @@ export class WorkerLauncher extends Base {
       disposable,
       options,
       requestId,
-      processer: async (task: LaunchTask, queue: PriorityLaunchQueue) => {
+      processer: async (task: LaunchTask) => {
         this.logger.info('process launch event(%s), request(%s) func(%s), disposable(%s), priority(%s).', event, task.requestId, task.functionName, task.disposable, TaskPriority[task.priority]);
         try {
           await this.doTryLaunch(task.functionName, task.options, task.disposable, task.requestId);

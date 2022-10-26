@@ -18,6 +18,7 @@ interface BeaconHost {
 }
 
 class NoopBeaconHost implements BeaconHost {
+
   sendBeacon(type: string, metadata: any, body: Uint8Array): Promise<void> {
     return Promise.resolve();
   }

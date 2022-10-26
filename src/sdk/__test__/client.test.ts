@@ -13,7 +13,6 @@ import { RawFunctionProfile } from '#self/lib/json/function_profile';
 import { DataPlane } from '#self/data_plane/index';
 import sinon from 'sinon';
 import { sleep } from '#self/lib/util';
-import _ from 'lodash';
 
 describe(testName(__filename), () => {
   let agent: NoslatedClient;

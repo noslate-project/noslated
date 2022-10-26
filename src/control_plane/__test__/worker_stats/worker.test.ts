@@ -7,7 +7,6 @@ import { config } from '#self/config';
 import { FunctionProfileManager as ProfileManager } from '#self/lib/function_profile';
 import { TurfContainerStates } from '#self/lib/turf';
 import { ContainerStatus, ContainerStatusReport, ControlPanelEvent } from '#self/lib/constants';
-import { performance } from 'perf_hooks';
 import sinon from 'sinon';
 import { AworkerFunctionProfile } from '#self/lib/json/function_profile';
 
@@ -333,9 +332,8 @@ describe(common.testName(__filename), () => {
   });
 
   describe('connect timeout', () => {
-    const containerStateses = [ 'init', 'starting', 'running', 'stopping', 'stopped' ];
-
     let clock: Clock;
+
     beforeEach(() => {
       clock = FakeTimers.install();
     });

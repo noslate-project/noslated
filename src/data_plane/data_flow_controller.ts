@@ -23,7 +23,6 @@ import { RawFunctionProfile } from '#self/lib/json/function_profile';
 import { Readable } from 'stream';
 import { Metadata, TriggerResponse } from '#self/delegate/request_response';
 import { ContainerStatusReport } from '#self/lib/constants';
-import { performance } from 'perf_hooks';
 
 const logger = require('#self/lib/logger').get('data flow controller');
 
