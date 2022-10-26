@@ -146,7 +146,6 @@ describe(common.testName(__filename), () => {
 
 
     it('should not update with illegal ContainerStatusReport order', async () => {
-      const { functionProfileManager } = capacityManager;
       await agent.setFunctionProfile([{
         name: 'func1',
         url: `file://${__dirname}`,
