@@ -44,3 +44,5 @@ bin/aworker_g
 .vscode
 
 package-lock.json
+
+docs

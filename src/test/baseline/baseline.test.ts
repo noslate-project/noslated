@@ -1,5 +1,4 @@
 import path from 'path';
-import fs from 'fs/promises';
 
 import address from 'address';
 import mm from 'mm';

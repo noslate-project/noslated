@@ -1,7 +1,7 @@
 import assert from 'assert';
 import _ from 'lodash';
 import mm from 'mm';
-import { Broker, Worker } from '#self/control_plane/worker_stats/index';
+import { Broker } from '#self/control_plane/worker_stats/index';
 import * as common from '#self/test/common';
 import { config } from '#self/config';
 import { FunctionProfileManager as ProfileManager } from '#self/lib/function_profile';
@@ -10,7 +10,6 @@ import { AworkerFunctionProfile, ShrinkStrategy } from '#self/lib/json/function_
 import { ContainerStatus, ContainerStatusReport, ControlPanelEvent, TurfStatusEvent } from '#self/lib/constants';
 import sinon from 'sinon';
 import pedding from 'pedding';
-import { performance } from 'perf_hooks';
 import { sleep } from '#self/lib/util';
 
 describe(common.testName(__filename), () => {

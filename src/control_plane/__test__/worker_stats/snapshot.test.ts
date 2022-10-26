@@ -7,7 +7,6 @@ import { config } from '#self/config';
 import { FunctionProfileManager as ProfileManager } from '#self/lib/function_profile';
 import { turf, TurfContainerStates } from '#self/lib/turf';
 import { ContainerStatus, ContainerStatusReport } from '#self/lib/constants';
-import { performance } from 'perf_hooks';
 import FakeTimers, { Clock } from '@sinonjs/fake-timers';
 import sinon from 'sinon';
 import fs from 'fs';

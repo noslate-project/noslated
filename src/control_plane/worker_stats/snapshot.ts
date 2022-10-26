@@ -11,8 +11,7 @@ import { FunctionProfileManager } from '#self/lib/function_profile';
 import { Config } from '#self/config';
 import { TurfProcess, TurfState } from '#self/lib/turf/types';
 import * as root from '#self/proto/root';
-import { ContainerStatus, ContainerStatusReport } from '#self/lib/constants';
-import { NotNullableInterface } from '#self/lib/interfaces';
+import { ContainerStatus } from '#self/lib/constants';
 import { StatLogger } from './stat_logger';
 
 export class WorkerStatsSnapshot extends BaseOf(EventEmitter) {

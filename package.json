@@ -26,6 +26,7 @@
     "generate_client_info": "ts-node tools/generate_client_info.js",
     "build-test": "npm run generate_client_info && tsc --build tsconfig.json",
     "build": "npm run generate_client_info && tsc --build tsconfig.src.json",
+    "build:docs": "make src/proto/root.d.ts && npm run generate_client_info && make src/lib/json/inspector_protocol.json && typedoc --tsconfig ./tsconfig.src.json --name Noslated --excludeNotDocumented --excludePrivate --out ./docs ./src/sdk/client.ts",
     "clean": "make clean",
     "dev": "node index.js",
     "lint": "make jslint",
@@ -91,6 +92,9 @@
     "sinon": "^11.1.2",
     "ts-node": "^10.9.1",
     "ts-proto": "^1.120.0",
+    "typedoc": "~0.22.18",
+    "typedoc-plugin-missing-exports": "^1.0.0",
+    "typedoc-plugin-no-inherit": "~1.3.1",
     "typescript": "~4.5.2",
     "walk": "^2.3.14"
   },

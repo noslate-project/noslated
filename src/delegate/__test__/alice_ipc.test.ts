@@ -110,7 +110,7 @@ describe(testName(__filename), () => {
           cb = callback;
         };
         let pushTime = 0;
-        client.onStreamPush = (streamId, isEos, chunk, isError) => {
+        client.onStreamPush = (streamId, isEos, chunk) => {
           pushTime++;
           assert.strictEqual(chunk.toString(), 'foobar');
           if (pushTime === 2) {
