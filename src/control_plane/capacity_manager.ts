@@ -2,14 +2,11 @@ import bytes from 'bytes';
 import { Base } from '#self/lib/sdk_base';
 import loggers from '#self/lib/logger';
 import { Logger } from '#self/lib/loggers';
-import { TaskQueue } from '#self/lib/task_queue';
-import { turf } from '#self/lib/turf';
 import { Broker, WorkerStatsSnapshot } from './worker_stats';
 import { wrapLaunchErrorObject } from './worker_launcher_error_code';
 import { ControlPlane } from './control_plane';
 import { Config } from '#self/config';
 import { FunctionProfileManager } from '#self/lib/function_profile';
-import { Turf } from '#self/lib/turf/wrapper';
 import { DataPlaneClient } from './data_plane_client/client';
 import * as root from '#self/proto/root';
 import _ from 'lodash';
@@ -51,8 +48,8 @@ export class CapacityManager extends Base {
 
   /**
    * 预估扩缩容指标
-   * @param {Broker[]} brokers 
-   * @returns 
+   * @param {Broker[]} brokers
+   * @returns
    */
   evaluteScaleDeltas(brokers: Broker[]): { expandDeltas: Delta[], shrinkDeltas: Delta[]; } {
     const expandDeltas: Delta[] = [];
@@ -94,7 +91,7 @@ export class CapacityManager extends Base {
 
   /**
    * 根据内存资源使用情况就地调整扩缩容指标
-   * @param {Delta[]} deltas 
+   * @param {Delta[]} deltas
    */
   regulateDeltas(deltas: Delta[]) {
     const memoUsed = this.plane.capacityManager.virtualMemoryUsed;

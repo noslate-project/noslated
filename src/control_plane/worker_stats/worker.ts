@@ -39,7 +39,7 @@ class Worker {
   set containerStatus(val) {
     this.#containerStatus = val;
   }
-  
+
   /**
    * The container states.
    */

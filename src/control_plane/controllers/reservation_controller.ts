@@ -4,14 +4,14 @@ import { Logger, loggers } from '#self/lib/loggers';
 import { Delta } from '../capacity_manager';
 
 export class ReservationController extends BaseController {
-    logger: Logger;
+  logger: Logger;
 
-    constructor(public plane: ControlPlane) {
-        super(plane);
-        this.logger = loggers.get('reservation controller');
-    }
+  constructor(public plane: ControlPlane) {
+    super(plane);
+    this.logger = loggers.get('reservation controller');
+  }
 
-    expand(deltas: Delta[]): Promise<void> {
-        return super.expand(deltas);
-    }
+  expand(deltas: Delta[]): Promise<void> {
+    return super.expand(deltas);
+  }
 }
