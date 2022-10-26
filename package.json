@@ -26,7 +26,7 @@
     "generate_client_info": "ts-node tools/generate_client_info.js",
     "build-test": "npm run generate_client_info && tsc --build tsconfig.json",
     "build": "npm run generate_client_info && tsc --build tsconfig.src.json",
-    "build-docs": "./node_modules/.bin/typedoc --tsconfig ./tsconfig.src.json --name Noslated --excludeNotDocumented --excludePrivate --out ./docs ./src/sdk/client.ts",
+    "build-docs": "typedoc --tsconfig ./tsconfig.src.json --name Noslated --excludeNotDocumented --excludePrivate --out ./docs ./src/sdk/client.ts",
     "clean": "make clean",
     "dev": "node index.js",
     "lint": "make jslint",
