@@ -36,10 +36,6 @@ class Worker {
     return this.#containerStatus;
   }
 
-  set containerStatus(val) {
-    this.#containerStatus = val;
-  }
-
   /**
    * The container states.
    */

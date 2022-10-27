@@ -28,21 +28,17 @@ export class StateManager {
       broker.removeItemFromStartingPool(worker.name);
     }
 
-    const statusTo: ContainerStatus = this.#setStatusToByEvent(event);
+    const statusTo: ContainerStatus = this.#getStatusToByEvent(event);
 
     worker.logger.info(`update status to [${ContainerStatus[statusTo]}] from [${ContainerStatus[worker.containerStatus]}] by event [${event}].`);
 
     // Stopped 和 Unknown 都是终止状态，不允许转向其他状态
     if (worker.containerStatus >= ContainerStatus.Stopped || statusTo < worker.containerStatus) return;
 
-    const oldStatus = worker.containerStatus;
-
-    worker.containerStatus = statusTo;
-
-    worker.logger.info(`set new container status [${ContainerStatus[statusTo]}] from [${ContainerStatus[oldStatus]}].`);
+    worker.updateContainerStatus(statusTo, event as ContainerStatusReport);
   }
 
-  #setStatusToByEvent(event: string) {
+  #getStatusToByEvent(event: string) {
     if (event === ContainerStatusReport.ContainerInstalled) {
       return ContainerStatus.Ready;
     } else if (event === ContainerStatusReport.RequestDrained || event === ContainerStatusReport.ContainerDisconnected) {
@@ -60,7 +56,6 @@ export class StateManager {
       return;
     }
 
-    const timestamp = performance.now();
     this.plane.capacityManager.workerStatsSnapshot.sync(data, psData);
     await this.plane.capacityManager.workerStatsSnapshot.correct();
   }
