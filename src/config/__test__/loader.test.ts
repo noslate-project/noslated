@@ -15,14 +15,26 @@ describe(common.testName(__filename), () => {
       assert.deepStrictEqual(defaultConfigWithEnv, config);
     });
 
+    it('should resolveConfig with platform config file', async () => {
+      process.env.NOSLATED_PLATFORM_CONFIG_PATH = join(FIXTURES_DIR, 'mockPlatformConfig.json');
+
+      const config = resolveConfig();
+
+      assert(config.virtualMemoryPoolSize, '12gb');
+
+      process.env.NOSLATED_PLATFORM_CONFIG_PATH = '';
+    });
+
     it('should resolveConfig with config file', async () => {
+      process.env.NOSLATED_PLATFORM_CONFIG_PATH = join(FIXTURES_DIR, 'mockPlatformConfig.json');
       process.env.NOSLATED_CONFIG_PATH = join(FIXTURES_DIR, 'mockConfig.json');
 
       const config = resolveConfig();
 
       assert(config.virtualMemoryPoolSize, '16gb');
 
-      process.env.NOSLATED_CONFIG_PATH = undefined;
+      process.env.NOSLATED_PLATFORM_CONFIG_PATH = '';
+      process.env.NOSLATED_CONFIG_PATH = '';
     });
 
     it('should resolveConfig when config file nonexist', async () => {
@@ -30,7 +42,7 @@ describe(common.testName(__filename), () => {
 
       resolveConfig();
 
-      process.env.NOSLATED_CONFIG_PATH = undefined;
+      process.env.NOSLATED_CONFIG_PATH = '';
     });
   });
 });
