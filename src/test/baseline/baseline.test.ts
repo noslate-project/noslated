@@ -230,7 +230,7 @@ const cases = [
   },
   {
     before: async (roles: BaseLineTestContext) => {
-      const spy = sinon.spy(roles.data.dataFlowController.namespaceResolver.beaconHost.logger, 'write');
+      const spy = sinon.spy(roles.data.dataFlowController.namespaceResolver.beaconHost, 'sendBeacon');
 
       return spy;
     },
@@ -252,7 +252,7 @@ const cases = [
     },
     after: async (roles: BaseLineTestContext, beforeRet: any) => {
       const spy: SinonSpy = beforeRet;
-      const written = spy.args[0]?.[0];
+      const written = spy.args[0]?.[2];
       assert.ok(Buffer.from('node_worker_beacon|a-unique-trace-node-id\n').equals(written as any));
       spy.restore();
     },
@@ -819,7 +819,7 @@ const cases = [
   },
   {
     before: async (roles: BaseLineTestContext) => {
-      const spy = sinon.spy(roles.data.dataFlowController.namespaceResolver.beaconHost.logger, 'write');
+      const spy = sinon.spy(roles.data.dataFlowController.namespaceResolver.beaconHost, 'sendBeacon');
 
       return spy;
     },
@@ -841,7 +841,7 @@ const cases = [
     },
     after: async (roles: BaseLineTestContext, beforeRet: any) => {
       const spy: SinonSpy = beforeRet;
-      const written = spy.args[0]?.[0];
+      const written = spy.args[0]?.[2];
       assert.ok(Buffer.from('aworker_beacon|a-unique-trace-id\n').equals(written as any));
       spy.restore();
     },
@@ -1048,14 +1048,13 @@ describe(common.testName(__filename), function() {
     describe(`${type} server`, () => {
       beforeEach(async () => {
         mm(config.delegate, 'type', type);
+        mm(config.dataPlane, 'daprAdaptorModulePath', require.resolve('./dapr-adaptor'));
         await startTurfD();
         await turf.destroyAll();
         const roles = await startAllRoles() as Required<Roles>;
         data = roles.data;
         agent = roles.agent;
         control = roles.control;
-
-        await agent.setDaprAdaptor(require.resolve('./dapr-adaptor'));
       });
 
       afterEach(async () => {

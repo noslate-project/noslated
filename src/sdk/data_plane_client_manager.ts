@@ -33,9 +33,6 @@ export class DataPlaneClientManager extends BasePlaneClientManager {
   async _onClientReady(client: DataPlaneClient) {
     super._onClientReady(client);
     const promises = [];
-    if (this.sdk.daprAdaptorModulePath) {
-      promises.push((client as any).setDaprAdaptor({ modulePath: this.sdk.daprAdaptorModulePath }));
-    }
     if (this.sdk.serviceProfiles != null) {
       promises.push((client as any).setServiceProfiles({ profiles: this.sdk.serviceProfiles }));
     }

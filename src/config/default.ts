@@ -18,6 +18,11 @@ export default {
     expandInterval: 0
   },
 
+  dataPlane: {
+    daprAdaptorModulePath: null,
+    beaconHostModulePath: null,
+  },
+
   dirs: {
     noslatedSock: path.join(projectRoot, '.code/socks'),
     noslatedWork: path.join(projectRoot, '.code'),

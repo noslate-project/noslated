@@ -15,8 +15,6 @@ export interface IDataPlane {
 
   useInspector(call: ServerUnaryCall<root.noslated.data.IUseInspectorRequest>): Promise<void>;
 
-  setDaprAdaptor(call: ServerUnaryCall<root.noslated.data.ISetDaprAdaptorRequest>): Promise<unknown>;
-
   setTracingCategories(call: ServerUnaryCall<root.noslated.data.ISetTracingCategoriesRequest>): Promise<void>;
 
   startInspector(call: ServerUnaryCall<root.noslated.data.IStartInspectorRequest>): Promise<void>;

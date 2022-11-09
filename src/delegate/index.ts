@@ -12,6 +12,7 @@ import { DelegateMetrics } from '#self/lib/telemetry/semantic_conventions';
 import { NoslatedServer } from './noslated_ipc';
 import { Readable } from 'stream';
 import { Metadata, MetadataInit } from './request_response';
+import { DaprAdaptor } from './dapr_adaptor';
 
 const logger = Logger.get('delegate');
 
@@ -253,7 +254,7 @@ export class NoslatedDelegateService extends EventEmitter {
    * NoslatedDelegateService#setDaprAdaptor
    * @param {DaprAdaptor} adaptor the adaptor object
    */
-  setDaprAdaptor(adaptor: any) {
+  setDaprAdaptor(adaptor: DaprAdaptor) {
     // 关闭旧的，防止泄露
     this.#sharedState.daprAdaptor?.close?.();
 
