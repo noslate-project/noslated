@@ -89,17 +89,16 @@ export function resolveEnvConfig() {
   return envConfig;
 }
 
-export function resolveConfig() {
-  let envFileConfig = {};
-  if (process.env.NOSLATED_CONFIG_PATH) {
-    try {
-      envFileConfig = JSON.parse(fs.readFileSync(process.env.NOSLATED_CONFIG_PATH, 'utf8'));
-    } catch (error) {
-      logger.warn(`load config from ${process.env.NOSLATED_CONFIG_PATH} failed, `, error);
-    }
-  }
+export function resolveConfig(): typeof defaultConfig {
+  const platformFileConfig = loadConfig(process.env.NOSLATED_PLATFORM_CONFIG_PATH);
+  const userFileConfig = loadConfig(process.env.NOSLATED_CONFIG_PATH);
   const envConfig = resolveEnvConfig();
-  return extend(/** deep */true, config, defaultConfig, localConfig, envFileConfig, envConfig);
+  return extend(/** deep */true, config,
+    defaultConfig,
+    localConfig,
+    platformFileConfig,
+    userFileConfig,
+    envConfig);
 }
 
 export function dumpConfig(name: string, config: typeof defaultConfig) {
@@ -108,4 +107,16 @@ export function dumpConfig(name: string, config: typeof defaultConfig) {
     fs.mkdirSync(runDir, { recursive: true });
     fs.writeFileSync(path.join(runDir, `${name}.config.json`), JSON.stringify(config, null, 2));
   } catch { /** do nothing */ }
+}
+
+function loadConfig(maybePath: string | undefined) {
+  let config = {};
+  if (maybePath) {
+    try {
+      config = require(maybePath);
+    } catch (error) {
+      console.warn(`load config from ${maybePath} failed`, error);
+    }
+  }
+  return config;
 }
