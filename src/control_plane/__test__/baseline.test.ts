@@ -11,6 +11,7 @@ import { testWorker, startAllRoles, Roles, ProseContext } from '#self/test/util'
 import { NoslatedClient } from '#self/sdk/index';
 import { ControlPlane } from '../control_plane';
 import { DataPlane } from '#self/data_plane';
+import { config } from '#self/config';
 
 const sleep = require('#self/lib/util').sleep;
 
@@ -474,13 +475,13 @@ describe(common.testName(__filename), function() {
   });
 
   beforeEach(async () => {
+    mm(config.dataPlane, 'daprAdaptorModulePath', require.resolve('#self/test/baseline/dapr-adaptor'));
     await startTurfD();
     await turf.destroyAll();
     const roles = await startAllRoles() as Required<Roles>;
     data = roles.data;
     agent = roles.agent;
     control = roles.control;
-    await agent.setDaprAdaptor(require.resolve('#self/test/baseline/dapr-adaptor'));
   });
 
   afterEach(async () => {

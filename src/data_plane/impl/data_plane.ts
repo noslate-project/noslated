@@ -145,38 +145,6 @@ export class DataPlaneImpl implements IDataPlane {
     this.dataFlowController.useInspector(funcName, use);
   }
 
-  /**
-   * Set Dapr adapter
-   */
-  async setDaprAdaptor(call: ServerUnaryCall<root.noslated.data.ISetDaprAdaptorRequest>) {
-    const { modulePath } = call.request;
-    rpcAssert(modulePath);
-    let mod = null;
-
-    try {
-      logger.info('set dapr path', modulePath);
-      const Clz = require(modulePath);
-
-      mod = new Clz({
-        logger: loggers.get('dapr'),
-      });
-
-      await mod.ready();
-      this.dataFlowController.delegate.setDaprAdaptor(mod);
-    } catch (e) {
-      logger.error(e);
-
-      if (mod?.close) {
-        mod.close();
-        mod = null;
-      }
-
-      throw e;
-    }
-
-    return {};
-  }
-
   async setTracingCategories(call: ServerUnaryCall<root.noslated.data.ISetTracingCategoriesRequest>): Promise<void> {
     const { functionName, inspect } = call.request;
     const categories = call.request.categories ?? [];

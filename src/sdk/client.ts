@@ -29,7 +29,6 @@ export class NoslatedClient extends EventEmitter {
   functionProfilesMode: Mode;
   serviceProfiles: root.noslated.data.IFunctionService[] | null;
   useInspectorSet: Set<string>;
-  daprAdaptorModulePath: string;
   platformEnvironmentVariables: root.noslated.IKeyValuePair[];
 
   constructor() {
@@ -46,7 +45,6 @@ export class NoslatedClient extends EventEmitter {
     this.functionProfilesMode = 'IMMEDIATELY';
     this.serviceProfiles = null;
     this.useInspectorSet = new Set();
-    this.daprAdaptorModulePath = '';
     this.platformEnvironmentVariables = [];
   }
 
@@ -98,16 +96,6 @@ export class NoslatedClient extends EventEmitter {
    */
   async invokeService(name: string, data: Readable | Buffer, metadata?: InvokeMetadata) {
     return this.#invoke('invokeService', name, data, metadata);
-  }
-
-  /**
-   * Set dapr adapter.
-   * @param {string} modulePath The dapr module path.
-   * @return {Promise<void>} The result.
-   */
-  async setDaprAdaptor(modulePath: string) {
-    await this.dataPlaneClientManager.callToAllAvailableClients('setDaprAdaptor', [{ modulePath }], 'all');
-    this.daprAdaptorModulePath = modulePath;
   }
 
   /**

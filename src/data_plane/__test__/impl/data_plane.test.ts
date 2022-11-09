@@ -11,10 +11,8 @@ import { BaseStarter } from '#self/control_plane/starter/base';
 import { getInspectorTargets } from '#self/test/diagnostics/util';
 import { once } from 'events';
 import { Events } from '#self/delegate/index';
-import sinon from 'sinon';
-import path from 'path';
 
-const { baselineDir, daprAdaptorDir } = common;
+const { baselineDir } = common;
 
 describe(common.testName(__filename), () => {
   const roles: ProseContext = {};
@@ -153,38 +151,6 @@ describe(common.testName(__filename), () => {
       const targets = await getInspectorTargets();
       assert(Array.isArray(targets));
       assert.strictEqual(targets.length, 1);
-    });
-  });
-
-  describe('setDaprAdaptor', () => {
-    it('should setDaprAdaptor work', async () => {
-      const modulePath = path.join(daprAdaptorDir, 'index');
-      const Clz = require(modulePath);
-      const stub = sinon.stub(Clz.prototype, 'ready');
-      await roles.agent!.setDaprAdaptor(modulePath);
-      assert.strictEqual(stub.callCount, 1);
-      stub.restore();
-    });
-
-    it('should close DaprAdaptor when ready failed', async () => {
-      const modulePath = path.join(daprAdaptorDir, 'index');
-      const Clz = require(modulePath);
-      const stubReady = sinon.stub(Clz.prototype, 'ready').callsFake(async () => {
-        throw new Error('MockReadyError');
-      });
-      const stubClose = sinon.stub(Clz.prototype, 'close');
-
-      try {
-        await roles.agent!.setDaprAdaptor(modulePath);
-      } catch (error) {
-        assert((error as Error).message.includes('MockReadyError'));
-      }
-
-      assert.strictEqual(stubReady.callCount, 1);
-      assert.strictEqual(stubClose.callCount, 1);
-
-      stubReady.restore();
-      stubClose.restore();
     });
   });
 });
