@@ -43,7 +43,7 @@ export class DataPlaneSubscription {
     const { plane: { capacityManager } } = this;
 
     try {
-      await capacityManager.syncWorkerData(snapshot.brokers);
+      await this.plane.stateManager.syncWorkerData(snapshot.brokers);
       await capacityManager.autoScale();
     } catch (e) {
       this.logger.error('Failed to process capacityManager.syncWorkerData / capacityManager.autoScale', e);
@@ -52,12 +52,13 @@ export class DataPlaneSubscription {
 
   async containerStatusReport(report: NotNullableInterface<root.noslated.data.IContainerStatusReport>) {
     const plane = this.plane;
-    const { capacityManager } = plane;
+
+    plane.stateManager.updateContainerStatusByReport(report);
 
     this.logger.info(`receive container status report: ${Date.now()}, ${report.requestId}, ${report.functionName}, ${report.name}, ${report.isInspector}, ${report.event}`);
 
     try {
-      await capacityManager.updateWorkerContainerStatus(report);
+      await plane.disposableController.tryStopDisposableWorkerByReport(report);
     } catch (error) {
       this.logger.error(`Failed to process containerStatusReport [${JSON.stringify(report)}].`, error);
     }

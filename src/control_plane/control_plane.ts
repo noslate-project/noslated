@@ -13,6 +13,8 @@ import { WorkerTelemetry } from './telemetry';
 import { getMeter } from '#self/lib/telemetry/otel';
 import { Meter } from '@opentelemetry/api-metrics';
 import { RawFunctionProfile } from '#self/lib/json/function_profile';
+import { StateManager } from './worker_stats/state_manager';
+import { BaseController, DisposableController, ReservationController } from './controllers';
 
 /**
  * ControlPlane
@@ -29,6 +31,10 @@ export class ControlPlane extends BaseOf(EventEmitter) {
   workerTelemetry: WorkerTelemetry;
   logger: Logger;
   platformEnvironmentVariables: Record<string, string>;
+  stateManager: StateManager;
+  controller: BaseController;
+  reservationController: ReservationController;
+  disposableController: DisposableController;
 
   constructor(private config: Config) {
     super();
@@ -42,6 +48,10 @@ export class ControlPlane extends BaseOf(EventEmitter) {
     this.workerLauncher = new WorkerLauncher(this, config);
     this.capacityManager = new CapacityManager(this, config);
     this.workerTelemetry = new WorkerTelemetry(this.meter, this.capacityManager.workerStatsSnapshot);
+    this.stateManager = new StateManager(this);
+    this.controller = new BaseController(this);
+    this.reservationController = new ReservationController(this);
+    this.disposableController = new DisposableController(this);
 
     this.logger = loggers.get('control plane');
     this.platformEnvironmentVariables = {};

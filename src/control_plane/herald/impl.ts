@@ -142,7 +142,7 @@ export class HeraldImpl {
     }
 
     // Do kill all workers in brokers.
-    await this.plane.capacityManager.forceDismissAllWorkersInCertainBrokers(killArray);
+    await this.plane.controller.forceDismissAllWorkersInCertainBrokers(killArray);
 
     return {
       set: true,

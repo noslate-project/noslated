@@ -2,42 +2,33 @@ import bytes from 'bytes';
 import { Base } from '#self/lib/sdk_base';
 import loggers from '#self/lib/logger';
 import { Logger } from '#self/lib/loggers';
-import { TaskQueue } from '#self/lib/task_queue';
-import { turf } from '#self/lib/turf';
 import { Broker, WorkerStatsSnapshot } from './worker_stats';
 import { wrapLaunchErrorObject } from './worker_launcher_error_code';
 import { ControlPlane } from './control_plane';
 import { Config } from '#self/config';
 import { FunctionProfileManager } from '#self/lib/function_profile';
-import { Turf } from '#self/lib/turf/wrapper';
 import { DataPlaneClient } from './data_plane_client/client';
 import * as root from '#self/proto/root';
 import { performance } from 'perf_hooks';
 import { NotNullableInterface } from '#self/lib/interfaces';
 import { ContainerStatus, ContainerStatusReport, ControlPanelEvent } from '#self/lib/constants';
-
+import _ from 'lodash';
 /**
  * CapacityManager
  */
 export class CapacityManager extends Base {
-  functionProfileManager: FunctionProfileManager
+  functionProfileManager: FunctionProfileManager;
   workerStatsSnapshot: WorkerStatsSnapshot;
   virtualMemoryPoolSize: number;
-  shrinking: boolean;
-  turf: Turf;
   logger: Logger;
-  requestQueueingTasks: TaskQueue<RequestQueueItem>;
 
-  constructor(public plane: ControlPlane, private config: Config) {
+  constructor(public plane: ControlPlane, public config: Config) {
     super();
 
     this.functionProfileManager = plane.functionProfile;
     this.workerStatsSnapshot = new WorkerStatsSnapshot(plane.functionProfile, config);
     this.virtualMemoryPoolSize = bytes(config.virtualMemoryPoolSize);
-    this.shrinking = false;
-    this.turf = turf;
     this.logger = loggers.get('capacity manager');
-    this.requestQueueingTasks = new TaskQueue(1);
   }
 
   /**
@@ -55,116 +46,133 @@ export class CapacityManager extends Base {
   }
 
   /**
-   * Sync worker data
+   * 预估扩缩容指标
+   * @param {Broker[]} brokers
+   * @returns
    */
-  async syncWorkerData(data: root.noslated.data.IBrokerStats[]) {
-    const psData = await turf.ps();
+  evaluteScaleDeltas(brokers: Broker[]): { expandDeltas: Delta[], shrinkDeltas: Delta[]; } {
+    const expandDeltas: Delta[] = [];
+    const shrinkDeltas: Delta[] = [];
 
-    if (!psData || psData.length === 0) {
-      this.logger.warn('got turf ps data empty, skip current syncWorkerData operation.');
-      return;
+    // 若扩缩容后小于预留数，则强行扩缩容至预留数。
+    for (const broker of brokers) {
+      // disposable 模式和 inspect 不预留
+      if (broker.isInspector || broker.disposable) {
+        continue;
+      }
+
+      let count = broker.evaluateWaterLevel(false);
+
+      if (broker.workerCount < broker.reservationCount) {
+        // 扩容至预留数
+        count = Math.max(count, broker.reservationCount - broker.workerCount);
+      } else if (broker.workerCount + count < broker.reservationCount) {
+        // 缩容至预留数
+        count = broker.reservationCount - broker.workerCount;
+      }
+
+      const delta = { broker, count };
+
+      if (count > 0) {
+        expandDeltas.push(delta);
+      } else if (count < 0) {
+        shrinkDeltas.push(delta);
+      }
     }
 
-    this.workerStatsSnapshot.sync(data, psData);
-    await this.workerStatsSnapshot.correct();
+    this.regulateDeltas(expandDeltas);
+
+    return {
+      expandDeltas,
+      shrinkDeltas
+    };
+  }
+
+  /**
+   * 根据内存资源使用情况就地调整扩缩容指标
+   * @param {Delta[]} deltas
+   */
+  regulateDeltas(deltas: Delta[]) {
+    const memoUsed = this.plane.capacityManager.virtualMemoryUsed;
+    const needMemo = deltas.reduce((memo, delta, i) => {
+      const broker: Broker = delta.broker;
+      return delta.count > 0 ? memo + delta.count * broker.memoryLimit : memo;
+    }, 0);
+
+    let rate = 1.0;
+
+    if (needMemo + memoUsed > this.plane.capacityManager.virtualMemoryPoolSize) {
+      rate = (this.plane.capacityManager.virtualMemoryPoolSize - memoUsed) / needMemo;
+      for (let i = 0; i < deltas.length; i++) {
+        const { count, broker } = deltas[i];
+        if (count > 0) {
+          const newDeltas = Math.floor(deltas[i].count * rate);
+
+          this.logger.info(
+            `[Auto Scale] Up to expand ${Math.max(newDeltas, 0)} workers ${broker.name}. ` +
+            `waterlevel: ${broker.activeRequestCount}/${broker.totalMaxActivateRequests}, ` +
+            `delta: ${(deltas[i].count)}, memo rate: ${rate}, reservation: ${broker.reservationCount}, ` +
+            `current: ${broker.workerCount}.`);
+
+          deltas[i].count = newDeltas;
+        }
+      }
+    }
+  }
+
+  /**
+   * Auto scale.
+   * @return {Promise<void>} The result.
+   */
+  async autoScale() {
+    // 先创建 brokers
+    const { reservationCountPerFunction } = this.plane.capacityManager.config.worker;
+    for (const profile of this.plane.capacityManager.functionProfileManager.profile) {
+      const reservationCount = profile?.worker?.reservationCount;
+      if (reservationCount === 0) continue;
+      if (reservationCount || reservationCountPerFunction) {
+        this.plane.capacityManager.workerStatsSnapshot.getOrCreateBroker(profile.name, false, profile.worker?.disposable);
+      }
+    }
+
+    const brokers = [...this.plane.capacityManager.workerStatsSnapshot.brokers.values()];
+    const {
+      expandDeltas,
+      shrinkDeltas
+    } = this.evaluteScaleDeltas(brokers);
+
+    const {
+      'true': reservationDeltas = [],
+      'false': regularDeltas = []
+    } = _.groupBy(expandDeltas, delta => delta.broker.workerCount < delta.broker.reservationCount);
+
+    const errors = [];
+
+    try {
+      await this.plane.controller.shrink(shrinkDeltas);
+    } catch (e) {
+      errors.push(e);
+    }
+
+    try {
+      await Promise.all([
+        this.plane.controller.expand(regularDeltas),
+        this.plane.reservationController.expand(reservationDeltas)
+      ]);
+    } catch (e) {
+      errors.push(e);
+    }
+
+    if (errors.length) {
+      throw errors[0];
+    }
   }
 
   /**
    * @type {number}
    */
   get virtualMemoryUsed() {
-    return [ ...this.workerStatsSnapshot.brokers.values() ].reduce((memo, broker) => (memo + broker.virtualMemory), 0);
-  }
-
-  /**
-   * Try expansion
-   * @param {string} functionName The function name.
-   * @param {number} count How many processes would be started.
-   * @param {{ inspect?: boolean }} options The options.
-   * @return {Promise<undefined[]>} The result.
-   */
-  async tryExpansion(
-    functionName: string,
-    count: number,
-    options: ExpansionOptions,
-    disposable = false,
-    toReserve = false
-  ): Promise<void[]> {
-    const { workerLauncher } = this.plane;
-    const ret = [];
-    for (let i = 0; i < count; i++) {
-      ret.push(workerLauncher.tryLaunch(ControlPanelEvent.Expand, functionName, options, disposable, toReserve));
-    }
-    return Promise.all(ret);
-  }
-
-  /**
-   * Expand.
-   * @param {number[]} deltas Each brokers' processes delta number.
-   * @param {import('./worker_stats/broker').Broker[]} brokers Each broker.
-   * @return {Promise<void>} The result.
-   */
-  async #expand(deltas: number[], brokers: Broker[]) {
-    const memoUsed = this.virtualMemoryUsed;
-    const needMemo = deltas.reduce((memo, delta, i) => {
-      const broker: Broker = brokers[i];
-      return delta > 0 ? memo + delta * broker.memoryLimit : memo;
-    }, 0);
-
-    let rate = 1.0;
-    if (needMemo + memoUsed > this.virtualMemoryPoolSize) {
-      rate = (this.virtualMemoryPoolSize - memoUsed) / needMemo;
-      for (let i = 0; i < deltas.length; i++) {
-        if (brokers[i].isInspector) {
-          // inspect 模式不自动扩容
-          deltas[i] = 0;
-        } else if (brokers[i].disposable) {
-          // 即抛模式不自动扩容
-          deltas[i] = 0;
-        } else if (deltas[i] > 0) {
-          const newDeltas = Math.floor(deltas[i] * rate);
-
-          this.logger.info(
-            `[Auto Scale] Up to expand ${Math.max(newDeltas, 0)} workers ${brokers[i].name}. ` +
-            `waterlevel: ${brokers[i].activeRequestCount}/${brokers[i].totalMaxActivateRequests}, ` +
-            `delta: ${deltas[i]}, memo rate: ${rate}, reservation: ${brokers[i].reservationCount}, ` +
-            `current: ${brokers[i].workerCount}.`);
-
-          deltas[i] = newDeltas;
-        }
-      }
-    }
-
-    const expansions = [];
-    for (let i = 0; i < deltas.length; i++) {
-      if (deltas[i] > 0) {
-        const profile = this.plane.functionProfile.get(brokers[i].name);
-        const toReserve = brokers[i].workerCount < brokers[i].reservationCount;
-        expansions.push(
-          this.tryExpansion(
-            brokers[i].name,
-            deltas[i],
-            {
-              inspect: brokers[i].isInspector,
-            },
-            profile?.worker?.disposable || false,
-            toReserve
-          )
-        );
-      }
-    }
-
-    await Promise.all(expansions);
-  }
-
-  /**
-   * Destory worker.
-   * @param {string} workerName The worker name to be destroyed.
-   * @return {Promise<void>} The result.
-   */
-  async stopWorker(workerName: string, requestId?: string) {
-    await this.turf.stop(workerName);
-    this.logger.info('worker(%s) with request(%s) stopped.', workerName, requestId);
+    return [...this.workerStatsSnapshot.brokers.values()].reduce((memo, broker) => (memo + broker.virtualMemory), 0);
   }
 
   async updateWorkerContainerStatus(report: NotNullableInterface<root.noslated.data.IContainerStatusReport>) {
@@ -187,7 +195,7 @@ export class CapacityManager extends Base {
 
         worker.requestId = report.requestId;
 
-        this.stopWorker(worker.name, report.requestId)
+        this.plane.controller.stopWorker(worker.name, report.requestId)
           .then(() => {
             this.logger.info(`stop worker [${worker.name}] because container status is [${ContainerStatus[worker.containerStatus]}] and disposable=true, cost: ${performance.now() - now}.`);
           })
@@ -200,167 +208,10 @@ export class CapacityManager extends Base {
     }
   }
 
-  /**
-   * Shrink.
-   * @param {number[]} deltas Each brokers' processes delta number.
-   * @param {import('./worker_stats_snapshot').Broker[]} brokers Each broker
-   * @return {Promise<void>} The result.
-   */
-  async #shrink(deltas: number[], brokers: Broker[]) {
-    if (this.shrinking) {
-      return;
-    }
-    this.shrinking = true;
-
-    try {
-      await this.#doShrink(deltas, brokers);
-    } finally {
-      this.shrinking = false;
-    }
-  }
-
-  /**
-   * Do shrink.
-   * @param {number[]} deltas Each brokers' processes delta number.
-   * @param {import('./worker_stats/broker').Broker[]} brokers Each broker
-   * @return {Promise<undefined[]>} The result.
-   */
-  async #doShrink(deltas: number[], brokers: Broker[]) {
-    const shrinkData = [];
-    for (let i = 0; i < deltas.length; i++) {
-      if (deltas[i] >= 0) continue;
-
-      const broker = brokers[i];
-
-      // inspect 模式不缩容
-      if (broker.isInspector) {
-        continue;
-      }
-
-      // 即抛模式不缩容
-      if (broker.disposable) {
-        continue;
-      }
-
-      const workers = broker.shrinkDraw(Math.abs(deltas[i]));
-
-      shrinkData.push({
-        functionName: broker.name,
-        inspector: broker.isInspector,
-        workers,
-      });
-
-      this.logger.info(
-        `[Auto Scale] Up to shrink ${workers.length} workers in ${broker.name}. ` +
-        `waterlevel: ${broker.activeRequestCount}/${broker.totalMaxActivateRequests}, ` +
-        `existing: ${!!broker.data}, reservation: ${broker.reservationCount}, current: ${broker.workerCount}.`);
-    }
-
-    if (!shrinkData.length) return; // To avoid unneccessary logic below.
-
-    const { dataPlaneClientManager } = this.plane;
-    const ensured = await dataPlaneClientManager.reduceCapacity({ brokers: shrinkData });
-    if (!ensured || !ensured.length) {
-      return;
-    }
-
-    const kill = [];
-    const up = [];
-
-    for (const broker of ensured) {
-      for (const worker of broker?.workers || []) {
-        const realWorker = this.workerStatsSnapshot.getWorker(broker.functionName, broker.inspector, worker.name);
-        if (realWorker?.credential !== worker.credential) continue;
-        up.push(worker.name);
-        kill.push(this.stopWorker(worker.name));
-      }
-    }
-
-    this.logger.info('Up to do shrink destroy after asking for data plane.', up);
-    await Promise.all(kill);
-  }
-
-  /**
-   * Auto scale.
-   * @return {Promise<void>} The result.
-   */
-  async autoScale() {
-    // 先创建 brokers
-    const { reservationCountPerFunction } = this.config.worker;
-    for (const profile of this.functionProfileManager.profile) {
-      const reservationCount = profile?.worker?.reservationCount;
-      if (reservationCount === 0) continue;
-      if (reservationCount || reservationCountPerFunction) {
-        this.workerStatsSnapshot.getOrCreateBroker(profile.name, false, profile.worker?.disposable);
-      }
-    }
-
-    const brokers = [ ...this.workerStatsSnapshot.brokers.values() ];
-    const deltas = brokers.map(broker => broker.evaluateWaterLevel(false));
-
-    // 若扩缩容后小于预留数，则强行扩缩容至预留数。
-    for (let i = 0; i < deltas.length; i++) {
-      if (brokers[i].workerCount < brokers[i].reservationCount) {
-        // 扩容至预留数
-        deltas[i] = Math.max(deltas[i], brokers[i].reservationCount - brokers[i].workerCount);
-      } else if (brokers[i].workerCount + deltas[i] < brokers[i].reservationCount) {
-        // 缩容至预留数
-        deltas[i] = brokers[i].reservationCount - brokers[i].workerCount;
-      }
-    }
-
-    const errors = [];
-
-    try {
-      await this.#shrink(deltas, brokers);
-    } catch (e) {
-      errors.push(e);
-    }
-
-    try {
-      await this.#expand(deltas, brokers);
-    } catch (e) {
-      errors.push(e);
-    }
-
-    if (errors.length) {
-      throw errors[0];
-    }
-  }
-
-  /**
-   * Force dismiss all workers in certain brokers.
-   * @param {string[]} names The broker names.
-   * @return {Promise<void>} The result.
-   */
-  async forceDismissAllWorkersInCertainBrokers(names: string[]) {
-    if (!Array.isArray(names)) names = [ names ];
-    const { workerStatsSnapshot } = this;
-    const promises = [];
-
-    this.logger.info('Up to force dismiss all workers in broker', names);
-    for (const name of names) {
-      const brokers = [ workerStatsSnapshot.getBroker(name, false), workerStatsSnapshot.getBroker(name, true) ];
-      for (const broker of brokers) {
-        if (!broker) continue;
-        const { workers } = broker;
-        for (const workerName of workers.keys()) {
-          promises.push(this.stopWorker(workerName));
-        }
-      }
-    }
-
-    const results = await Promise.allSettled(promises);
-    for (const ret of results) {
-      if (ret.status === 'rejected') {
-        this.logger.warn('Failed to force dismiss worker.', ret.reason);
-      }
-    }
-    this.logger.info(names, 'dismissed.');
-  }
 
   /**
    * Expend due to queueing request
+   * @param {{ data: import('#self/lib/proto/noslated/data-plane-broadcast').RequestQueueingBroadcast, client: import('#self/control_plane/data_plane_client/client') }} task The task object.
    */
   async expandDueToQueueingRequest(client: DataPlaneClient, request: NotNullableInterface<root.noslated.data.IRequestQueueingBroadcast>) {
     const { requestId, name, isInspect, stats } = request;
@@ -404,7 +255,7 @@ export class CapacityManager extends Base {
     // update current workers data
     try {
       if (brokers) {
-        await this.syncWorkerData(brokers);
+        await this.plane.stateManager.syncWorkerData(brokers);
       }
     } catch (e) {
       this.logger.warn('Failed to sync data.', e);
@@ -413,11 +264,7 @@ export class CapacityManager extends Base {
   }
 }
 
-interface RequestQueueItem {
-  client: DataPlaneClient;
-  data: NotNullableInterface<root.noslated.data.IRequestQueueingBroadcast>;
-}
-
-interface ExpansionOptions {
-  inspect?: boolean;
-}
+export type Delta = {
+  count: number;
+  broker: Broker;
+};

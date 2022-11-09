@@ -86,11 +86,11 @@ describe(common.testName(__filename), () => {
       capacityManager.workerStatsSnapshot.register('func', 'foo', 'bar', false);
 
       const { promise: promise2, resolve: resolve2 } = createDeferred<void>();
-      const syncWorkerData = capacityManager.syncWorkerData.bind(capacityManager);
+      const syncWorkerData = capacityManager.plane.stateManager.syncWorkerData.bind(capacityManager);
       const autoScale = capacityManager.autoScale.bind(capacityManager);
       let syncWorkerDataCalled = 0;
       let autoScaleCalled = 0;
-      mm(capacityManager, 'syncWorkerData', async (brokers: any) => {
+      mm(capacityManager.plane.stateManager, 'syncWorkerData', async (brokers: any) => {
         assert.deepStrictEqual(JSON.parse(JSON.stringify(brokers)), [ brokerData ]);
         syncWorkerDataCalled++;
         return syncWorkerData(brokers);
@@ -155,11 +155,11 @@ describe(common.testName(__filename), () => {
       });
 
       const { promise: promise2, resolve: resolve2 } = createDeferred<void>();
-      const syncWorkerData = capacityManager.syncWorkerData.bind(capacityManager);
+      const syncWorkerData = capacityManager.plane.stateManager.syncWorkerData.bind(capacityManager);
       const autoScale = capacityManager.autoScale.bind(capacityManager);
       let syncWorkerDataCalled = 0;
       let autoScaleCalled = 0;
-      mm(capacityManager, 'syncWorkerData', async (brokers: any) => {
+      mm(capacityManager.plane.stateManager, 'syncWorkerData', async (brokers: any) => {
         assert.deepStrictEqual(JSON.parse(JSON.stringify(brokers)), [ brokerData ]);
         syncWorkerDataCalled++;
         return syncWorkerData(brokers);

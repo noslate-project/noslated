@@ -33,7 +33,7 @@ class Worker {
   #containerStatus: ContainerStatus;
 
   get containerStatus() {
-    return this.#containerStatus
+    return this.#containerStatus;
   }
 
   /**

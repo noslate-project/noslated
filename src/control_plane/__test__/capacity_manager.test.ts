@@ -66,7 +66,7 @@ describe(common.testName(__filename), () => {
     await control.ready();
     ({ capacityManager } = control);
     clock = FakeTimers.install({
-      toFake: [ 'setTimeout' ]
+      toFake: ['setTimeout']
     });
   });
 
@@ -122,7 +122,7 @@ describe(common.testName(__filename), () => {
       const correct = capacityManager.workerStatsSnapshot.correct.bind(capacityManager.workerStatsSnapshot);
       mm(capacityManager.workerStatsSnapshot, 'sync', async (data: noslated.data.IBrokerStats[], _psData: TurfProcess[]) => {
         assert.deepStrictEqual(psData, _psData);
-        assert.deepStrictEqual(data, [ brokerData1 ]);
+        assert.deepStrictEqual(data, [brokerData1]);
         syncCalled = true;
         return sync(data, _psData);
       });
@@ -158,7 +158,7 @@ describe(common.testName(__filename), () => {
         workerStoppedBroker = broker;
       });
 
-      await capacityManager.syncWorkerData([ brokerData1 ]);
+      await control.stateManager.syncWorkerData([brokerData1]);
       assert(syncCalled);
       assert(psCalled);
       assert(correctCalled);
@@ -172,7 +172,7 @@ describe(common.testName(__filename), () => {
       assert.strictEqual(broker?.startingPool.size, 1);
       assert.strictEqual(broker?.workers.size, 1);
       const worker = broker?.getWorker('hello')?.toJSON();
-      assert.deepStrictEqual(_.omit(worker, [ 'registerTime' ]), {
+      assert.deepStrictEqual(_.omit(worker, ['registerTime']), {
         name: 'hello',
         credential: 'world',
         pid: null,
@@ -185,7 +185,7 @@ describe(common.testName(__filename), () => {
       });
       assert.strictEqual(typeof worker?.registerTime, 'number');
       assert.strictEqual(workerStoppedBroker, broker);
-      assert.deepStrictEqual(_.omit(workerStoppedWorker.toJSON(), [ 'registerTime' ]), {
+      assert.deepStrictEqual(_.omit(workerStoppedWorker.toJSON(), ['registerTime']), {
         name: 'foo',
         credential: 'bar',
         pid: 123,
@@ -254,7 +254,7 @@ describe(common.testName(__filename), () => {
       capacityManager.workerStatsSnapshot.register('lambda', 'cocos', '2d', false);
       capacityManager.workerStatsSnapshot.register('lambda', 'alibaba', 'seed of hope', false);
 
-      await capacityManager.syncWorkerData([ brokerData1, brokerData2 ]);
+      await control.stateManager.syncWorkerData([brokerData1, brokerData2]);
 
       capacityManager.updateWorkerContainerStatus({
         functionName: 'func',
@@ -292,8 +292,8 @@ describe(common.testName(__filename), () => {
     });
   });
 
-  describe('#tryExpansion()', () => {
-    it('should try expansion', async () => {
+  describe('#tryBatchLaunch()', () => {
+    it('should try batch launch', async () => {
       let called = 0;
       mm(capacityManager.plane.workerLauncher, 'tryLaunch', async (event: ControlPanelEvent, name: any, options: any) => {
         assert.strictEqual(event, ControlPanelEvent.Expand);
@@ -301,7 +301,7 @@ describe(common.testName(__filename), () => {
         assert.deepStrictEqual(options, { inspect: true });
         called++;
       });
-      await capacityManager.tryExpansion('func', 10, { inspect: true });
+      await control.controller.tryBatchLaunch('func', 10, { inspect: true });
       assert.strictEqual(called, 10);
 
       called = 0;
@@ -311,7 +311,7 @@ describe(common.testName(__filename), () => {
         assert.deepStrictEqual(options, { inspect: false });
         called++;
       });
-      await capacityManager.tryExpansion('func', 3, { inspect: false });
+      await control.controller.tryBatchLaunch('func', 3, { inspect: false });
       assert.strictEqual(called, 3);
 
       called = 0;
@@ -321,7 +321,7 @@ describe(common.testName(__filename), () => {
       });
 
       assert.rejects(async () => {
-        await capacityManager.tryExpansion('func', 3, { inspect: false });
+        await control.controller.tryBatchLaunch('func', 3, { inspect: false });
       }, /💩/);
     });
   });
@@ -333,7 +333,7 @@ describe(common.testName(__filename), () => {
         assert.strictEqual(name, 'ojbk');
         called = true;
       });
-      await capacityManager.stopWorker('ojbk');
+      await control.controller.stopWorker('ojbk');
       assert.strictEqual(called, true);
     });
 
@@ -342,7 +342,7 @@ describe(common.testName(__filename), () => {
         throw new Error('💩');
       });
 
-      assert.rejects(() => capacityManager.stopWorker('ojbk'), /💩/);
+      assert.rejects(() => control.controller.stopWorker('ojbk'), /💩/);
     });
   });
 
@@ -375,23 +375,23 @@ describe(common.testName(__filename), () => {
       capacityManager.workerStatsSnapshot.register('lambda', 'cocos', '2d', false);
       capacityManager.workerStatsSnapshot.register('lambda', 'alibaba', 'seed of hope', false);
 
-      await capacityManager.syncWorkerData([ brokerData1, brokerData2 ]);
+      await control.stateManager.syncWorkerData([brokerData1, brokerData2]);
 
       let stopNames: string[] = [];
-      mm(capacityManager, 'stopWorker', async (name: string) => {
+      mm(control.controller, 'stopWorker', async (name: string) => {
         stopNames.push(name);
       });
 
-      await capacityManager.forceDismissAllWorkersInCertainBrokers(['func']);
-      assert.deepStrictEqual(stopNames.sort(), [ 'foo', 'hello' ]);
+      await control.controller.forceDismissAllWorkersInCertainBrokers(['func']);
+      assert.deepStrictEqual(stopNames.sort(), ['foo', 'hello']);
 
       stopNames = [];
-      await capacityManager.forceDismissAllWorkersInCertainBrokers(['lambda']);
-      assert.deepStrictEqual(stopNames.sort(), [ 'alibaba', 'coco', 'cocos' ]);
+      await control.controller.forceDismissAllWorkersInCertainBrokers(['lambda']);
+      assert.deepStrictEqual(stopNames.sort(), ['alibaba', 'coco', 'cocos']);
 
       stopNames = [];
-      await capacityManager.forceDismissAllWorkersInCertainBrokers([ 'func', 'lambda' ]);
-      assert.deepStrictEqual(stopNames.sort(), [ 'alibaba', 'coco', 'cocos', 'foo', 'hello' ]);
+      await control.controller.forceDismissAllWorkersInCertainBrokers(['func', 'lambda']);
+      assert.deepStrictEqual(stopNames.sort(), ['alibaba', 'coco', 'cocos', 'foo', 'hello']);
     });
   });
 
@@ -476,7 +476,7 @@ describe(common.testName(__filename), () => {
         requestId: ''
         });
 
-        await capacityManager.syncWorkerData([ brokerData1, brokerData2 ]);
+        await control.stateManager.syncWorkerData([brokerData1, brokerData2]);
 
         capacityManager.workerStatsSnapshot!.getWorker('func', false, 'hello')!.data!.activeRequestCount = 10;
         capacityManager.workerStatsSnapshot!.getWorker('func', false, 'foo')!.data!.activeRequestCount = 10;
@@ -507,7 +507,7 @@ describe(common.testName(__filename), () => {
           ret.brokers[0].workers.pop();
           return ret.brokers;
         });
-        mm(capacityManager, 'stopWorker', async (name: any) => {
+        mm(control.controller, 'stopWorker', async (name: any) => {
           assert.strictEqual(name, 'cocos');
           stopWorkerCalled++;
         });
@@ -604,7 +604,7 @@ describe(common.testName(__filename), () => {
         requestId: ''
       });
 
-      await capacityManager.syncWorkerData([ brokerData1, brokerData2 ]);
+      await control.stateManager.syncWorkerData([brokerData1, brokerData2]);
       capacityManager.workerStatsSnapshot!.getWorker('func', false, 'hello')!.data!.activeRequestCount = 10;
       capacityManager.workerStatsSnapshot!.getWorker('func', false, 'foo')!.data!.activeRequestCount = 10;
       capacityManager.workerStatsSnapshot!.getBroker('func', false)!.redundantTimes = 60;
@@ -645,8 +645,8 @@ describe(common.testName(__filename), () => {
 
         return data.brokers;
       });
-      let left = [ 'cocos', 'coco', 'alibaba', 'foo', 'hello' ];
-      mm(capacityManager, 'stopWorker', async (name: string) => {
+      let left = ['cocos', 'coco', 'alibaba', 'foo', 'hello'];
+      mm(control.controller, 'stopWorker', async (name: string) => {
         assert(left.includes(name));
         left = left.filter(n => name !== n);
         stopWorkerCalled++;
@@ -676,7 +676,7 @@ describe(common.testName(__filename), () => {
         { pid: 2, name: 'foo', status: 'running' },
       ]);
 
-      mm(capacityManager, 'tryExpansion', async () => {
+      mm(control.controller, 'tryBatchLaunch', async () => {
         throw new Error('Should not be called.');
       });
 
@@ -699,7 +699,7 @@ describe(common.testName(__filename), () => {
       mm(brokerData1.workers[1], 'resourceLimit', { memory: 512 * 1024 * 1024 });
       mm(capacityManager, 'virtualMemoryPoolSize', 1024 * 1024 * 1024);
 
-      await capacityManager.syncWorkerData([ brokerData1 ]);
+      await control.stateManager.syncWorkerData([brokerData1]);
       await assert.doesNotReject(capacityManager.autoScale());
     });
   });
