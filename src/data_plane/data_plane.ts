@@ -5,9 +5,8 @@ import { Base } from '#self/lib/sdk_base';
 import { DataFlowController } from './data_flow_controller';
 import { DataPlaneHost } from './data_plane_host';
 import { getCurrentPlaneId } from '#self/lib/util';
-import { Logger } from '#self/lib/loggers';
-
-const loggers = require('#self/lib/logger');
+import { Logger, loggers } from '#self/lib/loggers';
+import { DaprAdaptor } from '#self/delegate/dapr_adaptor';
 
 export class DataPlane extends Base {
   logger: Logger;
@@ -34,8 +33,29 @@ export class DataPlane extends Base {
   }
 
   async _init() {
+    await this._loadDaprAdaptor();
     await this.host.start(this.dataFlowController);
     await this.dataFlowController.ready();
     this.logger.info(`listened at ${this.host.address}.`);
+  }
+
+  public setDaprAdaptor(it: DaprAdaptor) {
+    this.dataFlowController.delegate.setDaprAdaptor(it);
+  }
+
+  private async _loadDaprAdaptor() {
+    const modPath = this.config.dataPlane.daprAdaptorModulePath;
+    this.logger.info('load dapr module', modPath);
+    if (modPath == null) {
+      return;
+    }
+    const Clz = require(modPath);
+
+    const mod = new Clz({
+      logger: loggers.get('dapr'),
+    });
+
+    await mod.ready();
+    this.dataFlowController.delegate.setDaprAdaptor(mod);
   }
 }

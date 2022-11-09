@@ -8,7 +8,6 @@ service DataPlane {
   rpc setServiceProfiles(ServiceProfilesAccessor) returns (Empty);
   rpc getServiceProfiles(Empty) returns (ServiceProfilesAccessor);
   rpc useInspector(UseInspectorRequest) returns (Empty);
-  rpc setDaprAdaptor(SetDaprAdaptorRequest) returns (Empty);
   rpc registerWorkerCredential(RegisterWorkerCredentialRequest) returns (Empty);
   rpc serverSockPath(Empty) returns (ServerSockPathResponse);
   rpc reduceCapacity(CapacityReductionRequest) returns (CapacityReductionResponse);
@@ -25,10 +24,6 @@ service DataPlane {
 message UseInspectorRequest {
   string funcName = 1;
   bool use = 2;
-}
-
-message SetDaprAdaptorRequest {
-  string modulePath = 1;
 }
 
 message RegisterWorkerCredentialRequest {

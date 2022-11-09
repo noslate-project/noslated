@@ -1,47 +1,35 @@
-import { BeaconHost, Namespace } from '#self/delegate/namespace';
-import { IMidwayLogger, createLogger } from '@midwayjs/logger';
+import { BeaconHost, Namespace, NoopBeaconHost } from '#self/delegate/namespace';
 import type { DataFlowController } from './data_flow_controller';
 import type { WorkerBroker } from './worker_broker';
 
-export class DataPlaneBeaconHost implements BeaconHost {
-  logger: IMidwayLogger;
-
-  constructor(logger?: IMidwayLogger) {
-    // TODO: use OTEL Trace
-    this.logger = logger || createLogger('beaconLogger', {
-      enableFile: false,
-      enableError: false,
-    });
-  }
-
-  async sendBeacon(type: string, metadata: any, body: Uint8Array): Promise<void> {
-    if (type !== 'trace') {
-      return;
-    }
-
-    this.logger.write(body);
-  }
-}
-
 class DataPlaneNamespace extends Namespace {
-  constructor(public beaconHost: DataPlaneBeaconHost) {
+  constructor(public beaconHost: BeaconHost) {
     super();
   }
 }
 
 export class NamespaceResolver {
-  beaconHost = new DataPlaneBeaconHost();
+  beaconHost: BeaconHost;
   /** @type {WeakMap<object, Map>} Map resource id to credentials */
   #brokersMap = new WeakMap<WorkerBroker, DataPlaneNamespace>();
   /**
    * TODO: 暂时由 worker 配置注册，后续由全局 namespace 机制管理
    */
   #sharedNamespace = new Map<string, DataPlaneNamespace>();
-  #default = new DataPlaneNamespace(this.beaconHost);
+  #default: Namespace;
   dataFlowController: DataFlowController;
 
   constructor(dataFlowController: DataFlowController) {
     this.dataFlowController = dataFlowController;
+
+    const modPath = this.dataFlowController.config.dataPlane.beaconHostModulePath;
+    if (modPath) {
+      const BeaconHostClass = require(modPath);
+      this.beaconHost = new BeaconHostClass()
+    } else {
+      this.beaconHost = new NoopBeaconHost();
+    }
+    this.#default = new DataPlaneNamespace(this.beaconHost);
   }
 
   register(namespace: string) {

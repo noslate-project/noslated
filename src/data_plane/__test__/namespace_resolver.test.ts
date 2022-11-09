@@ -1,8 +1,5 @@
-import { DataPlaneBeaconHost } from '#self/data_plane/namespace_resolver';
-import { createLogger, IMidwayLogger } from '@midwayjs/logger';
 import * as common from '#self/test/common';
 import * as sinon from 'sinon';
-import * as assert from 'assert';
 import { startTurfD, stopTurfD, turf } from '#self/lib/turf';
 import { assertWorkerInvoke, Roles, startAllRoles } from '#self/test/util';
 import { DataPlane } from '../data_plane';
@@ -13,33 +10,6 @@ import { kMegaBytes } from '#self/control_plane/constants';
 describe(common.testName(__filename), () => {
   afterEach(() => {
     sinon.restore();
-  });
-
-  describe('DataPlaneBeaconHost', () => {
-    it('should write beacon data', async () => {
-      const logger: IMidwayLogger = createLogger('test.log', {
-        enableFile: false,
-        enableError: false,
-      });
-      const writeStub = sinon.stub(logger, 'write');
-      const beaconHost = new DataPlaneBeaconHost(logger);
-      await beaconHost.sendBeacon('trace', { format: 'trace' }, Buffer.from('foobar'));
-
-      assert.ok(writeStub.calledOnce);
-    });
-
-    it('should ignore unrecognized beacon data', async () => {
-      const logger: IMidwayLogger = createLogger('test.log', {
-        enableFile: false,
-        enableError: false,
-      });
-      const writeStub = sinon.stub(logger, 'write');
-      const beaconHost = new DataPlaneBeaconHost(logger);
-      await beaconHost.sendBeacon('metrics', { format: 'trace' }, Buffer.from('foobar'));
-      await beaconHost.sendBeacon('foobar', { format: 'stats' }, Buffer.from('foobar'));
-
-      assert.ok(!writeStub.called);
-    });
   });
 
   describe('Namespace', () => {
