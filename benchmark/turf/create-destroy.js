@@ -2,7 +2,7 @@
 
 const common = require('../common');
 const path = require('path');
-const { turf } = require('#self/lib/turf');
+const { turf, startTurfD, stopTurfD } = require('#self/lib/turf');
 
 process.env.TURF_WORKDIR = path.resolve(__dirname, '../../.turf');
 const bundlePath = path.resolve(__dirname, '../fixtures/turf_bundle');
@@ -21,6 +21,7 @@ async function run(i, n) {
 }
 
 async function main({ n, parallel }) {
+  startTurfD();
   bench.start();
   const promises = [];
   for (let i = 0; i < parallel; i++) {
@@ -28,4 +29,5 @@ async function main({ n, parallel }) {
   }
   await Promise.all(promises);
   bench.end(n * parallel);
+  stopTurfD();
 }

@@ -63,7 +63,7 @@ export class Turf {
 
   async create(containerName: string, bundlePath: string) {
     // TODO: nullibility of name
-    return await this.#exec([ 'create', containerName ], bundlePath);
+    return await this.#exec([ '-H', 'create', '-b', bundlePath, containerName ]);
   }
 
   async start(containerName: string, options: TurfStartOptions = {}) {
@@ -108,7 +108,7 @@ export class Turf {
 
   async delete(containerName: string) {
     // TODO: nullibility of name
-    return this.#exec([ 'delete', containerName ]);
+    return this.#exec([ '-H', 'delete', containerName ]);
   }
 
   async destroy(containerName: string) {
