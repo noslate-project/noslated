@@ -3,6 +3,8 @@ import type { noslated } from '#self/proto/root';
 import { PrefixedLogger } from '#self/lib/loggers';
 import { Config } from '#self/config';
 import { ContainerStatus, ContainerStatusReport, TurfStatusEvent, ControlPanelEvent } from '#self/lib/constants';
+import { createDeferred, Deferred } from '#self/lib/util';
+import { EventEmitter } from 'events';
 
 export type WorkerStats = noslated.data.IWorkerStats;
 
@@ -16,7 +18,7 @@ class WorkerAdditionalData {
   }
 }
 
-class Worker {
+class Worker extends EventEmitter {
   /**
    * Find ps data via name
    * @param {TurfPsItem[]} psData The ps data.
@@ -108,9 +110,13 @@ class Worker {
     return this.#registerTime;
   }
 
+  #readyDeferred: Deferred<void>;
+  #initializationTimeout: number;
+
   #config;
   logger: PrefixedLogger;
   requestId: string | undefined;
+  readyTimeout: NodeJS.Timeout | undefined;
 
   /**
    * Constructor
@@ -118,7 +124,8 @@ class Worker {
    * @param name The worker name (replica name).
    * @param credential The credential.
    */
-  constructor(config: Config, name: string, credential: string | null = null, public disposable: boolean = false) {
+  constructor(config: Config, name: string, credential: string | null = null, public disposable: boolean = false, initializationTimeout?: number) {
+    super();
     this.#config = config;
     this.#name = name;
     this.#credential = credential;
@@ -130,8 +137,49 @@ class Worker {
 
     this.#registerTime = Date.now();
 
+    this.#initializationTimeout = initializationTimeout ?? config.worker.defaultInitializerTimeout;
+
     this.logger = new PrefixedLogger('worker_stats worker', this.#name);
     this.requestId = undefined;
+
+    this.#readyDeferred = createDeferred<void>();
+  }
+
+  async ready() {
+    const { resolve, reject, promise } = createDeferred<void>();
+
+    // +100 等待 dp 先触发超时逻辑同步状态
+    this.readyTimeout = setTimeout(() => {
+      if (this.#containerStatus !== ContainerStatus.Ready) {
+        // 状态设为 Stopped，等待 GC 回收
+        this.updateContainerStatus(ContainerStatus.Stopped, ContainerStatusReport.ContainerDisconnected);
+        reject(new Error(`Worker(${this.name}, ${this.credential}) initialization timeout.`));
+      }
+    }, this.#initializationTimeout + 100);
+
+    this.once('stopped', () => {
+      reject(new Error(`Worker(${this.name}, ${this.credential}) stopped unexpected after start.`));
+    });
+
+    this.once('ready', () => {
+      if (this.readyTimeout) {
+        clearTimeout(this.readyTimeout);
+        this.readyTimeout = undefined;
+      }
+
+      this.removeAllListeners('stopped');
+
+      resolve();
+    });
+    return promise;
+  }
+
+  setReady() {
+    this.emit('ready');
+  }
+
+  setStopped() {
+    this.emit('stopped');
   }
 
   toJSON() {
@@ -179,7 +227,7 @@ class Worker {
       case TurfContainerStates.starting:
       case TurfContainerStates.cloning:
       case TurfContainerStates.running: {
-        if (Date.now() - this.#registerTime > this.#config.worker.controlPlaneConnectTimeout && this.#containerStatus === ContainerStatus.Created) {
+        if (Date.now() - this.#registerTime > this.#initializationTimeout && this.#containerStatus === ContainerStatus.Created) {
           this.updateContainerStatus(ContainerStatus.Stopped, TurfStatusEvent.ConnectTimeout);
           this.logger.error('switch worker container status to [Stopped], because connect timeout.');
         }
@@ -212,7 +260,7 @@ class Worker {
       default:
         this.logger.info('found turf state: ', turfState);
 
-        if (Date.now() - this.#registerTime > this.#config.worker.controlPlaneConnectTimeout && this.#containerStatus === ContainerStatus.Created) {
+        if (Date.now() - this.#registerTime > this.#initializationTimeout && this.#containerStatus === ContainerStatus.Created) {
           this.updateContainerStatus(ContainerStatus.Stopped, TurfStatusEvent.ConnectTimeout);
           this.logger.error('switch worker container status to [Stopped], because connect timeout.');
         }

@@ -194,6 +194,8 @@ export class CapacityManager extends Base {
         const now = performance.now();
 
         worker.requestId = report.requestId;
+        
+        this.logger.info('will kill worker(%s) with request(%s) because useCGIMode=true and request drained.', worker.name, report.requestId);
 
         this.plane.controller.stopWorker(worker.name, report.requestId)
           .then(() => {

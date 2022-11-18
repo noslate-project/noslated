@@ -350,7 +350,7 @@ describe(common.testName(__filename), () => {
       assert.strictEqual(worker.turfContainerStates, TurfContainerStates.starting);
       assert.strictEqual(worker.containerStatus, ContainerStatus.Created);
 
-      clock.tick(config.worker.controlPlaneConnectTimeout + 1000);
+      clock.tick(config.worker.defaultInitializerTimeout + 1000);
       const spy = sinon.spy(worker.logger, 'error');
 
       worker.sync(data, [{ pid: 1, status: TurfContainerStates.running, name: 'hello' }]);
@@ -371,7 +371,7 @@ describe(common.testName(__filename), () => {
       assert.strictEqual(worker.turfContainerStates, TurfContainerStates.starting);
       assert.strictEqual(worker.containerStatus, ContainerStatus.Created);
 
-      clock.tick(config.worker.controlPlaneConnectTimeout + 1000);
+      clock.tick(config.worker.defaultInitializerTimeout + 1000);
       const spy = sinon.spy(worker.logger, 'error');
 
       worker.sync(null, [{ pid: 1, status: TurfContainerStates.running, name: 'hello' }]);
@@ -392,7 +392,7 @@ describe(common.testName(__filename), () => {
       assert.strictEqual(worker.turfContainerStates, TurfContainerStates.starting);
       assert.strictEqual(worker.containerStatus, ContainerStatus.Created);
 
-      clock.tick(config.worker.controlPlaneConnectTimeout + 1000);
+      clock.tick(config.worker.defaultInitializerTimeout + 1000);
       const spy = sinon.spy(worker.logger, 'error');
 
       worker.sync(null, [{ pid: 1, status: 'unsupported' as TurfContainerStates, name: 'hello' }]);
@@ -414,7 +414,7 @@ describe(common.testName(__filename), () => {
 
       worker.updateContainerStatus(ContainerStatus.Ready, ContainerStatusReport.ContainerInstalled);
 
-      clock.tick(config.worker.controlPlaneConnectTimeout + 1000);
+      clock.tick(config.worker.defaultInitializerTimeout + 1000);
 
       worker.sync(null, [{ pid: 1, status: 'unsupported' as TurfContainerStates, name: 'hello' }]);
 

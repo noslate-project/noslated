@@ -19,7 +19,7 @@ export class StateManager {
     const worker = this.plane.capacityManager.workerStatsSnapshot.getWorker(functionName, isInspector, name);
 
     if (!broker || !worker) {
-      this.logger.warn('containerStatusReport report [%o] skip because no broker and worker related.', report);
+      this.logger.warn('containerStatusReport report [%j] skip because no broker and worker related.', report);
       return;
     }
 
@@ -29,6 +29,15 @@ export class StateManager {
     }
 
     const statusTo: ContainerStatus = this.#getStatusToByEvent(event);
+
+
+    if (statusTo === ContainerStatus.Stopped) {
+      worker.setStopped();
+    }
+
+    if (statusTo === ContainerStatus.Ready && event === ContainerStatusReport.ContainerInstalled) {
+      worker.setReady();
+    }
 
     worker.logger.info(`update status to [${ContainerStatus[statusTo]}] from [${ContainerStatus[worker.containerStatus]}] by event [${event}].`);
 
