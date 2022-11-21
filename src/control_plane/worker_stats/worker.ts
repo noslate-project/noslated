@@ -290,11 +290,6 @@ class Worker {
   }
 
   updateContainerStatus(status: ContainerStatus, event: TurfStatusEvent | ContainerStatusReport | ControlPanelEvent) {
-    if (status < this.#containerStatus) {
-      this.logger.info(`update container status [${ContainerStatus[status]}] from [${ContainerStatus[this.#containerStatus]}] by event [${event}] on [${Date.now()}] is illegal.`);
-      return;
-    }
-
     const oldStatus = this.#containerStatus;
 
     this.#containerStatus = status;
