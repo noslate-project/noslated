@@ -4,7 +4,6 @@ import { PrefixedLogger } from '#self/lib/loggers';
 import { Config } from '#self/config';
 import { ContainerStatus, ContainerStatusReport, TurfStatusEvent, ControlPanelEvent } from '#self/lib/constants';
 import { createDeferred, Deferred } from '#self/lib/util';
-import { EventEmitter } from 'events';
 
 export type WorkerStats = noslated.data.IWorkerStats;
 
@@ -18,7 +17,7 @@ class WorkerAdditionalData {
   }
 }
 
-class Worker extends EventEmitter {
+class Worker {
   /**
    * Find ps data via name
    * @param {TurfPsItem[]} psData The ps data.
@@ -125,7 +124,6 @@ class Worker extends EventEmitter {
    * @param credential The credential.
    */
   constructor(config: Config, name: string, credential: string | null = null, public disposable: boolean = false, initializationTimeout?: number) {
-    super();
     this.#config = config;
     this.#name = name;
     this.#credential = credential;
@@ -157,29 +155,28 @@ class Worker extends EventEmitter {
       }
     }, this.#initializationTimeout + 100);
 
-    this.once('stopped', () => {
+    this.#readyDeferred.promise.catch(() => {
       reject(new Error(`Worker(${this.name}, ${this.credential}) stopped unexpected after start.`));
     });
 
-    this.once('ready', () => {
+    this.#readyDeferred.promise.then(() => {
       if (this.readyTimeout) {
         clearTimeout(this.readyTimeout);
         this.readyTimeout = undefined;
       }
 
-      this.removeAllListeners('stopped');
-
       resolve();
     });
+
     return promise;
   }
 
   setReady() {
-    this.emit('ready');
+    this.#readyDeferred.resolve();
   }
 
   setStopped() {
-    this.emit('stopped');
+    this.#readyDeferred.reject();
   }
 
   toJSON() {
