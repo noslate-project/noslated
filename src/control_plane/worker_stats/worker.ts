@@ -117,6 +117,8 @@ class Worker {
   requestId: string | undefined;
   readyTimeout: NodeJS.Timeout | undefined;
 
+  #pendingReady: Boolean | undefined;
+
   /**
    * Constructor
    * @param config The global configure.
@@ -146,6 +148,8 @@ class Worker {
   async ready() {
     const { resolve, reject, promise } = createDeferred<void>();
 
+    this.#pendingReady = true;
+
     // +100 等待 dp 先触发超时逻辑同步状态
     this.readyTimeout = setTimeout(() => {
       if (this.#containerStatus !== ContainerStatus.Ready) {
@@ -172,10 +176,18 @@ class Worker {
   }
 
   setReady() {
+    if (this.#pendingReady !== true) {
+      return;
+    }
+
     this.#readyDeferred.resolve();
   }
 
   setStopped() {
+    if (this.#pendingReady !== true) {
+      return;
+    }
+
     this.#readyDeferred.reject();
   }
 
@@ -290,6 +302,11 @@ class Worker {
   }
 
   updateContainerStatus(status: ContainerStatus, event: TurfStatusEvent | ContainerStatusReport | ControlPanelEvent) {
+    if (status < this.#containerStatus) {
+      this.logger.info(`update container status [${ContainerStatus[status]}] from [${ContainerStatus[this.#containerStatus]}] by event [${event}] on [${Date.now()}] is illegal.`);
+      return;
+    }
+
     const oldStatus = this.#containerStatus;
 
     this.#containerStatus = status;

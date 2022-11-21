@@ -33,10 +33,7 @@ export class StateManager {
     worker.logger.info(`try update status to [${ContainerStatus[statusTo]}] from [${ContainerStatus[worker.containerStatus]}] by event [${event}].`);
 
     // Stopped 和 Unknown 都是终止状态，不允许转向其他状态
-    // 状态只允许进行 Created -> Ready -> PendingStop -> Stopped -> Unknow 的转移
-    if (!this.#statusTransCheck(worker.containerStatus, statusTo, event)) {
-      return;
-    }
+    if (worker.containerStatus >= ContainerStatus.Stopped || statusTo < statusTo) return;
 
     worker.updateContainerStatus(statusTo, event as ContainerStatusReport);
 
@@ -47,17 +44,6 @@ export class StateManager {
     if (statusTo === ContainerStatus.Ready && event === ContainerStatusReport.ContainerInstalled) {
       worker.setReady();
     }
-  }
-
-  #statusTransCheck(status: ContainerStatus, statusTo: ContainerStatus, event: string): Boolean {
-    if (status >= ContainerStatus.Stopped || statusTo < status) return false;
-
-    if (statusTo < status) {
-      this.logger.info(`update container status [${ContainerStatus[statusTo]}] from [${ContainerStatus[status]}] by event [${event}] on [${Date.now()}] is illegal.`);
-      return false;
-    }
-
-    return true;
   }
 
   #getStatusToByEvent(event: string) {
