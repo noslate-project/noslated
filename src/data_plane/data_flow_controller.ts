@@ -17,7 +17,7 @@ import { WorkerTelemetry } from './worker_telemetry';
 import { NamespaceResolver } from './namespace_resolver';
 import { Host } from '#self/lib/rpc/host';
 import { Config } from '#self/config';
-import { Meter } from '@opentelemetry/api-metrics';
+import { Meter } from '@opentelemetry/api';
 import * as root from '#self/proto/root';
 import { RawFunctionProfile } from '#self/lib/json/function_profile';
 import { Readable } from 'stream';

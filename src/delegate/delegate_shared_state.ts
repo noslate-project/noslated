@@ -1,6 +1,6 @@
 import { NoslatedServer } from './noslated_ipc';
 import type { NamespaceResolver } from './namespace';
-import { Meter, Counter, Histogram } from '@opentelemetry/api-metrics';
+import { Meter, Counter, Histogram } from '@opentelemetry/api';
 import { DaprAdaptor } from './dapr_adaptor';
 
 class DelegateSharedState {
