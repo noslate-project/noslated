@@ -1,5 +1,10 @@
 import assert from 'assert';
+import { performance } from 'perf_hooks';
+
 import _ from 'lodash';
+import mm from 'mm';
+import sinon from 'sinon';
+
 import FakeTimers, { Clock } from '@sinonjs/fake-timers';
 import { Worker } from '#self/control_plane/worker_stats/index';
 import * as common from '#self/test/common';
@@ -7,8 +12,13 @@ import { config } from '#self/config';
 import { FunctionProfileManager as ProfileManager } from '#self/lib/function_profile';
 import { TurfContainerStates } from '#self/lib/turf';
 import { ContainerStatus, ContainerStatusReport, ControlPanelEvent } from '#self/lib/constants';
-import sinon from 'sinon';
 import { AworkerFunctionProfile } from '#self/lib/json/function_profile';
+import { Roles, startAllRoles } from '#self/test/util';
+import { StateManager } from '#self/control_plane/worker_stats/state_manager';
+import { ControlPlane } from '#self/control_plane/control_plane';
+import { DataPlane } from '#self/data_plane';
+import { NoslatedClient } from '#self/sdk';
+import { CapacityManager } from '#self/control_plane/capacity_manager';
 
 describe(common.testName(__filename), () => {
   const funcData: AworkerFunctionProfile[] = [{
@@ -22,19 +32,36 @@ describe(common.testName(__filename), () => {
     },
   }];
 
-  let profileManager;
+  let profileManager: ProfileManager | null;
+  let controlPlane: ControlPlane;
+  let data: DataPlane;
+  let agent: NoslatedClient;
+  let stateManager: StateManager;
+  let capacityManager: CapacityManager;
+
   beforeEach(async () => {
+    const roles = await startAllRoles() as Required<Roles>;
+    data = roles.data;
+    agent = roles.agent;
+    controlPlane = roles.control;
+    ({ stateManager, capacityManager } = controlPlane);
+
     profileManager = new ProfileManager(config);
     await profileManager.set(funcData, 'WAIT');
   });
-  afterEach(() => {
+  afterEach(async () => {
     profileManager = null;
+    await Promise.all([
+      controlPlane.close(),
+      agent.close(),
+      data.close()
+    ]);
   });
 
   describe('constructor', () => {
     it('should construct', () => {
       const worker = new Worker(config, 'hello', 'world');
-      assert.deepStrictEqual(_.omit(worker.toJSON(), [ 'registerTime' ]), {
+      assert.deepStrictEqual(_.omit(worker.toJSON(), ['registerTime']), {
         name: 'hello',
         credential: 'world',
         containerStatus: ContainerStatus.Created,
@@ -47,7 +74,7 @@ describe(common.testName(__filename), () => {
 
     it('should construct with credential null', () => {
       const worker = new Worker(config, 'hello');
-      assert.deepStrictEqual(_.omit(worker.toJSON(), [ 'registerTime' ]), {
+      assert.deepStrictEqual(_.omit(worker.toJSON(), ['registerTime']), {
         name: 'hello',
         credential: null,
         containerStatus: ContainerStatus.Created,
@@ -63,7 +90,7 @@ describe(common.testName(__filename), () => {
     it('should sync data (null)', () => {
       const worker = new Worker(config, 'hello', 'world');
       worker.sync(null, [{ name: 'hello', status: TurfContainerStates.stopped, pid: 1 }]);
-      assert.deepStrictEqual(_.omit(worker.toJSON(), [ 'registerTime' ]), {
+      assert.deepStrictEqual(_.omit(worker.toJSON(), ['registerTime']), {
         name: 'hello',
         credential: 'world',
         containerStatus: ContainerStatus.Stopped,
@@ -77,7 +104,7 @@ describe(common.testName(__filename), () => {
     it('should sync data', () => {
       const worker = new Worker(config, 'hello', 'world');
       worker.sync({ name: 'hello', maxActivateRequests: 10, activeRequestCount: 5 }, [{ name: 'hello', status: TurfContainerStates.stopped, pid: 1 }]);
-      assert.deepStrictEqual(_.omit(worker.toJSON(), [ 'registerTime' ]), {
+      assert.deepStrictEqual(_.omit(worker.toJSON(), ['registerTime']), {
         name: 'hello',
         credential: 'world',
         containerStatus: ContainerStatus.Stopped,
@@ -99,7 +126,7 @@ describe(common.testName(__filename), () => {
         { name: 'hello', maxActivateRequests: 10, activeRequestCount: 5 },
         [{ name: 'helloo', status: TurfContainerStates.stopped, pid: 1 }]
       );
-      assert.deepStrictEqual(_.omit(worker.toJSON(), [ 'registerTime' ]), {
+      assert.deepStrictEqual(_.omit(worker.toJSON(), ['registerTime']), {
         name: 'hello',
         credential: 'world',
         containerStatus: ContainerStatus.Created,
@@ -119,7 +146,7 @@ describe(common.testName(__filename), () => {
         { name: 'hello', maxActivateRequests: 10, activeRequestCount: 5 },
         [{ name: 'hello', status: TurfContainerStates.stopped, pid: 1 }]
       );
-      assert.deepStrictEqual(_.omit(JSON.parse(JSON.stringify(worker)), [ 'registerTime' ]), {
+      assert.deepStrictEqual(_.omit(JSON.parse(JSON.stringify(worker)), ['registerTime']), {
         name: 'hello',
         credential: 'world',
         containerStatus: ContainerStatus.Stopped,
@@ -137,7 +164,7 @@ describe(common.testName(__filename), () => {
         [{ name: 'helloo', status: TurfContainerStates.stopped, pid: 1 }]
       );
 
-      assert.deepStrictEqual(_.omit(JSON.parse(JSON.stringify(worker)), [ 'registerTime', 'firstUnknownTime' ]), {
+      assert.deepStrictEqual(_.omit(JSON.parse(JSON.stringify(worker)), ['registerTime', 'firstUnknownTime']), {
         name: 'hello',
         credential: 'world',
         containerStatus: ContainerStatus.Stopped,
@@ -157,7 +184,7 @@ describe(common.testName(__filename), () => {
         { name: 'hello', maxActivateRequests: 10, activeRequestCount: 5 },
         [{ name: 'helloo', status: TurfContainerStates.stopped, pid: 1 }]
       );
-      assert.deepStrictEqual(_.omit(JSON.parse(JSON.stringify(worker)), [ 'registerTime', 'firstUnknownTime' ]), {
+      assert.deepStrictEqual(_.omit(JSON.parse(JSON.stringify(worker)), ['registerTime', 'firstUnknownTime']), {
         name: 'hello',
         credential: 'world',
         containerStatus: ContainerStatus.Created,
@@ -174,7 +201,7 @@ describe(common.testName(__filename), () => {
         { name: 'hello', maxActivateRequests: 10, activeRequestCount: 5 },
         [{ name: 'hello', status: TurfContainerStates.stopped, pid: 1 }]
       );
-      assert.deepStrictEqual(_.omit(JSON.parse(JSON.stringify(worker)), [ 'registerTime' ]), {
+      assert.deepStrictEqual(_.omit(JSON.parse(JSON.stringify(worker)), ['registerTime']), {
         name: 'hello',
         credential: 'world',
         containerStatus: ContainerStatus.Stopped,
@@ -420,6 +447,99 @@ describe(common.testName(__filename), () => {
 
       assert.strictEqual(worker.containerStatus, ContainerStatus.Ready);
     });
+  });
 
+  describe('worker ready', () => {
+    let worker: Worker;
+    beforeEach(async () => {
+      await agent.setFunctionProfile([{
+        name: 'func1',
+        url: `file://${__dirname}`,
+        runtime: 'aworker',
+        signature: 'xxx',
+        sourceFile: 'index.js',
+        worker: {
+          initializationTimeout: 1000
+        }
+      }], 'WAIT');
+
+      capacityManager.workerStatsSnapshot.register('func1', 'worker1', 'cred1', false);
+      worker = capacityManager.workerStatsSnapshot.getWorker('func1', false, 'worker1')!;
+    });
+
+    afterEach(() => {
+      capacityManager.workerStatsSnapshot.unregister('func1', 'worker1', false);
+    });
+
+    it('should worker ready after initializer handler success', async () => {
+      const now = performance.now();
+
+      setTimeout(() => {
+        stateManager.updateContainerStatusByReport({
+          functionName: 'func1',
+          name: 'worker1',
+          isInspector: false,
+          event: ContainerStatusReport.ContainerInstalled,
+          requestId: ''
+        });
+      }, 500);
+
+      await worker.ready();
+
+      assert.ok(performance.now() - now >= 500);
+    });
+
+    it('should throw error when ready timeout', async () => {
+      await assert.rejects(async () => {
+        await worker.ready();
+      }, {
+        message: /initialization timeout/
+      });
+    });
+
+    it('should throw error when set stopped before ready', async () => {
+      process.on('unhandledRejection', (promise, reason) => {
+      });
+      setTimeout(() => {
+        stateManager.updateContainerStatusByReport({
+          functionName: 'func1',
+          name: 'worker1',
+          isInspector: false,
+          event: ContainerStatusReport.ContainerDisconnected,
+          requestId: ''
+        });
+      }, 500);
+
+      await assert.rejects(async () => {
+        await worker.ready();
+      }, {
+        message: /stopped unexpected after start/
+      });
+    });
+
+    it('should do nothing when emit stopped after ready', async () => {
+      setTimeout(() => {
+        stateManager.updateContainerStatusByReport({
+          functionName: 'func1',
+          name: 'worker1',
+          isInspector: false,
+          event: ContainerStatusReport.ContainerInstalled,
+          requestId: ''
+        });
+      }, 200);
+
+      const spy = sinon.spy();
+
+      mm(worker, 'setStopped', async () => {
+        worker.setStopped();
+        spy();
+      });
+
+      await worker.ready();
+
+      worker.updateContainerStatusByEvent(ContainerStatusReport.ContainerDisconnected);
+
+      assert(spy.notCalled);
+    });
   });
 });

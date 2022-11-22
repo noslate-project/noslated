@@ -143,6 +143,7 @@ class Worker {
     this.requestId = undefined;
 
     this.#readyDeferred = createDeferred<void>();
+    this.#pendingReady = undefined;
   }
 
   async ready() {
@@ -155,22 +156,24 @@ class Worker {
       if (this.#containerStatus !== ContainerStatus.Ready) {
         // 状态设为 Stopped，等待 GC 回收
         this.updateContainerStatus(ContainerStatus.Stopped, ContainerStatusReport.ContainerDisconnected);
+
         reject(new Error(`Worker(${this.name}, ${this.credential}) initialization timeout.`));
       }
     }, this.#initializationTimeout + 100);
 
-    this.#readyDeferred.promise.catch(() => {
-      reject(new Error(`Worker(${this.name}, ${this.credential}) stopped unexpected after start.`));
-    });
-
-    this.#readyDeferred.promise.then(() => {
-      if (this.readyTimeout) {
-        clearTimeout(this.readyTimeout);
-        this.readyTimeout = undefined;
-      }
-
-      resolve();
-    });
+    this.#readyDeferred.promise
+      .catch(() => {
+        reject(new Error(`Worker(${this.name}, ${this.credential}) stopped unexpected after start.`));
+      })
+      .then(() => {
+        resolve();
+      })
+      .finally(() => {
+        if (this.readyTimeout) {
+          clearTimeout(this.readyTimeout);
+          this.readyTimeout = undefined;
+        }
+      });
 
     return promise;
   }
