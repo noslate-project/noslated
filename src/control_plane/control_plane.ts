@@ -11,7 +11,7 @@ import { WorkerLauncher } from './worker_launcher';
 import { EventEmitter } from 'events';
 import { WorkerTelemetry } from './telemetry';
 import { getMeter } from '#self/lib/telemetry/otel';
-import { Meter } from '@opentelemetry/api-metrics';
+import { Meter } from '@opentelemetry/api';
 import { RawFunctionProfile } from '#self/lib/json/function_profile';
 import { StateManager } from './worker_stats/state_manager';
 import { BaseController, DisposableController, ReservationController } from './controllers';

@@ -1,6 +1,6 @@
 import EventEmitter from 'events';
 import path from 'path';
-import { Meter, createNoopMeter } from '@opentelemetry/api-metrics';
+import { Meter, createNoopMeter } from '@opentelemetry/api';
 import Logger from '../lib/logger';
 import { aworker } from '../proto/aworker';
 import { CredentialRegistration } from './registration';
