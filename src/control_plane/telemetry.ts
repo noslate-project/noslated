@@ -86,8 +86,8 @@ export class WorkerTelemetry {
         return [];
       }
       return Array.from(broker.workers.values()).map(async worker => {
-        const state = await turf.state(worker.name).catch(() => ({ state: TurfContainerStates.unknown }));
-        if (state.state !== TurfContainerStates.running) {
+        const state = await turf.state(worker.name).catch(() => ({ state: TurfContainerStates.unknown } as TurfState));
+        if (state == null || state.state !== TurfContainerStates.running) {
           return;
         }
         const attributes = {

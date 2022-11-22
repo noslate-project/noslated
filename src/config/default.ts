@@ -54,6 +54,7 @@ export default {
     bin: path.join(projectRoot, 'bin/turf'),
     startTurfDOutput: false,
     deleteAllContainersBeforeStart: false,
+    socketSession: true,
   },
 
   delegate: {

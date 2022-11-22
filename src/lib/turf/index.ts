@@ -1,13 +1,15 @@
 import cp from 'child_process';
 import path from 'path';
 import { config } from '#self/config';
+import { loggers } from '../loggers';
+import { Turf } from './wrapper'
 
-const logger = require('../logger').get('turf/index');
+const logger = loggers.get('turf/index');
 
 const turfPath = config.turf.bin;
 let turfDCP: cp.ChildProcess | undefined;
 
-export const turf = new (require('./wrapper')).Turf(turfPath);
+export const turf = new Turf(turfPath);
 export { TurfContainerStates } from './types';
 
 function refreshTurfWorkspace() {
