@@ -482,7 +482,7 @@ describe(common.testName(__filename), () => {
           event: ContainerStatusReport.ContainerInstalled,
           requestId: ''
         });
-      }, 500);
+      }, 500 + 10);
 
       await worker.ready();
 
@@ -540,6 +540,44 @@ describe(common.testName(__filename), () => {
       worker.updateContainerStatusByEvent(ContainerStatusReport.ContainerDisconnected);
 
       assert(spy.notCalled);
+    });
+
+    it('should do nothing when setReady before wait ready', async () => {
+      worker.setReady();
+
+      await assert.rejects(async () => {
+        await worker.ready();
+      }, {
+        message: /initialization timeout/
+      });
+    });
+
+    it('should do nothing when setStopped before wait ready', async () => {
+      worker.setStopped();
+
+      await assert.rejects(async () => {
+        await worker.ready();
+      }, {
+        message: /initialization timeout/
+      });
+    });
+
+    it('should do nothing when timeout but ready', async () => {
+      let called = 0;
+
+      const _setReady = worker.setReady.bind(worker);
+      mm(worker, 'setReady', async () => {
+        called++;
+        _setReady();
+      });
+
+      worker.updateContainerStatus(ContainerStatus.Ready, ContainerStatusReport.ContainerInstalled);
+
+      await assert.doesNotReject(async () => {
+        await worker.ready();
+      });
+
+      assert.ok(called == 1);
     });
   });
 });

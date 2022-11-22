@@ -158,6 +158,8 @@ class Worker {
         this.updateContainerStatus(ContainerStatus.Stopped, ContainerStatusReport.ContainerDisconnected);
 
         reject(new Error(`Worker(${this.name}, ${this.credential}) initialization timeout.`));
+      } else {
+        this.setReady();
       }
     }, this.#initializationTimeout + 100);
 
