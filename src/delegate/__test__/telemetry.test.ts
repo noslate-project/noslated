@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { metrics } from '@opentelemetry/api-metrics';
+import { metrics } from '@opentelemetry/api';
 import { Histogram, MeterProvider } from '@opentelemetry/sdk-metrics';
 import { bufferFromStream } from '#self/lib/util';
 import {

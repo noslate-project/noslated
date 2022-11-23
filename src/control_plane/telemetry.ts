@@ -2,7 +2,7 @@ import { ControlPlaneMetricAttributes, PlaneMetricAttributes, ControlPlaneMetric
 import { turf } from '#self/lib/turf';
 import { TurfContainerStates } from '#self/lib/turf';
 import { TurfState } from '#self/lib/turf/types';
-import { Meter, Counter, ObservableGauge, BatchObservableResult } from '@opentelemetry/api-metrics';
+import { Meter, Counter, ObservableGauge, BatchObservableResult } from '@opentelemetry/api';
 import { Broker, WorkerStatsSnapshot } from './worker_stats';
 
 function mapStateToExitReason(state: TurfState | null): string {

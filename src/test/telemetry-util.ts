@@ -1,6 +1,6 @@
 import { baselineDir } from '#self/test/common';
 import { CollectionResult, DataPoint, MetricReader } from '@opentelemetry/sdk-metrics';
-import { MetricAttributes } from '@opentelemetry/api-metrics';
+import { MetricAttributes } from '@opentelemetry/api';
 
 export const nodeJsWorkerTestItem = {
   name: 'node_worker_echo',
