@@ -213,7 +213,7 @@ export class WorkerLauncher extends Base {
 
       const started = performance.now();
 
-      this.logger.info('worker(%s, $s, %s, inspect %s, disposable %s) started, cost: %s, related request(%s)', funcName, processName, credential, options.inspect, disposable, performance.now() - now, requestId);
+      this.logger.info('worker(%s, %s, %s, inspect %s, disposable %s) started, cost: %s, related request(%s)', funcName, processName, credential, options.inspect, disposable, performance.now() - now, requestId);
 
       await worker.ready();
 

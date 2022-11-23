@@ -147,9 +147,14 @@ class Worker {
   }
 
   async ready() {
-    const { resolve, reject, promise } = createDeferred<void>();
-
     this.#pendingReady = true;
+
+    // 在 await ready 之前已经 Ready 了
+    if (this.#containerStatus >= ContainerStatus.Ready) {
+      this.logger.info('Worker(%s, %s) already ready before pending ready', this.#name, this.#credential);
+      this.#pendingReady = false;
+      return this.#readyDeferred.resolve();
+    }
 
     // +100 等待 dp 先触发超时逻辑同步状态
     this.readyTimeout = setTimeout(() => {
@@ -157,27 +162,18 @@ class Worker {
         // 状态设为 Stopped，等待 GC 回收
         this.updateContainerStatus(ContainerStatus.Stopped, ContainerStatusReport.ContainerDisconnected);
 
-        reject(new Error(`Worker(${this.name}, ${this.credential}) initialization timeout.`));
-      } else {
-        this.setReady();
+        this.#readyDeferred.reject(new Error(`Worker(${this.name}, ${this.credential}) initialization timeout.`));
       }
     }, this.#initializationTimeout + 100);
 
-    this.#readyDeferred.promise
-      .catch(() => {
-        reject(new Error(`Worker(${this.name}, ${this.credential}) stopped unexpected after start.`));
-      })
-      .then(() => {
-        resolve();
-      })
+
+    return this.#readyDeferred.promise
       .finally(() => {
         if (this.readyTimeout) {
           clearTimeout(this.readyTimeout);
           this.readyTimeout = undefined;
         }
       });
-
-    return promise;
   }
 
   setReady() {
@@ -185,6 +181,7 @@ class Worker {
       return;
     }
 
+    this.#pendingReady = false;
     this.#readyDeferred.resolve();
   }
 
@@ -193,7 +190,8 @@ class Worker {
       return;
     }
 
-    this.#readyDeferred.reject();
+    this.#pendingReady = false;
+    this.#readyDeferred.reject(new Error(`Worker(${this.name}, ${this.credential}) stopped unexpected after start.`));
   }
 
   toJSON() {
