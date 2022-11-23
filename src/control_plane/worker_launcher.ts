@@ -211,7 +211,7 @@ export class WorkerLauncher extends Base {
       this.snapshot.register(funcName, processName, credential, !!options.inspect, disposable);
       await starter.start(serverSockPath, processName, credential, profile, bundlePath, options);
 
-      this.logger.info('worker(%s, $s, %s, inspect %s, disposable %s) started, cost: %s, related request(%s)', funcName, processName, credential, options.inspect, disposable, performance.now() - now, requestId);
+      this.logger.info('worker(%s, %s, %s, inspect %s, disposable %s) started, cost: %s, related request(%s)', funcName, processName, credential, options.inspect, disposable, performance.now() - now, requestId);
     } catch (e) {
       this.snapshot.unregister(funcName, processName, !!options.inspect);
       throw e;
