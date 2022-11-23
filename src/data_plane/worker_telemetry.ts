@@ -1,4 +1,4 @@
-import { BatchObservableResult, Meter, ObservableGauge } from '@opentelemetry/api-metrics';
+import { BatchObservableResult, Meter, ObservableGauge } from '@opentelemetry/api';
 import { WorkerMetrics, PlaneMetricAttributes } from '#self/lib/telemetry/semantic_conventions';
 import { NoslatedDelegateService } from '#self/delegate';
 import { DataFlowController } from './data_flow_controller';
