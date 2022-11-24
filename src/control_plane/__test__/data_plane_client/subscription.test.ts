@@ -86,7 +86,7 @@ describe(common.testName(__filename), () => {
       capacityManager.workerStatsSnapshot.register('func', 'foo', 'bar', false);
 
       const { promise: promise2, resolve: resolve2 } = createDeferred<void>();
-      const syncWorkerData = capacityManager.plane.stateManager.syncWorkerData.bind(capacityManager);
+      const syncWorkerData = capacityManager.plane.stateManager.syncWorkerData.bind(capacityManager.plane.stateManager);
       const autoScale = capacityManager.autoScale.bind(capacityManager);
       let syncWorkerDataCalled = 0;
       let autoScaleCalled = 0;
@@ -155,7 +155,7 @@ describe(common.testName(__filename), () => {
       });
 
       const { promise: promise2, resolve: resolve2 } = createDeferred<void>();
-      const syncWorkerData = capacityManager.plane.stateManager.syncWorkerData.bind(capacityManager);
+      const syncWorkerData = capacityManager.plane.stateManager.syncWorkerData.bind(capacityManager.plane.stateManager);
       const autoScale = capacityManager.autoScale.bind(capacityManager);
       let syncWorkerDataCalled = 0;
       let autoScaleCalled = 0;

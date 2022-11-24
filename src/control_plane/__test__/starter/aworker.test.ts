@@ -25,16 +25,17 @@ describe(common.testName(__filename), () => {
   beforeEach(async () => {
     mm(config.dirs, 'noslatedSock', testUtil.TMP_DIR());
     mm(process.env, 'NOSLATED_FORCE_NON_SEED_MODE', '');
-    await startTurfD();
+    startTurfD();
     turf = new Turf(config.turf.bin, config.turf.socketPath);
+    await turf.connect();
     dummyPlane.turf = turf;
   });
 
   afterEach(async () => {
     mm.restore();
     fs.rmdirSync(testUtil.TMP_DIR(), { recursive: true });
-    turf.close();
-    await stopTurfD();
+    await turf.close();
+    stopTurfD();
   });
 
   conditionalDescribe('#constructor()', () => {
