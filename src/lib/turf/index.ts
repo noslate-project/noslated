@@ -2,15 +2,14 @@ import cp from 'child_process';
 import path from 'path';
 import { config } from '#self/config';
 import { loggers } from '../loggers';
-import { Turf } from './wrapper'
 
 const logger = loggers.get('turf/index');
 
 const turfPath = config.turf.bin;
 let turfDCP: cp.ChildProcess | undefined;
 
-export const turf = new Turf(turfPath);
 export { TurfContainerStates } from './types';
+export { Turf } from './wrapper';
 
 function refreshTurfWorkspace() {
   const TURF_WORKDIR = process.env.TURF_WORKDIR!;
@@ -38,6 +37,7 @@ export function startTurfD() {
   let data = '';
   turfd.stdout.on('data', chunk => {
     chunk = chunk.toString();
+    console.log('turf', chunk);
     for (let i = 0; i < chunk.length; i++) {
       if (chunk[i] === '\n') {
         if (config.turf.startTurfDOutput && !data.startsWith('tick =')) logger.info(data);
@@ -51,6 +51,7 @@ export function startTurfD() {
   let errData = '';
   turfd.stderr.on('data', chunk => {
     chunk = chunk.toString();
+    console.log('turf', chunk);
     for (let i = 0; i < chunk.length; i++) {
       if (chunk[i] === '\n') {
         if (config.turf.startTurfDOutput) logger.error(errData);

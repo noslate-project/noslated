@@ -6,7 +6,7 @@ import mm from 'mm';
 import * as common from '#self/test/common';
 import { config } from '#self/config';
 import { Aworker } from '#self/control_plane/starter/index';
-import { turf, startTurfD, stopTurfD } from '#self/lib/turf';
+import { startTurfD, stopTurfD, Turf } from '#self/lib/turf';
 import * as testUtil from '#self/test/util';
 import { ControlPlane } from '#self/control_plane/control_plane';
 import { TurfContainerStates, TurfProcess } from '#self/lib/turf/types';
@@ -16,19 +16,24 @@ import { sleep } from '#self/lib/util';
 const conditionalDescribe = (process.platform === 'darwin' ? describe.skip : describe);
 
 describe(common.testName(__filename), () => {
-  const dummyPlane = {
+  const dummyPlane: any = {
     platformEnvironmentVariables: {},
   };
+
+  let turf: Turf;
 
   beforeEach(async () => {
     mm(config.dirs, 'noslatedSock', testUtil.TMP_DIR());
     mm(process.env, 'NOSLATED_FORCE_NON_SEED_MODE', '');
     await startTurfD();
+    turf = new Turf(config.turf.bin, config.turf.socketPath);
+    dummyPlane.turf = turf;
   });
 
   afterEach(async () => {
     mm.restore();
     fs.rmdirSync(testUtil.TMP_DIR(), { recursive: true });
+    turf.close();
     await stopTurfD();
   });
 

@@ -10,9 +10,8 @@ import FakeTimers, { Clock } from '@sinonjs/fake-timers';
 import { NoslatedClient } from '#self/sdk';
 import * as common from '#self/test/common';
 import { DataPlane } from '#self/data_plane';
-import { createDeferred } from '#self/lib/util';
 import { ControlPlane } from '#self/control_plane/index';
-import { startTurfD, stopTurfD, turf } from '#self/lib/turf';
+import { startTurfD, stopTurfD } from '#self/lib/turf';
 import * as starters from '#self/control_plane/starter/index';
 import { FIXTURES_DIR, Roles, startAllRoles } from '#self/test/util';
 import { CapacityManager } from '#self/control_plane/capacity_manager';
@@ -54,7 +53,7 @@ describe(common.testName(__filename), () => {
       agent.close(),
       data.close()
     ]);
-    await turf.destroyAll();
+    await controlPlane.turf.destroyAll();
 
     stopTurfD();
   });
@@ -210,10 +209,10 @@ describe(common.testName(__filename), () => {
       controlPlane.capacityManager.workerStatsSnapshot.register('func1', 'worker1', 'id1', false);
       controlPlane.capacityManager.workerStatsSnapshot.register('func1', 'worker2', 'id2', false);
 
-      await turf.create('worker1', simpleSandbox);
-      await turf.create('worker2', simpleSandbox);
-      await turf.start('worker1');
-      await turf.start('worker2');
+      await controlPlane.turf.create('worker1', simpleSandbox);
+      await controlPlane.turf.create('worker2', simpleSandbox);
+      await controlPlane.turf.start('worker1');
+      await controlPlane.turf.start('worker2');
 
       await stateManager.syncWorkerData([brokerStat1]);
 
@@ -235,7 +234,7 @@ describe(common.testName(__filename), () => {
         data: { maxActivateRequests: 10, activeRequestCount: 6 }
       });
 
-      await turf.stop('worker2');
+      await controlPlane.turf.stop('worker2');
       await stateManager.syncWorkerData([brokerStat1]);
 
       assert.strictEqual(capacityManager.workerStatsSnapshot.brokers.size, 1);

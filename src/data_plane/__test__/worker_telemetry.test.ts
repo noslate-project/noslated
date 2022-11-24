@@ -2,7 +2,6 @@ import assert from 'assert';
 import { metrics } from '@opentelemetry/api';
 import { MeterProvider } from '@opentelemetry/sdk-metrics';
 
-import { turf } from '#self/lib/turf';
 import { bufferFromStream } from '#self/lib/util';
 import {
   PlaneMetricAttributes,
@@ -40,7 +39,7 @@ describe(common.testName(__filename), function() {
     [ 'Serverless Worker', serverlessWorkerTestItem ],
   ].forEach(([ name, testItem ]: any[]) => {
     it(`collect ${name} metrics`, async () => {
-      const { agent, metricReader, data: dataPlane } = context;
+      const { agent, metricReader, data: dataPlane, control } = context;
 
       await agent!.setFunctionProfile([ testItem.profile ]);
 
@@ -56,7 +55,7 @@ describe(common.testName(__filename), function() {
       // TODO(chengzhong.wcz): get pid from worker stats.
       // const pid = worker.pid;
       // assert.ok(pid != null);
-      const items = await turf.ps();
+      const items = await control!.turf.ps();
       const state = items.filter((it: { status: TurfContainerStates; name: string; }) => {
         return it.status === TurfContainerStates.running && it.name === worker.name;
       })[0];

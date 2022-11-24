@@ -10,13 +10,16 @@ const simpleSandbox = path.resolve(FIXTURES_DIR, 'sandbox_simple');
 const containerName = 'foobar';
 
 describe(common.testName(__filename), () => {
-  const turf = new Turf(path.join(config.projectRoot, 'bin/turf'));
+  let turf: Turf;
   beforeEach(async () => {
     await startTurfD();
+    turf = new Turf(config.turf.bin, config.turf.socketPath);
+    await turf.connect();
     await turf.destroyAll();
   });
   afterEach(async () => {
     await turf.destroyAll();
+    await turf.close();
     await stopTurfD();
   });
 

@@ -1,7 +1,7 @@
 import assert from 'assert';
 import mm from 'mm';
 
-import { turf, startTurfD, stopTurfD } from '#self/lib/turf';
+import { startTurfD, stopTurfD } from '#self/lib/turf';
 import { testWorker, startAllRoles, FIXTURES_DIR, Roles } from '../util';
 import * as common from '#self/test/common';
 
@@ -55,11 +55,11 @@ describe(common.testName(__filename), function() {
 
   beforeEach(async () => {
     await startTurfD();
-    await turf.destroyAll();
     const roles = await startAllRoles() as Required<Roles>;
     data = roles.data;
     agent = roles.agent;
     control = roles.control;
+    await control.turf.destroyAll();
   });
 
   afterEach(async () => {
@@ -79,13 +79,13 @@ describe(common.testName(__filename), function() {
     const _it = (item.seed && process.platform === 'darwin') ? it.skip : it;
     _it(item.name, async () => {
       if (item.before) {
-        await item.before({ item, agent, control, data, turf, resourceServer });
+        await item.before({ item, agent, control, data, turf: control.turf, resourceServer });
       }
 
       await agent.setFunctionProfile([ item.profile ]);
       await testWorker(agent!, item);
       if (item.after) {
-        await item.after({ item, agent, control, data, turf, resourceServer });
+        await item.after({ item, agent, control, data, turf: control.turf, resourceServer });
       }
     });
   }

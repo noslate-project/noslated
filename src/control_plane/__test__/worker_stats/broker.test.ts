@@ -5,7 +5,7 @@ import { Broker } from '#self/control_plane/worker_stats/index';
 import * as common from '#self/test/common';
 import { config } from '#self/config';
 import { FunctionProfileManager as ProfileManager } from '#self/lib/function_profile';
-import { turf, TurfContainerStates } from '#self/lib/turf';
+import { Turf, TurfContainerStates } from '#self/lib/turf';
 import { AworkerFunctionProfile, ShrinkStrategy } from '#self/lib/json/function_profile';
 import { ContainerStatus, ContainerStatusReport, ControlPanelEvent, TurfStatusEvent } from '#self/lib/constants';
 import sinon from 'sinon';
@@ -40,6 +40,8 @@ describe(common.testName(__filename), () => {
   };
 
   let profileManager: ProfileManager | null;
+  // Not connected turf client.
+  const turf = new Turf(config.turf.bin, config.turf.socketPath);
   beforeEach(async () => {
     profileManager = new ProfileManager(config);
     await profileManager.set(funcData, 'WAIT');
@@ -52,7 +54,7 @@ describe(common.testName(__filename), () => {
   describe('Broker', () => {
     describe('constructor', () => {
       it('should constructor', () => {
-        const broker = new Broker(profileManager!, config, 'foo', true);
+        const broker = new Broker(profileManager!, config, 'foo', true, false, turf);
         assert.strictEqual(broker.redundantTimes, 0);
         assert.strictEqual(broker.config, config);
         assert.strictEqual(broker.profiles, profileManager);
@@ -64,7 +66,7 @@ describe(common.testName(__filename), () => {
       });
 
       it('should constructor with function profile', () => {
-        const broker = new Broker(profileManager!, config, 'func', true);
+        const broker = new Broker(profileManager!, config, 'func', true, false, turf);
         assert.strictEqual(broker.redundantTimes, 0);
         assert.strictEqual(broker.config, config);
         assert.strictEqual(broker.profiles, profileManager);
@@ -78,7 +80,7 @@ describe(common.testName(__filename), () => {
 
     describe('.getWorker()', () => {
       it('should get worker', () => {
-        const broker = new Broker(profileManager!, config, 'func', true);
+        const broker = new Broker(profileManager!, config, 'func', true, false, turf);
         broker.register('hello', 'world');
 
         assert.strictEqual(broker.getWorker('hello')!.credential, 'world');
@@ -88,7 +90,7 @@ describe(common.testName(__filename), () => {
 
     describe('.register()', () => {
       it('should register', () => {
-        const broker = new Broker(profileManager!, config, 'func', true);
+        const broker = new Broker(profileManager!, config, 'func', true, false, turf);
         broker.register('foo', 'bar');
 
         assert.strictEqual(broker.workers.size, 1);
@@ -112,7 +114,7 @@ describe(common.testName(__filename), () => {
       });
 
       it('should not register', () => {
-        const broker = new Broker(profileManager!, config, 'foo', true);
+        const broker = new Broker(profileManager!, config, 'foo', true, false, turf);
 
         assert.throws(() => {
           broker.register('foo', 'bar');
@@ -126,7 +128,7 @@ describe(common.testName(__filename), () => {
       it('should unregister without destroy', () => {
         const spy = sinon.spy(turf, 'destroy');
 
-        const broker = new Broker(profileManager!, config, 'func', true);
+        const broker = new Broker(profileManager!, config, 'func', true, false, turf);
         broker.register('foo', 'bar');
         broker.unregister('foo');
 
@@ -146,7 +148,7 @@ describe(common.testName(__filename), () => {
           done();
         });
 
-        const broker = new Broker(profileManager!, config, 'func', true);
+        const broker = new Broker(profileManager!, config, 'func', true, false, turf);
         broker.register('foo', 'bar');
         broker.unregister('foo', true);
 
@@ -166,7 +168,7 @@ describe(common.testName(__filename), () => {
           throw new Error('should be catched.');
         });
 
-        const broker = new Broker(profileManager!, config, 'func', true);
+        const broker = new Broker(profileManager!, config, 'func', true, false, turf);
 
         const spy = sinon.spy(broker.logger, 'warn');
 
@@ -195,7 +197,7 @@ describe(common.testName(__filename), () => {
           done();
         });
 
-        const broker = new Broker(profileManager!, config, 'func', true);
+        const broker = new Broker(profileManager!, config, 'func', true, false, turf);
         broker.register('foo', 'bar');
         broker.unregister('fooo', true);
 
@@ -209,7 +211,7 @@ describe(common.testName(__filename), () => {
 
     describe('.removeItemFromStartingPool()', () => {
       it('should removeItemFromStartingPool', () => {
-        const broker = new Broker(profileManager!, config, 'func', true);
+        const broker = new Broker(profileManager!, config, 'func', true, false, turf);
         broker.register('foo', 'bar');
         broker.removeItemFromStartingPool('foo');
 
@@ -220,12 +222,12 @@ describe(common.testName(__filename), () => {
 
     describe('.prerequestStartingPool()', () => {
       it('should return false when startingPool is empty', () => {
-        const broker = new Broker(profileManager!, config, 'func', true);
+        const broker = new Broker(profileManager!, config, 'func', true, false, turf);
         assert.strictEqual(broker.prerequestStartingPool(), false);
       });
 
       it('should return true when idle and false when busy', () => {
-        const broker = new Broker(profileManager!, config, 'func', true);
+        const broker = new Broker(profileManager!, config, 'func', true, false, turf);
         broker.register('coco', 'nut');
         for (let i = 0; i < 20; i++) {
           assert.strictEqual(broker.prerequestStartingPool(), i < 10);
@@ -233,7 +235,7 @@ describe(common.testName(__filename), () => {
       });
 
       it('should return true when idle and false when busy with two items', () => {
-        const broker = new Broker(profileManager!, config, 'func', true);
+        const broker = new Broker(profileManager!, config, 'func', true, false, turf);
 
         broker.register('coco', 'nut');
         broker.register('alibaba', 'seed of hope');
@@ -245,7 +247,7 @@ describe(common.testName(__filename), () => {
 
     describe('.mostIdleNWorkers()', () => {
       it('should get', () => {
-        const broker = new Broker(profileManager!, config, 'func', true);
+        const broker = new Broker(profileManager!, config, 'func', true, false, turf);
         broker.register('hello', 'world');
         broker.register('foo', 'bar');
 
@@ -285,7 +287,7 @@ describe(common.testName(__filename), () => {
       });
 
       it('should run with activeRequestCount order', () => {
-        const broker = new Broker(profileManager!, config, 'func', true);
+        const broker = new Broker(profileManager!, config, 'func', true, false, turf);
         broker.register('hello', 'world');
         broker.register('foo', 'bar');
 
@@ -331,7 +333,7 @@ describe(common.testName(__filename), () => {
       });
 
       it('should run with credential order when activeRequestCount is equal (1)', () => {
-        const broker = new Broker(profileManager!, config, 'func', true);
+        const broker = new Broker(profileManager!, config, 'func', true, false, turf);
         broker.register('hello', 'world');
         broker.register('foo', 'bar');
 
@@ -377,7 +379,7 @@ describe(common.testName(__filename), () => {
       });
 
       it('should run with credential order when activeRequestCount is equal (2)', () => {
-        const broker = new Broker(profileManager!, config, 'func', true);
+        const broker = new Broker(profileManager!, config, 'func', true, false, turf);
         broker.register('hello', 'world');
         broker.register('foo', 'bar');
 
@@ -426,7 +428,7 @@ describe(common.testName(__filename), () => {
       });
 
       it('should get when has non-valid', () => {
-        const broker = new Broker(profileManager!, config, 'func', true);
+        const broker = new Broker(profileManager!, config, 'func', true, false, turf);
         broker.register('hello', 'world');
         broker.register('foo', 'bar');
 
@@ -462,7 +464,7 @@ describe(common.testName(__filename), () => {
 
     describe('.newestNWorkers()', () => {
       it('should get', async () => {
-        const broker = new Broker(profileManager!, config, 'func', true);
+        const broker = new Broker(profileManager!, config, 'func', true, false, turf);
         broker.register('hello', 'world');
         await sleep(100);
         broker.register('foo', 'bar');
@@ -503,7 +505,7 @@ describe(common.testName(__filename), () => {
       });
 
       it('should run with registerTime order', async () => {
-        const broker = new Broker(profileManager!, config, 'func', true);
+        const broker = new Broker(profileManager!, config, 'func', true, false, turf);
         broker.register('hello', 'world');
         await sleep(100);
         broker.register('foo', 'bar');
@@ -553,7 +555,7 @@ describe(common.testName(__filename), () => {
       });
 
       it('should get when has non-valid', async () => {
-        const broker = new Broker(profileManager!, config, 'func', true);
+        const broker = new Broker(profileManager!, config, 'func', true, false, turf);
         broker.register('hello', 'world');
         await sleep(100);
         broker.register('foo', 'bar');
@@ -590,7 +592,7 @@ describe(common.testName(__filename), () => {
 
     describe('.oldestNWorkers()', () => {
       it('should get', async () => {
-        const broker = new Broker(profileManager!, config, 'func', true);
+        const broker = new Broker(profileManager!, config, 'func', true, false, turf);
         broker.register('hello', 'world');
         await sleep(100);
         broker.register('foo', 'bar');
@@ -637,7 +639,7 @@ describe(common.testName(__filename), () => {
       });
 
       it('should run with registerTime order', async () => {
-        const broker = new Broker(profileManager!, config, 'func', true);
+        const broker = new Broker(profileManager!, config, 'func', true, false, turf);
         broker.register('hello', 'world');
         await sleep(100);
         broker.register('foo', 'bar');
@@ -687,7 +689,7 @@ describe(common.testName(__filename), () => {
       });
 
       it('should get when has non-valid', async () => {
-        const broker = new Broker(profileManager!, config, 'func', true);
+        const broker = new Broker(profileManager!, config, 'func', true, false, turf);
         broker.register('hello', 'world');
         await sleep(100);
         broker.register('foo', 'bar');
@@ -724,7 +726,7 @@ describe(common.testName(__filename), () => {
 
     describe('.evaluateWaterLevel()', () => {
       it('should evaluate when some worker stopped (low)', () => {
-        const broker = new Broker(profileManager!, config, 'func', false);
+        const broker = new Broker(profileManager!, config, 'func', false, false, turf);
         broker.register('hello', 'world');
         broker.register('foo', 'bar');
 
@@ -749,7 +751,7 @@ describe(common.testName(__filename), () => {
       });
 
       it('should evaluate when some worker stopped (high)', () => {
-        const broker = new Broker(profileManager!, config, 'func', false);
+        const broker = new Broker(profileManager!, config, 'func', false, false, turf);
         broker.register('hello', 'world');
         broker.register('foo', 'bar');
 
@@ -772,7 +774,7 @@ describe(common.testName(__filename), () => {
       });
 
       it('should evaluate with starting pool, ignore in start pool', () => {
-        const broker = new Broker(profileManager!, config, 'func', false);
+        const broker = new Broker(profileManager!, config, 'func', false, false, turf);
         broker.register('hello', 'world');
         broker.register('foo', 'bar');
 
@@ -791,7 +793,7 @@ describe(common.testName(__filename), () => {
       });
 
       it('should evaluate with starting pool (high)', () => {
-        const broker = new Broker(profileManager!, config, 'func', false);
+        const broker = new Broker(profileManager!, config, 'func', false, false, turf);
         broker.register('hello', 'world');
         broker.register('foo', 'bar');
 
@@ -812,26 +814,26 @@ describe(common.testName(__filename), () => {
       });
 
       it('should evaluate water level', () => {
-        const broker = new Broker(profileManager!, config, 'func', false);
+        const broker = new Broker(profileManager!, config, 'func', false, false, turf);
         assert.strictEqual(broker.evaluateWaterLevel(), 0);
       });
 
       it('should evaluate water level without broker data', () => {
-        const broker = new Broker(profileManager!, config, 'func', false);
+        const broker = new Broker(profileManager!, config, 'func', false, false, turf);
         broker.register('hello', 'world');
         broker.data = null;
         assert.strictEqual(broker.evaluateWaterLevel(), -1);
       });
 
       it('should evaluate water level without broker data and expansionOnly = true', () => {
-        const broker = new Broker(profileManager!, config, 'func', false);
+        const broker = new Broker(profileManager!, config, 'func', false, false, turf);
         broker.register('hello', 'world');
         broker.data = null;
         assert.strictEqual(broker.evaluateWaterLevel(true), 0);
       });
 
       it('should evaluate water level with one worker left', () => {
-        const broker = new Broker(profileManager!, config, 'func', false);
+        const broker = new Broker(profileManager!, config, 'func', false, false, turf);
         broker.register('hello', 'world');
 
         broker.updateWorkerContainerStatus('hello', ContainerStatus.Ready, ControlPanelEvent.RequestQueueExpand);
@@ -848,7 +850,7 @@ describe(common.testName(__filename), () => {
       });
 
       it('should evaluate water level (still redundant, high)', () => {
-        const broker = new Broker(profileManager!, config, 'func', false);
+        const broker = new Broker(profileManager!, config, 'func', false, false, turf);
         broker.register('hello', 'world');
         broker.register('foo', 'bar');
 
@@ -871,7 +873,7 @@ describe(common.testName(__filename), () => {
       });
 
       it('should evaluate water level (still redundant, low)', () => {
-        const broker = new Broker(profileManager!, config, 'func', false);
+        const broker = new Broker(profileManager!, config, 'func', false, false, turf);
         broker.register('hello', 'world');
         broker.register('foo', 'bar');
 
@@ -895,7 +897,7 @@ describe(common.testName(__filename), () => {
 
       it('should evaluate water level (low 1)', async () => {
         await profileManager!.set([{ ...funcData[0], worker: { reservationCount: 1 } }], 'WAIT');
-        const broker = new Broker(profileManager!, config, 'func', false);
+        const broker = new Broker(profileManager!, config, 'func', false, false, turf);
         broker.register('hello', 'world');
         broker.register('foo', 'bar');
 
@@ -920,7 +922,7 @@ describe(common.testName(__filename), () => {
 
       it('should evaluate water level (low 2)', async () => {
         await profileManager!.set([{ ...funcData[0], worker: { reservationCount: 1 } }], 'WAIT');
-        const broker = new Broker(profileManager!, config, 'func', false);
+        const broker = new Broker(profileManager!, config, 'func', false, false, turf);
         broker.register('hello', 'world');
         broker.register('foo', 'bar');
 
@@ -945,7 +947,7 @@ describe(common.testName(__filename), () => {
       });
 
       it('should evaluate water level (low 1, no reservation)', () => {
-        const broker = new Broker(profileManager!, config, 'func', false);
+        const broker = new Broker(profileManager!, config, 'func', false, false, turf);
         broker.register('hello', 'world');
         broker.register('foo', 'bar');
 
@@ -969,7 +971,7 @@ describe(common.testName(__filename), () => {
       });
 
       it('should evaluate water level (low 2, no reservation)', () => {
-        const broker = new Broker(profileManager!, config, 'func', false);
+        const broker = new Broker(profileManager!, config, 'func', false, false, turf);
         broker.register('hello', 'world');
         broker.register('foo', 'bar');
 
@@ -993,7 +995,7 @@ describe(common.testName(__filename), () => {
       });
 
       it('should evaluate water level (low, expansionOnly)', () => {
-        const broker = new Broker(profileManager!, config, 'func', false);
+        const broker = new Broker(profileManager!, config, 'func', false, false, turf);
         broker.register('hello', 'world');
         broker.register('foo', 'bar');
 
@@ -1017,7 +1019,7 @@ describe(common.testName(__filename), () => {
       });
 
       it('should reset redundantTimes', () => {
-        const broker = new Broker(profileManager!, config, 'func', false);
+        const broker = new Broker(profileManager!, config, 'func', false, false, turf);
         broker.register('hello', 'world');
         broker.register('foo', 'bar');
 
@@ -1044,7 +1046,7 @@ describe(common.testName(__filename), () => {
 
       it('should evaluate (high with several workers)', async () => {
         await profileManager!.set([{ ...funcData[0], worker: { replicaCountLimit: 50 } }] as any, 'WAIT');
-        const broker = new Broker(profileManager!, config, 'func', false);
+        const broker = new Broker(profileManager!, config, 'func', false, false, turf);
         const mocked = [];
         const turfItems = [];
         for (let i = 0; i < 20; i++) {
@@ -1064,7 +1066,7 @@ describe(common.testName(__filename), () => {
 
       it('should evaluate (high with several workers, up to replicaCountLimit)', async () => {
         await profileManager!.set([{ ...funcData[0], worker: { replicaCountLimit: 25 } }] as any, 'WAIT');
-        const broker = new Broker(profileManager!, config, 'func', false);
+        const broker = new Broker(profileManager!, config, 'func', false, false, turf);
         const mocked = [];
         const turfItems = [];
         for (let i = 0; i < 20; i++) {
@@ -1085,7 +1087,7 @@ describe(common.testName(__filename), () => {
     describe('getters', () => {
       let broker: Broker;
       beforeEach(() => {
-        broker = new Broker(profileManager!, config, 'func', false);
+        broker = new Broker(profileManager!, config, 'func', false, false, turf);
         broker.register('hello', 'world');
         broker.register('foo', 'bar');
 
@@ -1267,13 +1269,13 @@ describe(common.testName(__filename), () => {
 
       describe('get reservationCount', () => {
         it('should get 1 when isInspector is true', () => {
-          broker = new Broker(profileManager!, config, 'func', true);
+          broker = new Broker(profileManager!, config, 'func', true, false, turf);
 
           assert.strictEqual(broker.reservationCount, 1);
         });
 
         it('should get from worker config', () => {
-          broker = new Broker(profileManager!, config, 'func', false);
+          broker = new Broker(profileManager!, config, 'func', false, false, turf);
 
           broker.data = {
             ...funcData[0],
@@ -1293,7 +1295,7 @@ describe(common.testName(__filename), () => {
         });
 
         it('should get 0 when worker not config', () => {
-          broker = new Broker(profileManager!, config, 'func', false);
+          broker = new Broker(profileManager!, config, 'func', false, false, turf);
 
           broker.data = {
             ...funcData[0],
@@ -1322,7 +1324,7 @@ describe(common.testName(__filename), () => {
 
       describe('get memoryLimit', () => {
         it('should get from worker config', () => {
-          broker = new Broker(profileManager!, config, 'func', false);
+          broker = new Broker(profileManager!, config, 'func', false, false, turf);
 
           broker.data = {
             ...funcData[0],
@@ -1345,7 +1347,7 @@ describe(common.testName(__filename), () => {
         });
 
         it('should get 0 when worker not config', () => {
-          broker = new Broker(profileManager!, config, 'func', false);
+          broker = new Broker(profileManager!, config, 'func', false, false, turf);
 
           broker.data = {
             ...funcData[0],
@@ -1376,7 +1378,7 @@ describe(common.testName(__filename), () => {
 
     describe('.sync()', () => {
       it('should sync', () => {
-        const broker = new Broker(profileManager!, config, 'func', true);
+        const broker = new Broker(profileManager!, config, 'func', true, false, turf);
         broker.register('hello', 'world');
         broker.register('foo', 'bar');
 
@@ -1429,7 +1431,7 @@ describe(common.testName(__filename), () => {
       });
 
       it('should sync with no function profile', async () => {
-        const broker = new Broker(profileManager!, config, 'func', true);
+        const broker = new Broker(profileManager!, config, 'func', true, false, turf);
         broker.register('hello', 'world');
         broker.register('foo', 'bar');
 
@@ -1486,7 +1488,7 @@ describe(common.testName(__filename), () => {
 
     describe('.shrinkDraw()', () => {
       it('should use default strategy LCC', () => {
-        const broker = new Broker(profileManager!, config, 'func', true);
+        const broker = new Broker(profileManager!, config, 'func', true, false, turf);
         broker.register('hello', 'world');
         broker.register('foo', 'bar');
         broker.data = null;
@@ -1514,7 +1516,7 @@ describe(common.testName(__filename), () => {
       });
 
       it('should use default strategy LCC when worker strategy not supported', () => {
-        const broker = new Broker(profileManager!, config, 'func', true);
+        const broker = new Broker(profileManager!, config, 'func', true, false, turf);
         broker.register('hello', 'world');
         broker.register('foo', 'bar');
 
@@ -1555,7 +1557,7 @@ describe(common.testName(__filename), () => {
       });
 
       it('should use default strategy LCC when worker strategy is empty', () => {
-        const broker = new Broker(profileManager!, config, 'func', true);
+        const broker = new Broker(profileManager!, config, 'func', true, false, turf);
         broker.register('hello', 'world');
         broker.register('foo', 'bar');
 
@@ -1596,7 +1598,7 @@ describe(common.testName(__filename), () => {
       });
 
       it('should use worker strategy FIFO', async () => {
-        const broker = new Broker(profileManager!, config, 'func', true);
+        const broker = new Broker(profileManager!, config, 'func', true, false, turf);
         broker.register('hello', 'world');
         await sleep(100);
         broker.register('foo', 'bar');
@@ -1638,7 +1640,7 @@ describe(common.testName(__filename), () => {
       });
 
       it('should use worker strategy FILO', async () => {
-        const broker = new Broker(profileManager!, config, 'func', true);
+        const broker = new Broker(profileManager!, config, 'func', true, false, turf);
         broker.register('hello', 'world');
         await sleep(100);
         broker.register('foo', 'bar');

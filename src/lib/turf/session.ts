@@ -1,3 +1,4 @@
+import EventEmitter from 'events';
 import net from 'net';
 import { TextEncoder } from 'util';
 import { createDeferred, Deferred } from '../util';
@@ -122,16 +123,18 @@ interface RequestItem {
   deferred: Deferred<Message>;
 }
 
-export class TurfSession {
+export class TurfSession extends EventEmitter {
   #socket!: net.Socket;
   #parser = new MessageParser();
   #connectionDeferred = createDeferred<void>();
   #closeDeferred = createDeferred<void>();
   #queue: RequestItem[] = [];
 
+  #connected = false;
   #pending = false;
 
   #onConnect = () => {
+    this.#connected = true;
     this.#drainQueue();
     this.#connectionDeferred.resolve();
   }
@@ -168,6 +171,7 @@ export class TurfSession {
       item.deferred.reject(e);
     }
     this.#queue = [];
+    this.#connected = false;
 
     this.#closeDeferred.resolve();
   }
@@ -180,13 +184,16 @@ export class TurfSession {
     this.#queue = [];
     this.#socket.destroy();
 
-    // TODO: emit error;
+    this.emit('error', e);
   }
 
-  constructor(private sockPath: string) {}
+  constructor(private sockPath: string) {
+    super();
+  }
 
   connect(): Promise<void> {
     this.#socket = net.connect({ path: this.sockPath }, this.#onConnect);
+
     this.#socket.on('data', this.#onData);
     this.#socket.on('close', this.#onClose);
     this.#socket.on('error', this.#onError);
@@ -210,6 +217,9 @@ export class TurfSession {
   }
 
   #drainQueue() {
+    if (!this.#connected) {
+      return;
+    }
     if (this.#pending) {
       return;
     }

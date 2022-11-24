@@ -13,11 +13,11 @@ import { createDeferred } from '#self/lib/util';
 import { DataPlaneClientManager } from '#self/control_plane/data_plane_client/manager';
 import { mockClientCreatorForManager } from '#self/test/util';
 import * as starters from '#self/control_plane/starter/index';
-import { turf } from '#self/lib/turf';
 import { CapacityManager } from '#self/control_plane/capacity_manager';
 import { TurfContainerStates, TurfProcess } from '#self/lib/turf/types';
 import { noslated } from '#self/proto/root';
 import { ContainerStatus, ContainerStatusReport, ControlPanelEvent } from '#self/lib/constants';
+import { Turf } from '#self/lib/turf';
 
 describe(common.testName(__filename), () => {
   const brokerData1 = {
@@ -54,6 +54,7 @@ describe(common.testName(__filename), () => {
 
   let clock: Clock;
   let control: ControlPlane;
+  let turf: Turf;
 
   let capacityManager: CapacityManager;
 
@@ -63,6 +64,7 @@ describe(common.testName(__filename), () => {
   beforeEach(async () => {
     mockClientCreatorForManager(DataPlaneClientManager);
     control = new ControlPlane(config);
+    turf = control.turf;
     await control.ready();
     ({ capacityManager } = control);
     clock = FakeTimers.install({
