@@ -269,7 +269,7 @@ export abstract class BaseStarter extends Base {
         stderr: path.join(logPath, 'stderr.log'),
       };
       if (options?.seed) startOptions.seed = options.seed;
-      this.logger.info('turf start (%s, %s)', name);
+      this.logger.info('turf start (%s, %s)', name, startOptions);
       const file = await fs.promises.readFile(path.join(process.env.TURF_WORKDIR!, 'sandbox', name, 'config.json'), 'utf8');
       this.logger.info('read sandbox config ', file);
       await this.turf.start(name, startOptions);

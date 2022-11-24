@@ -17,7 +17,7 @@ import { CapacityManager } from '#self/control_plane/capacity_manager';
 import { TurfContainerStates, TurfProcess } from '#self/lib/turf/types';
 import { noslated } from '#self/proto/root';
 import { ContainerStatus, ContainerStatusReport, ControlPanelEvent } from '#self/lib/constants';
-import { Turf } from '#self/lib/turf';
+import { startTurfD, stopTurfD, Turf } from '#self/lib/turf';
 
 describe(common.testName(__filename), () => {
   const brokerData1 = {
@@ -63,6 +63,7 @@ describe(common.testName(__filename), () => {
    */
   beforeEach(async () => {
     mockClientCreatorForManager(DataPlaneClientManager);
+    await startTurfD();
     control = new ControlPlane(config);
     turf = control.turf;
     await control.ready();
@@ -76,6 +77,7 @@ describe(common.testName(__filename), () => {
     clock.uninstall();
     mm.restore();
     await control.close();
+    await stopTurfD();
   });
 
   describe('#syncWorkerData()', () => {
