@@ -1049,7 +1049,7 @@ describe(common.testName(__filename), function() {
       beforeEach(async () => {
         mm(config.delegate, 'type', type);
         mm(config.dataPlane, 'daprAdaptorModulePath', require.resolve('./dapr-adaptor'));
-        await startTurfD();
+        startTurfD();
         const roles = await startAllRoles() as Required<Roles>;
         data = roles.data;
         agent = roles.agent;
@@ -1067,7 +1067,7 @@ describe(common.testName(__filename), function() {
           ]);
         }
 
-        await stopTurfD();
+        stopTurfD();
       });
 
       for (const item of cases as any[]) {

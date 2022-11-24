@@ -475,7 +475,7 @@ describe(common.testName(__filename), function() {
 
   beforeEach(async () => {
     mm(config.dataPlane, 'daprAdaptorModulePath', require.resolve('#self/test/baseline/dapr-adaptor'));
-    await startTurfD();
+    startTurfD();
   });
 
   afterEach(async () => {
@@ -489,7 +489,7 @@ describe(common.testName(__filename), function() {
       ]);
     }
 
-    await stopTurfD();
+    stopTurfD();
   });
 
   for (const item of cases as any[]) {

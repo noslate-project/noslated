@@ -11,8 +11,7 @@ import { Guest } from '#self/lib/rpc/guest';
 import { mockClientCreatorForManager } from '#self/test/util';
 import { RawFunctionProfile } from '#self/lib/json/function_profile';
 import { DataPlane } from '#self/data_plane/index';
-import sinon from 'sinon';
-import { sleep } from '#self/lib/util';
+import { startTurfD, stopTurfD } from '#self/lib/turf';
 
 describe(testName(__filename), () => {
   let agent: NoslatedClient;
@@ -20,6 +19,7 @@ describe(testName(__filename), () => {
   let data: DataPlane;
 
   beforeEach(async () => {
+    startTurfD();
     agent = new NoslatedClient();
   });
 
@@ -28,6 +28,7 @@ describe(testName(__filename), () => {
     await agent.close();
     await control?.close();
     await data?.close();
+    stopTurfD();
   });
 
   describe('.setFunctionProfile()', () => {

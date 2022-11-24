@@ -63,7 +63,7 @@ describe(common.testName(__filename), () => {
    */
   beforeEach(async () => {
     mockClientCreatorForManager(DataPlaneClientManager);
-    await startTurfD();
+    startTurfD();
     control = new ControlPlane(config);
     turf = control.turf;
     await control.ready();
@@ -77,7 +77,7 @@ describe(common.testName(__filename), () => {
     clock.uninstall();
     mm.restore();
     await control.close();
-    await stopTurfD();
+    stopTurfD();
   });
 
   describe('#syncWorkerData()', () => {

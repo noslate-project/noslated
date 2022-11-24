@@ -19,7 +19,7 @@ describe(common.testName(__filename), function() {
   let clock: Clock;
 
   beforeEach(async () => {
-    await startTurfD();
+    startTurfD();
     const roles = await startAllRoles() as Required<Roles>;
     data = roles.data;
     agent = roles.agent;
@@ -40,7 +40,7 @@ describe(common.testName(__filename), function() {
       ]);
     }
 
-    await stopTurfD();
+    stopTurfD();
   });
 
   it('should route to default target', async () => {

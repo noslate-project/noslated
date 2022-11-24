@@ -113,13 +113,13 @@ describe(common.testName(__filename), () => {
   let data: DataPlane;
   beforeEach(async function() {
     this.timeout(10000);
+
+    startTurfD();
     const roles = await startAllRoles() as Required<Roles>;
 
     data = roles.data;
     agent = roles.agent;
     control = roles.control;
-
-    await startTurfD();
   });
 
   afterEach(async () => {
@@ -131,7 +131,7 @@ describe(common.testName(__filename), () => {
       ]);
     }
 
-    await stopTurfD();
+    stopTurfD();
   });
 
   for (const item of cases) {

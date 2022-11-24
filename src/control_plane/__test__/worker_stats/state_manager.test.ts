@@ -30,6 +30,7 @@ describe(common.testName(__filename), () => {
   let data: DataPlane;
 
   beforeEach(async () => {
+    startTurfD();
     const roles = await startAllRoles() as Required<Roles>;
 
     data = roles.data;
@@ -42,8 +43,6 @@ describe(common.testName(__filename), () => {
     clock = FakeTimers.install({
       toFake: ['setTimeout']
     });
-
-    startTurfD();
   });
 
   afterEach(async () => {

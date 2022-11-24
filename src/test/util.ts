@@ -149,7 +149,7 @@ export async function startAllRoles(): Promise<Roles> {
 
 export function daemonProse<T>(roles: ProseContext<T>) {
   beforeEach(async () => {
-    await startTurfD();
+    startTurfD();
     const _roles = await startAllRoles();
     Object.assign(roles, _roles);
   });
@@ -161,7 +161,7 @@ export function daemonProse<T>(roles: ProseContext<T>) {
       roles.control?.close(),
     ]);
 
-    await stopTurfD();
+    stopTurfD();
   });
 }
 

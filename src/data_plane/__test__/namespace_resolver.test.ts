@@ -18,7 +18,7 @@ describe(common.testName(__filename), () => {
     let control: ControlPlane;
 
     beforeEach(async () => {
-      await startTurfD();
+      startTurfD();
       const roles = await startAllRoles() as Required<Roles>;
       data = roles.data;
       agent = roles.agent;
@@ -35,7 +35,7 @@ describe(common.testName(__filename), () => {
         ]);
       }
 
-      await stopTurfD();
+      stopTurfD();
     });
 
     it('should use function as namespace', async () => {
