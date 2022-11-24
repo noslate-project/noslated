@@ -37,7 +37,6 @@ export function startTurfD() {
   let data = '';
   turfd.stdout.on('data', chunk => {
     chunk = chunk.toString();
-    console.log('turf', chunk);
     for (let i = 0; i < chunk.length; i++) {
       if (chunk[i] === '\n') {
         if (config.turf.startTurfDOutput && !data.startsWith('tick =')) logger.info(data);
@@ -51,7 +50,6 @@ export function startTurfD() {
   let errData = '';
   turfd.stderr.on('data', chunk => {
     chunk = chunk.toString();
-    console.log('turf', chunk);
     for (let i = 0; i < chunk.length; i++) {
       if (chunk[i] === '\n') {
         if (config.turf.startTurfDOutput) logger.error(errData);
