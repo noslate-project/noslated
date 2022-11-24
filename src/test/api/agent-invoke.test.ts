@@ -29,11 +29,11 @@ describe(common.testName(__filename), function() {
   let control: ControlPlane;
   let data: DataPlane;
   before(async () => {
-    await startTurfD();
+    startTurfD();
   });
 
   after(async () => {
-    await stopTurfD();
+    stopTurfD();
   });
 
   beforeEach(async () => {

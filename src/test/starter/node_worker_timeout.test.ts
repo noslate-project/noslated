@@ -40,7 +40,7 @@ describe(common.testName(__filename), () => {
   let data: DataPlane;
 
   beforeEach(async () => {
-    await startTurfD();
+    startTurfD();
 
     const roles = await startAllRoles() as Required<Roles>;
 
@@ -58,7 +58,7 @@ describe(common.testName(__filename), () => {
       ]);
     }
 
-    await stopTurfD();
+    stopTurfD();
   });
 
   for (const item of cases) {

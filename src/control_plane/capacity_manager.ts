@@ -26,7 +26,7 @@ export class CapacityManager extends Base {
     super();
 
     this.functionProfileManager = plane.functionProfile;
-    this.workerStatsSnapshot = new WorkerStatsSnapshot(plane.functionProfile, config);
+    this.workerStatsSnapshot = new WorkerStatsSnapshot(plane.functionProfile, config, plane.turf);
     this.virtualMemoryPoolSize = bytes(config.virtualMemoryPoolSize);
     this.logger = loggers.get('capacity manager');
   }

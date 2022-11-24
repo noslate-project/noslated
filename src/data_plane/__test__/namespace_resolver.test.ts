@@ -1,6 +1,6 @@
 import * as common from '#self/test/common';
 import * as sinon from 'sinon';
-import { startTurfD, stopTurfD, turf } from '#self/lib/turf';
+import { startTurfD, stopTurfD } from '#self/lib/turf';
 import { assertWorkerInvoke, Roles, startAllRoles } from '#self/test/util';
 import { DataPlane } from '../data_plane';
 import { NoslatedClient } from '#self/sdk';
@@ -18,12 +18,12 @@ describe(common.testName(__filename), () => {
     let control: ControlPlane;
 
     beforeEach(async () => {
-      await startTurfD();
-      await turf.destroyAll();
+      startTurfD();
       const roles = await startAllRoles() as Required<Roles>;
       data = roles.data;
       agent = roles.agent;
       control = roles.control;
+      await control.turf.destroyAll();
     });
 
     afterEach(async () => {
@@ -35,7 +35,7 @@ describe(common.testName(__filename), () => {
         ]);
       }
 
-      await stopTurfD();
+      stopTurfD();
     });
 
     it('should use function as namespace', async () => {

@@ -5,7 +5,6 @@ import { Broker } from './broker';
 import loggers from '#self/lib/logger';
 import { Logger } from '#self/lib/loggers';
 import * as starters from '../starter';
-import { turf } from '#self/lib/turf';
 import { Worker } from './worker';
 import { FunctionProfileManager } from '#self/lib/function_profile';
 import { Config } from '#self/config';
@@ -13,6 +12,7 @@ import { TurfProcess, TurfState } from '#self/lib/turf/types';
 import * as root from '#self/proto/root';
 import { ContainerStatus } from '#self/lib/constants';
 import { StatLogger } from './stat_logger';
+import { Turf } from '#self/lib/turf';
 
 export class WorkerStatsSnapshot extends BaseOf(EventEmitter) {
   private logger: Logger;
@@ -21,7 +21,7 @@ export class WorkerStatsSnapshot extends BaseOf(EventEmitter) {
   private gcLogTimers: Set<NodeJS.Timeout>;
   private statLogger: StatLogger;
 
-  constructor(profileManager: FunctionProfileManager, public config: Config) {
+  constructor(profileManager: FunctionProfileManager, public config: Config, private turf: Turf) {
     super();
 
     this.logger = loggers.get('worker_stats snapshot');
@@ -84,7 +84,7 @@ export class WorkerStatsSnapshot extends BaseOf(EventEmitter) {
     let broker = this.getBroker(functionName, isInspector);
     if (broker) return broker;
     if (!this.profiles.get(functionName)) return null;
-    broker = new Broker(this.profiles, this.config, functionName, isInspector, disposable);
+    broker = new Broker(this.profiles, this.config, functionName, isInspector, disposable, this.turf);
     this.brokers.set(Broker.getKey(functionName, isInspector), broker);
     return broker;
   }
@@ -175,14 +175,14 @@ export class WorkerStatsSnapshot extends BaseOf(EventEmitter) {
       let emitExceptionMessage;
 
       try {
-        await turf.stop(worker.name);
+        await this.turf.stop(worker.name);
         this.logger.info(`Stopped worker [${worker.name}] via \`.#tryGC()\`.`);
       } catch (e) {
         this.logger.warn(`Failed to stop worker [${worker.name}] via \`.#tryGC()\`.`, e);
       }
 
       try {
-        state = await turf.state(worker.name) as TurfState;
+        state = await this.turf.state(worker.name) as TurfState;
         const stime = state['rusage.stime'] ?? 0;
         const utime = state['rusage.utime'] ?? 0;
         //TODO(yilong.lyl): fix typo @zl131478
@@ -201,7 +201,7 @@ export class WorkerStatsSnapshot extends BaseOf(EventEmitter) {
 
       try {
         // 清理 turf 数据
-        await turf.delete(worker.name);
+        await this.turf.delete(worker.name);
       } catch (e) {
         this.logger.warn(`Failed to delete worker [${worker.name}] via \`.#tryGC()\`.`, e);
       }

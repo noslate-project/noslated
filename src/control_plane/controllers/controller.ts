@@ -1,4 +1,3 @@
-import { turf } from '#self/lib/turf';
 import loggers from '#self/lib/logger';
 import { Logger } from '#self/lib/loggers';
 import { Turf } from '#self/lib/turf/wrapper';
@@ -13,7 +12,7 @@ export class BaseController {
   constructor(public plane: ControlPlane) {
     this.logger = loggers.get('base controller');
     this.shrinking = false;
-    this.turf = turf;
+    this.turf = plane.turf;
   }
   /**
    * Expand.

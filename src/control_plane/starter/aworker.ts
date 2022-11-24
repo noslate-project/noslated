@@ -4,7 +4,6 @@ import fs from 'fs';
 import path from 'path';
 
 import { BaseOptions, BaseStarter, StartOptions } from './base';
-import { turf } from '#self/lib/turf';
 import { TurfContainerStates } from '#self/lib/turf/wrapper';
 import * as naming from '#self/lib/naming';
 import { ControlPlane } from '../control_plane';
@@ -42,7 +41,7 @@ export class AworkerStarter extends BaseStarter {
     }
     let state: TurfState | null;
     try {
-      state = await turf.state(SEED_CONTAINER_NAME);
+      state = await this.turf.state(SEED_CONTAINER_NAME);
     } catch (exp) {
       this.logger.warn(`Cannot state ${SEED_CONTAINER_NAME}.`, exp);
       return null;
@@ -93,7 +92,7 @@ export class AworkerStarter extends BaseStarter {
   async keepSeedAlive() {
     this.keepSeedAliveTimer = null;
     try {
-      const status = await turf.state(SEED_CONTAINER_NAME)
+      const status = await this.turf.state(SEED_CONTAINER_NAME)
         .catch((exp: unknown) => {
           const e = castError(exp);
           if (!e.message.includes('not found')) {
@@ -112,7 +111,7 @@ export class AworkerStarter extends BaseStarter {
         TurfContainerStates.forkwait,
       ].includes(status.state)) {
         needStart = true;
-        await turf.destroy(SEED_CONTAINER_NAME);
+        await this.turf.destroy(SEED_CONTAINER_NAME);
         if (this.closed) return;
       }
 
@@ -150,7 +149,7 @@ export class AworkerStarter extends BaseStarter {
     }
 
     try {
-      await turf.destroy(SEED_CONTAINER_NAME);
+      await this.turf.destroy(SEED_CONTAINER_NAME);
     } catch (e) {
       this.logger.warn(e);
     }
