@@ -13,22 +13,14 @@
       'dependencies': [
         '<(noslate_aworker_dir)/src/inspector/aworker_inspector_protocol.gyp:aworker_inspector_protocol',
       ],
-      'actions': [
+      'copies': [
         {
-          'action_name': 'copy_aworker_inspector_json',
-          'inputs': [
+          'destination': 'src/lib/json',
+          'files': [
             '<(SHARED_INTERMEDIATE_DIR)/aworker-inspector-output-root/inspector_protocol.json',
-          ],
-          'outputs': [
-            './src/lib/json/inspector_protocol.json',
-          ],
-          'action': [
-            'cp',
-            '<@(_inputs)',
-            '<@(_outputs)',
-          ],
-        },
+          ]
+        }
       ]
-    },
+    }
   ]
 }
