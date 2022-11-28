@@ -1,6 +1,5 @@
 import { ControlPlaneMetricAttributes, PlaneMetricAttributes, ControlPlaneMetrics } from '#self/lib/telemetry/semantic_conventions';
-import { turf } from '#self/lib/turf';
-import { TurfContainerStates } from '#self/lib/turf';
+import { Turf, TurfContainerStates } from '#self/lib/turf';
 import { TurfState } from '#self/lib/turf/types';
 import { Meter, Counter, ObservableGauge, BatchObservableResult } from '@opentelemetry/api';
 import { Broker, WorkerStatsSnapshot } from './worker_stats';
@@ -28,7 +27,7 @@ export class WorkerTelemetry {
   #funcExitCounter: Counter;
   #replicaTotalCountValueObserver: ObservableGauge;
 
-  constructor(meter: Meter, workerStatsSnapshot: WorkerStatsSnapshot) {
+  constructor(meter: Meter, workerStatsSnapshot: WorkerStatsSnapshot, private turf: Turf) {
     this.#meter = meter;
     this.#workerStatsSnapshot = workerStatsSnapshot;
     this.#workerStatsSnapshot.on('workerStopped', this.onWorkerStopped);
@@ -86,8 +85,8 @@ export class WorkerTelemetry {
         return [];
       }
       return Array.from(broker.workers.values()).map(async worker => {
-        const state = await turf.state(worker.name).catch(() => ({ state: TurfContainerStates.unknown }));
-        if (state.state !== TurfContainerStates.running) {
+        const state = await this.turf.state(worker.name).catch(() => ({ state: TurfContainerStates.unknown } as TurfState));
+        if (state == null || state.state !== TurfContainerStates.running) {
           return;
         }
         const attributes = {

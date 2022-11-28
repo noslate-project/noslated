@@ -23,6 +23,10 @@ export function resolveEnvConfig() {
     envConfig.dirs.noslatedSock = path.join(envConfig.dirs.noslatedWork, 'socks');
   }
 
+  if (process.env.TURF_WORKDIR) {
+    envConfig.turf.socketPath = path.join(process.env.TURF_WORKDIR, 'turf.sock');
+  }
+
   if (process.env.NOSLATED_LOG_LEVEL) {
     envConfig.logger.level = process.env.NOSLATED_LOG_LEVEL;
   }

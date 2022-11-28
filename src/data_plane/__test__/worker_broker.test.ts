@@ -48,11 +48,11 @@ describe(common.testName(__filename), () => {
   let data: DataPlane;
 
   before(async () => {
-    await startTurfD();
+    startTurfD();
   });
 
   after(async () => {
-    await stopTurfD();
+    stopTurfD();
   });
 
   beforeEach(async () => {

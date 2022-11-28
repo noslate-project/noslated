@@ -15,6 +15,7 @@ import { Meter } from '@opentelemetry/api';
 import { RawFunctionProfile } from '#self/lib/json/function_profile';
 import { StateManager } from './worker_stats/state_manager';
 import { BaseController, DisposableController, ReservationController } from './controllers';
+import { Turf } from '#self/lib/turf';
 
 /**
  * ControlPlane
@@ -22,6 +23,7 @@ import { BaseController, DisposableController, ReservationController } from './c
 export class ControlPlane extends BaseOf(EventEmitter) {
 
   meter: Meter;
+  turf: Turf;
   dataPlaneClientManager: DataPlaneClientManager;
   herald: Herald;
   codeManager: CodeManager;
@@ -41,13 +43,14 @@ export class ControlPlane extends BaseOf(EventEmitter) {
     dumpConfig('control', config);
 
     this.meter = getMeter();
+    this.turf = new Turf(config.turf.bin, config.turf.socketPath);
     this.dataPlaneClientManager = new DataPlaneClientManager(this, config);
     this.herald = new Herald(this, config);
     this.codeManager = new CodeManager(this.config.dirs.noslatedWork);
     this.functionProfile = new FunctionProfileManager(config, this.onPresetFunctionProfile.bind(this));
     this.workerLauncher = new WorkerLauncher(this, config);
     this.capacityManager = new CapacityManager(this, config);
-    this.workerTelemetry = new WorkerTelemetry(this.meter, this.capacityManager.workerStatsSnapshot);
+    this.workerTelemetry = new WorkerTelemetry(this.meter, this.capacityManager.workerStatsSnapshot, this.turf);
     this.stateManager = new StateManager(this);
     this.controller = new BaseController(this);
     this.reservationController = new ReservationController(this);
@@ -67,6 +70,7 @@ export class ControlPlane extends BaseOf(EventEmitter) {
     });
 
     return Promise.all([
+      this.turf.connect(),
       this.dataPlaneClientManager.ready(),
       this.herald.ready(),
       this.workerLauncher.ready(),
@@ -82,6 +86,7 @@ export class ControlPlane extends BaseOf(EventEmitter) {
     this.dataPlaneClientManager.removeAllListeners('newClientReady');
 
     return Promise.all([
+      this.turf.close(),
       this.dataPlaneClientManager.close(),
       this.herald.close(),
       this.workerLauncher.close(),

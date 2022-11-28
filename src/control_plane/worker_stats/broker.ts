@@ -3,7 +3,7 @@ import { ContainerStatus, ContainerStatusReport, ControlPanelEvent } from '#self
 import { FunctionProfileManager } from '#self/lib/function_profile';
 import { RawFunctionProfile } from '#self/lib/json/function_profile';
 import { PrefixedLogger } from '#self/lib/loggers';
-import { turf } from '#self/lib/turf';
+import { Turf } from '#self/lib/turf';
 import { TurfProcess } from '#self/lib/turf/types';
 import { Worker, WorkerStats } from './worker';
 
@@ -48,7 +48,7 @@ class Broker {
    * @param funcName The function name of this broker.
    * @param isInspector Whether it's using inspector or not.
    */
-  constructor(profiles: FunctionProfileManager, config: Config, funcName: string, isInspector: boolean, public disposable: boolean = false) {
+  constructor(profiles: FunctionProfileManager, config: Config, funcName: string, isInspector: boolean, public disposable: boolean = false, private turf: Turf) {
     this.config = config;
     this.logger = new PrefixedLogger('worker_stats_snapshot broker', Broker.getKey(funcName, isInspector));
 
@@ -115,7 +115,7 @@ class Broker {
     this.workers.delete(processName);
     this.removeItemFromStartingPool(processName);
     if (destroy) {
-      turf.destroy(processName).catch((e: unknown) => {
+      this.turf.destroy(processName).catch((e: unknown) => {
         this.logger.warn(`Failed to destroy worker ${processName} in unregistering.`, e);
       });
     }

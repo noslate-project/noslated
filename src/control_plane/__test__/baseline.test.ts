@@ -1,13 +1,12 @@
-
 import assert from 'assert';
 import _ from 'lodash';
 import mm from 'mm';
 import * as common from '#self/test/common';
 import { baselineDir } from '#self/test/common';
 import { ResourceServer } from '#self/test/baseline/resource-server';
-import { turf, startTurfD, stopTurfD } from '#self/lib/turf';
+import { startTurfD, stopTurfD } from '#self/lib/turf';
 import type { Turf } from '#self/lib/turf/wrapper';
-import { testWorker, startAllRoles, Roles, ProseContext } from '#self/test/util';
+import { testWorker, startAllRoles, Roles, ProseContext, TurfContext } from '#self/test/util';
 import { NoslatedClient } from '#self/sdk/index';
 import { ControlPlane } from '../control_plane';
 import { DataPlane } from '#self/data_plane';
@@ -34,7 +33,7 @@ const cases = [
     expect: {
       data: Buffer.from('foobar'),
     },
-    after: async () => {
+    after: async ({ turf }: Required<ProseContext<TurfContext>>) => {
       const ps = await turf.ps();
       assert(ps.length > 0);
       for (const item of ps) {
@@ -476,12 +475,7 @@ describe(common.testName(__filename), function() {
 
   beforeEach(async () => {
     mm(config.dataPlane, 'daprAdaptorModulePath', require.resolve('#self/test/baseline/dapr-adaptor'));
-    await startTurfD();
-    await turf.destroyAll();
-    const roles = await startAllRoles() as Required<Roles>;
-    data = roles.data;
-    agent = roles.agent;
-    control = roles.control;
+    startTurfD();
   });
 
   afterEach(async () => {
@@ -495,27 +489,30 @@ describe(common.testName(__filename), function() {
       ]);
     }
 
-    await stopTurfD();
+    stopTurfD();
   });
 
   for (const item of cases as any[]) {
     const _it = ((item as any).seed && process.platform === 'darwin') ? it.skip : it;
     _it(item.name, async () => {
       if (item.seed) {
-        // Default CI is non seed mode. Mock it to seed mode and then restart all roles.
+        // Default CI is non seed mode. Mock it to seed mode and then start all roles.
         mm(process.env, 'NOSLATED_FORCE_NON_SEED_MODE', '');
-        await Promise.all([ data.close(), agent.close(), control.close() ]);
-        ({ data, agent, control } = await startAllRoles() as Required<Roles>);
       }
+      const roles = await startAllRoles() as Required<Roles>;
+      data = roles.data;
+      agent = roles.agent;
+      control = roles.control;
+      await control.turf.destroyAll();
 
       if (item.before) {
-        await item.before({ agent, control, data, turf } as ProseContext<{ turf: Turf }>);
+        await item.before({ agent, control, data, turf: control.turf } as ProseContext<TurfContext>);
       }
 
       await agent.setFunctionProfile([ item.profile ] as any);
       await testWorker(agent, item);
       if (item.after) {
-        await item.after({ agent, control, data, turf } as ProseContext<{ turf: Turf }>);
+        await item.after({ agent, control, data, turf: control.turf } as ProseContext<TurfContext>);
       }
     });
   }

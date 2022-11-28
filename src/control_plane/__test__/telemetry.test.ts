@@ -2,7 +2,6 @@ import assert from 'assert';
 import { once } from 'events';
 import { metrics } from '@opentelemetry/api';
 import { MeterProvider } from '@opentelemetry/sdk-metrics';
-import { turf } from '#self/lib/turf';
 import { bufferFromStream } from '#self/lib/util';
 import { TurfContainerStates } from '#self/lib/turf/wrapper';
 import {
@@ -69,7 +68,7 @@ describe(common.testName(__filename), function() {
     const buffer = await bufferFromStream(response);
     assert.strictEqual(buffer.toString('utf8'), 'foobar');
 
-    const items = await turf.ps();
+    const items = await control.turf.ps();
     items.filter((it: { status: TurfContainerStates; }) => {
       return it.status === TurfContainerStates.running;
     }).forEach((it: { pid: number; }) => {
@@ -111,7 +110,7 @@ describe(common.testName(__filename), function() {
     // TODO(chengzhong.wcz): get pid from worker stats.
     // const pid = worker.pid;
     // assert.ok(pid != null);
-    const items = await turf.ps();
+    const items = await control.turf.ps();
     const state = items.filter((it: { status: TurfContainerStates; name: any; }) => {
       return it.status === TurfContainerStates.running && it.name === worker.name;
     })[0];
