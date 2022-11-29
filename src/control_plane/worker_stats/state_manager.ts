@@ -1,15 +1,15 @@
 import { NotNullableInterface } from '#self/lib/interfaces';
 import * as root from '#self/proto/root';
 import { ContainerStatus, ContainerStatusReport } from '#self/lib/constants';
-import { performance } from 'perf_hooks';
 import { ControlPlane } from '../control_plane';
 import { Logger, loggers } from '#self/lib/loggers';
-import { turf } from '#self/lib/turf';
 
 export class StateManager {
   logger: Logger;
+  turf;
   constructor(public plane: ControlPlane) {
     this.logger = loggers.get('state manager');
+    this.turf = plane.turf;
   }
 
   updateContainerStatusByReport(report: NotNullableInterface<root.noslated.data.IContainerStatusReport>) {
@@ -57,7 +57,7 @@ export class StateManager {
   }
 
   async syncWorkerData(data: root.noslated.data.IBrokerStats[]) {
-    const psData = await turf.ps();
+    const psData = await this.turf.ps();
 
     if (!psData || psData.length === 0) {
       this.logger.warn('got turf ps data empty, skip current syncWorkerData operation.');

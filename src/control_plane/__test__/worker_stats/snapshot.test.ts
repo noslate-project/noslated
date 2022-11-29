@@ -5,7 +5,7 @@ import { Broker, Worker, WorkerStatsSnapshot } from '#self/control_plane/worker_
 import * as common from '#self/test/common';
 import { config } from '#self/config';
 import { FunctionProfileManager as ProfileManager } from '#self/lib/function_profile';
-import { turf, TurfContainerStates } from '#self/lib/turf';
+import { Turf, TurfContainerStates } from '#self/lib/turf';
 import { ContainerStatus, ContainerStatusReport } from '#self/lib/constants';
 import FakeTimers, { Clock } from '@sinonjs/fake-timers';
 import sinon from 'sinon';
@@ -65,6 +65,8 @@ describe(common.testName(__filename), () => {
   }];
 
   let profileManager: ProfileManager;
+  // Not connected turf client
+  const turf = new Turf(config.turf.bin, config.turf.socketPath);
   beforeEach(async () => {
     profileManager = new ProfileManager(config);
     await profileManager.set(funcData, 'WAIT');
@@ -80,7 +82,7 @@ describe(common.testName(__filename), () => {
     let workerStatsSnapshot: WorkerStatsSnapshot;
 
     beforeEach(async () => {
-      workerStatsSnapshot = new WorkerStatsSnapshot(profileManager, config);
+      workerStatsSnapshot = new WorkerStatsSnapshot(profileManager, config, turf);
       await workerStatsSnapshot.ready();
     });
     afterEach(async () => {

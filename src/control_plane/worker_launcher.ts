@@ -3,7 +3,6 @@ import { castError, createDeferred } from '#self/lib/util';
 import loggers from '#self/lib/logger';
 import * as naming from '#self/lib/naming';
 import * as starters from './starter';
-import { turf } from '#self/lib/turf';
 import { ErrorCode } from './worker_launcher_error_code';
 import { ControlPlane } from './control_plane';
 import { Config } from '#self/config';
@@ -24,6 +23,7 @@ export interface WorkerStarter {
 
 export class WorkerLauncher extends Base {
   plane;
+  turf;
   logger;
   config;
   starters;
@@ -41,6 +41,7 @@ export class WorkerLauncher extends Base {
   constructor(plane: ControlPlane, config: Config) {
     super();
     this.plane = plane;
+    this.turf = plane.turf;
 
     this.logger = loggers.get('worker launcher');
     this.config = config;
@@ -74,7 +75,7 @@ export class WorkerLauncher extends Base {
     this.snapshot = this.plane.capacityManager.workerStatsSnapshot;
 
     if (this.config.turf.deleteAllContainersBeforeStart) {
-      await turf.destroyAll();
+      await this.turf.destroyAll();
     }
 
     await Promise.all([

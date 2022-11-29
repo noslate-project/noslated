@@ -3,7 +3,7 @@ import mm from 'mm';
 import * as common from '#self/test/common';
 import { createDeferred } from '#self/lib/util';
 import { daemonProse, ProseContext } from '#self/test/util';
-import { turf, TurfContainerStates } from '#self/lib/turf';
+import { TurfContainerStates } from '#self/lib/turf';
 import { Host } from '#self/lib/rpc/host';
 import { ContainerStatusReport } from '#self/lib/constants';
 
@@ -86,7 +86,7 @@ describe(common.testName(__filename), () => {
       capacityManager.workerStatsSnapshot.register('func', 'foo', 'bar', false);
 
       const { promise: promise2, resolve: resolve2 } = createDeferred<void>();
-      const syncWorkerData = capacityManager.plane.stateManager.syncWorkerData.bind(capacityManager);
+      const syncWorkerData = capacityManager.plane.stateManager.syncWorkerData.bind(capacityManager.plane.stateManager);
       const autoScale = capacityManager.autoScale.bind(capacityManager);
       let syncWorkerDataCalled = 0;
       let autoScaleCalled = 0;
@@ -155,7 +155,7 @@ describe(common.testName(__filename), () => {
       });
 
       const { promise: promise2, resolve: resolve2 } = createDeferred<void>();
-      const syncWorkerData = capacityManager.plane.stateManager.syncWorkerData.bind(capacityManager);
+      const syncWorkerData = capacityManager.plane.stateManager.syncWorkerData.bind(capacityManager.plane.stateManager);
       const autoScale = capacityManager.autoScale.bind(capacityManager);
       let syncWorkerDataCalled = 0;
       let autoScaleCalled = 0;
@@ -174,7 +174,7 @@ describe(common.testName(__filename), () => {
           throw e;
         }
       });
-      mm(turf, 'ps', async () => {
+      mm(roles.control!.turf, 'ps', async () => {
         return [{ name: 'foo', pid: 10000, status: TurfContainerStates.running }];
       });
 

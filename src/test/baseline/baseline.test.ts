@@ -6,7 +6,7 @@ import mm from 'mm';
 import * as common from '#self/test/common';
 import { baselineDir } from '#self/test/common';
 import * as naming from '#self/lib/naming';
-import { turf, startTurfD, stopTurfD, TurfContainerStates } from '#self/lib/turf';
+import { startTurfD, stopTurfD, TurfContainerStates } from '#self/lib/turf';
 import { ResourceServer } from './resource-server';
 import { testWorker, startAllRoles, Roles, TurfContext, ProseContext } from '../util';
 import { config } from '#self/config';
@@ -1049,12 +1049,12 @@ describe(common.testName(__filename), function() {
       beforeEach(async () => {
         mm(config.delegate, 'type', type);
         mm(config.dataPlane, 'daprAdaptorModulePath', require.resolve('./dapr-adaptor'));
-        await startTurfD();
-        await turf.destroyAll();
+        startTurfD();
         const roles = await startAllRoles() as Required<Roles>;
         data = roles.data;
         agent = roles.agent;
         control = roles.control;
+        await control.turf.destroyAll();
       });
 
       afterEach(async () => {
@@ -1067,7 +1067,7 @@ describe(common.testName(__filename), function() {
           ]);
         }
 
-        await stopTurfD();
+        stopTurfD();
       });
 
       for (const item of cases as any[]) {
@@ -1083,13 +1083,13 @@ describe(common.testName(__filename), function() {
           let beforeRet;
 
           if (item.before) {
-            beforeRet = await item.before({ agent, control, data, turf });
+            beforeRet = await item.before({ agent, control, data, turf: control.turf });
           }
 
           await agent.setFunctionProfile([ item.profile ]);
           await testWorker(agent!, item);
           if (item.after) {
-            await item.after({ agent, control, data, turf }, beforeRet);
+            await item.after({ agent, control, data, turf: control.turf }, beforeRet);
           }
         });
       }

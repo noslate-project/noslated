@@ -7,7 +7,6 @@ import extend from 'extend';
 import { Base } from '#self/lib/sdk_base';
 import loggers from '#self/lib/logger';
 import { pairsToMap } from '#self/lib/rpc/key_value_pair';
-import { turf } from '#self/lib/turf';
 import * as utils from '#self/lib/util';
 import { ErrorCode } from '../worker_launcher_error_code';
 import { ControlPlane } from '../control_plane';
@@ -94,6 +93,7 @@ export abstract class BaseStarter extends Base {
   logger;
   plane;
   config;
+  turf;
   _validV8Options: string[];
 
   /**
@@ -112,6 +112,7 @@ export abstract class BaseStarter extends Base {
     this.plane = plane;
     this.config = config;
     this._validV8Options = [];
+    this.turf = plane.turf;
   }
 
   /**
@@ -261,15 +262,15 @@ export abstract class BaseStarter extends Base {
 
       await fs.promises.writeFile(specPath, JSON.stringify(spec), 'utf8');
       this.logger.info('turf create (%s, %s)', name, bundlePath);
-      await turf.create(name, bundlePath);
+      await this.turf.create(name, bundlePath);
 
       const startOptions: TurfStartOptions = {
         stdout: path.join(logPath, 'stdout.log'),
         stderr: path.join(logPath, 'stderr.log'),
       };
       if (options?.seed) startOptions.seed = options.seed;
-      this.logger.info('turf start (%s, %s)', name);
-      await turf.start(name, startOptions);
+      this.logger.info('turf start (%s, %s)', name, startOptions);
+      await this.turf.start(name, startOptions);
     } catch (e) {
       BaseStarter.bundlePathLock.delete(bundlePath);
       resolve();

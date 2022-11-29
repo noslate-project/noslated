@@ -1,7 +1,9 @@
+import { config } from '#self/config';
 import cp from 'child_process';
 
 import Logger from '../logger';
 import { createDeferred, isNotNullish } from '../util';
+import { TurfSession } from './session';
 import { TurfStartOptions, TurfException, TurfProcess, TurfState } from './types';
 
 const logger = Logger.get('turf/wrapper');
@@ -12,7 +14,30 @@ const TurfStateLineMatcher = /(\S+):\s+(\S+)/;
 export { TurfContainerStates } from './types';
 
 export class Turf {
-  constructor(public turfPath: string) {}
+  session: TurfSession;
+  constructor(public turfPath: string, public sockPath: string) {
+    this.session = new TurfSession(sockPath);
+    this.session.on('error', (err) => this._onSessionError(err));
+  }
+
+  private _onSessionError(err: unknown) {
+    logger.error('unexpected error on turf session:', err);
+    this.session = new TurfSession(this.sockPath);
+    this.session.on('error', (err) => this._onSessionError(err));
+    this.session.connect()
+      .then(() => {
+        logger.info('turf session re-connected');
+      }, () => { /** identical to error event */ });
+  }
+
+  async connect() {
+    await this.session.connect();
+    logger.info('turf session connected');
+  }
+
+  async close() {
+    await this.session.close();
+  }
 
   #exec(args: string[], cwd?: string) {
     const cmd = this.turfPath;
@@ -56,19 +81,32 @@ export class Turf {
     return deferred.promise;
   }
 
-  async run(containerName: string, bundlePath: string) {
-    // TODO: nullibility of name
-    return await this.#exec([ 'run', containerName ], bundlePath);
+  async #send(args: string[]) {
+    const start = process.hrtime.bigint();
+    const command = args.join(' ');
+    const ret = await this.session.send(args)
+      .finally(() => {
+        logger.debug(`send %s, consume %s`, command, process.hrtime.bigint() - start);
+      });
+    if (ret.header.code !== 0) {
+      throw new Error(`Turf response with non-zero code(${ret.header.code})`);
+    }
+  }
+
+  #sendOrExec(args: string[]) {
+    if (config.turf.socketSession) {
+      return this.#send(args);
+    } else {
+      return this.#exec(args);
+    }
   }
 
   async create(containerName: string, bundlePath: string) {
-    // TODO: nullibility of name
-    return await this.#exec([ 'create', containerName ], bundlePath);
+    return await this.#sendOrExec([ 'create', '-b', bundlePath, containerName ]);
   }
 
   async start(containerName: string, options: TurfStartOptions = {}) {
-    // TODO: nullibility of name
-    const args = [ '-H', 'start' ];
+    const args = [ 'start' ];
 
     const ADDITIONAL_KEYS = [ 'seed', 'stdout', 'stderr' ] as const;
     for (const key of ADDITIONAL_KEYS) {
@@ -81,38 +119,27 @@ export class Turf {
 
     args.push(containerName);
 
-    return this.#exec(args);
+    return this.#sendOrExec(args);
   }
 
   async stop(containerName: string) {
-    // TODO: nullibility of name
-    let ret;
     try {
-      ret = await this.#exec([ '-H', 'stop', containerName ]);
+      await this.#exec([ '-H', 'stop', containerName ]);
     } catch (e: any) {
-      if (e.code !== 255) { // aka. -1
-        return e.stdout;
-      }
-
       logger.warn(`${containerName} stop failed, try to force stop`, e);
       try {
-        ret = await this.#exec([ '-H', 'stop', '--force', containerName ]);
+        await this.#exec([ '-H', 'stop', '--force', containerName ]);
       } catch (e: any) {
         logger.warn(`${containerName} force stop failed, ignore error`, e);
-        return e.stdout;
       }
     }
-
-    return ret;
   }
 
   async delete(containerName: string) {
-    // TODO: nullibility of name
     return this.#exec([ 'delete', containerName ]);
   }
 
   async destroy(containerName: string) {
-    // TODO: nullibility of name
     await this.stop(containerName);
     // TODO: stop 之后可能要等一下才能 delete
     await this.delete(containerName);
@@ -147,7 +174,6 @@ export class Turf {
   }
 
   async state(name: string): Promise<TurfState | null> {
-    // TODO: nullibility of name
     const ret = await this.#exec([ 'state', name ]);
     const lines = ret.split('\n').filter(l => l);
     if (!lines.length) return null;

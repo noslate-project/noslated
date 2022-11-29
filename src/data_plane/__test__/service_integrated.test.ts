@@ -26,7 +26,7 @@ describe(common.testName(__filename), function() {
   });
 
   beforeEach(async () => {
-    await startTurfD();
+    startTurfD();
     const roles = await startAllRoles() as Required<Roles>;
     data = roles.data;
     agent = roles.agent;
@@ -43,7 +43,7 @@ describe(common.testName(__filename), function() {
       ]);
     }
 
-    await stopTurfD();
+    stopTurfD();
   });
 
   it('should reject not found service', async () => {
