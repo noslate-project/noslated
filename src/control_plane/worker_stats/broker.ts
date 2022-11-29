@@ -96,7 +96,6 @@ class Broker {
     const worker = new Worker(this.config, processName, credential, this.disposable, this.initializationTimeout);
     this.workers.set(processName, worker);
 
-    // this.workers.set(processName, new Worker(this.config, processName, credential, this.disposable));
     this.startingPool.set(processName, {
       credential,
       estimateRequestLeft: this.data.worker?.maxActivateRequests,
