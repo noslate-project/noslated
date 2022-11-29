@@ -10,7 +10,7 @@ import { Worker } from '#self/control_plane/worker_stats/index';
 import * as common from '#self/test/common';
 import { config } from '#self/config';
 import { FunctionProfileManager as ProfileManager } from '#self/lib/function_profile';
-import { TurfContainerStates } from '#self/lib/turf';
+import { startTurfD, stopTurfD, TurfContainerStates } from '#self/lib/turf';
 import { ContainerStatus, ContainerStatusReport, ControlPanelEvent } from '#self/lib/constants';
 import { AworkerFunctionProfile } from '#self/lib/json/function_profile';
 import { Roles, startAllRoles } from '#self/test/util';
@@ -40,6 +40,7 @@ describe(common.testName(__filename), () => {
   let capacityManager: CapacityManager;
 
   beforeEach(async () => {
+    startTurfD();
     const roles = await startAllRoles() as Required<Roles>;
     data = roles.data;
     agent = roles.agent;
@@ -56,6 +57,7 @@ describe(common.testName(__filename), () => {
       agent.close(),
       data.close()
     ]);
+    stopTurfD();
   });
 
   describe('constructor', () => {
