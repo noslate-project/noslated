@@ -575,7 +575,7 @@ describe(common.testName(__filename), () => {
         await worker.ready();
       });
 
-      assert.ok(called == 0);
+      assert.ok(called === 0);
     });
   });
 });
