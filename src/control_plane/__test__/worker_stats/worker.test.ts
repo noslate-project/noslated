@@ -545,10 +545,8 @@ describe(common.testName(__filename), () => {
     it('should do nothing when setReady before wait ready', async () => {
       worker.setReady();
 
-      await assert.rejects(async () => {
+      await assert.doesNotReject(async () => {
         await worker.ready();
-      }, {
-        message: /initialization timeout/
       });
     });
 
@@ -558,7 +556,7 @@ describe(common.testName(__filename), () => {
       await assert.rejects(async () => {
         await worker.ready();
       }, {
-        message: /initialization timeout/
+        message: /stopped unexpected after start./
       });
     });
 

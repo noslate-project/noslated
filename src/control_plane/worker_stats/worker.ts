@@ -117,8 +117,6 @@ class Worker {
   requestId: string | undefined;
   readyTimeout: NodeJS.Timeout | undefined;
 
-  #pendingReady: Boolean | undefined;
-
   /**
    * Constructor
    * @param config The global configure.
@@ -143,17 +141,20 @@ class Worker {
     this.requestId = undefined;
 
     this.#readyDeferred = createDeferred<void>();
-    this.#pendingReady = undefined;
   }
 
   async ready() {
-    this.#pendingReady = true;
-
-    // 在 await ready 之前已经 Ready 了
+    // 在 await ready 之前状态已经改变了
     if (this.#containerStatus >= ContainerStatus.Ready) {
-      this.logger.info('Worker(%s, %s) already ready before pending ready', this.#name, this.#credential);
-      this.#pendingReady = false;
-      return this.#readyDeferred.resolve();
+      this.logger.info('Worker(%s, %s) status settle to [%s] before pending ready', this.#name, this.#credential, ContainerStatus[this.#containerStatus]);
+
+      if (this.#containerStatus >= ContainerStatus.PendingStop) {
+        this.#readyDeferred.reject();
+      }
+
+      this.#readyDeferred.resolve();
+
+      return this.#readyDeferred.promise;
     }
 
     // +100 等待 dp 先触发超时逻辑同步状态
@@ -177,20 +178,10 @@ class Worker {
   }
 
   setReady() {
-    if (this.#pendingReady !== true) {
-      return;
-    }
-
-    this.#pendingReady = false;
     this.#readyDeferred.resolve();
   }
 
   setStopped() {
-    if (this.#pendingReady !== true) {
-      return;
-    }
-
-    this.#pendingReady = false;
     this.#readyDeferred.reject(new Error(`Worker(${this.name}, ${this.credential}) stopped unexpected after start.`));
   }
 

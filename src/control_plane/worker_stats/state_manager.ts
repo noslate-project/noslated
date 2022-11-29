@@ -33,7 +33,7 @@ export class StateManager {
     worker.logger.info(`try update status to [${ContainerStatus[statusTo]}] from [${ContainerStatus[worker.containerStatus]}] by event [${event}].`);
 
     // Stopped 和 Unknown 都是终止状态，不允许转向其他状态
-    if (worker.containerStatus >= ContainerStatus.Stopped || statusTo < statusTo) return;
+    if (worker.containerStatus >= ContainerStatus.Stopped) return;
 
     worker.updateContainerStatus(statusTo, event as ContainerStatusReport);
 
