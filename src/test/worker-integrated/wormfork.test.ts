@@ -5,10 +5,11 @@ import path from 'path';
 
 import { bufferFromStream } from '#self/lib/util';
 
-import { testWorker, daemonProse, FIXTURES_DIR, ProseContext } from '#self/test/util';
+import { testWorker, FIXTURES_DIR } from '#self/test/util';
 import * as common from '#self/test/common';
 import { killWorker } from './util';
 import { config } from '#self/config';
+import { DefaultEnvironment } from '../env/environment';
 
 const codeDir = path.join(FIXTURES_DIR, 'worker-integrated');
 
@@ -82,25 +83,24 @@ describe(common.testName(__filename), function() {
   });
 
   describe('default seed', () => {
-    const ctx: ProseContext = {};
-    daemonProse(ctx);
+    const env = new DefaultEnvironment();
 
     for (const item of defaultSeedCases) {
       prose(item.name, async () => {
-        await ctx.agent!.setFunctionProfile([ item.profile ]);
-        let first;
+        await env.agent.setFunctionProfile([ item.profile ]);
+        let first: Buffer;
         {
-          const response = await ctx.agent!.invoke(item.name, item.input.data, item.input.metadata);
+          const response = await env.agent.invoke(item.name, item.input.data, item.input.metadata);
           first = await bufferFromStream(response);
         }
 
-        await killWorker(ctx.control!, item.name);
+        await killWorker(env.control, item.name);
 
-        await once(ctx.control!.capacityManager.workerStatsSnapshot, 'workerStopped');
+        await once(env.control.capacityManager.workerStatsSnapshot, 'workerStopped');
 
         let second;
         {
-          const response = await ctx.agent!.invoke(item.name, item.input.data, item.input.metadata);
+          const response = await env.agent.invoke(item.name, item.input.data, item.input.metadata);
           second = await bufferFromStream(response);
         }
         assert.notStrictEqual(first.toString(), second.toString());
@@ -115,11 +115,10 @@ describe(common.testName(__filename), function() {
           mm(config.starter.aworker, 'defaultSeedScript', item.seedScript);
         });
 
-        const ctx: any = {};
-        daemonProse(ctx);
+        const env = new DefaultEnvironment();
         prose('testing invoke result', async () => {
-          await ctx.agent.setFunctionProfile([ item.profile ]);
-          await testWorker(ctx.agent, item);
+          await env.agent.setFunctionProfile([ item.profile ]);
+          await testWorker(env.agent, item);
         });
       });
     }

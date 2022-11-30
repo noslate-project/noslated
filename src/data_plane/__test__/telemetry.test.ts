@@ -8,38 +8,34 @@ import {
   PlaneMetricAttributes,
 } from '#self/lib/telemetry/semantic_conventions';
 
-import { daemonProse, TelemetryContext, ProseContext } from '#self/test/util';
 import * as common from '#self/test/common';
 import { getMetricRecords, nodeJsWorkerTestItem, TestMetricReader } from '#self/test/telemetry-util';
+import { DefaultEnvironment } from '#self/test/env/environment';
 
 describe(common.testName(__filename), function() {
   // Debug version of Node.js may take longer time to bootstrap.
   this.timeout(30_000);
 
-  const context: ProseContext<TelemetryContext> = {
-    meterProvider: undefined,
-    metricReader: undefined,
-  };
+  let meterProvider: MeterProvider;
+  let metricReader: TestMetricReader;
   beforeEach(async () => {
-    context.metricReader = new TestMetricReader();
-    context.meterProvider = new MeterProvider();
-    context.meterProvider.addMetricReader(context.metricReader!);
-    metrics.setGlobalMeterProvider(context.meterProvider);
+    metricReader = new TestMetricReader();
+    meterProvider = new MeterProvider();
+    meterProvider.addMetricReader(metricReader);
+    metrics.setGlobalMeterProvider(meterProvider);
   });
   afterEach(() => {
     // disable current global provider so that we can set global meter provider again.
     metrics.disable();
   });
-  daemonProse(context);
+  const env = new DefaultEnvironment();
 
   it('invoke function with metrics', async () => {
-    const { agent, metricReader } = context;
-
-    await agent!.setFunctionProfile([ nodeJsWorkerTestItem.profile ] as any);
+    await env.agent.setFunctionProfile([ nodeJsWorkerTestItem.profile ]);
 
     const data = Buffer.from('foobar');
     const startTime = Date.now();
-    const response = await agent!.invoke(nodeJsWorkerTestItem.name, data);
+    const response = await env.agent.invoke(nodeJsWorkerTestItem.name, data);
     const endTime = Date.now();
     const buffer = await bufferFromStream(response!);
     assert.strictEqual(buffer.toString('utf8'), 'foobar');
@@ -81,10 +77,8 @@ describe(common.testName(__filename), function() {
   });
 
   it('invoke service with metrics', async () => {
-    const { agent, metricReader } = context;
-
-    await agent!.setFunctionProfile([ nodeJsWorkerTestItem.profile ] as any);
-    await agent!.setServiceProfile([
+    await env.agent.setFunctionProfile([ nodeJsWorkerTestItem.profile ]);
+    await env.agent.setServiceProfile([
       {
         name: 'foobar',
         type: 'default',
@@ -96,7 +90,7 @@ describe(common.testName(__filename), function() {
 
     const data = Buffer.from('foobar');
     const startTime = Date.now();
-    const response = await agent!.invokeService('foobar', data);
+    const response = await env.agent.invokeService('foobar', data);
     const endTime = Date.now();
     const buffer = await bufferFromStream(response!);
     assert.strictEqual(buffer.toString('utf8'), 'foobar');

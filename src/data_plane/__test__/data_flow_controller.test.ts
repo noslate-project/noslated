@@ -3,18 +3,19 @@ import assert from 'assert';
 
 import * as common from '#self/test/common';
 import { baselineDir } from '#self/test/common';
-import { assertInvoke, daemonProse, ProseContext } from '#self/test/util';
+import { assertInvoke } from '#self/test/util';
 import { Guest } from '#self/lib/rpc/guest';
+import { DefaultEnvironment } from '#self/test/env/environment';
 
 describe(common.testName(__filename), function() {
   // Debug version of Node.js may take longer time to bootstrap.
   this.timeout(30_000);
 
-  const roles: ProseContext = {};
   let guest: Guest;
-  daemonProse(roles);
+  const env = new DefaultEnvironment();
+
   beforeEach(async () => {
-    guest = new Guest(roles.data!.host.address);
+    guest = new Guest(env.data.host.address);
     await guest.start();
   });
   afterEach(async () => {
@@ -22,7 +23,7 @@ describe(common.testName(__filename), function() {
   });
 
   it('should broadcast worker stats', async () => {
-    await roles.agent!.setFunctionProfile([
+    await env.agent.setFunctionProfile([
       {
         name: 'node_worker_echo',
         runtime: 'nodejs',
@@ -40,7 +41,7 @@ describe(common.testName(__filename), function() {
       assert.strictEqual(msg.brokers.length, 0);
     }
 
-    await assertInvoke(roles.agent!, 'node_worker_echo', {
+    await assertInvoke(env.agent, 'node_worker_echo', {
       input: {
         data: Buffer.from('foobar'),
         metadata: {

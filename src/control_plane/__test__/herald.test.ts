@@ -1,17 +1,15 @@
 import assert from 'assert';
 import { testName, baselineDir } from '#self/test/common';
-import { daemonProse, ProseContext } from '#self/test/util';
 import { Guest } from '#self/lib/rpc/guest';
 import { descriptor } from '#self/lib/rpc/util';
+import { DefaultEnvironment } from '#self/test/env/environment';
 
 describe(testName(__filename), () => {
-  const roles: ProseContext = {};
   let guest: Guest;
 
-  daemonProse(roles);
-
+  const env = new DefaultEnvironment();
   beforeEach(async () => {
-    guest = new Guest(roles.control!.herald.address);
+    guest = new Guest(env.control.herald.address);
     guest.addService((descriptor as any).noslated.control.ControlPlane);
     await guest.start();
   });
@@ -28,7 +26,7 @@ describe(testName(__filename), () => {
         handler: 'index.handler',
         signature: 'md5:234234',
       };
-      await roles.agent!.setFunctionProfile([
+      await env.agent.setFunctionProfile([
         expectedProfile,
       ]);
 

@@ -1,6 +1,5 @@
 import assert from 'assert';
 import * as common from '#self/test/common';
-import { daemonProse, ProseContext } from '#self/test/util';
 import { Guest } from '#self/lib/rpc/guest';
 import { descriptor } from '#self/lib/rpc/util';
 import { bufferFromStream } from '#self/lib/util';
@@ -11,16 +10,16 @@ import { BaseStarter } from '#self/control_plane/starter/base';
 import { getInspectorTargets } from '#self/test/diagnostics/util';
 import { once } from 'events';
 import { Events } from '#self/delegate/index';
+import { DefaultEnvironment } from '#self/test/env/environment';
 
 const { baselineDir } = common;
 
 describe(common.testName(__filename), () => {
-  const roles: ProseContext = {};
   let guest: Guest;
 
-  daemonProse(roles);
+  const env = new DefaultEnvironment();
   beforeEach(async () => {
-    guest = new Guest(roles.data!.host.address);
+    guest = new Guest(env.data.host.address);
     guest.addService((descriptor as any).noslated.data.DataPlane);
     await guest.start();
   });
@@ -30,7 +29,7 @@ describe(common.testName(__filename), () => {
 
   describe('getServiceProfile', () => {
     it('should inspect current service profiles', async () => {
-      await roles.agent!.setServiceProfile([
+      await env.agent.setServiceProfile([
         {
           name: 'foobar',
           type: 'proportional-load-balance',
@@ -86,8 +85,7 @@ describe(common.testName(__filename), () => {
     this.timeout(10_000);
 
     it('should set tracing categories for existing processes', async () => {
-      const { agent } = roles;
-      await agent!.setFunctionProfile([
+      await env.agent.setFunctionProfile([
         {
           name: 'foobar',
           runtime: 'aworker',
@@ -99,7 +97,7 @@ describe(common.testName(__filename), () => {
 
       {
         const data = Buffer.from('foobar');
-        const response = await agent!.invoke('foobar', data, { method: 'POST' });
+        const response = await env.agent.invoke('foobar', data, { method: 'POST' });
         const buffer = await bufferFromStream(response);
         assert.strictEqual(buffer.toString('utf8'), 'foobar');
       }
@@ -107,14 +105,14 @@ describe(common.testName(__filename), () => {
       await (guest as any).setTracingCategories({ functionName: 'foobar', categories: [ 'v8', 'aworker' ] });
       {
         const data = Buffer.from('foobar');
-        const response = await agent!.invoke('foobar', data, { method: 'POST' });
+        const response = await env.agent.invoke('foobar', data, { method: 'POST' });
         const buffer = await bufferFromStream(response);
         assert.strictEqual(buffer.toString('utf8'), 'foobar');
       }
 
       // await flushing
       await sleep(2000);
-      const containerName = roles.data!.dataFlowController!.getBroker('foobar')!.workers[0].name;
+      const containerName = env.data.dataFlowController.getBroker('foobar')!.workers[0].name;
       const logDir = BaseStarter.logPath(config.logger.dir, containerName);
       const files = fs.readdirSync(logDir);
 
@@ -126,8 +124,7 @@ describe(common.testName(__filename), () => {
     this.timeout(10_000);
 
     it('should start inspector for existing processes', async () => {
-      const { agent } = roles;
-      await agent!.setFunctionProfile([
+      await env.agent.setFunctionProfile([
         {
           name: 'foobar',
           runtime: 'aworker',
@@ -139,12 +136,12 @@ describe(common.testName(__filename), () => {
 
       {
         const data = Buffer.from('foobar');
-        const response = await agent!.invoke('foobar', data, { method: 'POST' });
+        const response = await env.agent.invoke('foobar', data, { method: 'POST' });
         const buffer = await bufferFromStream(response);
         assert.strictEqual(buffer.toString('utf8'), 'foobar');
       }
 
-      const inspectorFuture = once(roles.data!.dataFlowController.delegate, Events.inspectorStarted);
+      const inspectorFuture = once(env.data.dataFlowController.delegate, Events.inspectorStarted);
       await (guest as any).startInspector({ functionName: 'foobar' });
       await inspectorFuture;
 

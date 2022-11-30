@@ -2,10 +2,10 @@ import assert from 'assert';
 import mm from 'mm';
 import * as common from '#self/test/common';
 import { createDeferred } from '#self/lib/util';
-import { daemonProse, ProseContext } from '#self/test/util';
 import { TurfContainerStates } from '#self/lib/turf';
 import { Host } from '#self/lib/rpc/host';
 import { ContainerStatusReport } from '#self/lib/constants';
+import { DefaultEnvironment } from '#self/test/env/environment';
 
 /**
  * Wait for at least one subscriber for a host object with subscribe event name.
@@ -33,8 +33,7 @@ function waitForAtLeastOneSubscriber(host: Host, name: string) {
 }
 
 describe(common.testName(__filename), () => {
-  const roles: ProseContext = {};
-  daemonProse(roles);
+  const env = new DefaultEnvironment();
 
   describe('workerTrafficStats', () => {
     const profiles = [{
@@ -73,7 +72,7 @@ describe(common.testName(__filename), () => {
         }],
       };
 
-      const { functionProfile, capacityManager } = roles.control!;
+      const { functionProfile, capacityManager } = env.control;
       functionProfile.set(profiles, 'WAIT');
 
       const { promise: promise1, resolve: resolve1 } = createDeferred<void>();
@@ -102,8 +101,8 @@ describe(common.testName(__filename), () => {
         return ret;
       });
 
-      await waitForAtLeastOneSubscriber(roles.data!.dataFlowController.host, 'workerTrafficStats');
-      await (roles.data!.dataFlowController.host as any).broadcastWorkerTrafficStats({ brokers: [ brokerData ] });
+      await waitForAtLeastOneSubscriber(env.data.dataFlowController.host, 'workerTrafficStats');
+      await (env.data.dataFlowController.host as any).broadcastWorkerTrafficStats({ brokers: [ brokerData ] });
       await promise2;
 
       assert.strictEqual(syncWorkerDataCalled, 1);
@@ -126,7 +125,7 @@ describe(common.testName(__filename), () => {
         }],
       };
 
-      const { functionProfile, capacityManager } = roles.control!;
+      const { functionProfile, capacityManager } = env.control;
       functionProfile.set(profiles, 'WAIT');
 
       const { promise: promise1, resolve: resolve1 } = createDeferred<void>();
@@ -174,13 +173,13 @@ describe(common.testName(__filename), () => {
           throw e;
         }
       });
-      mm(roles.control!.turf, 'ps', async () => {
+      mm(env.control.turf, 'ps', async () => {
         return [{ name: 'foo', pid: 10000, status: TurfContainerStates.running }];
       });
 
-      await waitForAtLeastOneSubscriber(roles.data!.dataFlowController.host, 'workerTrafficStats');
+      await waitForAtLeastOneSubscriber(env.data.dataFlowController.host, 'workerTrafficStats');
       functionProfile.profile[0].runtime = 'hello' as any;
-      await (roles.data!.dataFlowController.host as any).broadcastWorkerTrafficStats({ brokers: [ brokerData ] });
+      await (env.data.dataFlowController.host as any).broadcastWorkerTrafficStats({ brokers: [ brokerData ] });
       await promise2;
 
       assert.strictEqual(syncWorkerDataCalled, 1);
