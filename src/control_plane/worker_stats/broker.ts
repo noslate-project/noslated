@@ -79,22 +79,30 @@ class Broker {
     return this.data?.worker?.reservationCount || 0;
   }
 
+  get initializationTimeout() {
+    return this.data?.worker?.initializationTimeout || this.config.worker.defaultInitializerTimeout;
+  }
+
   /**
    * Register worker.
    * @param processName The process name (worker name).
    * @param credential The credential.
    */
-  register(processName: string, credential: string) {
+  register(processName: string, credential: string): Worker {
     if (!this.data) {
       throw new Error(`No function profile named ${this.name}.`);
     }
 
-    this.workers.set(processName, new Worker(this.config, processName, credential, this.disposable));
+    const worker = new Worker(this.config, processName, credential, this.disposable, this.initializationTimeout);
+    this.workers.set(processName, worker);
+
     this.startingPool.set(processName, {
       credential,
       estimateRequestLeft: this.data.worker?.maxActivateRequests,
       maxActivateRequests: this.data.worker?.maxActivateRequests,
     });
+
+    return worker;
   }
 
   /**

@@ -86,10 +86,6 @@ export function resolveEnvConfig() {
     envConfig.plane.controlPlaneCount = Number.parseInt(process.env.NOSLATED_CONTROL_PLANE_COUNT);
   }
 
-  if (process.env.NOSLATED_CONTROL_PLANE_WORKER_CONNECT_TIMEOUT) {
-    envConfig.worker.controlPlaneConnectTimeout = Number.parseInt(process.env.NOSLATED_CONTROL_PLANE_WORKER_CONNECT_TIMEOUT);
-  }
-
   return envConfig;
 }
 

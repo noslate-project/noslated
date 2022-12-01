@@ -209,10 +209,16 @@ export class WorkerLauncher extends Base {
       });
       const serverSockPath = (dataPlane as any).getServerSockPath();
 
-      this.snapshot.register(funcName, processName, credential, !!options.inspect, disposable);
+      const worker = this.snapshot.register(funcName, processName, credential, !!options.inspect, disposable);
       await starter.start(serverSockPath, processName, credential, profile, bundlePath, options);
 
+      const started = performance.now();
+
       this.logger.info('worker(%s, %s, %s, inspect %s, disposable %s) started, cost: %s, related request(%s)', funcName, processName, credential, options.inspect, disposable, performance.now() - now, requestId);
+
+      await worker.ready();
+
+      this.logger.info('worker(%s, %s, inspect %s, disposable %s) ready, cost: %s, related request(%s)', funcName, credential, options.inspect, disposable, performance.now() - started, requestId);
     } catch (e) {
       this.snapshot.unregister(funcName, processName, !!options.inspect);
       throw e;

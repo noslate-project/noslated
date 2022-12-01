@@ -31,7 +31,6 @@ export default {
   noslatedAddonType: 'Release',
   virtualMemoryPoolSize: '1gb',
   worker: {
-    controlPlaneConnectTimeout: 10_000,
     defaultShrinkStrategy: 'LCC',
     gcLogDelay: 5 * 1000 * 60,
     reservationCountPerFunction: 0,

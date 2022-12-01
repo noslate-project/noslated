@@ -158,6 +158,12 @@ describe(common.testName(__filename), () => {
 
       assert(worker);
 
+      assert.rejects(async () => {
+        await worker.ready();
+      }, {
+        message: /stopped unexpected after start./
+      });
+
       stateManager.updateContainerStatusByReport({
         functionName: 'func1',
         name: 'worker1',
@@ -165,6 +171,7 @@ describe(common.testName(__filename), () => {
         event: ContainerStatusReport.RequestDrained,
         requestId: ''
       });
+
 
       assert.strictEqual(worker.containerStatus, ContainerStatus.Stopped);
 

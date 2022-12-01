@@ -105,12 +105,12 @@ export class WorkerStatsSnapshot extends BaseOf(EventEmitter) {
    * @param {string} credential The credential.
    * @param {boolean} isInspector Whether it's using inspector or not.
    */
-  register(funcName: string, processName: string, credential: string, isInspector: boolean, disposable = false) {
+  register(funcName: string, processName: string, credential: string, isInspector: boolean, disposable = false): Worker {
     const broker = this.getOrCreateBroker(funcName, isInspector, disposable);
     if (!broker) {
       throw new Error(`No function named ${funcName} in function profile.`);
     }
-    broker.register(processName, credential);
+    return broker.register(processName, credential);
   }
 
   /**

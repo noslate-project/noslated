@@ -31,7 +31,7 @@ export class DisposableController extends BaseController {
 
     if (!broker || !worker) {
       this.logger.warn(
-        'containerStatusReport report [%o] skip because no broker and worker related.',
+        'containerStatusReport report [%j] skip because no broker and worker related.',
         report
       );
       return;
