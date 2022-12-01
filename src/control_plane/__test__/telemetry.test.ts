@@ -9,37 +9,34 @@ import {
   ControlPlaneMetrics,
   ControlPlaneMetricAttributes,
 } from '#self/lib/telemetry/semantic_conventions';
-import { daemonProse, ProseContext, TelemetryContext } from '#self/test/util';
 import * as common from '#self/test/common';
 import { TestMetricReader, getMetricRecords, nodeJsWorkerTestItem } from '#self/test/telemetry-util';
+import { DefaultEnvironment } from '#self/test/env/environment';
 
 describe(common.testName(__filename), function() {
   // Debug version of Node.js may take longer time to bootstrap.
   this.timeout(30_000);
 
-  const context: ProseContext<TelemetryContext> = {
-    meterProvider: undefined,
-    metricReader: undefined,
-  };
+  let meterProvider: MeterProvider;
+  let metricReader: TestMetricReader;
 
   beforeEach(async () => {
-    context.metricReader = new TestMetricReader();
-    context.meterProvider = new MeterProvider();
-    context.meterProvider!.addMetricReader(context.metricReader!);
-    metrics.setGlobalMeterProvider(context.meterProvider);
+    metricReader = new TestMetricReader();
+    meterProvider = new MeterProvider();
+    meterProvider!.addMetricReader(metricReader);
+    metrics.setGlobalMeterProvider(meterProvider);
   });
   afterEach(() => {
     // disable current global provider so that we can set global meter provider again.
     metrics.disable();
   });
-  daemonProse(context);
+
+  const env = new DefaultEnvironment();
 
   it('should collect replica metrics', async () => {
-    const { agent, metricReader } = context;
-
-    await agent!.setFunctionProfile([ nodeJsWorkerTestItem.profile ] as any);
+    await env.agent.setFunctionProfile([ nodeJsWorkerTestItem.profile ] as any);
     const data = Buffer.from('foobar');
-    const response = await agent!.invoke(nodeJsWorkerTestItem.name, data);
+    const response = await env.agent.invoke(nodeJsWorkerTestItem.name, data);
 
     const buffer = await bufferFromStream(response!);
     assert.strictEqual(buffer.toString('utf8'), 'foobar');
@@ -60,22 +57,20 @@ describe(common.testName(__filename), function() {
 
   const replicaResourceUsageProse = process.platform === 'linux' ? it : it.skip;
   replicaResourceUsageProse('should collect replica exit count', async () => {
-    const { agent, control, metricReader }: any = context;
-
-    await agent.setFunctionProfile([ nodeJsWorkerTestItem.profile ]);
+    await env.agent.setFunctionProfile([ nodeJsWorkerTestItem.profile ]);
     const data = Buffer.from('foobar');
-    const response = await agent.invoke(nodeJsWorkerTestItem.name, data);
+    const response = await env.agent.invoke(nodeJsWorkerTestItem.name, data);
     const buffer = await bufferFromStream(response);
     assert.strictEqual(buffer.toString('utf8'), 'foobar');
 
-    const items = await control.turf.ps();
+    const items = await env.control.turf.ps();
     items.filter((it: { status: TurfContainerStates; }) => {
       return it.status === TurfContainerStates.running;
     }).forEach((it: { pid: number; }) => {
       process.kill(it.pid, 'SIGKILL');
     });
 
-    await once(control.capacityManager.workerStatsSnapshot, 'workerStopped');
+    await once(env.control.capacityManager.workerStatsSnapshot, 'workerStopped');
 
     const result = await metricReader!.collect();
     {
@@ -94,15 +89,13 @@ describe(common.testName(__filename), function() {
   });
 
   replicaResourceUsageProse('should collect replica resource usage', async () => {
-    const { agent, control, metricReader }: any = context;
-
-    await agent.setFunctionProfile([ nodeJsWorkerTestItem.profile ]);
+    await env.agent.setFunctionProfile([ nodeJsWorkerTestItem.profile ]);
     const data = Buffer.from('foobar');
-    const response = await agent.invoke(nodeJsWorkerTestItem.name, data);
+    const response = await env.agent.invoke(nodeJsWorkerTestItem.name, data);
     const buffer = await bufferFromStream(response);
     assert.strictEqual(buffer.toString('utf8'), 'foobar');
 
-    const broker: any = Array.from(control.capacityManager.workerStatsSnapshot.brokers.values())[0];
+    const broker: any = Array.from(env.control.capacityManager.workerStatsSnapshot.brokers.values())[0];
     assert.ok(broker != null);
     assert.strictEqual(broker.name, nodeJsWorkerTestItem.name);
     const worker: any = Array.from(broker.workers.values())[0];
@@ -110,7 +103,7 @@ describe(common.testName(__filename), function() {
     // TODO(chengzhong.wcz): get pid from worker stats.
     // const pid = worker.pid;
     // assert.ok(pid != null);
-    const items = await control.turf.ps();
+    const items = await env.control.turf.ps();
     const state = items.filter((it: { status: TurfContainerStates; name: any; }) => {
       return it.status === TurfContainerStates.running && it.name === worker.name;
     })[0];

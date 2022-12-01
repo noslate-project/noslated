@@ -4,13 +4,9 @@ import mm from 'mm';
 import * as common from '#self/test/common';
 import { baselineDir } from '#self/test/common';
 import { ResourceServer } from '#self/test/baseline/resource-server';
-import { startTurfD, stopTurfD } from '#self/lib/turf';
-import type { Turf } from '#self/lib/turf/wrapper';
-import { testWorker, startAllRoles, Roles, ProseContext, TurfContext } from '#self/test/util';
-import { NoslatedClient } from '#self/sdk/index';
-import { ControlPlane } from '../control_plane';
-import { DataPlane } from '#self/data_plane';
+import { testWorker } from '#self/test/util';
 import { config } from '#self/config';
+import { DefaultEnvironment } from '#self/test/env/environment';
 
 const sleep = require('#self/lib/util').sleep;
 
@@ -33,7 +29,7 @@ const cases = [
     expect: {
       data: Buffer.from('foobar'),
     },
-    after: async ({ turf }: Required<ProseContext<TurfContext>>) => {
+    after: async ({ turf }: DefaultEnvironment) => {
       const ps = await turf.ps();
       assert(ps.length > 0);
       for (const item of ps) {
@@ -87,7 +83,7 @@ const cases = [
         method: 'POST',
       },
     },
-    before: async ({ control }: Required<ProseContext<{ turf: Turf }>>) => {
+    before: async ({ control }: DefaultEnvironment) => {
       mm(control['config'].worker, 'replicaCountLimit', 0);
     },
     expect: {
@@ -167,7 +163,7 @@ const cases = [
         method: 'POST',
       },
     },
-    before: async ({ control }: Required<ProseContext<{ turf: Turf }>>) => {
+    before: async ({ control }: DefaultEnvironment) => {
       const doStart = control.workerLauncher.starters.aworker.doStart.bind(control.workerLauncher.starters.aworker);
       mm(
         control.workerLauncher.starters.aworker,
@@ -208,7 +204,7 @@ const cases = [
         method: 'POST',
       },
     },
-    before: async ({ control }: Required<ProseContext<{ turf: Turf }>>) => {
+    before: async ({ control }: DefaultEnvironment) => {
       const doStart = control.workerLauncher.starters.aworker.doStart.bind(control.workerLauncher.starters.aworker);
       mm(
         control.workerLauncher.starters.aworker,
@@ -249,7 +245,7 @@ const cases = [
         method: 'POST',
       },
     },
-    after: async ({ control }: Required<ProseContext<{ turf: Turf }>>) => {
+    after: async ({ control }: DefaultEnvironment) => {
       const broker = control.capacityManager.workerStatsSnapshot.getBroker('aworker_echo', false)!;
       while (true) {
         if (broker.workerCount !== 4) {
@@ -284,7 +280,7 @@ const cases = [
         method: 'POST',
       },
     },
-    after: async ({ control }: Required<ProseContext<{ turf: Turf }>>) => {
+    after: async ({ control }: DefaultEnvironment) => {
       const broker = control.capacityManager.workerStatsSnapshot.getBroker('aworker_echo', false)!;
       while (true) {
         if (broker.workerCount !== 2) {
@@ -319,7 +315,7 @@ const cases = [
         method: 'POST',
       },
     },
-    after: async ({ control }: Required<ProseContext<{ turf: Turf }>>) => {
+    after: async ({ control }: DefaultEnvironment) => {
       await control.controller.tryBatchLaunch('aworker_echo', 1, { inspect: false });
       const broker = control.capacityManager.workerStatsSnapshot.getBroker('aworker_echo', false)!;
       while (true) {
@@ -368,7 +364,7 @@ const cases = [
         method: 'POST',
       },
     },
-    after: async ({ control }: Required<ProseContext<{ turf: Turf }>>) => {
+    after: async ({ control }: DefaultEnvironment) => {
       await control.controller.tryBatchLaunch('aworker_echo', 1, { inspect: false });
       const broker = control.capacityManager.workerStatsSnapshot.getBroker('aworker_echo', false)!;
       while (true) {
@@ -420,7 +416,7 @@ const cases = [
         method: 'POST',
       },
     },
-    after: async ({ control }: Required<ProseContext<{ turf: Turf }>>) => {
+    after: async ({ control }: DefaultEnvironment) => {
       await control.controller.tryBatchLaunch('aworker_echo', 1, { inspect: false });
       const broker = control.capacityManager.workerStatsSnapshot.getBroker('aworker_echo', false)!;
       while (true) {
@@ -460,10 +456,6 @@ describe(common.testName(__filename), function() {
   this.timeout(30_000);
 
   let resourceServer: ResourceServer;
-  let agent: NoslatedClient;
-  let control: ControlPlane;
-  let data: DataPlane;
-
   before(async () => {
     resourceServer = new ResourceServer();
     await resourceServer.start();
@@ -475,45 +467,37 @@ describe(common.testName(__filename), function() {
 
   beforeEach(async () => {
     mm(config.dataPlane, 'daprAdaptorModulePath', require.resolve('#self/test/baseline/dapr-adaptor'));
-    startTurfD();
   });
 
   afterEach(async () => {
     mm.restore();
-
-    if (data) {
-      await Promise.all([
-        data.close(),
-        agent.close(),
-        control.close(),
-      ]);
-    }
-
-    stopTurfD();
   });
 
   for (const item of cases as any[]) {
-    const _it = ((item as any).seed && process.platform === 'darwin') ? it.skip : it;
-    _it(item.name, async () => {
-      if (item.seed) {
-        // Default CI is non seed mode. Mock it to seed mode and then start all roles.
-        mm(process.env, 'NOSLATED_FORCE_NON_SEED_MODE', '');
-      }
-      const roles = await startAllRoles() as Required<Roles>;
-      data = roles.data;
-      agent = roles.agent;
-      control = roles.control;
-      await control.turf.destroyAll();
+    describe(item.name, () => {
+      beforeEach(() => {
+        if (item.seed) {
+          // Default CI is non seed mode. Mock it to seed mode and then start all roles.
+          mm(process.env, 'NOSLATED_FORCE_NON_SEED_MODE', '');
+        }
+      });
 
-      if (item.before) {
-        await item.before({ agent, control, data, turf: control.turf } as ProseContext<TurfContext>);
-      }
+      const env = new DefaultEnvironment();
 
-      await agent.setFunctionProfile([ item.profile ] as any);
-      await testWorker(agent, item);
-      if (item.after) {
-        await item.after({ agent, control, data, turf: control.turf } as ProseContext<TurfContext>);
-      }
+      const _it = ((item as any).seed && process.platform === 'darwin') ? it.skip : it;
+      _it('test worker', async () => {
+        await env.turf.destroyAll();
+
+        if (item.before) {
+          await item.before(env);
+        }
+
+        await env.agent.setFunctionProfile([ item.profile ] as any);
+        await testWorker(env.agent, item);
+        if (item.after) {
+          await item.after(env);
+        }
+      });
     });
   }
 });

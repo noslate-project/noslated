@@ -13,11 +13,7 @@ import { ControlPlane } from '#self/control_plane/index';
 import { DataPlane } from '#self/data_plane/index';
 import { createDeferred, bufferFromStream } from '../lib/util';
 import { config } from '#self/config';
-import { startTurfD, stopTurfD } from '#self/lib/turf';
 import { TriggerResponse } from '#self/delegate/request_response';
-import { TestMetricReader } from './telemetry-util';
-import { MeterProvider } from '@opentelemetry/sdk-metrics';
-import { Turf } from '#self/lib/turf/wrapper';
 
 export function TMP_DIR() {
   const dir = path.join(__dirname, '.tmp');
@@ -119,13 +115,13 @@ export async function testWorker(agent: NoslatedClient, testProfile: any) {
   await assertWorkerInvoke(agent.invoke(testProfile.profile.name, testProfile.input.data, testProfile.input.metadata), testProfile.expect);
 }
 
-export async function startAllRoles(): Promise<Roles> {
+export async function startAllRoles(): Promise<Required<Roles>> {
   const agent = new NoslatedClient();
   const control = new ControlPlane(config);
   const data = new DataPlane(config);
 
   let readyCount = 0;
-  const { resolve, promise } = createDeferred<Roles>();
+  const { resolve, promise } = createDeferred<Required<Roles>>();
   control.once('newDataPlaneClientReady', onNewClientReady.bind(undefined, 'control>data client'));
   agent.once('newDataPlaneClientReady', onNewClientReady.bind(undefined, 'agent>data client'));
   agent.once('newControlPlaneClientReady', onNewClientReady.bind(undefined, 'agent>ctrl client'));
@@ -147,24 +143,6 @@ export async function startAllRoles(): Promise<Roles> {
   return promise;
 }
 
-export function daemonProse<T>(roles: ProseContext<T>) {
-  beforeEach(async () => {
-    startTurfD();
-    const _roles = await startAllRoles();
-    Object.assign(roles, _roles);
-  });
-
-  afterEach(async () => {
-    await Promise.all([
-      roles.agent?.close(),
-      roles.data?.close(),
-      roles.control?.close(),
-    ]);
-
-    stopTurfD();
-  });
-}
-
 export function mockClientCreatorForManager(ManagerClass: any) {
   class DummyClient extends EventEmitter {
     async ready() { /* empty */ }
@@ -181,14 +159,3 @@ export interface Roles {
   control?: ControlPlane;
   agent?: NoslatedClient;
 }
-
-export interface TurfContext {
-  turf?: Turf;
-}
-
-export interface TelemetryContext {
-  meterProvider?: MeterProvider;
-  metricReader?: TestMetricReader;
-}
-
-export type ProseContext<T = unknown> = T & Roles;

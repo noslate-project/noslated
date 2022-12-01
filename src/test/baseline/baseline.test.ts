@@ -6,18 +6,16 @@ import mm from 'mm';
 import * as common from '#self/test/common';
 import { baselineDir } from '#self/test/common';
 import * as naming from '#self/lib/naming';
-import { startTurfD, stopTurfD, TurfContainerStates } from '#self/lib/turf';
+import { TurfContainerStates } from '#self/lib/turf';
 import { ResourceServer } from './resource-server';
-import { testWorker, startAllRoles, Roles, TurfContext, ProseContext } from '../util';
+import { testWorker } from '../util';
 import { config } from '#self/config';
 import assert from 'assert';
 import { CanonicalCode } from '#self/delegate/index';
 import { sleep } from '#self/lib/util';
-import { NoslatedClient } from '#self/sdk/index';
-import { DataPlane } from '#self/data_plane';
-import { ControlPlane } from '#self/control_plane';
 import { ContainerStatus } from '#self/lib/constants';
 import sinon, { SinonSpy } from 'sinon';
+import { DefaultEnvironment } from '../env/environment';
 
 const cases = [
   {
@@ -229,8 +227,8 @@ const cases = [
     },
   },
   {
-    before: async (roles: BaseLineTestContext) => {
-      const spy = sinon.spy(roles.data.dataFlowController.namespaceResolver.beaconHost, 'sendBeacon');
+    before: async (env: DefaultEnvironment) => {
+      const spy = sinon.spy(env.data.dataFlowController.namespaceResolver.beaconHost, 'sendBeacon');
 
       return spy;
     },
@@ -250,7 +248,7 @@ const cases = [
         ],
       },
     },
-    after: async (roles: BaseLineTestContext, beforeRet: any) => {
+    after: async (env: DefaultEnvironment, beforeRet: any) => {
       const spy: SinonSpy = beforeRet;
       const written = spy.args[0]?.[2];
       assert.ok(Buffer.from('node_worker_beacon|a-unique-trace-node-id\n').equals(written as any));
@@ -514,8 +512,8 @@ const cases = [
         ],
       },
     },
-    after: async (roles: BaseLineTestContext) => {
-      const resourceUsages = roles.data.dataFlowController.getResourceUsages()
+    after: async (env: DefaultEnvironment) => {
+      const resourceUsages = env.data.dataFlowController.getResourceUsages()
         .filter((it) => it!.functionName === 'aworker_fetch');
       assert.strictEqual(resourceUsages.length, 1);
       assert.strictEqual(resourceUsages[0]!.activeFetchRequestCount, 0);
@@ -537,8 +535,8 @@ const cases = [
     expect: {
       data: 'TypeError: Failed to drain request body',
     },
-    after: async (roles: BaseLineTestContext) => {
-      const resourceUsages = roles.data.dataFlowController.getResourceUsages()
+    after: async (env: DefaultEnvironment) => {
+      const resourceUsages = env.data.dataFlowController.getResourceUsages()
         .filter((it) => it!.functionName === 'aworker_fetch_body_error');
       assert.strictEqual(resourceUsages.length, 1);
       assert.strictEqual(resourceUsages[0]!.activeFetchRequestCount, 0);
@@ -611,15 +609,15 @@ const cases = [
         message: /No available worker process for node_worker_echo now\./,
       },
     },
-    after: async (roles: BaseLineTestContext) => {
+    after: async (env: DefaultEnvironment) => {
       // 虽然在启动阶段检验要 fastfail，但是仍然要在测试之后检测在 fastfail 之后，Worker 进程是否仍然被
       // 正常启动，所以用一个 loop 去轮询，直至 worker 正常为止。
       // 若不正常，则触发 mocha 超时，导致失败。
       do {
         await sleep(10);
-        const worker = roles.data.dataFlowController.getBroker('node_worker_echo')!.getAvailableWorker();
+        const worker = env.data.dataFlowController.getBroker('node_worker_echo')!.getAvailableWorker();
         if (!worker) continue;
-        const ps = await roles.turf.ps();
+        const ps = await env.turf.ps();
         for (const p of ps) {
           if (p.status === 'running' && p.name === worker.name) return;
         }
@@ -628,8 +626,8 @@ const cases = [
   },
   {
     name: 'node_worker_echo_no_enough_memory_pool_fastfail',
-    before: async (roles: BaseLineTestContext) => {
-      mm(roles.control.capacityManager, 'virtualMemoryPoolSize', 1);
+    before: async (env: DefaultEnvironment) => {
+      mm(env.control.capacityManager, 'virtualMemoryPoolSize', 1);
     },
     profile: {
       name: 'node_worker_echo',
@@ -727,11 +725,11 @@ const cases = [
       data: null,
       metadata: {},
     },
-    before: async (roles: BaseLineTestContext) => {
+    before: async (env: DefaultEnvironment) => {
       mm(process.env, 'TZ', 'Asia/Tokyo');
       mm(naming, 'processName', () => 'hello-world');
       mm(naming, 'codeBundleName', () => 'bundle-name');
-      await roles.agent.setPlatformEnvironmentVariables([{
+      await env.agent.setPlatformEnvironmentVariables([{
         key: 'POD_IP',
         value: address.ip(),
       }]);
@@ -765,11 +763,11 @@ const cases = [
       data: null,
       metadata: {},
     },
-    before: async (roles: BaseLineTestContext) => {
+    before: async (env: DefaultEnvironment) => {
       mm(process.env, 'TZ', 'Asia/Tokyo');
       mm(naming, 'processName', () => 'hello-world-ii');
       mm(naming, 'codeBundleName', () => 'bundle-name-ii');
-      await roles.agent.setPlatformEnvironmentVariables([{
+      await env.agent.setPlatformEnvironmentVariables([{
         key: 'POD_IP',
         value: address.ip(),
       }, {
@@ -818,8 +816,8 @@ const cases = [
     },
   },
   {
-    before: async (roles: BaseLineTestContext) => {
-      const spy = sinon.spy(roles.data.dataFlowController.namespaceResolver.beaconHost, 'sendBeacon');
+    before: async (env: DefaultEnvironment) => {
+      const spy = sinon.spy(env.data.dataFlowController.namespaceResolver.beaconHost, 'sendBeacon');
 
       return spy;
     },
@@ -839,7 +837,7 @@ const cases = [
         ],
       },
     },
-    after: async (roles: BaseLineTestContext, beforeRet: any) => {
+    after: async (env: DefaultEnvironment, beforeRet: any) => {
       const spy: SinonSpy = beforeRet;
       const written = spy.args[0]?.[2];
       assert.ok(Buffer.from('aworker_beacon|a-unique-trace-id\n').equals(written as any));
@@ -867,8 +865,8 @@ const cases = [
         text: JSON.stringify({ appId: 'hello-world', methodName: 'echo', data: 'foobar' }),
       }),
     },
-    after: async (roles: Required<ProseContext<TurfContext>>) => {
-      const broker = roles.control.capacityManager.workerStatsSnapshot.getBroker('node_worker_without_disposable_true', false)!;
+    after: async (env: DefaultEnvironment) => {
+      const broker = env.control.capacityManager.workerStatsSnapshot.getBroker('node_worker_without_disposable_true', false)!;
       assert.deepStrictEqual(broker.workers.size, 1);
       const worker = broker.workers.values().next().value;
       assert.deepStrictEqual(worker.containerStatus, ContainerStatus.Ready);
@@ -898,8 +896,8 @@ const cases = [
         text: JSON.stringify({ appId: 'hello-world', methodName: 'echo', data: 'foobar' }),
       }),
     },
-    after: async (roles: Required<ProseContext<TurfContext>>) => {
-      const broker = roles.control.capacityManager.workerStatsSnapshot.getBroker('node_worker_with_disposable_true', false)!;
+    after: async (env: DefaultEnvironment) => {
+      const broker = env.control.capacityManager.workerStatsSnapshot.getBroker('node_worker_with_disposable_true', false)!;
       assert.deepStrictEqual(broker.workers.size, 1);
       const worker = broker.workers.values().next().value;
       assert.deepStrictEqual(worker.containerStatus, ContainerStatus.Stopped);
@@ -926,8 +924,8 @@ const cases = [
     expect: {
       data: Buffer.from('{"appId":"hello-world","methodName":"echo","data":"foobar"}'),
     },
-    after: async (roles: Required<ProseContext<TurfContext>>) => {
-      const broker = roles.control.capacityManager.workerStatsSnapshot.getBroker('aworker_without_disposable_true', false)!;
+    after: async (env: DefaultEnvironment) => {
+      const broker = env.control.capacityManager.workerStatsSnapshot.getBroker('aworker_without_disposable_true', false)!;
       assert.deepStrictEqual(broker.workers.size, 1);
       const worker = broker.workers.values().next().value;
       assert.deepStrictEqual(worker.containerStatus, ContainerStatus.Ready);
@@ -954,8 +952,8 @@ const cases = [
     expect: {
       data: Buffer.from('{"appId":"hello-world","methodName":"echo","data":"foobar"}'),
     },
-    after: async (roles: Required<ProseContext<TurfContext>>) => {
-      const broker = roles.control.capacityManager.workerStatsSnapshot.getBroker('aworker_with_disposable_true', false)!;
+    after: async (env: DefaultEnvironment) => {
+      const broker = env.control.capacityManager.workerStatsSnapshot.getBroker('aworker_with_disposable_true', false)!;
       assert.deepStrictEqual(broker.workers.size, 1);
       const worker = broker.workers.values().next().value;
       assert.deepStrictEqual(worker.containerStatus, ContainerStatus.Stopped);
@@ -966,8 +964,8 @@ const cases = [
     }
   },
   {
-    before: async (roles: BaseLineTestContext) => {
-      return sinon.spy(roles.data.dataFlowController, 'invoke');
+    before: async (env: DefaultEnvironment) => {
+      return sinon.spy(env.data.dataFlowController, 'invoke');
     },
     name: 'node_worker_echo_with_request_id',
     profile: {
@@ -987,7 +985,7 @@ const cases = [
     expect: {
       data: Buffer.from('foobar'),
     },
-    after: async (roles: BaseLineTestContext, beforeRet: any) => {
+    after: async (env: DefaultEnvironment, beforeRet: any) => {
       const spy: SinonSpy = beforeRet;
       const spyCall = spy.getCall(-1);
       assert.strictEqual(spyCall.args[2].requestId, 'node_worker_echo_with_request_id');
@@ -995,8 +993,8 @@ const cases = [
     }
   },
   {
-    before: async (roles: BaseLineTestContext) => {
-      return sinon.spy(roles.data.dataFlowController, 'invoke');
+    before: async (env: DefaultEnvironment) => {
+      return sinon.spy(env.data.dataFlowController, 'invoke');
     },
     name: 'aworker_echo_with_request_id',
     profile: {
@@ -1018,7 +1016,7 @@ const cases = [
     expect: {
       data: Buffer.from('foobar'),
     },
-    after: async (roles: BaseLineTestContext, beforeRet: any) => {
+    after: async (env: DefaultEnvironment, beforeRet: any) => {
       const spy: SinonSpy = beforeRet;
       const spyCall = spy.getCall(-1);
       assert.strictEqual(spyCall.args[2].requestId, 'aworker_echo_with_request_id');
@@ -1032,9 +1030,6 @@ describe(common.testName(__filename), function() {
   this.timeout(30_000);
 
   let resourceServer: ResourceServer;
-  let agent: NoslatedClient;
-  let control: ControlPlane;
-  let data: DataPlane;
   before(async () => {
     resourceServer = new ResourceServer();
     await resourceServer.start();
@@ -1049,52 +1044,39 @@ describe(common.testName(__filename), function() {
       beforeEach(async () => {
         mm(config.delegate, 'type', type);
         mm(config.dataPlane, 'daprAdaptorModulePath', require.resolve('./dapr-adaptor'));
-        startTurfD();
-        const roles = await startAllRoles() as Required<Roles>;
-        data = roles.data;
-        agent = roles.agent;
-        control = roles.control;
-        await control.turf.destroyAll();
       });
 
-      afterEach(async () => {
+      afterEach(() => {
         mm.restore();
-        if (data) {
-          await Promise.all([
-            data.close(),
-            agent.close(),
-            control.close(),
-          ]);
-        }
-
-        stopTurfD();
       });
 
       for (const item of cases as any[]) {
-        const _it = (item.seed && process.platform === 'darwin') ? it.skip : it;
-        _it(item.name, async () => {
-          if (item.seed) {
-            // Default CI is non seed mode. Mock it to seed mode and then restart all roles.
-            mm(process.env, 'NOSLATED_FORCE_NON_SEED_MODE', '');
-            await Promise.all([ data.close(), agent.close(), control.close() ]);
-            ({ data, agent, control } = await startAllRoles() as Required<Roles>);
-          }
+        describe(item.name, () => {
+          beforeEach(() => {
+            if (item.seed) {
+              // Default CI is non seed mode. Mock it to seed mode and then restart all roles.
+              mm(process.env, 'NOSLATED_FORCE_NON_SEED_MODE', '');
+            }
+          });
+          const env = new DefaultEnvironment();
 
-          let beforeRet;
+          const _it = (item.seed && process.platform === 'darwin') ? it.skip : it;
+          _it(item.name, async () => {
+            await env.turf.destroyAll();
+            let beforeRet;
 
-          if (item.before) {
-            beforeRet = await item.before({ agent, control, data, turf: control.turf });
-          }
+            if (item.before) {
+              beforeRet = await item.before(env);
+            }
 
-          await agent.setFunctionProfile([ item.profile ]);
-          await testWorker(agent!, item);
-          if (item.after) {
-            await item.after({ agent, control, data, turf: control.turf }, beforeRet);
-          }
+            await env.agent.setFunctionProfile([ item.profile ]);
+            await testWorker(env.agent, item);
+            if (item.after) {
+              await item.after(env, beforeRet);
+            }
+          });
         });
       }
     });
   }
 });
-
-type BaseLineTestContext = Required<ProseContext<TurfContext>>;

@@ -11,7 +11,7 @@ export const nodeJsWorkerTestItem = {
     handler: 'index.handler',
     signature: 'md5:234234',
   },
-};
+} as const;
 export const serverlessWorkerTestItem = {
   name: 'aworker_echo',
   profile: {
@@ -21,7 +21,7 @@ export const serverlessWorkerTestItem = {
     sourceFile: 'index.js',
     signature: 'md5:234234',
   },
-};
+} as const;
 
 export class TestMetricReader extends MetricReader {
   protected async onForceFlush(): Promise<void> {}
