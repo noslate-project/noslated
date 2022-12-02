@@ -10,15 +10,15 @@ import { Worker } from '#self/control_plane/worker_stats/index';
 import * as common from '#self/test/common';
 import { config } from '#self/config';
 import { FunctionProfileManager as ProfileManager } from '#self/lib/function_profile';
-import { startTurfD, stopTurfD, TurfContainerStates } from '#self/lib/turf';
+import { TurfContainerStates } from '#self/lib/turf';
 import { ContainerStatus, ContainerStatusReport, ControlPanelEvent } from '#self/lib/constants';
 import { AworkerFunctionProfile } from '#self/lib/json/function_profile';
-import { Roles, startAllRoles } from '#self/test/util';
 import { StateManager } from '#self/control_plane/worker_stats/state_manager';
 import { ControlPlane } from '#self/control_plane/control_plane';
 import { DataPlane } from '#self/data_plane';
 import { NoslatedClient } from '#self/sdk';
 import { CapacityManager } from '#self/control_plane/capacity_manager';
+import { DefaultEnvironment } from '#self/test/env/environment';
 
 describe(common.testName(__filename), () => {
   const funcData: AworkerFunctionProfile[] = [{
@@ -32,32 +32,22 @@ describe(common.testName(__filename), () => {
     },
   }];
 
+  const env = new DefaultEnvironment();
+
   let profileManager: ProfileManager | null;
-  let controlPlane: ControlPlane;
-  let data: DataPlane;
   let agent: NoslatedClient;
   let stateManager: StateManager;
   let capacityManager: CapacityManager;
 
   beforeEach(async () => {
-    startTurfD();
-    const roles = await startAllRoles() as Required<Roles>;
-    data = roles.data;
-    agent = roles.agent;
-    controlPlane = roles.control;
-    ({ stateManager, capacityManager } = controlPlane);
+    agent = env.agent;
+    ({ stateManager, capacityManager } = env.control);
 
     profileManager = new ProfileManager(config);
     await profileManager.set(funcData, 'WAIT');
   });
   afterEach(async () => {
     profileManager = null;
-    await Promise.all([
-      controlPlane.close(),
-      agent.close(),
-      data.close()
-    ]);
-    stopTurfD();
   });
 
   describe('constructor', () => {

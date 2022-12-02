@@ -1,29 +1,19 @@
 import * as common from '#self/test/common';
 import { baselineDir } from '#self/test/common';
-import { startTurfD, stopTurfD } from '#self/lib/turf';
-import { assertInvoke, Roles, startAllRoles } from '#self/test/util';
+import { assertInvoke } from '#self/test/util';
 import FakeTimer, { Clock } from '@sinonjs/fake-timers';
 import mm from 'mm';
-import { NoslatedClient } from '#self/sdk/index';
-import { ControlPlane } from '#self/control_plane';
-import { DataPlane } from '../data_plane';
+import { DefaultEnvironment } from '#self/test/env/environment';
 
 describe(common.testName(__filename), function() {
   // Debug version of Node.js may take longer time to bootstrap.
   this.timeout(30_000);
 
-  let agent: NoslatedClient;
-  let control: ControlPlane;
-  let data: DataPlane;
-  /** @type {FakeTimer.Clock} */
   let clock: Clock;
 
+  const env = new DefaultEnvironment();
+
   beforeEach(async () => {
-    startTurfD();
-    const roles = await startAllRoles() as Required<Roles>;
-    data = roles.data;
-    agent = roles.agent;
-    control = roles.control;
     clock = FakeTimer.install({
       toFake: ['setInterval'],
     });
@@ -32,19 +22,10 @@ describe(common.testName(__filename), function() {
   afterEach(async () => {
     clock.uninstall();
     mm.restore();
-    if (data) {
-      await Promise.all([
-        data.close(),
-        agent.close(),
-        control.close(),
-      ]);
-    }
-
-    stopTurfD();
   });
 
   it('should route to default target', async () => {
-    await agent.setFunctionProfile([
+    await env.agent.setFunctionProfile([
       {
         name: 'node_worker_echo',
         runtime: 'nodejs',
@@ -59,7 +40,7 @@ describe(common.testName(__filename), function() {
       },
     ]);
 
-    await assertInvoke(agent, 'node_worker_echo', {
+    await assertInvoke(env.agent, 'node_worker_echo', {
       input: {
         data: Buffer.from('foobar'),
         metadata: {
@@ -71,7 +52,7 @@ describe(common.testName(__filename), function() {
       },
     });
 
-    await assertInvoke(agent, 'node_worker_echo', {
+    await assertInvoke(env.agent, 'node_worker_echo', {
       input: {
         data: Buffer.from('foobar'),
         metadata: {
@@ -85,7 +66,7 @@ describe(common.testName(__filename), function() {
 
     clock.tick(10_000);
 
-    await assertInvoke(agent, 'node_worker_echo', {
+    await assertInvoke(env.agent, 'node_worker_echo', {
       input: {
         data: Buffer.from('foobar'),
         metadata: {
@@ -99,7 +80,7 @@ describe(common.testName(__filename), function() {
   });
 
   it('should route to default target when rateLimit is empty', async () => {
-    await agent.setFunctionProfile([
+    await env.agent.setFunctionProfile([
       {
         name: 'node_worker_echo',
         runtime: 'nodejs',
@@ -110,7 +91,7 @@ describe(common.testName(__filename), function() {
       },
     ]);
 
-    await assertInvoke(agent, 'node_worker_echo', {
+    await assertInvoke(env.agent, 'node_worker_echo', {
       input: {
         data: Buffer.from('foobar'),
         metadata: {
@@ -122,7 +103,7 @@ describe(common.testName(__filename), function() {
       },
     });
 
-    await assertInvoke(agent, 'node_worker_echo', {
+    await assertInvoke(env.agent, 'node_worker_echo', {
       input: {
         data: Buffer.from('foobar'),
         metadata: {
