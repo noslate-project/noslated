@@ -49,10 +49,6 @@ export const stopResourceServer = () => {
   resourceServer = null;
 };
 
-export function closeAutoProcessRecyclingStrategy(item: any) {
-  item.autoProcessRecyclingStrategy.end();
-}
-
 export async function assertWorkerResponse(response: TriggerResponse, expected: any) {
   if (expected.status !== undefined) {
     assert.strictEqual(response.status, expected.status);

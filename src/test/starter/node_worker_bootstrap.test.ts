@@ -2,11 +2,8 @@ import assert from 'assert';
 import path from 'path';
 
 import * as common from '../common';
-import { startAllRoles, testWorker, FIXTURES_DIR, Roles } from '../util';
-import { startTurfD, stopTurfD } from '../../lib/turf';
-import { NoslatedClient } from '#self/sdk/index';
-import { ControlPlane } from '#self/control_plane';
-import { DataPlane } from '#self/data_plane';
+import { testWorker, FIXTURES_DIR } from '../util';
+import { DefaultEnvironment } from '../env/environment';
 
 const workersDir = path.join(FIXTURES_DIR, 'starter');
 
@@ -107,32 +104,9 @@ const cases = [
   },
 ];
 
-describe(common.testName(__filename), () => {
-  let agent: NoslatedClient;
-  let control: ControlPlane;
-  let data: DataPlane;
-  beforeEach(async function() {
-    this.timeout(10000);
-
-    startTurfD();
-    const roles = await startAllRoles() as Required<Roles>;
-
-    data = roles.data;
-    agent = roles.agent;
-    control = roles.control;
-  });
-
-  afterEach(async () => {
-    if (data) {
-      await Promise.all([
-        data.close(),
-        agent.close(),
-        control.close(),
-      ]);
-    }
-
-    stopTurfD();
-  });
+describe(common.testName(__filename), function () {
+  this.timeout(10000);
+  const env = new DefaultEnvironment();
 
   for (const item of cases) {
     it(item.name, async function() {
@@ -140,12 +114,12 @@ describe(common.testName(__filename), () => {
 
       // TODO: proper error handling in bootstrap
       let attachError: Error;
-      data.dataFlowController.on('attachError', e => {
+      env.data.dataFlowController.on('attachError', e => {
         attachError = e;
       });
 
-      await agent.setFunctionProfile([ item.profile ] as any);
-      await testWorker(agent!, item);
+      await env.agent.setFunctionProfile([ item.profile ] as any);
+      await testWorker(env.agent, item);
 
       if (item.attachError) {
         assert.throws(() => {

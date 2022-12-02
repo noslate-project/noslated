@@ -2,16 +2,12 @@ import assert from 'assert';
 
 import * as common from '#self/test/common';
 import { FunctionProfileManager } from '#self/lib/function_profile';
-import { Roles, startAllRoles } from '#self/test/util';
-import { startTurfD, stopTurfD } from '#self/lib/turf';
 import { PendingRequest, WorkerBroker } from '../worker_broker';
-import { NoslatedClient } from '#self/sdk/index';
-import { ControlPlane } from '#self/control_plane';
-import { DataPlane } from '../data_plane';
 import { kMegaBytes } from '#self/control_plane/constants';
 import { DataFlowController } from '../data_flow_controller';
 import { Metadata } from '#self/delegate/request_response';
 import { createDeferred, sleep } from '#self/lib/util';
+import { DefaultEnvironment } from '#self/test/env/environment';
 
 const PROFILES = [{
   name: 'node-http-demo',
@@ -43,34 +39,7 @@ const mockHost = {
 };
 
 describe(common.testName(__filename), () => {
-  let agent: NoslatedClient;
-  let control: ControlPlane;
-  let data: DataPlane;
-
-  before(async () => {
-    startTurfD();
-  });
-
-  after(async () => {
-    stopTurfD();
-  });
-
-  beforeEach(async () => {
-    const roles = await startAllRoles() as Required<Roles>;
-    data = roles.data;
-    agent = roles.agent;
-    control = roles.control;
-  });
-
-  afterEach(async () => {
-    if (data) {
-      await Promise.all([
-        data.close(),
-        agent.close(),
-        control.close(),
-      ]);
-    }
-  });
+  const env = new DefaultEnvironment();
 
   describe('WorkerBroker#bindWorker', async () => {
     let profileManager: FunctionProfileManager;
@@ -281,7 +250,7 @@ describe(common.testName(__filename), () => {
 
   describe('tryConsumeQueue', () => {
     it('should consume request queue', async() => {
-      await agent.setFunctionProfile([
+      await env.agent.setFunctionProfile([
         {
           name: 'aworker_echo',
           runtime: 'aworker',
@@ -294,9 +263,9 @@ describe(common.testName(__filename), () => {
         }
       ]);
 
-      await agent.invoke('aworker_echo', Buffer.from('ok'), { method: 'POST' });
+      await env.agent.invoke('aworker_echo', Buffer.from('ok'), { method: 'POST' });
 
-      const dpBroker = data.dataFlowController.getBroker('aworker_echo')!;
+      const dpBroker = env.data.dataFlowController.getBroker('aworker_echo')!;
       const dpWorker = dpBroker.workers[0];
 
       for (let i = 0; i < 5; i ++) {
@@ -315,7 +284,7 @@ describe(common.testName(__filename), () => {
     });
 
     it('should not continue deal request when worker traffic off', async() => {
-      await agent.setFunctionProfile([
+      await env.agent.setFunctionProfile([
         {
           name: 'aworker_echo',
           runtime: 'aworker',
@@ -328,9 +297,9 @@ describe(common.testName(__filename), () => {
         }
       ]);
 
-      await agent.invoke('aworker_echo', Buffer.from('200'), { method: 'POST' });
+      await env.agent.invoke('aworker_echo', Buffer.from('200'), { method: 'POST' });
 
-      const dpBroker = data.dataFlowController.getBroker('aworker_echo')!;
+      const dpBroker = env.data.dataFlowController.getBroker('aworker_echo')!;
 
       const defer = createDeferred<void>();
 
@@ -342,7 +311,7 @@ describe(common.testName(__filename), () => {
       const interval = setInterval(async () => {
         if (times === 10) {
           // 等待 worker 关闭流量
-          await control.dataPlaneClientManager.reduceCapacity({
+          await env.control.dataPlaneClientManager.reduceCapacity({
             brokers: [
               {
                 functionName: 'aworker_echo',

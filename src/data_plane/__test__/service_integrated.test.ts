@@ -1,21 +1,15 @@
 import * as common from '#self/test/common';
 import { baselineDir } from '#self/test/common';
 import { ResourceServer } from '#self/test/baseline/resource-server';
-import { startTurfD, stopTurfD } from '#self/lib/turf';
-import { assertInvokeService, Roles, startAllRoles } from '#self/test/util';
+import { assertInvokeService } from '#self/test/util';
 import mm from 'mm';
-import { ControlPlane } from '#self/control_plane';
-import { DataPlane } from '../data_plane';
-import { NoslatedClient } from '#self/sdk/index';
+import { DefaultEnvironment } from '#self/test/env/environment';
 
 describe(common.testName(__filename), function() {
   // Debug version of Node.js may take longer time to bootstrap.
   this.timeout(30_000);
 
   let resourceServer: ResourceServer;
-  let agent: NoslatedClient;
-  let control: ControlPlane;
-  let data: DataPlane;
   before(async () => {
     resourceServer = new ResourceServer();
     await resourceServer.start();
@@ -25,29 +19,14 @@ describe(common.testName(__filename), function() {
     await resourceServer.close();
   });
 
-  beforeEach(async () => {
-    startTurfD();
-    const roles = await startAllRoles() as Required<Roles>;
-    data = roles.data;
-    agent = roles.agent;
-    control = roles.control;
-  });
+  const env = new DefaultEnvironment();
 
   afterEach(async () => {
     mm.restore();
-    if (data) {
-      await Promise.all([
-        data.close(),
-        agent.close(),
-        control.close(),
-      ]);
-    }
-
-    stopTurfD();
   });
 
   it('should reject not found service', async () => {
-    await assertInvokeService(agent, 'non-exists', {
+    await assertInvokeService(env.agent, 'non-exists', {
       input: {
         data: Buffer.from('foobar'),
         metadata: {
@@ -63,7 +42,7 @@ describe(common.testName(__filename), function() {
   });
 
   it('should route to default target', async () => {
-    await agent.setFunctionProfile([
+    await env.agent.setFunctionProfile([
       {
         name: 'node_worker_echo',
         runtime: 'nodejs',
@@ -72,7 +51,7 @@ describe(common.testName(__filename), function() {
         signature: 'md5:234234',
       },
     ]);
-    await agent.setServiceProfile([
+    await env.agent.setServiceProfile([
       {
         name: 'foobar',
         selector: {
@@ -81,7 +60,7 @@ describe(common.testName(__filename), function() {
       },
     ] as any);
 
-    await assertInvokeService(agent, 'foobar', {
+    await assertInvokeService(env.agent, 'foobar', {
       input: {
         data: Buffer.from('foobar'),
         metadata: {
@@ -95,7 +74,7 @@ describe(common.testName(__filename), function() {
   });
 
   it('should route with proportional balancing', async () => {
-    await agent.setFunctionProfile([
+    await env.agent.setFunctionProfile([
       {
         name: 'node_worker_echo',
         runtime: 'nodejs',
@@ -104,7 +83,7 @@ describe(common.testName(__filename), function() {
         signature: 'md5:234234',
       },
     ]);
-    await agent.setServiceProfile([
+    await env.agent.setServiceProfile([
       {
         name: 'foobar',
         type: 'proportional-load-balance',
@@ -127,7 +106,7 @@ describe(common.testName(__filename), function() {
 
     mm(Math, 'random', () => 0.1);
 
-    await assertInvokeService(agent, 'foobar', {
+    await assertInvokeService(env.agent, 'foobar', {
       input: {
         data: Buffer.from('foobar'),
         metadata: {
@@ -141,7 +120,7 @@ describe(common.testName(__filename), function() {
 
     mm(Math, 'random', () => 0.7);
 
-    await assertInvokeService(agent, 'foobar', {
+    await assertInvokeService(env.agent, 'foobar', {
       input: {
         data: Buffer.from('foobar'),
         metadata: {

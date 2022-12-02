@@ -1,7 +1,6 @@
 import path from 'path';
 import * as fs from 'fs';
 import assert from 'assert';
-import { performance } from 'perf_hooks';
 
 import mm from 'mm';
 import _ from 'lodash';
@@ -9,14 +8,13 @@ import FakeTimers, { Clock } from '@sinonjs/fake-timers';
 
 import { NoslatedClient } from '#self/sdk';
 import * as common from '#self/test/common';
-import { DataPlane } from '#self/data_plane';
 import { ControlPlane } from '#self/control_plane/index';
-import { startTurfD, stopTurfD } from '#self/lib/turf';
 import * as starters from '#self/control_plane/starter/index';
-import { FIXTURES_DIR, Roles, startAllRoles } from '#self/test/util';
+import { FIXTURES_DIR } from '#self/test/util';
 import { CapacityManager } from '#self/control_plane/capacity_manager';
 import { ContainerStatus, ContainerStatusReport } from '#self/lib/constants';
 import { StateManager } from '#self/control_plane/worker_stats/state_manager';
+import { DefaultEnvironment } from '#self/test/env/environment';
 
 const simpleSandbox = path.resolve(FIXTURES_DIR, 'sandbox_simple');
 
@@ -25,20 +23,15 @@ describe(common.testName(__filename), () => {
   let capacityManager: CapacityManager;
   let clock: Clock;
 
+  const env = new DefaultEnvironment();
   let agent: NoslatedClient;
   let controlPlane: ControlPlane;
-  let data: DataPlane;
 
   beforeEach(async () => {
-    startTurfD();
-    const roles = await startAllRoles() as Required<Roles>;
-
-    data = roles.data;
-    agent = roles.agent;
-    controlPlane = roles.control;
+    agent = env.agent;
+    controlPlane = env.control;
 
     ({ stateManager, capacityManager } = controlPlane);
-    ({ capacityManager } = controlPlane);
 
     clock = FakeTimers.install({
       toFake: ['setTimeout']
@@ -47,14 +40,6 @@ describe(common.testName(__filename), () => {
 
   afterEach(async () => {
     clock.uninstall();
-    await Promise.all([
-      controlPlane.close(),
-      agent.close(),
-      data.close()
-    ]);
-    await controlPlane.turf.destroyAll();
-
-    stopTurfD();
   });
 
   describe('updateContainerStatusByReport()', () => {

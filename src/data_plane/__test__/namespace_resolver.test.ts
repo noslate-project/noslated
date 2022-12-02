@@ -1,11 +1,8 @@
 import * as common from '#self/test/common';
 import * as sinon from 'sinon';
-import { startTurfD, stopTurfD } from '#self/lib/turf';
-import { assertWorkerInvoke, Roles, startAllRoles } from '#self/test/util';
-import { DataPlane } from '../data_plane';
-import { NoslatedClient } from '#self/sdk';
-import { ControlPlane } from '#self/control_plane';
+import { assertWorkerInvoke } from '#self/test/util';
 import { kMegaBytes } from '#self/control_plane/constants';
+import { DefaultEnvironment } from '#self/test/env/environment';
 
 describe(common.testName(__filename), () => {
   afterEach(() => {
@@ -13,33 +10,10 @@ describe(common.testName(__filename), () => {
   });
 
   describe('Namespace', () => {
-    let data: DataPlane;
-    let agent: NoslatedClient;
-    let control: ControlPlane;
-
-    beforeEach(async () => {
-      startTurfD();
-      const roles = await startAllRoles() as Required<Roles>;
-      data = roles.data;
-      agent = roles.agent;
-      control = roles.control;
-      await control.turf.destroyAll();
-    });
-
-    afterEach(async () => {
-      if (data) {
-        await Promise.all([
-          data.close(),
-          agent.close(),
-          control.close(),
-        ]);
-      }
-
-      stopTurfD();
-    });
+    const env = new DefaultEnvironment();
 
     it('should use function as namespace', async () => {
-      await agent.setFunctionProfile([
+      await env.agent.setFunctionProfile([
         {
           name: 'aworker_echo_with_storage',
           runtime: 'aworker',
@@ -49,13 +23,13 @@ describe(common.testName(__filename), () => {
         }
       ]);
 
-      await assertWorkerInvoke(agent.invoke('aworker_echo_with_storage', Buffer.alloc(0), {
+      await assertWorkerInvoke(env.agent.invoke('aworker_echo_with_storage', Buffer.alloc(0), {
         method: 'POST',
       }), Buffer.from('test-value'));
     });
 
     it('should use namespace config work', async () => {
-      await agent.setFunctionProfile([
+      await env.agent.setFunctionProfile([
         {
           name: 'aworker_echo_with_storage',
           runtime: 'aworker',
@@ -66,13 +40,13 @@ describe(common.testName(__filename), () => {
         }
       ]);
 
-      await assertWorkerInvoke(agent.invoke('aworker_echo_with_storage', Buffer.alloc(0), {
+      await assertWorkerInvoke(env.agent.invoke('aworker_echo_with_storage', Buffer.alloc(0), {
         method: 'POST',
       }), Buffer.from('test-value'));
     });
 
     it('should shard namespace work', async () => {
-      await agent.setFunctionProfile([
+      await env.agent.setFunctionProfile([
         {
           name: 'aworker_echo_with_storage',
           runtime: 'aworker',
@@ -108,17 +82,17 @@ describe(common.testName(__filename), () => {
       ]);
 
       // 设置 kv storage 内容
-      await assertWorkerInvoke(agent.invoke('aworker_echo_with_storage', Buffer.alloc(0), {
+      await assertWorkerInvoke(env.agent.invoke('aworker_echo_with_storage', Buffer.alloc(0), {
         method: 'POST',
       }), Buffer.from('test-value'));
 
       // 读取共享 namespace kv storage 内容
-      await assertWorkerInvoke(agent.invoke('aworker_echo_with_storage_shard', Buffer.alloc(0), {
+      await assertWorkerInvoke(env.agent.invoke('aworker_echo_with_storage_shard', Buffer.alloc(0), {
         method: 'POST',
       }), Buffer.from('test-value'));
 
       // 未设置共享 namespace，使用默认方式，无法共享数据
-      await assertWorkerInvoke(agent.invoke('aworker_echo_without_storage_shard', Buffer.alloc(0), {
+      await assertWorkerInvoke(env.agent.invoke('aworker_echo_without_storage_shard', Buffer.alloc(0), {
         method: 'POST',
       }), Buffer.alloc(0));
     });
