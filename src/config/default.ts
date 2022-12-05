@@ -53,7 +53,6 @@ export default {
     bin: path.join(projectRoot, 'bin/turf'),
     socketPath: path.join(projectRoot, '.turf/turf.sock'),
     startTurfDOutput: false,
-    deleteAllContainersBeforeStart: false,
     socketSession: true,
   },
 

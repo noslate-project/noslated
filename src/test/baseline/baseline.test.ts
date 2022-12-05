@@ -1062,7 +1062,6 @@ describe(common.testName(__filename), function() {
 
           const _it = (item.seed && process.platform === 'darwin') ? it.skip : it;
           _it(item.name, async () => {
-            await env.turf.destroyAll();
             let beforeRet;
 
             if (item.before) {
