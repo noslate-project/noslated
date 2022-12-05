@@ -145,11 +145,6 @@ export class Turf {
     await this.delete(containerName);
   }
 
-  async destroyAll() {
-    const all = (await this.ps()).map(obj => this.destroy(obj.name));
-    await Promise.all(all);
-  }
-
   /**
    * ps
    */

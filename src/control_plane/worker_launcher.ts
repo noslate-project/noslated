@@ -74,10 +74,6 @@ export class WorkerLauncher extends Base {
     this.dataPlaneClientManager = this.plane.dataPlaneClientManager;
     this.snapshot = this.plane.capacityManager.workerStatsSnapshot;
 
-    if (this.config.turf.deleteAllContainersBeforeStart) {
-      await this.turf.destroyAll();
-    }
-
     await Promise.all([
       this.starters.nodejs.ready(),
       this.starters.aworker.ready(),

@@ -15,10 +15,8 @@ describe(common.testName(__filename), () => {
     await startTurfD();
     turf = new Turf(config.turf.bin, config.turf.socketPath);
     await turf.connect();
-    await turf.destroyAll();
   });
   afterEach(async () => {
-    await turf.destroyAll();
     await turf.close();
     await stopTurfD();
   });

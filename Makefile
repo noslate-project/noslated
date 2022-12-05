@@ -104,4 +104,3 @@ clean-test: node_modules
 	rm -rf .code/logs/.*-audit.json
 	rm -rf $(TURF_TEST_WORKDIR)/overlay/*
 	rm -rf $(TURF_TEST_WORKDIR)/sandbox/*
-	$(TOOLCHAIN_NODE_BIN) tools/turf_destroy_all_containers.js
