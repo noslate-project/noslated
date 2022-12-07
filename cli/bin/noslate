@@ -1,0 +1,33 @@
+#!/usr/bin/env node
+const arg = require('arg');
+
+function main(argv) {
+  const args = arg({
+    '--help': Boolean,
+    '--version': Boolean
+  }, {
+    argv,
+    stopAtPositional: true,
+  });
+
+  if (args['--help']) {
+    return console.log('Usage: noslate invoke <options> [script.js]');
+  }
+
+  if (args['--version']) {
+    return console.log('0.0.1');
+  }
+
+  const commands = ['invoke'];
+
+  if (!commands.includes(args._[0])) {
+    return console.log('not support command');
+  }
+
+  const cli = require(`../scripts/${args._[0]}.js`);
+  cli(args._.slice(1));
+}
+
+if (require.main === module) {
+  main(process.argv.slice(2));
+}
