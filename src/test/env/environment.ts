@@ -8,25 +8,22 @@ import { startTurfD, stopTurfD } from '#self/test/turf';
 
 export abstract class MochaEnvironment {
   constructor() {
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
     const self = this;
     before(async function before() {
-      const ctx = this;
-      await self.before(ctx);
+      await self.before(this);
     });
 
     after(async function after() {
-      const ctx = this;
-      await self.after(ctx);
+      await self.after(this);
     });
 
     beforeEach(async function beforeEach() {
-      const ctx = this;
-      await self.beforeEach(ctx);
+      await self.beforeEach(this);
     });
 
     afterEach(async function afterEach() {
-      const ctx = this;
-      await self.afterEach(ctx);
+      await self.afterEach(this);
     });
   }
 
