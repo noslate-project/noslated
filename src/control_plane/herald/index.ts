@@ -33,6 +33,6 @@ export class Herald extends Host {
   async close() {
     await super.close();
     fs.rmSync(this.address, { force: true });
-    logger.info('closed.');
+    logger.debug('closed.');
   }
 }

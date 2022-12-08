@@ -176,7 +176,6 @@ export class WorkerStatsSnapshot extends BaseOf(EventEmitter) {
 
       try {
         await this.turf.stop(worker.name);
-        this.logger.info(`Stopped worker [${worker.name}] via \`.#tryGC()\`.`);
       } catch (e) {
         this.logger.warn(`Failed to stop worker [${worker.name}] via \`.#tryGC()\`.`, e);
       }
@@ -190,10 +189,10 @@ export class WorkerStatsSnapshot extends BaseOf(EventEmitter) {
 
         this.statLogger.exit(state.name, state.pid, state.exitcode ?? null, state['killed.signal'] ?? null, stime + utime, rss, worker.requestId ?? null);
 
-        this.logger.info(`${worker.name}'s last state.`, state);
+        this.logger.info(`%s's last state: %j`, worker.name, state);
       } catch (e) {
         emitExceptionMessage = 'failed_to_state';
-        this.logger.warn(`Failed to state worker [${worker.name}]`, e);
+        this.logger.warn(`Failed to state worker [%s]`, worker.name, e);
       }
 
       broker.removeItemFromStartingPool(worker.name);
@@ -203,7 +202,7 @@ export class WorkerStatsSnapshot extends BaseOf(EventEmitter) {
         // 清理 turf 数据
         await this.turf.delete(worker.name);
       } catch (e) {
-        this.logger.warn(`Failed to delete worker [${worker.name}] via \`.#tryGC()\`.`, e);
+        this.logger.warn(`Failed to delete worker [%s] via \`.#tryGC()\`.`, worker.name, e);
       }
 
       // 清理 log 文件
@@ -211,9 +210,9 @@ export class WorkerStatsSnapshot extends BaseOf(EventEmitter) {
         this.gcLogTimers.delete(gcLogTimer);
         const logDir = starters.logPath(this.config.logger.dir, worker.name);
         fs.promises.rmdir(logDir, { recursive: true }).then(() => {
-          this.logger.debug(`[${worker.name}]'s log directory removed: ${logDir}.`);
+          this.logger.debug(`[%s]'s log directory removed: %s.`, worker.name, logDir);
         }).catch(e => {
-          this.logger.warn(`Failed to rm [${worker.name}]'s log directory: ${logDir}.`, e);
+          this.logger.warn(`Failed to rm [%s]'s log directory: %s.`, worker.name, logDir, e);
         });
       }, this.config.worker.gcLogDelay);
       this.gcLogTimers.add(gcLogTimer);

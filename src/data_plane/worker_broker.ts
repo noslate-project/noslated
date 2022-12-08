@@ -547,8 +547,8 @@ export class WorkerBroker extends Base {
         name: worker.name,
         event: ContainerStatusReport.ContainerInstalled
       });
-    } catch (e) {
-      this.logger.error('Unexpected error on invokeing initializer', e);
+    } catch (e: any) {
+      this.logger.debug('Unexpected error on invokeing initializer', e.message);
       this.delegate.resetPeer(credential);
       throw e;
     }

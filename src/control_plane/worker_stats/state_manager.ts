@@ -58,7 +58,7 @@ export class StateManager {
     const psData = await this.turf.ps();
 
     if (!psData || psData.length === 0) {
-      this.logger.warn('got turf ps data empty, skip current syncWorkerData operation.');
+      this.logger.debug('got turf ps data empty, skip current syncWorkerData operation.');
       return;
     }
 
