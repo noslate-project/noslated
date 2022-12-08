@@ -14,14 +14,14 @@ const codeDir = path.join(FIXTURES_DIR, 'worker-integrated');
 class TestEnvironment extends DefaultEnvironment {
   resourceServer!: ResourceServer;
 
-  async before() {
-    super.before();
+  async before(ctx: Mocha.Context) {
+    super.before(ctx);
     this.resourceServer = new ResourceServer();
     await this.resourceServer.start();
   }
 
-  async after() {
-    super.after();
+  async after(ctx: Mocha.Context) {
+    super.after(ctx);
     await this.resourceServer.close();
   }
 
