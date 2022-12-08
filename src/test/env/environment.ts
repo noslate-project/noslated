@@ -2,7 +2,6 @@ import { config } from '#self/config';
 import { ControlPlane } from '#self/control_plane/index';
 import { DataPlane } from '#self/data_plane/index';
 import { Turf } from '#self/lib/turf';
-import { createDeferred } from '#self/lib/util';
 import { NoslatedClient } from '#self/sdk/index';
 import { startTurfD, stopTurfD } from '#self/test/turf';
 
@@ -51,7 +50,7 @@ export class DefaultEnvironment extends MochaEnvironment {
   turf!: Turf;
 
   async beforeEach(ctx: Mocha.Context) {
-    ctx.timeout(10_000);
+    ctx.timeout(10_000 + ctx.timeout());
 
     startTurfD();
     this.agent = new NoslatedClient();
@@ -59,27 +58,11 @@ export class DefaultEnvironment extends MochaEnvironment {
     this.data = new DataPlane(config);
     this.turf = this.control.turf;
 
-    let readyCount = 0;
-    const { resolve, promise } = createDeferred<void>();
-    this.control.once('newDataPlaneClientReady', onNewClientReady.bind(undefined, 'control>data client'));
-    this.agent.once('newDataPlaneClientReady', onNewClientReady.bind(undefined, 'agent>data client'));
-    this.agent.once('newControlPlaneClientReady', onNewClientReady.bind(undefined, 'agent>ctrl client'));
-
-    function onNewClientReady(name: string) {
-      console.log(`${name} connected!`);
-      readyCount++;
-      if (readyCount === 3) {
-        resolve();
-      }
-    }
-
     await Promise.all([
       this.data.ready(),
       this.control.ready(),
       this.agent.start(),
     ]);
-
-    await promise;
   }
 
   async afterEach() {
