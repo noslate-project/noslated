@@ -168,11 +168,14 @@ export class BaseController {
    * @param {string[]} names The broker names.
    * @return {Promise<void>} The result.
    */
-  async forceDismissAllWorkersInCertainBrokers(names: string[]) {
-    if (!Array.isArray(names)) names = [names];
+  async stopAllWorkers(names: string[]) {
+    if (names.length === 0) {
+      return;
+    }
+
     const { workerStatsSnapshot } = this.plane.capacityManager;
     const promises = [];
-    this.logger.info('Up to force dismiss all workers in broker', names);
+    this.logger.info('stop all worker of function %j', names);
     for (const name of names) {
       const brokers = [
         workerStatsSnapshot.getBroker(name, false),
@@ -189,10 +192,9 @@ export class BaseController {
     const results = await Promise.allSettled(promises);
     for (const ret of results) {
       if (ret.status === 'rejected') {
-        this.logger.warn('Failed to force dismiss worker.', ret.reason);
+        this.logger.warn('Failed to force stop all workers.', ret.reason);
       }
     }
-    this.logger.info(names, 'dismissed.');
   }
 }
 

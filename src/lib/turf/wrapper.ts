@@ -126,11 +126,11 @@ export class Turf {
     try {
       await this.#exec([ '-H', 'stop', containerName ]);
     } catch (e: any) {
-      logger.warn(`${containerName} stop failed, try to force stop`, e);
+      logger.info(`${containerName} stop failed, try to force stop`, e.message);
       try {
         await this.#exec([ '-H', 'stop', '--force', containerName ]);
       } catch (e: any) {
-        logger.warn(`${containerName} force stop failed, ignore error`, e);
+        logger.info(`${containerName} force stop failed, ignore error`, e.message);
       }
     }
   }

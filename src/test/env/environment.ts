@@ -1,7 +1,8 @@
 import { ControlPlane } from '#self/control_plane';
 import { DataPlane } from '#self/data_plane';
-import { startTurfD, stopTurfD, Turf } from '#self/lib/turf';
+import { Turf } from '#self/lib/turf';
 import { NoslatedClient } from '#self/sdk';
+import { startTurfD, stopTurfD } from '#self/test/turf';
 import { startAllRoles } from '../util';
 
 export abstract class MochaEnvironment {

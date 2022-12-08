@@ -251,7 +251,7 @@ const cases = [
     after: async (env: DefaultEnvironment, beforeRet: any) => {
       const spy: SinonSpy = beforeRet;
       const written = spy.args[0]?.[2];
-      assert.ok(Buffer.from('node_worker_beacon|a-unique-trace-node-id\n').equals(written as any));
+      assert.ok(Buffer.from('node_worker_beacon|a-unique-trace-node-id\n').equals(written));
       spy.restore();
     },
     expect: {},
@@ -840,7 +840,7 @@ const cases = [
     after: async (env: DefaultEnvironment, beforeRet: any) => {
       const spy: SinonSpy = beforeRet;
       const written = spy.args[0]?.[2];
-      assert.ok(Buffer.from('aworker_beacon|a-unique-trace-id\n').equals(written as any));
+      assert.ok(Buffer.from('aworker_beacon|a-unique-trace-id\n').equals(written));
       spy.restore();
     },
     expect: {},

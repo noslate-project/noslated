@@ -271,9 +271,10 @@ class Broker {
     for (const startingName of [ ...this.startingPool.keys() ]) {
       const worker = newMap.get(startingName);
       if (!worker.isInitializating()) {
-        this.logger.info(
-          `${startingName} removed from starting pool due to status ` +
-          `[${ContainerStatus[worker.containerStatus]}] - [${worker.turfContainerStates}]`);
+        this.logger.debug(
+          `%s removed from starting pool due to status ` +
+          `[%s] - [%s]`,
+          startingName, ContainerStatus[worker.containerStatus], worker.turfContainerStates);
         this.startingPool.delete(startingName);
       } else if (worker.data) {
         // 同步 startingPool 中的值

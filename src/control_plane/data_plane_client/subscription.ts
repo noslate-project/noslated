@@ -55,7 +55,7 @@ export class DataPlaneSubscription {
 
     plane.stateManager.updateContainerStatusByReport(report);
 
-    this.logger.info(`receive container status report: ${Date.now()}, ${report.requestId}, ${report.functionName}, ${report.name}, ${report.isInspector}, ${report.event}`);
+    this.logger.debug(`receive container status report`, report);
 
     try {
       await plane.disposableController.tryStopDisposableWorkerByReport(report);

@@ -17,7 +17,8 @@ import { CapacityManager } from '#self/control_plane/capacity_manager';
 import { TurfContainerStates, TurfProcess } from '#self/lib/turf/types';
 import { noslated } from '#self/proto/root';
 import { ContainerStatus, ContainerStatusReport, ControlPanelEvent } from '#self/lib/constants';
-import { startTurfD, stopTurfD, Turf } from '#self/lib/turf';
+import { Turf } from '#self/lib/turf';
+import { startTurfD, stopTurfD } from '#self/test/turf';
 
 describe(common.testName(__filename), () => {
   const brokerData1 = {
@@ -386,15 +387,15 @@ describe(common.testName(__filename), () => {
         stopNames.push(name);
       });
 
-      await control.controller.forceDismissAllWorkersInCertainBrokers(['func']);
+      await control.controller.stopAllWorkers(['func']);
       assert.deepStrictEqual(stopNames.sort(), ['foo', 'hello']);
 
       stopNames = [];
-      await control.controller.forceDismissAllWorkersInCertainBrokers(['lambda']);
+      await control.controller.stopAllWorkers(['lambda']);
       assert.deepStrictEqual(stopNames.sort(), ['alibaba', 'coco', 'cocos']);
 
       stopNames = [];
-      await control.controller.forceDismissAllWorkersInCertainBrokers(['func', 'lambda']);
+      await control.controller.stopAllWorkers(['func', 'lambda']);
       assert.deepStrictEqual(stopNames.sort(), ['alibaba', 'coco', 'cocos', 'foo', 'hello']);
     });
   });
