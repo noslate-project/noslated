@@ -14,6 +14,7 @@
     "install-aworker": "54"
   },
   "dependencies": {
-    "arg": "^5.0.2"
+    "arg": "^5.0.2",
+    "chokidar": "^3.5.3"
   }
 }

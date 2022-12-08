@@ -18,13 +18,13 @@ function main(argv) {
     return console.log('0.0.1');
   }
 
-  const commands = ['invoke'];
+  const commands = ['invoke', 'dev'];
 
   if (!commands.includes(args._[0])) {
     return console.log('not support command');
   }
 
-  const cli = require(`../scripts/${args._[0]}.js`);
+  const cli = require(`../src/scripts/${args._[0]}`);
   cli(args._.slice(1));
 }
 
