@@ -4,6 +4,7 @@ import { DataPlane } from '#self/data_plane/index';
 import { Turf } from '#self/lib/turf';
 import { NoslatedClient } from '#self/sdk/index';
 import { startTurfD, stopTurfD } from '#self/test/turf';
+import mm from 'mm';
 
 export abstract class MochaEnvironment {
   constructor() {
@@ -66,6 +67,8 @@ export class DefaultEnvironment extends MochaEnvironment {
   }
 
   async afterEach() {
+    mm.restore();
+
     await Promise.all([
       this.agent.close(),
       this.data.close(),
