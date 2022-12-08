@@ -139,7 +139,7 @@ export class BasePlaneClientManager extends BaseOf(EventEmitter) {
     this.#clients = [];
     await Promise.all(closes);
 
-    this.logger.info('closed');
+    this.logger.debug('closed');
   }
 
   #onClientReady(client: BasePlaneClient) {
