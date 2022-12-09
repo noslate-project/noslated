@@ -3,8 +3,8 @@ import path from 'path';
 import { config } from '#self/config';
 import * as common from '#self/test/common';
 import { Turf, TurfContainerStates } from '#self/lib/turf/wrapper';
-import { startTurfD, stopTurfD } from '#self/lib/turf/index';
 import { FIXTURES_DIR } from '#self/test/util';
+import { startTurfD, stopTurfD } from '#self/test/turf';
 
 const simpleSandbox = path.resolve(FIXTURES_DIR, 'sandbox_simple');
 const containerName = 'foobar';

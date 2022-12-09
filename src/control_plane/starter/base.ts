@@ -269,7 +269,7 @@ export abstract class BaseStarter extends Base {
         stderr: path.join(logPath, 'stderr.log'),
       };
       if (options?.seed) startOptions.seed = options.seed;
-      this.logger.info('turf start (%s, %s)', name, startOptions);
+      this.logger.info('turf start (%s)', name);
       await this.turf.start(name, startOptions);
     } catch (e) {
       BaseStarter.bundlePathLock.delete(bundlePath);

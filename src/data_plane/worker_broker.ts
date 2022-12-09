@@ -17,6 +17,7 @@ import * as root from '#self/proto/root';
 import { kMemoryLimit } from '#self/control_plane/constants';
 import { performance } from 'perf_hooks';
 import { ContainerStatusReport, kDefaultRequestId } from '#self/lib/constants';
+import { DataPlaneHost } from './data_plane_host';
 
 export enum RequestQueueStatus {
   PASS_THROUGH = 0,
@@ -205,7 +206,7 @@ interface PendingCredentials {
 export class WorkerBroker extends Base {
   profileManager: FunctionProfileManager;
   delegate: NoslatedDelegateService;
-  host: Host;
+  host: DataPlaneHost;
   config: Config;
   logger: PrefixedLogger;
   requestQueue: PendingRequest[];
@@ -354,7 +355,7 @@ export class WorkerBroker extends Base {
     this.removeWorker(worker.credential);
     await worker.closeTraffic();
     // 同步 RequestDrained
-    await (this.host as any).broadcastContainerStatusReport({
+    await this.host.broadcastContainerStatusReport({
       functionName: this.name,
       isInspector: this.options.inspect === true,
       name: worker.name,
@@ -546,8 +547,8 @@ export class WorkerBroker extends Base {
         name: worker.name,
         event: ContainerStatusReport.ContainerInstalled
       });
-    } catch (e) {
-      this.logger.error('Unexpected error on invokeing initializer', e);
+    } catch (e: any) {
+      this.logger.debug('Unexpected error on invokeing initializer', e.message);
       this.delegate.resetPeer(credential);
       throw e;
     }
@@ -598,7 +599,7 @@ export class WorkerBroker extends Base {
     });
 
     // broadcast that there's no enough container
-    (this.host as any).broadcastRequestQueueing(this, this.dataFlowController.currentWorkersInformation, request.requestId);
+    this.host.broadcastRequestQueueing(this, this.dataFlowController.currentWorkersInformation, request.requestId);
     return request;
   }
 

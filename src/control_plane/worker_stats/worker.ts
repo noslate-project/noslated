@@ -297,7 +297,7 @@ class Worker {
 
   updateContainerStatus(status: ContainerStatus, event: TurfStatusEvent | ContainerStatusReport | ControlPanelEvent) {
     if (status < this.#containerStatus) {
-      this.logger.info(`update container status [${ContainerStatus[status]}] from [${ContainerStatus[this.#containerStatus]}] by event [${event}] on [${Date.now()}] is illegal.`);
+      this.logger.warn(`update container status [%s] from [%s] by event [%s] is illegal.`, ContainerStatus[status], ContainerStatus[this.#containerStatus], event);
       return;
     }
 
@@ -305,7 +305,7 @@ class Worker {
 
     this.#containerStatus = status;
 
-    this.logger.info(`update container status [${ContainerStatus[status]}] from [${ContainerStatus[oldStatus]}] by event [${event}] on [${Date.now()}].`);
+    this.logger.info(`update container status [%s] from [%s] by event [%s].`, ContainerStatus[status], ContainerStatus[oldStatus], event);
   }
 }
 

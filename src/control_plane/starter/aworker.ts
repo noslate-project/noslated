@@ -42,8 +42,8 @@ export class AworkerStarter extends BaseStarter {
     let state: TurfState | null;
     try {
       state = await this.turf.state(SEED_CONTAINER_NAME);
-    } catch (exp) {
-      this.logger.warn(`Cannot state ${SEED_CONTAINER_NAME}.`, exp);
+    } catch (exp: any) {
+      this.logger.warn(`Cannot state ${SEED_CONTAINER_NAME}.`, exp.message);
       return null;
     }
     this.lastSeedState = state?.state;
@@ -96,7 +96,7 @@ export class AworkerStarter extends BaseStarter {
         .catch((exp: unknown) => {
           const e = castError(exp);
           if (!e.message.includes('not found')) {
-            this.logger.warn(`Cannot state ${SEED_CONTAINER_NAME}.`, e);
+            this.logger.warn(`Cannot state ${SEED_CONTAINER_NAME}.`, e.message);
           }
           return null;
         });

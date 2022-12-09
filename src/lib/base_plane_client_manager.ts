@@ -106,7 +106,6 @@ export class BasePlaneClientManager extends BaseOf(EventEmitter) {
    * @return {Promise<void>} Init result.
    */
   async _init() {
-    this.logger.info('starting...');
     await fs.promises.mkdir(this.sockDir, { recursive: true });
 
     for (let i = 0; i < this.sockCount; i++) {
@@ -123,7 +122,7 @@ export class BasePlaneClientManager extends BaseOf(EventEmitter) {
         throw error;
       }),
     ]);
-    this.logger.info('started.');
+    this.logger.debug('started.');
   }
 
   /**
@@ -140,7 +139,7 @@ export class BasePlaneClientManager extends BaseOf(EventEmitter) {
     this.#clients = [];
     await Promise.all(closes);
 
-    this.logger.info('closed');
+    this.logger.debug('closed');
   }
 
   #onClientReady(client: BasePlaneClient) {

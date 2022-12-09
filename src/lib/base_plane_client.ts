@@ -40,7 +40,7 @@ export class BasePlaneClient extends BaseOf(Guest) {
     await this.start({
       connectionTimeout: this.config.plane.planeFirstConnectionTimeout,
     });
-    this.logger.info('%s(%s) connected.', this.role, this.planeId);
+    this.logger.debug('%s(%s) connected.', this.role, this.planeId);
   }
 
   /**

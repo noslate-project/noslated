@@ -15,7 +15,7 @@ export class DataPlane extends Base {
 
   constructor(private config: Config) {
     super();
-    dumpConfig('sdk', config);
+    dumpConfig('data', config);
 
     this.logger = loggers.get('data plane');
     const sockPath = path.join(config.dirs.noslatedSock, `dp-${getCurrentPlaneId()}.sock`);

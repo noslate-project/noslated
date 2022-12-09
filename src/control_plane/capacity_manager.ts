@@ -109,10 +109,10 @@ export class CapacityManager extends Base {
           const newDeltas = Math.floor(deltas[i].count * rate);
 
           this.logger.info(
-            `[Auto Scale] Up to expand ${Math.max(newDeltas, 0)} workers ${broker.name}. ` +
-            `waterlevel: ${broker.activeRequestCount}/${broker.totalMaxActivateRequests}, ` +
-            `delta: ${(deltas[i].count)}, memo rate: ${rate}, reservation: ${broker.reservationCount}, ` +
-            `current: ${broker.workerCount}.`);
+            `[Auto Scale] Up to expand %d workers %s. ` +
+            `waterlevel: %d/%d, ` +
+            `delta: %d, memo rate: %d, reservation: %d, ` +
+            `current: %d.`, newDeltas, broker.name, broker.activeRequestCount, broker.totalMaxActivateRequests, deltas[i].count, rate, broker.reservationCount, broker.workerCount);
 
           deltas[i].count = newDeltas;
         }
@@ -231,7 +231,6 @@ export class CapacityManager extends Base {
     const profile = this.plane.functionProfile.get(name);
 
     try {
-      this.logger.info('Prepare to launch worker(%s, inspect %s)', name, isInspect);
       const now = performance.now();
 
       await this.plane.workerLauncher.tryLaunch(
@@ -246,14 +245,14 @@ export class CapacityManager extends Base {
       );
       this.logger.info('Request(%s) queueing for func(%s, inspect %s) expanded, cost: %sms.', requestId, name, isInspect, performance.now() - now);
     } catch (e) {
-      this.logger.warn(`Request(${requestId}) queueing for func(${name}, inspect ${String(isInspect)}) expanding failed.`, e);
+      this.logger.warn(`Request(%s) queueing for func(%s, inspect %s) expanding failed.`, requestId, name, isInspect, e);
 
       (client as any).startWorkerFastFail(wrapLaunchErrorObject(name, isInspect, e as Error)).catch((e: unknown) => {
         this.logger.warn(e);
       });
     }
 
-    this.logger.info('sync worker data after launch worker(%s)', name);
+    this.logger.debug('sync worker data after launch worker(%s)', name);
     // update current workers data
     try {
       if (brokers) {
@@ -262,7 +261,7 @@ export class CapacityManager extends Base {
     } catch (e) {
       this.logger.warn('Failed to sync data.', e);
     }
-    this.logger.info('worker data synchronized after launch worker(%s)', name);
+    this.logger.debug('worker data synchronized after launch worker(%s)', name);
   }
 }
 

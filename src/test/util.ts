@@ -9,8 +9,6 @@ import mm from 'mm';
 import serveHandler from 'serve-handler';
 
 import { NoslatedClient } from '#self/sdk/index';
-import { ControlPlane } from '#self/control_plane/index';
-import { DataPlane } from '#self/data_plane/index';
 import { createDeferred, bufferFromStream } from '../lib/util';
 import { config } from '#self/config';
 import { TriggerResponse } from '#self/delegate/request_response';
@@ -111,34 +109,6 @@ export async function testWorker(agent: NoslatedClient, testProfile: any) {
   await assertWorkerInvoke(agent.invoke(testProfile.profile.name, testProfile.input.data, testProfile.input.metadata), testProfile.expect);
 }
 
-export async function startAllRoles(): Promise<Required<Roles>> {
-  const agent = new NoslatedClient();
-  const control = new ControlPlane(config);
-  const data = new DataPlane(config);
-
-  let readyCount = 0;
-  const { resolve, promise } = createDeferred<Required<Roles>>();
-  control.once('newDataPlaneClientReady', onNewClientReady.bind(undefined, 'control>data client'));
-  agent.once('newDataPlaneClientReady', onNewClientReady.bind(undefined, 'agent>data client'));
-  agent.once('newControlPlaneClientReady', onNewClientReady.bind(undefined, 'agent>ctrl client'));
-
-  function onNewClientReady(name: string) {
-    console.log(`${name} connected!`);
-    readyCount++;
-    if (readyCount === 3) {
-      resolve({ data, control, agent });
-    }
-  }
-
-  await Promise.all([
-    data.ready(),
-    control.ready(),
-    agent.start(),
-  ]);
-
-  return promise;
-}
-
 export function mockClientCreatorForManager(ManagerClass: any) {
   class DummyClient extends EventEmitter {
     async ready() { /* empty */ }
@@ -149,9 +119,3 @@ export function mockClientCreatorForManager(ManagerClass: any) {
 }
 
 export const internetDescribe = process.env.NOSLATED_ENABLE_INTERNET_TEST === 'true' ? describe : describe.skip;
-
-export interface Roles {
-  data?: DataPlane;
-  control?: ControlPlane;
-  agent?: NoslatedClient;
-}

@@ -1,12 +1,10 @@
 import extend from 'extend';
 import fs from 'fs';
 import path from 'path';
-import Loggers from '#self/lib/logger';
 
 import defaultConfig from './default';
 
 const config = {};
-const logger = Loggers.get('config-loader');
 
 let localConfig = {};
 try {

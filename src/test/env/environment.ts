@@ -1,41 +1,45 @@
-import { ControlPlane } from '#self/control_plane';
-import { DataPlane } from '#self/data_plane';
-import { startTurfD, stopTurfD, Turf } from '#self/lib/turf';
-import { NoslatedClient } from '#self/sdk';
-import { startAllRoles } from '../util';
+import { config } from '#self/config';
+import { ControlPlane } from '#self/control_plane/index';
+import { DataPlane } from '#self/data_plane/index';
+import { Turf } from '#self/lib/turf';
+import { NoslatedClient } from '#self/sdk/index';
+import { startTurfD, stopTurfD } from '#self/test/turf';
+import mm from 'mm';
 
 export abstract class MochaEnvironment {
   constructor() {
-    before(async () => {
-      await this.before();
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
+    const self = this;
+    before(async function before() {
+      await self.before(this);
     });
 
-    after(async () => {
-      await this.after();
+    after(async function after() {
+      await self.after(this);
     });
 
-    beforeEach(async () => {
-      await this.beforeEach();
+    beforeEach(async function beforeEach() {
+      await self.beforeEach(this);
     });
 
-    afterEach(async () => {
-      await this.afterEach();
+    afterEach(async function afterEach() {
+      await self.afterEach(this);
     });
   }
 
-  protected before(): Promise<void> {
+  protected before(ctx: Mocha.Context): Promise<void> {
     return Promise.resolve();
   }
 
-  protected after(): Promise<void> {
+  protected after(ctx: Mocha.Context): Promise<void> {
     return Promise.resolve();
   }
 
-  protected beforeEach(): Promise<void> {
+  protected beforeEach(ctx: Mocha.Context): Promise<void> {
     return Promise.resolve();
   }
 
-  protected afterEach(): Promise<void> {
+  protected afterEach(ctx: Mocha.Context): Promise<void> {
     return Promise.resolve();
   }
 }
@@ -46,16 +50,25 @@ export class DefaultEnvironment extends MochaEnvironment {
   agent!: NoslatedClient;
   turf!: Turf;
 
-  async beforeEach() {
+  async beforeEach(ctx: Mocha.Context) {
+    ctx.timeout(10_000 + ctx.timeout());
+
     startTurfD();
-    const roles = await startAllRoles();
-    this.data = roles.data;
-    this.control = roles.control;
-    this.agent = roles.agent;
+    this.agent = new NoslatedClient();
+    this.control = new ControlPlane(config);
+    this.data = new DataPlane(config);
     this.turf = this.control.turf;
+
+    await Promise.all([
+      this.data.ready(),
+      this.control.ready(),
+      this.agent.start(),
+    ]);
   }
 
   async afterEach() {
+    mm.restore();
+
     await Promise.all([
       this.agent.close(),
       this.data.close(),

@@ -23,6 +23,7 @@ import { RawFunctionProfile } from '#self/lib/json/function_profile';
 import { Readable } from 'stream';
 import { Metadata, TriggerResponse } from '#self/delegate/request_response';
 import { ContainerStatusReport } from '#self/lib/constants';
+import { DataPlaneHost } from './data_plane_host';
 
 const logger = require('#self/lib/logger').get('data flow controller');
 
@@ -53,7 +54,7 @@ export class DataFlowController extends BaseOf(EventEmitter) {
 
   telemetry: WorkerTelemetry;
 
-  constructor(public host: Host, public config: Config) {
+  constructor(public host: DataPlaneHost, public config: Config) {
     super();
 
     this.meter = getMeter();
@@ -370,7 +371,6 @@ export class DataFlowController extends BaseOf(EventEmitter) {
     this.delegate.close();
 
     fs.rmSync(this.delegateSockPath, { force: true });
-    logger.info('closed.');
   }
 
   /**
@@ -379,7 +379,6 @@ export class DataFlowController extends BaseOf(EventEmitter) {
    * @param {'IMMEDIATELY' | 'WAIT'} mode the mode
    */
   async setFunctionProfile(profile: RawFunctionProfile[], mode: Mode = 'IMMEDIATELY') {
-    logger.info('Setting function profile');
     // 获取前后 namespace 差异
     const { toAdd, toRemove } = this.compareSharedNamespaces(profile);
 

@@ -11,7 +11,7 @@ import { Guest } from '#self/lib/rpc/guest';
 import { mockClientCreatorForManager } from '#self/test/util';
 import { RawFunctionProfile } from '#self/lib/json/function_profile';
 import { DataPlane } from '#self/data_plane/index';
-import { startTurfD, stopTurfD } from '#self/lib/turf';
+import { startTurfD, stopTurfD } from '#self/test/turf';
 
 describe(testName(__filename), () => {
   let agent: NoslatedClient;

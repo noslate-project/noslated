@@ -19,7 +19,7 @@ export class StateManager {
     const worker = this.plane.capacityManager.workerStatsSnapshot.getWorker(functionName, isInspector, name);
 
     if (!broker || !worker) {
-      this.logger.warn('containerStatusReport report [%j] skip because no broker and worker related.', report);
+      this.logger.warn('containerStatusReport report [%j] skipped because no broker and worker found.', report);
       return;
     }
 
@@ -29,8 +29,6 @@ export class StateManager {
     }
 
     const statusTo: ContainerStatus = this.#getStatusToByEvent(event);
-
-    worker.logger.info(`try update status to [${ContainerStatus[statusTo]}] from [${ContainerStatus[worker.containerStatus]}] by event [${event}].`);
 
     // Stopped 和 Unknown 都是终止状态，不允许转向其他状态
     if (worker.containerStatus >= ContainerStatus.Stopped) return;
@@ -60,7 +58,7 @@ export class StateManager {
     const psData = await this.turf.ps();
 
     if (!psData || psData.length === 0) {
-      this.logger.warn('got turf ps data empty, skip current syncWorkerData operation.');
+      this.logger.debug('got turf ps data empty, skip current syncWorkerData operation.');
       return;
     }
 

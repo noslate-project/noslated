@@ -2,7 +2,8 @@
 
 const common = require('../common');
 const path = require('path');
-const { Turf, startTurfD, stopTurfD } = require('#self/lib/turf');
+const { Turf } = require('#self/lib/turf');
+const { startTurfD, stopTurfD } = require('#self/test/turf');
 const { config } = require('#self/config');
 
 process.env.TURF_WORKDIR = path.resolve(__dirname, '../../.turf');

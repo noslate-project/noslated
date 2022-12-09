@@ -143,7 +143,7 @@ export class FunctionProfileManager extends EventEmitter {
             logger.warn('Failed to preset profile:', e.stack);
           }); // do not await
         }
-        logger.debug('Function profile has been updated', JSON.stringify(this.profile));
+        logger.debug('Function profile has been updated: %j', this.profile);
         this.emit('changed', this.profile);
 
         // interrupt waiting profiles (but not stop the downloading tasks)

@@ -6,12 +6,13 @@ import mm from 'mm';
 import * as common from '#self/test/common';
 import { config } from '#self/config';
 import { Aworker } from '#self/control_plane/starter/index';
-import { startTurfD, stopTurfD, Turf } from '#self/lib/turf';
+import { Turf } from '#self/lib/turf';
 import * as testUtil from '#self/test/util';
 import { ControlPlane } from '#self/control_plane/control_plane';
 import { TurfContainerStates, TurfProcess } from '#self/lib/turf/types';
 import FakeTimers from '@sinonjs/fake-timers';
 import { sleep } from '#self/lib/util';
+import { startTurfD, stopTurfD } from '#self/test/turf';
 
 const conditionalDescribe = (process.platform === 'darwin' ? describe.skip : describe);
 

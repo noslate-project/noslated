@@ -57,8 +57,6 @@ export class DataPlaneImpl implements IDataPlane {
     const mode = call.request.mode ?? 'WAIT';
     rpcAssert(mode === 'IMMEDIATELY' || mode === 'WAIT');
 
-    logger.info('set function profiles count: %d', profiles.length);
-
     try {
       await this.dataFlowController.setFunctionProfile(profiles, mode);
     } catch (e) {
