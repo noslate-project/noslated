@@ -24,18 +24,17 @@ async function main(argv) {
 
   const otherArgv = args._;
 
-  const execFileName = otherArgv.find(value => value.endsWith('.js'));
+  const execFileName = otherArgv.find(value => path.isAbsolute(path.resolve(value)));
 
   if (!execFileName) {
-    console.error('target .js file not found');
+    console.error('target file not found');
     return;
   }
 
-  const execFilePath = path.join(process.cwd(), execFileName);
+  let execFilePath = path.resolve(execFileName);
 
-  if (!fs.statSync(execFilePath)) {
-    console.error('target .js file not found');
-    return;
+  if ((await fs.promises.lstat(execFileName)).isDirectory()) {
+    execFilePath = path.join(execFileName, 'index.js');
   }
 
   let startInspectorServerFlag = false;
@@ -87,8 +86,11 @@ class DevCommand {
 
   startWatch() {
     const watcher = chokidar.watch(this.execFilePath);
-    watcher.on('change', path => {
+    watcher.on('change', async path => {
+      console.clear();
       console.log(`File ${path} has been changed`);
+      await this.agent.rerun();
+      await this.agent.spawnAworker();
     });
   }
 
@@ -118,10 +120,21 @@ class DevCommand {
 
     metadata.method = method;
     metadata.headers = getHeaders(headers);
+    const start = performance.now();
+    let result;
 
-    const data = await this.agent.invoke(metadata);
+    try {
+      result = await this.agent.invoke(metadata);
+    } catch (e) {
+      console.error(e);
+    }
 
-    res.end(data);
+    res.end(result);
+
+    console.log(`Url: ${req.url}, Method: ${method}, Headers: ${metadata.headers}, Cost: ${(performance.now() - start).toFixed(3)}ms`);
+
+    await this.agent.rerun();
+    await this.agent.spawnAworker();
   }
 
   async run() {
@@ -129,14 +142,13 @@ class DevCommand {
       daprAdaptorPath: this.daprAdaptorPath,
       startInspectorServerFlag: this.startInspectorServerFlag,
       argv: this.argv,
-      keepAlive: true
     });
-
-    await this.agent.run();
-    await this.agent.spawnAworker();
 
     this.serve();
     this.startWatch();
+
+    await this.agent.run();
+    await this.agent.spawnAworker();
   }
 }
 

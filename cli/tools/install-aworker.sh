@@ -6,8 +6,6 @@ fi
 UNAME_M=$(uname -m)
 UNAME_S=$(uname -s)
 
-
-
 if [ "${UNAME_M}" == 'x86_64' ]; then
   DESTCPU=x64
   elif [ "${UNAME_M}" == 'amd64' ]; then

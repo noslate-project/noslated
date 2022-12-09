@@ -17,19 +17,13 @@ class AgentDelegate {
   inspectorAgent;
   aworker;
   bindDeferedPromise;
-  keepAlive = false;
 
-  constructor({ daprAdaptorPath, startInspectorServerFlag, argv, keepAlive }) {
+  constructor({ daprAdaptorPath, startInspectorServerFlag, argv }) {
     this.agentServerPath = agentServerPath;
     this.agentModulePath = agentModulePath;
 
     this.daprAdaptorPath = daprAdaptorPath;
     this.startInspectorServerFlag = !!startInspectorServerFlag;
-
-    this.bindDeferedPromise = createDeferredPromise();
-
-    this.keepAlive = keepAlive ?? this.keepAlive;
-
 
     this.spawnArgv = [
       '-A',
@@ -41,6 +35,7 @@ class AgentDelegate {
   }
 
   async run() {
+    this.bindDeferedPromise = new createDeferredPromise();
     await this.startNoslatedAgent();
 
     if (this.startInspectorServerFlag) {
@@ -48,35 +43,33 @@ class AgentDelegate {
     }
   }
 
-  async invoke(metadata) {
+  async rerun() {
+    this.close();
+    await this.run();
+  }
 
+  async invoke(metadata) {
     const { data, headers, method } = metadata;
 
-    try {
-      const rsp = await this.agent.trigger(this.credential, 'invoke', data ? Readable.from(data) : null, { method, headers });
+    const rsp = await this.agent.trigger(this.credential, 'invoke', data ? Readable.from(data) : null, { method, headers });
 
-      const result = await new Promise((resolve) => {
-        let data = '';
+    const result = await new Promise((resolve) => {
+      let data = '';
 
-        rsp.on('readable', () => {
-          let buf;
+      rsp.on('readable', () => {
+        let buf;
 
-          while ((buf = rsp.read()) !== null) {
-            data += buf.toString();
-          }
-        });
-
-        rsp.on('end', () => {
-          resolve(data);
-        });
+        while ((buf = rsp.read()) !== null) {
+          data += buf.toString();
+        }
       });
 
-      console.log(result);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      this.inspectorAgent?.close();
-    }
+      rsp.on('end', () => {
+        resolve(data);
+      });
+    });
+
+    return result;
   }
 
   async waitBind() {
@@ -88,15 +81,15 @@ class AgentDelegate {
     clearTimeout(t);
   }
 
-  flushBindDeferedPromise() {
-    this.bindDeferedPromise = new createDeferredPromise();
-  }
-
   async spawnAworker() {
     this.aworker = new AworkerProcess(this.spawnArgv, {}, this.agent, this.startInspectorServerFlag, this.credential);
 
     await this.aworker.spawn();
     await this.waitBind();
+  }
+
+  stopAworker() {
+    this.aworker.exit();
   }
 
   async startInspectorServer() {
@@ -121,16 +114,14 @@ class AgentDelegate {
     });
 
     this.agent.on('disconnect', async () => {
-      if (this.keepAlive) {
-        this.flushBindDeferedPromise();
-        await this.spawnAworker();
-      } else {
-        this.agent.close();
-      }
+      this.aworker.exit();
     });
 
     if (this.daprAdaptorPath) {
-      const daprAdaptor = require(this.daprAdaptorPath);
+      const daprAdaptorModule = require(this.daprAdaptorPath);
+      const eagleeyeTracer = { close() { }, startSpan() { } };
+      const daprAdaptor = new daprAdaptorModule({ eagleeyeTracer, appName: '🈁' });
+      await daprAdaptor.ready();
       this.agent.setDaprAdaptor(daprAdaptor);
     }
   }

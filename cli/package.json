@@ -14,6 +14,7 @@
     "install-aworker": "54"
   },
   "dependencies": {
+    "@ali/anc-node-dapr-provider": "^3.3.3",
     "arg": "^5.0.2",
     "chokidar": "^3.5.3"
   }

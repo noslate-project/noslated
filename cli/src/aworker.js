@@ -23,7 +23,14 @@ class AworkerProcess {
     this.aworkerProcess = cp.spawn(this.bin, this.args, this.options);
     this.alive = true;
 
+    const stdFilters = [/Agent Connected./];
+
     this.aworkerProcess.stdout.on('data', buffer => {
+      for (const rgx of stdFilters) {
+        if (rgx.test(buffer.toString())) {
+          return;
+        }
+      }
       process.stdout.write(buffer);
     });
 

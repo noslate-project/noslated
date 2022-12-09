@@ -1,5 +1,4 @@
 const path = require('path');
-const fs = require('fs');
 const arg = require('arg');
 const AgentDelegate = require('../server');
 const { getHeaders } = require('../utils');
@@ -49,20 +48,6 @@ async function main(argv) {
     metadata.headers = getHeaders(args['--headers']);
   }
 
-  const execFileName = otherArgv.find(value => value.endsWith('.js'));
-
-  if (!execFileName) {
-    console.error('target .js file not found');
-    return;
-  }
-
-  const execFilePath = path.join(process.cwd(), execFileName);
-
-  if (!fs.statSync(execFilePath)) {
-    console.error('target .js file not found');
-    return;
-  }
-
   const agent = new AgentDelegate({
     daprAdaptorPath: daprAdaptorPath,
     startInspectorServerFlag: debug,
@@ -70,15 +55,13 @@ async function main(argv) {
   });
 
   await agent.run();
+  await agent.spawnAworker();
 
-  try {
-    await agent.spawnAworker();
-  } catch (err) {
-    console.error(err);
-  }
+  const result = await agent.invoke(metadata);
+  console.log(result);
+  agent.close();
 
-  await agent.invoke(metadata);
-  agent.aworker.exit();
+  process.exit();
 }
 
 
