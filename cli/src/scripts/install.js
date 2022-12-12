@@ -1,6 +1,24 @@
 const cp = require('child_process');
 const { pipeline } = require('stream');
-function main() {
+const arg = require('arg');
+const { existsSync } = require('fs');
+const { agentModulePath } = require('../utils');
+
+function main(argv) {
+  const args = arg({
+    '--force': Boolean,
+    '-f': '--force'
+  }, {
+    argv
+  });
+
+  if (!args['--force']) {
+    if (existsSync(agentModulePath)) {
+      console.log('aworker already installed, use -f to re install');
+      return;
+    }
+  }
+
   const package = require('../../package.json');
   const versionOrBuild = package.engines['install-aworker'];
 
@@ -17,3 +35,6 @@ function main() {
 
 module.exports = main;
 
+if (require.main === module) {
+  main(process.argv.slice(2));
+}
