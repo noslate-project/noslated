@@ -14,7 +14,7 @@ function main(argv) {
 
   if (!args['--force']) {
     if (existsSync(agentModulePath)) {
-      console.log('aworker already installed, use -f to re install');
+      console.log('aworker already installed, use `-f` to re install');
       return;
     }
   }
