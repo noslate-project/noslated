@@ -232,7 +232,7 @@ class Worker {
       case TurfContainerStates.running: {
         if (Date.now() - this.#registerTime > this.#initializationTimeout && this.#containerStatus === ContainerStatus.Created) {
           this.updateContainerStatus(ContainerStatus.Stopped, TurfStatusEvent.ConnectTimeout);
-          this.logger.error('switch worker container status to [Stopped], because connect timeout.');
+          this.logger.info('switch worker container status to [Stopped], because connect timeout.');
         }
         // always be Created, wait dp ContainerInstalled to Ready
         break;
@@ -244,7 +244,7 @@ class Worker {
       }
       case TurfContainerStates.stopping:
       case TurfContainerStates.stopped: {
-        this.logger.error('switch worker container status to [Stopped], because turf state is stopped/stopping.');
+        this.logger.info('switch worker container status to [Stopped], because turf state is stopped/stopping.');
         this.updateContainerStatus(ContainerStatus.Stopped, TurfStatusEvent.StatusStopped);
         break;
       }
@@ -252,7 +252,7 @@ class Worker {
         // 只有 Ready 运行时无法找到的情况视为异常
         // 其他情况不做处理
         if (this.#containerStatus === ContainerStatus.Ready) {
-          this.logger.error('switch worker container status to [Stopped], because sandbox disappeared.');
+          this.logger.info('switch worker container status to [Stopped], because sandbox disappeared.');
           this.updateContainerStatus(ContainerStatus.Stopped, TurfStatusEvent.StatusNull);
         }
         break;
@@ -265,7 +265,7 @@ class Worker {
 
         if (Date.now() - this.#registerTime > this.#initializationTimeout && this.#containerStatus === ContainerStatus.Created) {
           this.updateContainerStatus(ContainerStatus.Stopped, TurfStatusEvent.ConnectTimeout);
-          this.logger.error('switch worker container status to [Stopped], because connect timeout.');
+          this.logger.info('switch worker container status to [Stopped], because connect timeout.');
         }
     }
   }

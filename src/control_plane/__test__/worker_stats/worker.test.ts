@@ -370,7 +370,7 @@ describe(common.testName(__filename), () => {
       assert.strictEqual(worker.containerStatus, ContainerStatus.Created);
 
       clock.tick(config.worker.defaultInitializerTimeout + 1000);
-      const spy = sinon.spy(worker.logger, 'error');
+      const spy = sinon.spy(worker.logger, 'info');
 
       worker.sync(data, [{ pid: 1, status: TurfContainerStates.running, name: 'hello' }]);
 
@@ -391,7 +391,7 @@ describe(common.testName(__filename), () => {
       assert.strictEqual(worker.containerStatus, ContainerStatus.Created);
 
       clock.tick(config.worker.defaultInitializerTimeout + 1000);
-      const spy = sinon.spy(worker.logger, 'error');
+      const spy = sinon.spy(worker.logger, 'info');
 
       worker.sync(null, [{ pid: 1, status: TurfContainerStates.running, name: 'hello' }]);
 
@@ -412,7 +412,7 @@ describe(common.testName(__filename), () => {
       assert.strictEqual(worker.containerStatus, ContainerStatus.Created);
 
       clock.tick(config.worker.defaultInitializerTimeout + 1000);
-      const spy = sinon.spy(worker.logger, 'error');
+      const spy = sinon.spy(worker.logger, 'info');
 
       worker.sync(null, [{ pid: 1, status: 'unsupported' as TurfContainerStates, name: 'hello' }]);
 

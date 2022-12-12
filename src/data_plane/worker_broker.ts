@@ -352,7 +352,6 @@ export class WorkerBroker extends Base {
   }
 
   async afterDisposableInvoke(worker: Worker, requestId?: string) {
-    this.removeWorker(worker.credential);
     await worker.closeTraffic();
     // 同步 RequestDrained
     await this.host.broadcastContainerStatusReport({
