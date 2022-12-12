@@ -54,12 +54,16 @@ function install_ossutil(){
   fi
 }
 
+pwd=$(cd "$(dirname "$0")"/../; pwd)
+
 if echo $BUILD | grep -qE "^[0-9]+\.[0-9]+\.[0-9]+$"; then
   FILE_NAME=noslate-${OS}-${ARCH}-v${BUILD}.tar.gz
+  FILE_PATH=${pwd}/$FILE_NAME
   OSS_PATH=${bucket}/noslate-release/v${BUILD}
   DOWNLOAD_URL=oss://${OSS_PATH}/${FILE_NAME}
 else
   FILE_NAME=noslate-${OS}-${ARCH}-${BUILD}.tar.gz
+  FILE_PATH=${pwd}/$FILE_NAME
   OSS_PATH=${bucket}/noslate-build-${OS}-${DESTCPU}/${BUILD}
   DOWNLOAD_URL=oss://${OSS_PATH}/${FILE_NAME}
 fi
@@ -76,7 +80,7 @@ STAT=$(./ossutil stat ${DOWNLOAD_URL})
 
 echo "Downloading aworker."
 # download aworker
-output=$(./ossutil cp ${DOWNLOAD_URL} ${FILE_NAME} -f)
+output=$(./ossutil cp ${DOWNLOAD_URL} ${FILE_PATH} -f)
 
 if echo $output | grep -q "Error"; then
   echo "Download aworker from oss failed."
@@ -89,7 +93,7 @@ fi
 # check hash
 OSS_FILE_HASH=$(echo $STAT | grep -Eo "X-Oss-Hash-Crc64ecma : [0-9]+" | awk -F' : ' '{print $2}')
 
-LOCAL_FILE_HASH=$(./ossutil hash ${FILE_NAME} | cut -d ":" -f 2 | sed s/[[:space:]]//g)
+LOCAL_FILE_HASH=$(./ossutil hash ${FILE_PATH} | cut -d ":" -f 2 | sed s/[[:space:]]//g)
 
 if [ $OSS_FILE_HASH == $LOCAL_FILE_HASH ]; then
   echo "Check hash success."
@@ -99,15 +103,17 @@ else
   exit 1
 fi
 
+out="$pwd/out/"
+
 # unzip
-if [ -d out ]; then
-  rm -rf out
+if [ -d $out ]; then
+  rm -rf $out
 fi
 
-mkdir out
-tar -zxf $FILE_NAME -C ./out
+mkdir $out
+tar -zxf $FILE_PATH -C $out
 
-rm -f ${FILE_NAME}
+rm -f ${FILE_PATH}
 rm -f ossutil
 
 echo "Install aworker success."

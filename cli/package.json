@@ -1,6 +1,6 @@
 {
-  "name": "@noslate/cli",
-  "version": "0.0.1",
+  "name": "@ali/noslate-cli",
+  "version": "0.0.4",
   "description": "",
   "main": "index.js",
   "bin": "bin/noslate",
@@ -16,5 +16,8 @@
   "dependencies": {
     "arg": "^5.0.2",
     "chokidar": "^3.5.3"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npm.alibaba-inc.com"
   }
 }

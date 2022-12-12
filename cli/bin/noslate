@@ -4,18 +4,39 @@ const arg = require('arg');
 function main(argv) {
   const args = arg({
     '--help': Boolean,
-    '--version': Boolean
+    '--version': Boolean,
+    '-h': '--help',
+    '-v': '--version'
   }, {
     argv,
     stopAtPositional: true,
   });
 
   if (args['--help']) {
-    return console.log('Usage: noslate invoke <options> [script.js]');
+    const usage = `noslate-cli [subcommand] <options> [script.js]
+  --help/-h: show usage
+  --version/-v: show noslate-cli version
+
+subcommand:
+dev:
+  --debug: open debug mode
+
+install:
+  --force/-f: ignore exists aworker, download the aworker from remote anyway
+  
+invoke:
+  --data: request body
+  --headers: request headers
+  --dapr-adaptor-path: dapr-adaptor path
+  --debug: open debug mode
+
+example: noslate-cli invoke --debug --data='https://registry.npmmirror.com' --headers='{"foo":"bar"}' fetch.js`;
+
+    return console.log(usage);
   }
 
   if (args['--version']) {
-    return console.log('0.0.1');
+    return console.log(require('../package.json').version);
   }
 
   const commands = ['invoke', 'dev', 'install'];

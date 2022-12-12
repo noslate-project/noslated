@@ -3,6 +3,7 @@ const { pipeline } = require('stream');
 const arg = require('arg');
 const { existsSync } = require('fs');
 const { agentModulePath } = require('../utils');
+const { join } = require('path');
 
 function main(argv) {
   const args = arg({
@@ -28,7 +29,7 @@ function main(argv) {
     BUILD: versionOrBuild
   };
 
-  const child = cp.execFile('/bin/bash', ['./tools/install-aworker.sh'], { env });
+  const child = cp.execFile('/bin/bash', [join(__dirname, '../../tools/install-aworker.sh')], { env });
   pipeline(child.stdout, process.stdout, () => { });
   pipeline(child.stderr, process.stderr, () => { });
 }
