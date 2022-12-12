@@ -18,7 +18,7 @@ function main(argv) {
     return console.log('0.0.1');
   }
 
-  const commands = ['invoke', 'dev'];
+  const commands = ['invoke', 'dev', 'install'];
 
   if (!commands.includes(args._[0])) {
     return console.log('not support command');
