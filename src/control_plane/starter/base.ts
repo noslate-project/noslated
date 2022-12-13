@@ -27,7 +27,8 @@ export interface StartOptions extends BaseOptions {
 }
 
 export abstract class BaseStarter extends Base {
-  static bundlePathLock = new Map();
+  static bundlePathLock = new Map<string, Promise<void>>();
+
   /**
    * Get worker's full log path.
    * @param {string} baseDir The log base directory.
@@ -250,36 +251,38 @@ export abstract class BaseStarter extends Base {
       )
     );
 
-    const { promise, resolve } = utils.createDeferred<void>();
-    try {
-      let bundlePathLock = BaseStarter.bundlePathLock.get(bundlePath);
-      while (nodeUtil.types.isPromise(bundlePathLock)) {
-        await bundlePathLock;
-        bundlePathLock = BaseStarter.bundlePathLock.get(bundlePath);
-      }
-
-      BaseStarter.bundlePathLock.set(bundlePath, promise);
-
+    await this._bundlePathLock(bundlePath, async () => {
       await fs.promises.writeFile(specPath, JSON.stringify(spec), 'utf8');
       this.logger.info('turf create (%s, %s)', name, bundlePath);
       await this.turf.create(name, bundlePath);
+    });
 
-      const startOptions: TurfStartOptions = {
-        stdout: path.join(logPath, 'stdout.log'),
-        stderr: path.join(logPath, 'stderr.log'),
-      };
-      if (options?.seed) startOptions.seed = options.seed;
-      this.logger.info('turf start (%s)', name);
-      await this.turf.start(name, startOptions);
-    } catch (e) {
-      BaseStarter.bundlePathLock.delete(bundlePath);
-      resolve();
+    const startOptions: TurfStartOptions = {
+      stdout: path.join(logPath, 'stdout.log'),
+      stderr: path.join(logPath, 'stderr.log'),
+    };
+    if (options?.seed) startOptions.seed = options.seed;
+    this.logger.info('turf start (%s)', name);
+    await this.turf.start(name, startOptions);
+  }
 
-      throw e;
+  private async _bundlePathLock<T>(bundlePath: string, fn: () => T) {
+    const start = Date.now();
+    let bundlePathLock = BaseStarter.bundlePathLock.get(bundlePath);
+    while (bundlePathLock != null) {
+      await bundlePathLock;
+      bundlePathLock = BaseStarter.bundlePathLock.get(bundlePath);
     }
 
-    BaseStarter.bundlePathLock.delete(bundlePath);
-    resolve();
+    this.logger.info('fetched lock on bundle path(%s) cost %d ms', bundlePath, Date.now() - start);
+    const { promise, resolve } = utils.createDeferred<void>();
+    BaseStarter.bundlePathLock.set(bundlePath, promise);
+    try {
+      return await fn();
+    } finally {
+      BaseStarter.bundlePathLock.delete(bundlePath);
+      resolve();
+    }
   }
 
   /**
