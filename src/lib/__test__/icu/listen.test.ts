@@ -33,6 +33,11 @@ describe(common.testName(__filename), function() {
 
     const cp = childProcess.spawn(process.execPath, [ listenPath, '--sock', address, 'foobar' ], {
       stdio: 'pipe',
+      env: {
+        ...process.env,
+        GRPC_TRACE: '',
+        GRPC_VERBOSITY: 'NONE',
+      },
     });
     cleanup = () => cp.kill();
     cp.stderr.pipe(process.stderr);

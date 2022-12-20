@@ -55,6 +55,10 @@ jstest: export NOSLATED_SOCK_CONN_TIMEOUT=30000
 else
 jstest: export PATH:=$(BUILD_PROJ_DIR)/out/Release:$(PATH)
 endif
+ifeq ($(V), 1)
+jstest: export GRPC_TRACE=all
+jstest: export GRPC_VERBOSITY=DEBUG
+endif
 jstest: export NOSLATED_LOG_CONSOLE=true
 jstest:
 	npm run cov -- $(JSTEST_FLAGS)

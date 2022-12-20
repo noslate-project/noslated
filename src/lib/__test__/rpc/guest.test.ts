@@ -126,7 +126,7 @@ describe(common.testName(__filename), () => {
       cp.kill();
 
       guest = new Guest(address);
-      await assert.rejects(guest.start({ connectionTimeout: 1000 }), /Error: Failed to connect before the deadline|ECONNRESET|Error: 14 UNAVAILABLE: Connection dropped/);
+      await assert.rejects(guest.start({ connectionTimeout: 1000 }), /Error: Failed to connect before the deadline|ECONNRESET|Error: 14 UNAVAILABLE: Connection dropped|Guest stream client failed to receive liveness signal in time./);
     });
 
     it('Guest failed to start - host unable to send liveness probe', async () => {
@@ -143,8 +143,7 @@ describe(common.testName(__filename), () => {
       await assert.rejects(guest.start({ connectionTimeout: 1000 }), /Error: Guest stream client failed to receive liveness signal in time./);
     });
 
-    // TODO(chengzhong.wcz): flaky
-    it.skip('Guest start before host starting', async () => {
+    it('Guest start before host starting', async () => {
       const sockFile = `${config.dirs.noslatedSock}/test.sock`;
       const address = `unix://${sockFile}`;
       await fs.rm(sockFile);

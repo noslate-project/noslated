@@ -268,7 +268,7 @@ describe('test/lib/util.test.js', () => {
   describe('raceEvent', () => {
     it('should remove all event listener on complete', async () => {
       const ee = new EventEmitter();
-      const raceFuture = util.raceEvent(ee, [ 'foo', 'bar', 'error' ]);
+      const raceFuture = util.raceEvent(ee, [ 'foo', 'bar', 'error' ]).promise;
 
       ee.emit('foo', 1, 2, 3);
       const [ event, args ] = await raceFuture;

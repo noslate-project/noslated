@@ -86,7 +86,7 @@ export class NoslatedServer {
       }
     }
     this._server.listen(this._serverPath);
-    const [ event, err ] = await raceEvent(this._server, ['listening', 'error']);
+    const [ event, err ] = await raceEvent(this._server, ['listening', 'error']).promise;
     if (event === 'error') {
       throw err;
     }
@@ -346,7 +346,7 @@ export class NoslatedClient {
   public async start() {
     const socket = net.connect(this._serverPath);
     this._socket = socket;
-    const [ event ] = await raceEvent(socket, ['connect', 'error']);
+    const [ event ] = await raceEvent(socket, ['connect', 'error']).promise;
     if (event !== 'connect') {
       throw new Error(`Failed to connect: ${event}`)
     }
