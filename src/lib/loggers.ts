@@ -28,6 +28,7 @@ function getPrettySink(filename: string) {
     level: config.logger.level,
     fileLogName: filename ?? 'noslated.log',
     dir: config.logger.dir,
+    enableConsole: config.logger.enableConsole,
     // no need to pipe errors to a different file.
     disableError: true,
     // keep after rotater

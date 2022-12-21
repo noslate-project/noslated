@@ -75,6 +75,7 @@ export default {
   logger: {
     level: 'info',
     dir: path.join(projectRoot, '.code/logs'),
+    enableConsole: false,
   },
 
   dispatchStrategy: {

@@ -55,6 +55,7 @@ jstest: export NOSLATED_SOCK_CONN_TIMEOUT=30000
 else
 jstest: export PATH:=$(BUILD_PROJ_DIR)/out/Release:$(PATH)
 endif
+jstest: export NOSLATED_LOG_CONSOLE=true
 jstest:
 	npm run cov -- $(JSTEST_FLAGS)
 
@@ -69,6 +70,7 @@ baselinetest: export NOSLATED_SOCK_CONN_TIMEOUT=30000
 else
 baselinetest: export PATH:=$(BUILD_PROJ_DIR)/out/Release:$(PATH)
 endif
+baselinetest: export NOSLATED_LOG_CONSOLE=true
 baselinetest: export PATH:=$(shell pwd)/node_modules/.bin:$(PATH)
 baselinetest:
 	npm run test -- -g 'baseline'
@@ -81,6 +83,7 @@ benchmarktest: export NATIVE_DEBUG=1
 else
 benchmarktest: export PATH:=$(BUILD_PROJ_DIR)/out/Release:$(PATH)
 endif
+benchmarktest: export NOSLATED_LOG_CONSOLE=true
 benchmarktest: export PATH:=$(shell pwd)/node_modules/.bin:$(PATH)
 benchmarktest: build node_modules clean-test
 	node benchmark/run test all

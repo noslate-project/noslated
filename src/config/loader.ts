@@ -29,6 +29,10 @@ export function resolveEnvConfig() {
     envConfig.logger.level = process.env.NOSLATED_LOG_LEVEL;
   }
 
+  if (process.env.NOSLATED_LOG_CONSOLE) {
+    envConfig.logger.enableConsole = true;
+  }
+
   if (process.env.NOSLATE_LOGDIR) {
     envConfig.logger.dir = process.env.NOSLATE_LOGDIR;
   }
