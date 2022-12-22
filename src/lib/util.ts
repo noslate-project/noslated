@@ -131,7 +131,7 @@ async function downloadZipAndExtractToDir(url: string, dir: string) {
   return promise;
 }
 
-async function raceEvent(eventEmitter: EventEmitter, events: string[]) {
+function raceEvent(eventEmitter: EventEmitter, events: string[]) {
   const deferred = createDeferred<[string, any[]]>();
   const off: () => void = () => {
     events.forEach((it, idx) => {
@@ -150,7 +150,10 @@ async function raceEvent(eventEmitter: EventEmitter, events: string[]) {
   });
 
   (deferred.promise as any).off = off;
-  return deferred.promise;
+  return {
+    promise: deferred.promise,
+    off: off,
+  };
 }
 
 function getCurrentPlaneId() {
@@ -208,4 +211,21 @@ export function setDifference<T>(setA: Set<T>, setB: Set<T>): Set<T> {
   }
 
   return _difference;
+}
+
+export class BackoffCounter {
+  private count = 0;
+  constructor(private initialTimeout: number, private maxReconnectTimeout: number, private reconnectTimeout: number = Math.floor((maxReconnectTimeout - initialTimeout) / 10)) {}
+
+  next() {
+    const count = this.count++;
+    if (count === 0) {
+      return this.initialTimeout;
+    }
+    return Math.min(count * this.reconnectTimeout + this.initialTimeout, this.maxReconnectTimeout);
+  }
+
+  reset() {
+    this.count = 0;
+  }
 }

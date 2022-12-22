@@ -92,6 +92,8 @@ export default {
     channelOptions: {
       'grpc.max_receive_message_length': /* 10M */10 * 1024 * 1024,
       'grpc.max_send_message_length': /* 10M */10 * 1024 * 1024,
+      /** disable grpc global subchannel pool */
+      'grpc.use_local_subchannel_pool': 1,
       'grpc-node.max_session_memory': /* 10M, in megabytes */10,
     },
   },

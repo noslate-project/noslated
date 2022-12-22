@@ -11,7 +11,10 @@ import { loggers } from '../loggers';
 import { config } from '#self/config';
 
 grpc.setLogger(loggers.get('grpc'));
-grpc.setLogVerbosity(grpc.logVerbosity.ERROR);
+// Set the default verbosity to ERROR.
+if (process.env.GRPC_VERBOSITY == null) {
+  grpc.setLogVerbosity(grpc.logVerbosity.ERROR);
+}
 
 function loadDescriptor(includePaths: string[] = []) {
   const protoDir = path.resolve(__dirname, '../../../proto/noslated');

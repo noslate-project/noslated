@@ -54,9 +54,9 @@ export class DefaultEnvironment extends MochaEnvironment {
     ctx.timeout(10_000 + ctx.timeout());
 
     startTurfD();
-    this.agent = new NoslatedClient();
-    this.control = new ControlPlane(config);
     this.data = new DataPlane(config);
+    this.control = new ControlPlane(config);
+    this.agent = new NoslatedClient();
     this.turf = this.control.turf;
 
     await Promise.all([

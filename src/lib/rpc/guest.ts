@@ -10,16 +10,98 @@ import {
 } from '@grpc/grpc-js';
 import { descriptor, RequestType, HostEvents, delegateClientMethods, kDefaultChannelOptions } from './util';
 import { Any } from './any';
-import { raceEvent } from '../util';
+import { BackoffCounter, createDeferred, Deferred, raceEvent } from '../util';
 import { ServiceClient } from '@grpc/grpc-js/build/src/make-client';
 import * as root from '#self/proto/root';
 import { IHostClient } from '#self/lib/interfaces/guest';
+import { loggers } from '../loggers';
+
+const logger = loggers.get('guest');
 
 const kStreamDisconnectedCode = [ status.CANCELLED, status.UNAVAILABLE ];
 
+class StreamClient extends EventEmitter {
+  #streamClient: ClientDuplexStream<root.noslated.IRequest, root.noslated.ISubscriptionChunk> | null = null;
+  #ready = false;
+  #closed = false;
+
+  #backoffCounter: BackoffCounter;
+  #backoffTimer: ReturnType<typeof setTimeout> | null = null;
+
+  constructor(private hostClient: IHostClient, initialBackoff: number, maxReconnectBackoff: number) {
+    super();
+    this.#backoffCounter = new BackoffCounter(initialBackoff, maxReconnectBackoff);
+    this.#createClient();
+  }
+
+  #createClient() {
+    try {
+      this.#streamClient = this.hostClient.connect();
+    } catch (err) {
+      this.#onConnectionUnstable(err);
+      return;
+    }
+    this.#streamClient?.on('data', chunk => {
+      for (const item of chunk.events) {
+        const any = Any.unpack(item.data);
+        this.#onEvent(item.name, any.object, any);
+        if (item.name === HostEvents.LIVENESS && !this.#ready) {
+          this.#onConnectionStable();
+        }
+      }
+    });
+    this.#streamClient?.on('error', error => {
+      this.#onConnectionUnstable(error);
+    });
+    this.#streamClient?.on('end', () => {
+      this.#onConnectionUnstable()
+    });
+  }
+
+  #onEvent(name: string, event: any, message: Any) {
+    this.emit('event', name, event, message);
+  }
+
+  #onConnectionStable() {
+    this.#ready = true;
+    this.#backoffCounter.reset();
+  }
+
+  #onConnectionUnstable(error?: any) {
+    this.#streamClient?.end();
+    this.#streamClient = null;
+    this.#ready = false;
+    if (error && !kStreamDisconnectedCode.includes(error.code)) {
+      logger.debug('stream client connection error', error);
+    }
+
+    if (this.#closed) {
+      return;
+    }
+
+    // backoff.
+    const nextBackoff = this.#backoffCounter.next();
+    this.#backoffTimer = setTimeout(() => {
+      this.#createClient();
+    }, nextBackoff);
+  }
+
+  destroy() {
+    // clear backoff.
+    if (this.#backoffTimer) {
+      clearTimeout(this.#backoffTimer);
+    }
+    this.#streamClient?.end();
+    this.#closed = true;
+  }
+
+  write(request: root.noslated.IRequest) {
+    this.#streamClient?.write(request);
+  }
+}
+
 export class Guest extends EventEmitter {
   static events = {
-    STREAM_CLIENT_ERROR: 'stream-client-error',
     CONNECTIVITY_STATE_CHANGED: 'connectivity-state-changed',
   };
   static connectivityState = connectivityState;
@@ -29,8 +111,11 @@ export class Guest extends EventEmitter {
   #hostClient: IHostClient;
   #clients: Map<ServiceClientConstructor, ServiceClient> = new Map();
   /** @type {grpc.ClientDuplexStream} */
-  #streamClient: ClientDuplexStream<root.noslated.IRequest, root.noslated.ISubscriptionChunk> | null;
+  #streamClient: StreamClient | null;
   #streamClientInitTimeoutMs;
+
+  #initialReconnectBackoffMs;
+  #maxReconnectBackoffMs;
 
   /** @type {Set<string>} */
   #subscribedEvents: Set<string> = new Set();
@@ -39,54 +124,22 @@ export class Guest extends EventEmitter {
   constructor(address: string, options?: GuestOptions) {
     super();
     this.#address = address;
+
+    this.#initialReconnectBackoffMs = options?.initialReconnectBackoffMs ?? 100;
+    this.#maxReconnectBackoffMs = options?.maxReconnectBackoffMs ?? 5_000;
+
     this.#hostClient = new (descriptor as any).noslated.Host(this.#address, credentials.createInsecure(), {
-      ...kDefaultChannelOptions,
       'grpc.enable_http_proxy': 0,
-      'grpc.initial_reconnect_backoff_ms': options?.initialReconnectBackoffMs ?? 100,
-      'grpc.max_reconnect_backoff_ms': options?.maxReconnectBackoffMs ?? 10_000,
+      'grpc.initial_reconnect_backoff_ms': this.#initialReconnectBackoffMs,
+      'grpc.max_reconnect_backoff_ms': this.#maxReconnectBackoffMs,
+      ...kDefaultChannelOptions,
     });
     this.#channel = getClientChannel(this.#hostClient);
     this.#streamClientInitTimeoutMs = options?.streamClientInitTimeoutMs ?? 2_000;
     this.#streamClient = null;
   }
 
-  #streamClientPreamble = () => {
-    if (this.#streamClient == null) {
-      this.#streamClient = this.#hostClient.connect();
-      let initTimeout: NodeJS.Timeout | undefined = setTimeout(() => {
-        const err = new Error('Guest stream client failed to receive liveness signal in time.');
-        err.code = status.DEADLINE_EXCEEDED;
-        this.#streamClient?.destroy(err);
-        initTimeout = undefined;
-      }, this.#streamClientInitTimeoutMs);
-      this.#streamClient?.on('data', chunk => {
-        for (const item of chunk.events) {
-          const any = Any.unpack(item.data);
-          this.emit(item.name, any.object, any);
-          if (item.name === HostEvents.LIVENESS && initTimeout) {
-            clearTimeout(initTimeout);
-            initTimeout = undefined;
-          }
-        }
-      });
-      this.#streamClient?.on('error', error => {
-        clearTimeout(initTimeout);
-        initTimeout = undefined;
-        if (kStreamDisconnectedCode.includes(error.code as status)) {
-          this.emit(Guest.events.STREAM_CLIENT_ERROR, error);
-          return;
-        }
-        this.#onError(error);
-      });
-      this.#streamClient?.on('end', () => {
-        clearTimeout(initTimeout);
-        initTimeout = undefined;
-        this.#streamClient = null;
-      });
-    }
-  }
-
-  #onChannelUnstable = (oldState: connectivityState, err?: Error) => {
+  #onConnectionStateChanged = (oldState: connectivityState, err?: Error) => {
     const newState = this.#channel.getConnectivityState(false);
     if (newState === connectivityState.SHUTDOWN) {
       return;
@@ -98,12 +151,6 @@ export class Guest extends EventEmitter {
 
     this.#channel.getConnectivityState(/** exit idle */true);
 
-    /** only emit state changed event when significant state changes */
-    if (this.#started && ((newState === connectivityState.IDLE && oldState === connectivityState.READY) ||
-      newState === connectivityState.READY)) {
-      this.emit(Guest.events.CONNECTIVITY_STATE_CHANGED, newState);
-    }
-
     let watchDeadline;
     if ([ connectivityState.READY ].includes(newState)) {
       watchDeadline = Infinity;
@@ -114,15 +161,33 @@ export class Guest extends EventEmitter {
     this.#channel.watchConnectivityState(
       newState,
       watchDeadline,
-      err => this.#onChannelUnstable(newState, err as Error));
+      err => this.#onConnectionStateChanged(newState, err as Error));
 
-    if (newState === connectivityState.READY) {
+    const stable = newState === connectivityState.READY;
+    const unstable = newState === connectivityState.IDLE && oldState === connectivityState.READY;
+    /** only emit state changed event when significant state changes */
+    if (this.#started && (unstable || stable)) {
+      this.emit(Guest.events.CONNECTIVITY_STATE_CHANGED, newState);
+    }
+    if (stable) {
       this.#onConnectionStable();
+    } else if (unstable) {
+      this.#onConnectionUnstable()
     }
   }
 
+  #onConnectionUnstable = () => {
+    this.#streamClient?.destroy();
+    this.#streamClient = null;
+  }
+
   #onConnectionStable = () => {
-    this.#streamClientPreamble();
+    if (this.#streamClient == null) {
+      this.#streamClient = new StreamClient(this.#hostClient, this.#initialReconnectBackoffMs, this.#maxReconnectBackoffMs);
+      this.#streamClient.on('event', (event: string, ...args: any[]) => {
+        this.emit(event, ...args);
+      });
+    }
     for (const eventName of this.#subscribedEvents) {
       this.#streamClient?.write({
         type: RequestType.SUBSCRIBE,
@@ -131,9 +196,38 @@ export class Guest extends EventEmitter {
     }
   }
 
+  /**
+   * Wait for arbitrary stream client ready.
+   * Stream client may be replace when the connection is unstable.
+   */
+  async #waitForStreamClientReady(timeout: number) {
+    const deferred = createDeferred<void>();
+    const initTimeout = setTimeout(() => {
+      const err = new Error('Guest stream client failed to receive liveness signal in time.');
+      err.code = status.DEADLINE_EXCEEDED;
+      deferred.reject(err);
+    }, timeout);
+
+    const { promise, off } = raceEvent(this, [ HostEvents.LIVENESS, 'error' ]);
+    const raceFuture = promise.then(([event, args]) => {
+      if (event !== HostEvents.LIVENESS) {
+        throw args[0];
+      }
+    });
+
+    return Promise.race([deferred.promise, raceFuture])
+      .finally(() => {
+        clearTimeout(initTimeout);
+        off();
+      });
+  }
+
   #onError = (e: Error) => {
+    if (this.#started) {
+      console.log('guest on error', this.#started, e);
+      this.emit('error', e);
+    }
     this.close();
-    this.emit('error', e);
   }
 
   get address() {
@@ -166,7 +260,6 @@ export class Guest extends EventEmitter {
   }
 
   livenessCheckpoint() {
-    this.#streamClientPreamble();
     this.#streamClient?.write({
       type: RequestType.LIVENESS_PROBE,
       liveness: { timestamp: Date.now() },
@@ -218,23 +311,21 @@ export class Guest extends EventEmitter {
     this.#channel.watchConnectivityState(
       connectivityState.READY,
       Infinity,
-      () => this.#onChannelUnstable(connectivityState.READY)
+      () => this.#onConnectionStateChanged(connectivityState.READY)
     );
 
     this.#onConnectionStable();
-    const [ event, args ] = await raceEvent(this, [ HostEvents.LIVENESS, Guest.events.STREAM_CLIENT_ERROR, 'error' ]);
-    if (event !== HostEvents.LIVENESS) {
-      throw args[0];
-    }
+    await this.#waitForStreamClientReady(this.#streamClientInitTimeoutMs);
     this.#started = true;
   }
 
   async close() {
+    this.#started = false;
     if (this.#streamClient) {
       // suppress any cancellation errors during shutdown;
       this.#streamClient.removeAllListeners('error');
       this.#streamClient.on('error', () => {});
-      this.#streamClient.end();
+      this.#streamClient.destroy();
     }
     this.#hostClient.close();
   }

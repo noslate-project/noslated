@@ -47,6 +47,11 @@ describe(common.testName(__filename), function() {
       'ping', '{"msg": "foobar"}',
     ], {
       stdio: 'pipe',
+      env: {
+        ...process.env,
+        GRPC_TRACE: '',
+        GRPC_VERBOSITY: 'NONE',
+      },
     });
     cleanup = () => cp.kill();
     cp.stderr.pipe(process.stderr);
@@ -70,6 +75,11 @@ describe(common.testName(__filename), function() {
       'non-exists', '{"msg": "foobar"}',
     ], {
       stdio: 'pipe',
+      env: {
+        ...process.env,
+        GRPC_TRACE: '',
+        GRPC_VERBOSITY: 'NONE',
+      },
     });
     cleanup = () => cp.kill();
     cp.stdout.pipe(process.stdout);
