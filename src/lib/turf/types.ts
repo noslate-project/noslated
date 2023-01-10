@@ -20,6 +20,13 @@ export enum TurfContainerStates {
   unknown = 'unknown',
 }
 
+export enum TurfCode {
+  ENOENT = -2,
+  ECHILD = -10,
+  EAGAIN = -11,
+  EINVAL = -22,
+}
+
 export interface TurfProcess {
   status: TurfContainerStates;
   pid: number;

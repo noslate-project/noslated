@@ -82,16 +82,17 @@ export class ControlPlane extends BaseOf(EventEmitter) {
    * Close
    * @return {Promise<void>} The result.
    */
-  _close() {
+  async _close() {
     this.dataPlaneClientManager.removeAllListeners('newClientReady');
 
-    return Promise.all([
-      this.turf.close(),
+    await Promise.all([
       this.dataPlaneClientManager.close(),
       this.herald.close(),
       this.workerLauncher.close(),
       this.capacityManager.close(),
     ]);
+    await this.turf.close();
+    return;
   }
 
   /**

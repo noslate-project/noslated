@@ -15,6 +15,7 @@ import { Done } from 'mocha';
 import { AworkerFunctionProfile } from '#self/lib/json/function_profile';
 import { NotNullableInterface } from '#self/lib/interfaces';
 import * as root from '#self/proto/root';
+import { startTurfD, stopTurfD } from '#self/test/turf';
 
 describe(common.testName(__filename), () => {
   const funcData: AworkerFunctionProfile[] = [{
@@ -65,14 +66,18 @@ describe(common.testName(__filename), () => {
   }];
 
   let profileManager: ProfileManager;
-  // Not connected turf client
-  const turf = new Turf(config.turf.bin, config.turf.socketPath);
+  let turf: Turf;
   beforeEach(async () => {
+    startTurfD();
+    turf = new Turf(config.turf.bin, config.turf.socketPath);
+    turf.connect();
     profileManager = new ProfileManager(config);
     await profileManager.set(funcData, 'WAIT');
   });
-  afterEach(() => {
+  afterEach(async () => {
     mm.restore();
+    await turf.close();
+    stopTurfD();
   });
 
   describe('WorkerStatsSnapshot', () => {
@@ -572,7 +577,8 @@ describe(common.testName(__filename), () => {
     describe('.correct()', () => {
       it('should correct gc stopped and unknown container', async () => {
         const clock: Clock = FakeTimers.install({
-          toFake: [ 'setTimeout' ]
+          toFake: [ 'setTimeout' ],
+          shouldAdvanceTime: true,
         });
         const spyTurfStop = sinon.spy(turf, 'stop');
         const spyTurfState = sinon.spy(turf, 'state');

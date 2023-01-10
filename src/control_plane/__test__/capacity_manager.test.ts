@@ -20,7 +20,9 @@ import { ContainerStatus, ContainerStatusReport, ControlPanelEvent } from '#self
 import { Turf } from '#self/lib/turf';
 import { startTurfD, stopTurfD } from '#self/test/turf';
 
-describe(common.testName(__filename), () => {
+describe(common.testName(__filename), function () {
+  this.timeout(10_000);
+
   const brokerData1 = {
     functionName: 'func',
     inspector: false,
@@ -70,7 +72,8 @@ describe(common.testName(__filename), () => {
     await control.ready();
     ({ capacityManager } = control);
     clock = FakeTimers.install({
-      toFake: ['setTimeout']
+      toFake: ['setTimeout'],
+      shouldAdvanceTime: true,
     });
   });
 

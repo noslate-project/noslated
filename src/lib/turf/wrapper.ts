@@ -2,9 +2,9 @@ import { config } from '#self/config';
 import cp from 'child_process';
 
 import Logger from '../logger';
-import { createDeferred, isNotNullish } from '../util';
+import { createDeferred, isNotNullish, sleep } from '../util';
 import { TurfSession } from './session';
-import { TurfStartOptions, TurfException, TurfProcess, TurfState } from './types';
+import { TurfStartOptions, TurfException, TurfProcess, TurfState, TurfCode } from './types';
 
 const logger = Logger.get('turf/wrapper');
 
@@ -12,6 +12,14 @@ const TurfPsLineMatcher = /(\S+)\s+(\d+)\s+(\S+)/;
 const TurfStateLineMatcher = /(\S+):\s+(\S+)/;
 
 export { TurfContainerStates } from './types';
+
+const TurfStopIgnorableCodes = [
+  TurfCode.ECHILD,
+  TurfCode.ENOENT,
+];
+const TurfStopRetryableCodes = [
+  TurfCode.EAGAIN,
+];
 
 export class Turf {
   session: TurfSession;
@@ -64,7 +72,7 @@ export class Turf {
     });
     // Listen on 'close' event instead of 'exit' event to wait stdout and stderr to be closed.
     child.on('close', (code, signal) => {
-      logger.debug(`ran ${command}, cwd: ${opt.cwd || process.cwd()}, consume %s`, process.hrtime.bigint() - start);
+      logger.debug(`ran ${command}, cwd: ${opt.cwd || process.cwd()}, consume %s ns`, process.hrtime.bigint() - start);
       const stdout = Buffer.concat(result.stdout).toString('utf8');
       if (code !== 0) {
         const stderr = Buffer.concat(result.stderr).toString('utf8')
@@ -86,10 +94,12 @@ export class Turf {
     const command = args.join(' ');
     const ret = await this.session.send(args)
       .finally(() => {
-        logger.debug(`send %s, consume %s`, command, process.hrtime.bigint() - start);
+        logger.debug(`send %s, consume %s ns`, command, process.hrtime.bigint() - start);
       });
     if (ret.header.code !== 0) {
-      throw new Error(`Turf response with non-zero code(${ret.header.code})`);
+      const err = new Error(`Turf response with non-zero code(${ret.header.code})`);
+      err.code = ret.header.code;
+      throw err;
     }
   }
 
@@ -122,15 +132,45 @@ export class Turf {
     return this.#sendOrExec(args);
   }
 
+  async #stop(containerName: string, force: boolean) {
+    const args = ['stop'];
+    if (force) {
+      args.push('--force');
+    }
+    args.push(containerName);
+    try {
+      await this.#send(args);
+    } catch (e: any) {
+      if (TurfStopIgnorableCodes.includes(e.code)) {
+        return;
+      }
+      throw e;
+    }
+  }
+
   async stop(containerName: string) {
     try {
-      await this.#exec([ '-H', 'stop', containerName ]);
+      await this.#stop(containerName, false);
     } catch (e: any) {
-      logger.info(`${containerName} stop failed, try to force stop`, e.message);
-      try {
-        await this.#exec([ '-H', 'stop', '--force', containerName ]);
-      } catch (e: any) {
-        logger.info(`${containerName} force stop failed, ignore error`, e.message);
+      if (!TurfStopRetryableCodes.includes(e.code)) {
+        logger.info(`%s stop failed`, containerName, e.message);
+        throw e;
+      }
+      // TODO(chengzhong.wcz): yield retrying to callers.
+      logger.info(`%s stop failed, retrying`, containerName);
+      let retry = 3;
+      while (retry >= 1) {
+        retry--;
+        try {
+          await sleep(1000);
+          await this.#stop(containerName, true);
+        } catch (e: any) {
+          if (retry === 0 || !TurfStopRetryableCodes.includes(e.code)) {
+            logger.info(`%s force stop failed, ignore error`, containerName, e.message);
+            return;
+          }
+          logger.info(`%s force stop, retrying`, containerName, retry);
+        }
       }
     }
   }

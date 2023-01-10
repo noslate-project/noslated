@@ -166,7 +166,7 @@ export class TurfSession extends EventEmitter {
   }
 
   #onClose = () => {
-    const e = new Error('Aborted');
+    const e = new Error('Turf request aborted because session closed');
     for (const item of this.#queue) {
       item.deferred.reject(e);
     }
