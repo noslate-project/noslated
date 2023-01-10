@@ -8,7 +8,10 @@ const logger = require('#self/lib/logger').get('test-client');
 function child() {
   let client: NoslatedClient;
   process.on('message', ({ type, args }: CallbackArgs) => {
-    console.log('[CLIENT CHILD] client process received message', { type, args });
+    console.log('[CLIENT CHILD] client process received message', {
+      type,
+      args,
+    });
     if (type === 'connect') {
       return connect(...args);
     }
@@ -16,7 +19,7 @@ function child() {
       return close();
     }
     if (type === 'resourcePut') {
-      return client.resourcePut(...args).then((ret) => {
+      return client.resourcePut(...args).then(ret => {
         process.send?.({ type, args: ret });
       });
     }
@@ -44,15 +47,17 @@ function child() {
       };
     };
 
-    const onEvent = (type: string) => (...args: any[]) => process.send?.({ type, args });
+    const onEvent =
+      (type: string) =>
+      (...args: any[]) =>
+        process.send?.({ type, args });
     client.onRequest = onEvent('request');
     client.onStreamPush = onEvent('streamPush');
     client.onResourceNotification = onEvent('resourceNotification');
     client.onDisconnect = onEvent('disconnect');
-    client.start()
-      .then(() => {
-        process.send?.({ type: 'bind', args: [] });
-      });
+    client.start().then(() => {
+      process.send?.({ type: 'bind', args: [] });
+    });
   }
   function close() {
     if (client == null) {
@@ -77,17 +82,26 @@ export class TestClient extends EventEmitter {
     if (this.client) {
       return;
     }
-    this.client = childProcess.fork(__filename, [ 'child' ], { stdio: [ 'ignore', 'inherit', 'inherit', 'ipc' ] });
+    this.client = childProcess.fork(__filename, ['child'], {
+      stdio: ['ignore', 'inherit', 'inherit', 'ipc'],
+    });
     this.client.on('message', ({ type, args }: CallbackArgs) => {
       logger.info('client controller received message', { type, args });
       if (type === 'ready') {
-        this.client.send({ type: 'connect', args: [ this.serverPath, this.credential ] });
+        this.client.send({
+          type: 'connect',
+          args: [this.serverPath, this.credential],
+        });
         return;
       }
       this.emit(type, args);
     });
     this.client.on('exit', (code: string, signal: string) => {
-      logger.info('client process exited with code(%d) and signal(%s)', code, signal);
+      logger.info(
+        'client process exited with code(%d) and signal(%s)',
+        code,
+        signal
+      );
     });
   }
 
@@ -95,8 +109,15 @@ export class TestClient extends EventEmitter {
     return this.client?.pid;
   }
 
-  resourcePut(resourceId: string, action: aworker.ipc.ResourcePutAction, token: string) {
-    this.client.send({ type: 'resourcePut', args: [ resourceId, action, token ] });
+  resourcePut(
+    resourceId: string,
+    action: aworker.ipc.ResourcePutAction,
+    token: string
+  ) {
+    this.client.send({
+      type: 'resourcePut',
+      args: [resourceId, action, token],
+    });
   }
 
   async close() {
@@ -110,7 +131,7 @@ export class TestClient extends EventEmitter {
   }
 }
 
-type CallbackArgs = { type: string; args: [any, any]; };
+type CallbackArgs = { type: string; args: [any, any] };
 
 if (require.main === module && process.argv[2] === 'child') {
   child();

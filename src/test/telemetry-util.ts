@@ -1,5 +1,9 @@
 import { baselineDir } from '#self/test/common';
-import { CollectionResult, DataPoint, MetricReader } from '@opentelemetry/sdk-metrics';
+import {
+  CollectionResult,
+  DataPoint,
+  MetricReader,
+} from '@opentelemetry/sdk-metrics';
 import { MetricAttributes } from '@opentelemetry/api';
 
 export const nodeJsWorkerTestItem = {
@@ -28,7 +32,10 @@ export class TestMetricReader extends MetricReader {
   protected async onShutdown(): Promise<void> {}
 }
 
-function attributesEquals(lhs: { [x: string]: any; }, rhs: { [x: string]: any; }) {
+function attributesEquals(
+  lhs: { [x: string]: any },
+  rhs: { [x: string]: any }
+) {
   const lhsKeys = Object.keys(lhs).sort();
   const rhsKeys = Object.keys(rhs).sort();
   if (lhsKeys.length !== rhsKeys.length) {
@@ -44,11 +51,16 @@ function attributesEquals(lhs: { [x: string]: any; }, rhs: { [x: string]: any; }
   return true;
 }
 
-export function getMetricRecords<T>(result: CollectionResult, name: any, attributes: MetricAttributes) {
+export function getMetricRecords<T>(
+  result: CollectionResult,
+  name: any,
+  attributes: MetricAttributes
+) {
   if (result.errors.length) {
     throw new AggregateError(result.errors);
   }
-  return result.resourceMetrics.scopeMetrics.flatMap(it => it.metrics)
+  return result.resourceMetrics.scopeMetrics
+    .flatMap(it => it.metrics)
     .filter(metric => {
       return metric.descriptor.name === name;
     })

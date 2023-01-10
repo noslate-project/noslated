@@ -24,12 +24,18 @@ describe(common.testName(__filename), () => {
 
     delegate = new NoslatedDelegateService();
     delegate.register('foobar');
-    delegate.on('bind', serverOnBind.calls(cred => {
-      assert.strictEqual(cred, 'foobar');
-    }, 1));
-    delegate.on('disconnect', serverOnDisconnect.calls(cred => {
-      assert.strictEqual(cred, 'foobar');
-    }, 1));
+    delegate.on(
+      'bind',
+      serverOnBind.calls(cred => {
+        assert.strictEqual(cred, 'foobar');
+      }, 1)
+    );
+    delegate.on(
+      'disconnect',
+      serverOnDisconnect.calls(cred => {
+        assert.strictEqual(cred, 'foobar');
+      }, 1)
+    );
     delegate.start();
 
     client = new TestClient(delegate.serverSockPath(), 'foobar');
@@ -39,7 +45,7 @@ describe(common.testName(__filename), () => {
       client?.once('bind', resolve);
       client?.connect();
     });
-    [ clientOnBind, serverOnBind ].forEach(it => {
+    [clientOnBind, serverOnBind].forEach(it => {
       it.verify();
     });
 
@@ -47,7 +53,7 @@ describe(common.testName(__filename), () => {
       delegate?.once('disconnect', resolve);
       client?.close();
     });
-    [ serverOnDisconnect ].forEach(it => {
+    [serverOnDisconnect].forEach(it => {
       it.verify();
     });
   });
@@ -61,12 +67,18 @@ describe(common.testName(__filename), () => {
     delegate.register('foobar', { preemptive: true });
 
     // Both 'bind' and 'disconnect' should be emitted once.
-    delegate.on('bind', serverOnBind.calls(cred => {
-      assert.strictEqual(cred, 'foobar');
-    }, 1));
-    delegate.on('disconnect', serverOnDisconnect.calls(cred => {
-      assert.strictEqual(cred, 'foobar');
-    }, 1));
+    delegate.on(
+      'bind',
+      serverOnBind.calls(cred => {
+        assert.strictEqual(cred, 'foobar');
+      }, 1)
+    );
+    delegate.on(
+      'disconnect',
+      serverOnDisconnect.calls(cred => {
+        assert.strictEqual(cred, 'foobar');
+      }, 1)
+    );
     delegate.start();
 
     client = new TestClient(delegate.serverSockPath(), 'foobar');
@@ -88,7 +100,7 @@ describe(common.testName(__filename), () => {
     });
 
     // verify 'bind' emitted once.
-    [ clientOnBind, serverOnBind ].forEach(it => {
+    [clientOnBind, serverOnBind].forEach(it => {
       it.verify();
     });
 
@@ -98,7 +110,7 @@ describe(common.testName(__filename), () => {
     });
 
     // verify 'disconnect' emitted once.
-    [ serverOnDisconnect ].forEach(it => {
+    [serverOnDisconnect].forEach(it => {
       it.verify();
     });
   });
@@ -119,17 +131,18 @@ describe(common.testName(__filename), () => {
     try {
       await Promise.all([
         delegate.trigger('foobar', 'foobar', null as any, { timeout: 60_1000 }),
-        Promise.resolve()
-          .then(async () => {
-            await new Promise(resolve => setTimeout(resolve, 100));
-            delegate?.resetPeer('foobar');
-          }),
+        Promise.resolve().then(async () => {
+          await new Promise(resolve => setTimeout(resolve, 100));
+          delegate?.resetPeer('foobar');
+        }),
       ]);
     } catch (e) {
       err = e as Error;
     }
     assert.ok(err! != null);
-    assert.throws(() => { throw err; }, /CanonicalCode::CANCELLED/);
+    assert.throws(() => {
+      throw err;
+    }, /CanonicalCode::CANCELLED/);
   });
 
   it('should reset requests on client disconnected for peer disconnected', async () => {
@@ -148,17 +161,18 @@ describe(common.testName(__filename), () => {
     try {
       await Promise.all([
         delegate.trigger('foobar', 'foobar', null as any, { timeout: 60_1000 }),
-        Promise.resolve()
-          .then(async () => {
-            await new Promise(resolve => setTimeout(resolve, 100));
-            await client?.close();
-          }),
+        Promise.resolve().then(async () => {
+          await new Promise(resolve => setTimeout(resolve, 100));
+          await client?.close();
+        }),
       ]);
     } catch (e) {
       err = e as Error;
     }
     assert.ok(err! != null);
-    assert.throws(() => { throw err; }, /CanonicalCode::CONNECTION_RESET/);
+    assert.throws(() => {
+      throw err;
+    }, /CanonicalCode::CONNECTION_RESET/);
   });
 
   it('should reset requests on client disconnected for client closed', async () => {
@@ -177,17 +191,18 @@ describe(common.testName(__filename), () => {
     try {
       await Promise.all([
         delegate.trigger('foobar', 'foobar', null as any, { timeout: 60_1000 }),
-        Promise.resolve()
-          .then(async () => {
-            await new Promise(resolve => setTimeout(resolve, 100));
-            client?.close();
-          }),
+        Promise.resolve().then(async () => {
+          await new Promise(resolve => setTimeout(resolve, 100));
+          client?.close();
+        }),
       ]);
     } catch (e) {
       err = e as Error;
     }
     assert.ok(err! != null);
-    assert.throws(() => { throw err; }, /CanonicalCode::CONNECTION_RESET/);
+    assert.throws(() => {
+      throw err;
+    }, /CanonicalCode::CONNECTION_RESET/);
   });
 
   describe('setDaprAdaptor', () => {

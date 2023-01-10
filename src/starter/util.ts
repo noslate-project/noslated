@@ -1,18 +1,23 @@
 import { NoslatedClient, CanonicalCode } from '../delegate/noslated_ipc';
 
-const levels = [ 'debug', 'info', 'error' ] as const;
+const levels = ['debug', 'info', 'error'] as const;
 type LogMethod = (...args: unknown[]) => void;
 class NaiveLogger {
   #level;
   constructor(level = 'error') {
     this.#level = levels.indexOf(level as any);
-    for (const [ idx, lvl ] of levels.entries()) {
+    for (const [idx, lvl] of levels.entries()) {
       const upperLvl = lvl.toUpperCase();
       this[lvl] = (format, ...args) => {
         if (this.#level > idx) {
           return;
         }
-        console[lvl]('WORKER [%s] %s - ' + format, upperLvl, new Date(), ...args);
+        console[lvl](
+          'WORKER [%s] %s - ' + format,
+          upperLvl,
+          new Date(),
+          ...args
+        );
       };
     }
   }
@@ -39,9 +44,4 @@ function safeError(error: unknown) {
   }
 }
 
-export {
-  NaiveLogger,
-  safeError,
-  NoslatedClient,
-  CanonicalCode,
-};
+export { NaiveLogger, safeError, NoslatedClient, CanonicalCode };

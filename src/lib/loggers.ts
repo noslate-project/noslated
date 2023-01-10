@@ -1,11 +1,11 @@
 import * as MidwayLogger from '@midwayjs/logger';
 import { IMidwayLogger } from '@midwayjs/logger';
 
-const levels = [ 'debug', 'info', 'warn', 'error' ] as const;
+const levels = ['debug', 'info', 'warn', 'error'] as const;
 type LogLevels = (typeof levels)[number];
 export type Sink = {
   [key in LogLevels]: (...args: unknown[]) => void;
-}
+};
 
 interface LoggerMeta {
   label: string;
@@ -32,7 +32,7 @@ function getPrettySink(filename: string) {
     // no need to pipe errors to a different file.
     disableError: true,
     // keep after rotater
-    maxFiles: 3
+    maxFiles: 3,
   });
   return midwayLogger;
 }

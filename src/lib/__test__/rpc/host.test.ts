@@ -26,7 +26,12 @@ describe(common.testName(__filename), () => {
 
   it('Host#addService delegation', async () => {
     host.addService((grpcDescriptor as any).noslated.test.TestService.service, {
-      async ping(call: ServerWritableStream<root.noslated.test.IPing, root.noslated.test.IPong>) {
+      async ping(
+        call: ServerWritableStream<
+          root.noslated.test.IPing,
+          root.noslated.test.IPong
+        >
+      ) {
         if (call.request.msg === 'error') {
           throw new RpcError('foobar');
         }
@@ -41,7 +46,10 @@ describe(common.testName(__filename), () => {
     const resp = await (guest as any).ping({ msg: 'foo' });
     assert.strictEqual(resp.msg, 'foo');
 
-    await assert.rejects((guest as any).ping({ msg: 'error' }), /Error: 13 INTERNAL: foobar/);
+    await assert.rejects(
+      (guest as any).ping({ msg: 'error' }),
+      /Error: 13 INTERNAL: foobar/
+    );
   });
 
   it('Host#addService unexpected error', async () => {
@@ -55,7 +63,10 @@ describe(common.testName(__filename), () => {
     guest.addService((grpcDescriptor as any).noslated.test.TestService);
     await guest.start();
 
-    await assert.rejects((guest as any).ping({ msg: 'error' }), /Error: 2 UNKNOWN: foobar/);
+    await assert.rejects(
+      (guest as any).ping({ msg: 'error' }),
+      /Error: 2 UNKNOWN: foobar/
+    );
   });
 
   it('Host should emit Host.events.DISCONNECTED event', async () => {

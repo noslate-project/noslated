@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { once } from 'events' ;
+import { once } from 'events';
 import * as common from '#self/test/common';
 import { TestClient } from './test-client';
 import { NoslatedDelegateService } from '#self/delegate/index';
@@ -69,7 +69,7 @@ describe(common.testName(__filename), () => {
       assert.ok(resource.exclusive);
 
       assert.strictEqual(notification.callCount, 1);
-      assert.deepStrictEqual(notification.args[0][0], [[ acq2.token, 'cred2' ]]);
+      assert.deepStrictEqual(notification.args[0][0], [[acq2.token, 'cred2']]);
       resource.release(acq2.token);
       assert.ok(!resource.isActive);
       assert.strictEqual(notification.callCount, 1);
@@ -98,7 +98,7 @@ describe(common.testName(__filename), () => {
       assert.ok(!resource.exclusive);
 
       assert.strictEqual(notification.callCount, 1);
-      assert.deepStrictEqual(notification.args[0][0], [[ acq2.token, 'cred2' ]]);
+      assert.deepStrictEqual(notification.args[0][0], [[acq2.token, 'cred2']]);
       resource.release(acq2.token);
       assert.ok(!resource.isActive);
       assert.strictEqual(notification.callCount, 1);
@@ -126,7 +126,7 @@ describe(common.testName(__filename), () => {
       assert.ok(resource.exclusive);
 
       assert.strictEqual(notification.callCount, 1);
-      assert.deepStrictEqual(notification.args[0][0], [[ acq2.token, 'cred2' ]]);
+      assert.deepStrictEqual(notification.args[0][0], [[acq2.token, 'cred2']]);
       resource.release(acq2.token);
       assert.ok(!resource.isActive);
       assert.strictEqual(notification.callCount, 1);
@@ -154,7 +154,7 @@ describe(common.testName(__filename), () => {
 
       clock.tick(kTimeout);
       assert.strictEqual(timeout.callCount, 1);
-      assert.deepStrictEqual(timeout.args[0][0], [[ acq1.token, 'cred1' ]]);
+      assert.deepStrictEqual(timeout.args[0][0], [[acq1.token, 'cred1']]);
 
       assert.ok(resource.isActive);
       assert.ok(resource.exclusive);
@@ -162,7 +162,7 @@ describe(common.testName(__filename), () => {
 
       clock.tick(kTimeout);
       assert.strictEqual(timeout.callCount, 2);
-      assert.deepStrictEqual(timeout.args[1][0], [[ acq2.token, 'cred2' ]]);
+      assert.deepStrictEqual(timeout.args[1][0], [[acq2.token, 'cred2']]);
     });
 
     it('should automatically release exclusive resource once timeout', () => {
@@ -187,7 +187,7 @@ describe(common.testName(__filename), () => {
 
       clock.tick(kTimeout);
       assert.strictEqual(timeout.callCount, 1);
-      assert.deepStrictEqual(timeout.args[0][0], [[ acq1.token, 'cred1' ]]);
+      assert.deepStrictEqual(timeout.args[0][0], [[acq1.token, 'cred1']]);
 
       assert.ok(resource.isActive);
       assert.ok(!resource.exclusive);
@@ -195,7 +195,7 @@ describe(common.testName(__filename), () => {
 
       clock.tick(kTimeout);
       assert.strictEqual(timeout.callCount, 2);
-      assert.deepStrictEqual(timeout.args[1][0], [[ acq2.token, 'cred2' ]]);
+      assert.deepStrictEqual(timeout.args[1][0], [[acq2.token, 'cred2']]);
     });
   });
 
@@ -214,7 +214,9 @@ describe(common.testName(__filename), () => {
 
     it('should acquire and release resources', async () => {
       const resolver = new DefaultNamespaceResolver();
-      delegate = new NoslatedDelegateService({ namespaceResolver: resolver } as any);
+      delegate = new NoslatedDelegateService({
+        namespaceResolver: resolver,
+      } as any);
       delegate.register(cred);
       delegate.start();
 
@@ -229,7 +231,7 @@ describe(common.testName(__filename), () => {
       {
         const resultFuture = once(client, 'resourcePut');
         client.resourcePut(resourceId, ResourcePutAction.ACQUIRE_SH, '');
-        ([{ successOrAcquired, token }] = await resultFuture);
+        [{ successOrAcquired, token }] = await resultFuture;
         assert.strictEqual(successOrAcquired, true);
         const stub = resolver.resolve(cred).resources.get(resourceId);
         assert.ok(stub?.activeTokens.includes(token));
@@ -238,7 +240,7 @@ describe(common.testName(__filename), () => {
       {
         const resultFuture = once(client, 'resourcePut');
         client.resourcePut(resourceId, ResourcePutAction.RELEASE, token);
-        ([{ successOrAcquired }] = await resultFuture);
+        [{ successOrAcquired }] = await resultFuture;
         assert.strictEqual(successOrAcquired, true);
         // released resource should have been collected.
         assert(!resolver.resolve(cred).resources.has(resourceId));
@@ -261,7 +263,7 @@ describe(common.testName(__filename), () => {
       {
         const resultFuture = once(client, 'resourcePut');
         client.resourcePut(resourceId, ResourcePutAction.ACQUIRE_EX, '');
-        ([{ successOrAcquired, token }] = await resultFuture);
+        [{ successOrAcquired, token }] = await resultFuture;
         assert.strictEqual(successOrAcquired, true);
       }
 
@@ -269,7 +271,7 @@ describe(common.testName(__filename), () => {
       {
         const resultFuture = once(client, 'resourcePut');
         client.resourcePut(resourceId, ResourcePutAction.ACQUIRE_EX, '');
-        ([{ successOrAcquired, token: token2 }] = await resultFuture);
+        [{ successOrAcquired, token: token2 }] = await resultFuture;
         assert.strictEqual(successOrAcquired, false); // failed to put resource, notification registered.
       }
       {
@@ -277,7 +279,8 @@ describe(common.testName(__filename), () => {
         const resultFuture = once(client, 'resourcePut');
         client.resourcePut(resourceId, ResourcePutAction.RELEASE, token);
         await resultFuture;
-        const [[ notificationResourceId, notificationToken ]] = await notificationFuture;
+        const [[notificationResourceId, notificationToken]] =
+          await notificationFuture;
         assert.strictEqual(notificationResourceId, resourceId);
         assert.strictEqual(notificationToken, token2);
       }
@@ -309,7 +312,9 @@ describe(common.testName(__filename), () => {
 
     it('should acquire and release resources', async () => {
       const resolver = new DefaultNamespaceResolver();
-      delegate = new NoslatedDelegateService({ namespaceResolver: resolver } as any);
+      delegate = new NoslatedDelegateService({
+        namespaceResolver: resolver,
+      } as any);
       delegate.start();
 
       delegate.register(cred1);
@@ -332,7 +337,7 @@ describe(common.testName(__filename), () => {
       {
         const resultFuture = once(client1, 'resourcePut');
         client1.resourcePut(resourceId, ResourcePutAction.ACQUIRE_EX, '');
-        ([{ successOrAcquired, token }] = await resultFuture);
+        [{ successOrAcquired, token }] = await resultFuture;
         assert.strictEqual(successOrAcquired, true);
         const stub = resolver.resolve(cred1).resources.get(resourceId);
         assert.ok(stub?.activeTokens.includes(token));
@@ -349,7 +354,7 @@ describe(common.testName(__filename), () => {
         // force client1 to exit without releasing;
         client1.close();
 
-        const [[ notificationResourceId ]] = await notificationFuture;
+        const [[notificationResourceId]] = await notificationFuture;
         assert.strictEqual(notificationResourceId, resourceId);
       }
       client2.close();
@@ -361,7 +366,9 @@ describe(common.testName(__filename), () => {
         toFake: ['setTimeout'],
       });
       const resolver = new DefaultNamespaceResolver();
-      delegate = new NoslatedDelegateService({ namespaceResolver: resolver } as any);
+      delegate = new NoslatedDelegateService({
+        namespaceResolver: resolver,
+      } as any);
       delegate.start();
 
       delegate.register(cred1);
@@ -384,7 +391,7 @@ describe(common.testName(__filename), () => {
       {
         const resultFuture = once(client1, 'resourcePut');
         client1.resourcePut(resourceId, ResourcePutAction.ACQUIRE_EX, '');
-        ([{ successOrAcquired, token }] = await resultFuture);
+        [{ successOrAcquired, token }] = await resultFuture;
         assert.ok(successOrAcquired);
         const stub = resolver.resolve(cred1).resources.get(resourceId);
         assert.ok(stub?.activeTokens.includes(token));
@@ -393,7 +400,7 @@ describe(common.testName(__filename), () => {
       {
         const resultFuture = once(client2, 'resourcePut');
         client2.resourcePut(resourceId, ResourcePutAction.ACQUIRE_EX, '');
-        ([{ successOrAcquired, token: token2 }] = await resultFuture);
+        [{ successOrAcquired, token: token2 }] = await resultFuture;
         assert.strictEqual(successOrAcquired, false); // failed to put resource, notification registered.
       }
 
@@ -401,7 +408,8 @@ describe(common.testName(__filename), () => {
         const notificationFuture = once(client2, 'resourceNotification');
         await clock.tickAsync(10_000);
 
-        const [[ notificationResourceId, notificationToken ]] = await notificationFuture;
+        const [[notificationResourceId, notificationToken]] =
+          await notificationFuture;
         assert.strictEqual(notificationResourceId, resourceId);
         assert.strictEqual(notificationToken, token2);
       }

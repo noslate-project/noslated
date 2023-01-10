@@ -14,7 +14,7 @@ if (process.argv[2] === 'child') {
 }
 
 const bench = common.createBenchmark(main, {
-  n: [ 5e6 ],
+  n: [5e6],
 });
 
 async function main({ n }) {
@@ -22,7 +22,7 @@ async function main({ n }) {
   await host.start();
   const newSubscriberFuture = once(host, 'new-subscriber');
 
-  const cp = childProcess.fork(__filename, [ 'child', `${n}` ]);
+  const cp = childProcess.fork(__filename, ['child', `${n}`]);
   await newSubscriberFuture;
 
   cp.on('message', async () => {
@@ -38,7 +38,10 @@ async function main({ n }) {
   });
   bench.start();
   for (let i = 0; i < n; i++) {
-    host.broadcast('foobar', 'noslated.KeyValuePair', { key: 'foo', value: 'bar' });
+    host.broadcast('foobar', 'noslated.KeyValuePair', {
+      key: 'foo',
+      value: 'bar',
+    });
   }
 }
 

@@ -12,14 +12,16 @@ class AutocannonBenchmarker {
     this.name = 'autocannon';
     this.executable =
       process.platform === 'win32' ? 'autocannon.cmd' : 'autocannon';
-    const result = child_process.spawnSync(this.executable, [ '-h' ]);
+    const result = child_process.spawnSync(this.executable, ['-h']);
     this.present = !(result.error && result.error.code === 'ENOENT');
   }
 
   create(options) {
     const args = [
-      '-d', options.duration,
-      '-c', options.connections,
+      '-d',
+      options.duration,
+      '-c',
+      options.connections,
       '-j',
       '-n',
     ];
@@ -49,18 +51,22 @@ class WrkBenchmarker {
   constructor() {
     this.name = 'wrk';
     this.executable = 'wrk';
-    const result = child_process.spawnSync(this.executable, [ '-h' ]);
+    const result = child_process.spawnSync(this.executable, ['-h']);
     this.present = !(result.error && result.error.code === 'ENOENT');
   }
 
   create(options) {
-    const duration = typeof options.duration === 'number' ?
-      Math.max(options.duration, 1) :
-      options.duration;
+    const duration =
+      typeof options.duration === 'number'
+        ? Math.max(options.duration, 1)
+        : options.duration;
     const args = [
-      '-d', duration,
-      '-c', options.connections,
-      '-t', Math.min(options.connections, require('os').cpus().length || 8),
+      '-d',
+      duration,
+      '-c',
+      options.connections,
+      '-t',
+      Math.min(options.connections, require('os').cpus().length || 8),
       `http://127.0.0.1:${options.port}${options.path}`,
     ];
     for (const field in options.headers) {
@@ -103,9 +109,10 @@ class TestDoubleBenchmarker {
       ...process.env,
     };
 
-    const child = child_process.fork(this.executable,
-      [ this.type ],
-      { silent: true, env });
+    const child = child_process.fork(this.executable, [this.type], {
+      silent: true,
+      env,
+    });
     return child;
   }
 
@@ -127,26 +134,49 @@ class H2LoadBenchmarker {
   constructor() {
     this.name = 'h2load';
     this.executable = 'h2load';
-    const result = child_process.spawnSync(this.executable, [ '-h' ]);
+    const result = child_process.spawnSync(this.executable, ['-h']);
     this.present = !(result.error && result.error.code === 'ENOENT');
   }
 
   create(options) {
     const args = [];
-    if (typeof options.requests === 'number') { args.push('-n', options.requests); }
-    if (typeof options.clients === 'number') { args.push('-c', options.clients); }
-    if (typeof options.threads === 'number') { args.push('-t', options.threads); }
-    if (typeof options.maxConcurrentStreams === 'number') { args.push('-m', options.maxConcurrentStreams); }
-    if (typeof options.initialWindowSize === 'number') { args.push('-w', options.initialWindowSize); }
-    if (typeof options.sessionInitialWindowSize === 'number') { args.push('-W', options.sessionInitialWindowSize); }
-    if (typeof options.rate === 'number') { args.push('-r', options.rate); }
-    if (typeof options.ratePeriod === 'number') { args.push(`--rate-period=${options.ratePeriod}`); }
-    if (typeof options.duration === 'number') { args.push('-T', options.duration); }
-    if (typeof options.timeout === 'number') { args.push('-N', options.timeout); }
-    if (typeof options.headerTableSize === 'number') { args.push(`--header-table-size=${options.headerTableSize}`); }
+    if (typeof options.requests === 'number') {
+      args.push('-n', options.requests);
+    }
+    if (typeof options.clients === 'number') {
+      args.push('-c', options.clients);
+    }
+    if (typeof options.threads === 'number') {
+      args.push('-t', options.threads);
+    }
+    if (typeof options.maxConcurrentStreams === 'number') {
+      args.push('-m', options.maxConcurrentStreams);
+    }
+    if (typeof options.initialWindowSize === 'number') {
+      args.push('-w', options.initialWindowSize);
+    }
+    if (typeof options.sessionInitialWindowSize === 'number') {
+      args.push('-W', options.sessionInitialWindowSize);
+    }
+    if (typeof options.rate === 'number') {
+      args.push('-r', options.rate);
+    }
+    if (typeof options.ratePeriod === 'number') {
+      args.push(`--rate-period=${options.ratePeriod}`);
+    }
+    if (typeof options.duration === 'number') {
+      args.push('-T', options.duration);
+    }
+    if (typeof options.timeout === 'number') {
+      args.push('-N', options.timeout);
+    }
+    if (typeof options.headerTableSize === 'number') {
+      args.push(`--header-table-size=${options.headerTableSize}`);
+    }
     if (typeof options.encoderHeaderTableSize === 'number') {
       args.push(
-        `--encoder-header-table-size=${options.encoderHeaderTableSize}`);
+        `--encoder-header-table-size=${options.encoderHeaderTableSize}`
+      );
     }
     const scheme = options.scheme || 'http';
     const host = options.host || '127.0.0.1';
@@ -178,7 +208,7 @@ http_benchmarkers.forEach(benchmarker => {
   }
 });
 
-exports.run = function(options, callback) {
+exports.run = function (options, callback) {
   options = {
     port: exports.PORT,
     path: '/',
@@ -188,19 +218,29 @@ exports.run = function(options, callback) {
     ...options,
   };
   if (!options.benchmarker) {
-    callback(new Error('Could not locate required http benchmarker. See ' +
-                       `${__filename} for further instructions.`));
+    callback(
+      new Error(
+        'Could not locate required http benchmarker. See ' +
+          `${__filename} for further instructions.`
+      )
+    );
     return;
   }
   const benchmarker = benchmarkers[options.benchmarker];
   if (!benchmarker) {
-    callback(new Error(`Requested benchmarker '${options.benchmarker}' ` +
-                       'is  not supported'));
+    callback(
+      new Error(
+        `Requested benchmarker '${options.benchmarker}' ` + 'is  not supported'
+      )
+    );
     return;
   }
   if (!benchmarker.present) {
-    callback(new Error(`Requested benchmarker '${options.benchmarker}' ` +
-                       'is  not installed'));
+    callback(
+      new Error(
+        `Requested benchmarker '${options.benchmarker}' ` + 'is  not installed'
+      )
+    );
     return;
   }
 
@@ -212,7 +252,9 @@ exports.run = function(options, callback) {
 
   let stdout = '';
   child.stdout.setEncoding('utf8');
-  child.stdout.on('data', chunk => { stdout += chunk; });
+  child.stdout.on('data', chunk => {
+    stdout += chunk;
+  });
 
   child.once('close', code => {
     const elapsed = process.hrtime(benchmarker_start);
@@ -227,12 +269,13 @@ exports.run = function(options, callback) {
 
     const result = benchmarker.processResults(stdout);
     if (result === undefined) {
-      callback(new Error(
-        `${options.benchmarker} produced strange output: ${stdout}`), code);
+      callback(
+        new Error(`${options.benchmarker} produced strange output: ${stdout}`),
+        code
+      );
       return;
     }
 
     callback(null, code, options.benchmarker, result, elapsed);
   });
-
 };

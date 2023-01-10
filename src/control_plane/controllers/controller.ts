@@ -33,7 +33,7 @@ export class BaseController {
             delta.broker.name,
             delta.count,
             {
-              inspect: delta.broker.isInspector
+              inspect: delta.broker.isInspector,
             },
             profile?.worker?.disposable || false,
             toReserve
@@ -112,19 +112,20 @@ export class BaseController {
       shrinkData.push({
         functionName: broker.name,
         inspector: broker.isInspector,
-        workers
+        workers,
       });
       this.logger.info(
         `[Auto Scale] Up to shrink ${workers.length} workers in ${broker.name}. ` +
-        `waterlevel: ${broker.activeRequestCount}/${broker.totalMaxActivateRequests}, ` +
-        `existing: ${!!broker.data}, reservation: ${broker.reservationCount
-        }, current: ${broker.workerCount}.`
+          `waterlevel: ${broker.activeRequestCount}/${broker.totalMaxActivateRequests}, ` +
+          `existing: ${!!broker.data}, reservation: ${
+            broker.reservationCount
+          }, current: ${broker.workerCount}.`
       );
     }
     if (!shrinkData.length) return; // To avoid unneccessary logic below.
     const { dataPlaneClientManager } = this.plane;
     const ensured = await dataPlaneClientManager.reduceCapacity({
-      brokers: shrinkData
+      brokers: shrinkData,
     });
     if (!ensured || !ensured.length) {
       return;
@@ -179,7 +180,7 @@ export class BaseController {
     for (const name of names) {
       const brokers = [
         workerStatsSnapshot.getBroker(name, false),
-        workerStatsSnapshot.getBroker(name, true)
+        workerStatsSnapshot.getBroker(name, true),
       ];
       for (const broker of brokers) {
         if (!broker) continue;

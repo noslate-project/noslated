@@ -74,7 +74,7 @@ export class LinkList<T> {
     }
 
     // from start to end...
-    if(this.length << 1 > pos) {
+    if (this.length << 1 > pos) {
       let i = 0;
 
       for (let node = this._head.next; node !== this._tail; node = node?.next) {
@@ -137,14 +137,14 @@ export class LinkList<T> {
     let node = this.nodeAt(pos);
 
     // two special position.
-    if(pos < 0) {
-        node = this._head;
-    } else if(node === null) {
-        node = this._tail;
+    if (pos < 0) {
+      node = this._head;
+    } else if (node === null) {
+      node = this._tail;
     }
 
-    if(!(value instanceof LinklistNode)) {
-        value = new LinklistNode(value);
+    if (!(value instanceof LinklistNode)) {
+      value = new LinklistNode(value);
     }
 
     value.prev = node?.prev;

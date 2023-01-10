@@ -7,11 +7,14 @@ const path = require('path');
 const benchmarks = {};
 fs.readdirSync(__dirname)
   .filter(name => {
-    return name !== 'fixtures' &&
-           fs.statSync(path.resolve(__dirname, name)).isDirectory();
+    return (
+      name !== 'fixtures' &&
+      fs.statSync(path.resolve(__dirname, name)).isDirectory()
+    );
   })
   .forEach(category => {
-    benchmarks[category] = fs.readdirSync(path.resolve(__dirname, category))
+    benchmarks[category] = fs
+      .readdirSync(path.resolve(__dirname, category))
       .filter(filename => filename[0] !== '.' && filename[0] !== '_');
   });
 
@@ -65,7 +68,7 @@ function CLI(usage, settings) {
       mode = 'both';
     } else if (arg === 'test') {
       this.test = true;
-    } else if ([ 'both', 'item' ].includes(mode)) {
+    } else if (['both', 'item'].includes(mode)) {
       // item arguments
       this.items.push(arg);
 
@@ -79,12 +82,12 @@ function CLI(usage, settings) {
 }
 module.exports = CLI;
 
-CLI.prototype.abort = function(msg) {
+CLI.prototype.abort = function (msg) {
   console.error(msg);
   process.exit(1);
 };
 
-CLI.prototype.benchmarks = function() {
+CLI.prototype.benchmarks = function () {
   const paths = [];
 
   if (this.items.includes('all')) {
@@ -106,7 +109,7 @@ CLI.prototype.benchmarks = function() {
   return paths;
 };
 
-CLI.prototype.shouldSkip = function(scripts) {
+CLI.prototype.shouldSkip = function (scripts) {
   const filters = this.optional.filter || [];
   const excludes = this.optional.exclude || [];
   let skip = filters.length > 0;

@@ -9,7 +9,7 @@ export function tuplesToPairs<T>(tuples: KVTuples<T>): KVPairs<T> {
 
 export function pairsToTuples(pairs: KVPairs): KVTuples {
   return pairs.map(it => {
-    return [ it.key, it.value ];
+    return [it.key, it.value];
   });
 }
 
@@ -25,4 +25,4 @@ export function mapToPairs<T>(obj: Record<string, T>): KVPairs<T> {
 }
 
 export type KVTuples<T = string> = [string, T][];
-export type KVPairs<T = string> = { key: string, value: T }[];
+export type KVPairs<T = string> = { key: string; value: T }[];

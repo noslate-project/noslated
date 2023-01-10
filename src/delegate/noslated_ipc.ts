@@ -6,7 +6,8 @@ import { aworker } from '../proto/aworker';
 export type CanonicalCode = aworker.ipc.CanonicalCode;
 export const CanonicalCode = aworker.ipc.CanonicalCode;
 
-const kShouldVerifyProtocol = process.env.NOSLATED_INTERCEPTOR_VERIFY === 'true';
+const kShouldVerifyProtocol =
+  process.env.NOSLATED_INTERCEPTOR_VERIFY === 'true';
 
 type RequestKind = aworker.ipc.RequestKind;
 const RequestKind = aworker.ipc.RequestKind;
@@ -23,34 +24,103 @@ const NOSLATED_DEFAULT_REQUEST_TIMEOUT_MS = 10_000;
 const NOSLATED_SEND_BEACON_TIMEOUT_MS = 10_000;
 
 const kRequestKindDataMap: { [key: number]: [any, any] } = {
-  [RequestKind.Trigger]: [aworker.ipc.TriggerRequestMessage, aworker.ipc.TriggerResponseMessage],
-  [RequestKind.StreamPush]: [aworker.ipc.StreamPushRequestMessage, aworker.ipc.StreamPushResponseMessage],
-  [RequestKind.StreamOpen]: [aworker.ipc.StreamOpenRequestMessage, aworker.ipc.StreamOpenResponseMessage],
-  [RequestKind.CollectMetrics]: [aworker.ipc.CollectMetricsRequestMessage, aworker.ipc.CollectMetricsResponseMessage],
-  [RequestKind.Credentials]: [aworker.ipc.CredentialsRequestMessage, aworker.ipc.CredentialsResponseMessage],
-  [RequestKind.Fetch]: [aworker.ipc.FetchRequestMessage, aworker.ipc.FetchResponseMessage],
-  [RequestKind.DaprInvoke]: [aworker.ipc.DaprInvokeRequestMessage, aworker.ipc.DaprInvokeResponseMessage],
-  [RequestKind.DaprBinding]: [aworker.ipc.DaprBindingRequestMessage, aworker.ipc.DaprBindingResponseMessage],
-  [RequestKind.FetchAbort]: [aworker.ipc.FetchAbortRequestMessage, aworker.ipc.FetchAbortResponseMessage],
-  [RequestKind.ExtensionBinding]: [aworker.ipc.ExtensionBindingRequestMessage, aworker.ipc.ExtensionBindingResponseMessage],
-  [RequestKind.ResourceNotification]: [aworker.ipc.ResourceNotificationRequestMessage, aworker.ipc.ResourceNotificationResponseMessage],
-  [RequestKind.ResourcePut]: [aworker.ipc.ResourcePutRequestMessage, aworker.ipc.ResourcePutResponseMessage],
-  [RequestKind.InspectorStart]: [aworker.ipc.InspectorStartRequestMessage, aworker.ipc.InspectorStartResponseMessage],
-  [RequestKind.InspectorStartSession]: [aworker.ipc.InspectorStartSessionRequestMessage, aworker.ipc.InspectorStartSessionResponseMessage],
-  [RequestKind.InspectorEndSession]: [aworker.ipc.InspectorEndSessionRequestMessage, aworker.ipc.InspectorEndSessionResponseMessage],
-  [RequestKind.InspectorGetTargets]: [aworker.ipc.InspectorGetTargetsRequestMessage, aworker.ipc.InspectorGetTargetsResponseMessage],
-  [RequestKind.InspectorCommand]: [aworker.ipc.InspectorCommandRequestMessage, aworker.ipc.InspectorCommandResponseMessage],
-  [RequestKind.InspectorEvent]: [aworker.ipc.InspectorEventRequestMessage, aworker.ipc.InspectorEventResponseMessage],
-  [RequestKind.InspectorStarted]: [aworker.ipc.InspectorStartedRequestMessage, aworker.ipc.InspectorStartedResponseMessage],
-  [RequestKind.TracingStart]: [aworker.ipc.TracingStartRequestMessage, aworker.ipc.TracingStartResponseMessage],
-  [RequestKind.TracingStop]: [aworker.ipc.TracingStopRequestMessage, aworker.ipc.TracingStopResponseMessage],
+  [RequestKind.Trigger]: [
+    aworker.ipc.TriggerRequestMessage,
+    aworker.ipc.TriggerResponseMessage,
+  ],
+  [RequestKind.StreamPush]: [
+    aworker.ipc.StreamPushRequestMessage,
+    aworker.ipc.StreamPushResponseMessage,
+  ],
+  [RequestKind.StreamOpen]: [
+    aworker.ipc.StreamOpenRequestMessage,
+    aworker.ipc.StreamOpenResponseMessage,
+  ],
+  [RequestKind.CollectMetrics]: [
+    aworker.ipc.CollectMetricsRequestMessage,
+    aworker.ipc.CollectMetricsResponseMessage,
+  ],
+  [RequestKind.Credentials]: [
+    aworker.ipc.CredentialsRequestMessage,
+    aworker.ipc.CredentialsResponseMessage,
+  ],
+  [RequestKind.Fetch]: [
+    aworker.ipc.FetchRequestMessage,
+    aworker.ipc.FetchResponseMessage,
+  ],
+  [RequestKind.DaprInvoke]: [
+    aworker.ipc.DaprInvokeRequestMessage,
+    aworker.ipc.DaprInvokeResponseMessage,
+  ],
+  [RequestKind.DaprBinding]: [
+    aworker.ipc.DaprBindingRequestMessage,
+    aworker.ipc.DaprBindingResponseMessage,
+  ],
+  [RequestKind.FetchAbort]: [
+    aworker.ipc.FetchAbortRequestMessage,
+    aworker.ipc.FetchAbortResponseMessage,
+  ],
+  [RequestKind.ExtensionBinding]: [
+    aworker.ipc.ExtensionBindingRequestMessage,
+    aworker.ipc.ExtensionBindingResponseMessage,
+  ],
+  [RequestKind.ResourceNotification]: [
+    aworker.ipc.ResourceNotificationRequestMessage,
+    aworker.ipc.ResourceNotificationResponseMessage,
+  ],
+  [RequestKind.ResourcePut]: [
+    aworker.ipc.ResourcePutRequestMessage,
+    aworker.ipc.ResourcePutResponseMessage,
+  ],
+  [RequestKind.InspectorStart]: [
+    aworker.ipc.InspectorStartRequestMessage,
+    aworker.ipc.InspectorStartResponseMessage,
+  ],
+  [RequestKind.InspectorStartSession]: [
+    aworker.ipc.InspectorStartSessionRequestMessage,
+    aworker.ipc.InspectorStartSessionResponseMessage,
+  ],
+  [RequestKind.InspectorEndSession]: [
+    aworker.ipc.InspectorEndSessionRequestMessage,
+    aworker.ipc.InspectorEndSessionResponseMessage,
+  ],
+  [RequestKind.InspectorGetTargets]: [
+    aworker.ipc.InspectorGetTargetsRequestMessage,
+    aworker.ipc.InspectorGetTargetsResponseMessage,
+  ],
+  [RequestKind.InspectorCommand]: [
+    aworker.ipc.InspectorCommandRequestMessage,
+    aworker.ipc.InspectorCommandResponseMessage,
+  ],
+  [RequestKind.InspectorEvent]: [
+    aworker.ipc.InspectorEventRequestMessage,
+    aworker.ipc.InspectorEventResponseMessage,
+  ],
+  [RequestKind.InspectorStarted]: [
+    aworker.ipc.InspectorStartedRequestMessage,
+    aworker.ipc.InspectorStartedResponseMessage,
+  ],
+  [RequestKind.TracingStart]: [
+    aworker.ipc.TracingStartRequestMessage,
+    aworker.ipc.TracingStartResponseMessage,
+  ],
+  [RequestKind.TracingStop]: [
+    aworker.ipc.TracingStopRequestMessage,
+    aworker.ipc.TracingStopResponseMessage,
+  ],
 };
 
 export class NoslatedError extends Error {
   peerStack?: string;
   operation: string;
-  constructor(public code: CanonicalCode, public kind: RequestKind, message = '') {
-    super(`Noslated request failed: CanonicalCode::${CanonicalCode[code]} request kind(${RequestKind[kind]}), ${message}`);
+  constructor(
+    public code: CanonicalCode,
+    public kind: RequestKind,
+    message = ''
+  ) {
+    super(
+      `Noslated request failed: CanonicalCode::${CanonicalCode[code]} request kind(${RequestKind[kind]}), ${message}`
+    );
     this.name = 'NoslatedError';
     this.operation = RequestKind[kind];
   }
@@ -70,10 +140,18 @@ export class NoslatedServer {
   private _nextSessionId = new IdGenerator();
   private _server: net.Server;
   private _sessions: Map<number, Session> = new Map();
-  onRequest?: (sessionId: number, op: string, params: unknown, callback: any) => void;
+  onRequest?: (
+    sessionId: number,
+    op: string,
+    params: unknown,
+    callback: any
+  ) => void;
   onDisconnect?: (sessionId: number) => void;
 
-  constructor(private _serverPath: string, private _logger: Logger = kNoopLogger) {
+  constructor(
+    private _serverPath: string,
+    private _logger: Logger = kNoopLogger
+  ) {
     this._server = net.createServer(this._onConnection);
   }
 
@@ -86,7 +164,8 @@ export class NoslatedServer {
       }
     }
     this._server.listen(this._serverPath);
-    const [ event, err ] = await raceEvent(this._server, ['listening', 'error']).promise;
+    const [event, err] = await raceEvent(this._server, ['listening', 'error'])
+      .promise;
     if (event === 'error') {
       throw err;
     }
@@ -97,14 +176,14 @@ export class NoslatedServer {
 
   close() {
     return new Promise<void>((resolve, reject) => {
-      this._server.close((err) => {
+      this._server.close(err => {
         if (err) {
           reject(err);
         } else {
           resolve();
         }
       });
-    })
+    });
   }
 
   nextStreamId(sessionId: number) {
@@ -115,29 +194,41 @@ export class NoslatedServer {
     return session.nextStreamId.next();
   }
 
-  trigger(sessionId: number, method: string, metadata: MetadataToIPC, hasInputData: boolean, hasOutputData: boolean, timeout: number) {
+  trigger(
+    sessionId: number,
+    method: string,
+    metadata: MetadataToIPC,
+    hasInputData: boolean,
+    hasOutputData: boolean,
+    timeout: number
+  ) {
     const kind = RequestKind.Trigger;
     const session = this._getSession(sessionId, kind);
     let sid: number | undefined;
     if (hasInputData || hasOutputData) {
-      sid = session.nextStreamId.next()
+      sid = session.nextStreamId.next();
     }
-    const future = session.request<
-      aworker.ipc.ITriggerRequestMessage,
-      aworker.ipc.ITriggerResponseMessage
-    >(kind, {
-      method,
-      metadata: {
-        url: metadata.url,
-        method: metadata.method,
-        headers: flattenToKeyValuePairs(metadata.headers ?? []),
-        baggage: flattenToKeyValuePairs(metadata.baggage ?? []),
-        requestId: metadata.requestId
-      },
-      hasInputData,
-      hasOutputData,
-      sid,
-    }, timeout)
+    const future = session
+      .request<
+        aworker.ipc.ITriggerRequestMessage,
+        aworker.ipc.ITriggerResponseMessage
+      >(
+        kind,
+        {
+          method,
+          metadata: {
+            url: metadata.url,
+            method: metadata.method,
+            headers: flattenToKeyValuePairs(metadata.headers ?? []),
+            baggage: flattenToKeyValuePairs(metadata.baggage ?? []),
+            requestId: metadata.requestId,
+          },
+          hasInputData,
+          hasOutputData,
+          sid,
+        },
+        timeout
+      )
       .then(res => {
         return {
           status: res.status,
@@ -149,22 +240,32 @@ export class NoslatedServer {
 
     return {
       sid,
-      future
-    }
+      future,
+    };
   }
 
-  async streamPush(sessionId: number, sid: number, isEos: boolean, data: Uint8Array | null, isError: boolean) {
+  async streamPush(
+    sessionId: number,
+    sid: number,
+    isEos: boolean,
+    data: Uint8Array | null,
+    isError: boolean
+  ) {
     const kind = RequestKind.StreamPush;
     const session = this._getSession(sessionId, kind);
     return session.request<
       aworker.ipc.IStreamPushRequestMessage,
       aworker.ipc.IStreamPushResponseMessage
-    >(kind, {
-      sid,
-      isEos,
-      isError,
-      data,
-    }, NOSLATED_STREAM_PUSH_TIMEOUT_MS);
+    >(
+      kind,
+      {
+        sid,
+        isEos,
+        isError,
+        data,
+      },
+      NOSLATED_STREAM_PUSH_TIMEOUT_MS
+    );
   }
 
   async collectMetrics(sessionId: number) {
@@ -181,21 +282,29 @@ export class NoslatedServer {
           labels: keyValuePairsToObject(it.labels ?? []),
           name: it.name,
           value: it.value,
-        }
-      })
-    }
+        };
+      }),
+    };
   }
 
-  async resourceNotification(sessionId: number, resourceId: string, token: string) {
+  async resourceNotification(
+    sessionId: number,
+    resourceId: string,
+    token: string
+  ) {
     const kind = RequestKind.ResourceNotification;
     const session = this._getSession(sessionId, kind);
     return session.request<
       aworker.ipc.IResourceNotificationRequestMessage,
       aworker.ipc.IResourceNotificationResponseMessage
-    >(kind, {
-      resourceId,
-      token,
-    }, NOSLATED_RESOURCE_NOTIFICATION_TIMEOUT_MS);
+    >(
+      kind,
+      {
+        resourceId,
+        token,
+      },
+      NOSLATED_RESOURCE_NOTIFICATION_TIMEOUT_MS
+    );
   }
 
   async inspectorStart(sessionId: number) {
@@ -207,16 +316,24 @@ export class NoslatedServer {
     >(kind, {}, NOSLATED_INSPECTOR_TIMEOUT_MS);
   }
 
-  async inspectorStartSession(sessionId: number, inspectorSessionId: number, targetId: string) {
+  async inspectorStartSession(
+    sessionId: number,
+    inspectorSessionId: number,
+    targetId: string
+  ) {
     const kind = RequestKind.InspectorStartSession;
     const session = this._getSession(sessionId, kind);
     return session.request<
       aworker.ipc.IInspectorStartSessionRequestMessage,
       aworker.ipc.IInspectorStartSessionResponseMessage
-    >(kind, {
-      sessionId: inspectorSessionId,
-      targetId,
-    }, NOSLATED_INSPECTOR_TIMEOUT_MS);
+    >(
+      kind,
+      {
+        sessionId: inspectorSessionId,
+        targetId,
+      },
+      NOSLATED_INSPECTOR_TIMEOUT_MS
+    );
   }
 
   async inspectorEndSession(sessionId: number, inspectorSessionId: number) {
@@ -225,9 +342,13 @@ export class NoslatedServer {
     return session.request<
       aworker.ipc.IInspectorEndSessionRequestMessage,
       aworker.ipc.IInspectorEndSessionResponseMessage
-    >(kind, {
-      sessionId: inspectorSessionId,
-    }, NOSLATED_INSPECTOR_TIMEOUT_MS);
+    >(
+      kind,
+      {
+        sessionId: inspectorSessionId,
+      },
+      NOSLATED_INSPECTOR_TIMEOUT_MS
+    );
   }
 
   async inspectorGetTargets(sessionId: number) {
@@ -241,16 +362,24 @@ export class NoslatedServer {
     return result.targets ?? [];
   }
 
-  async inspectorCommand(sessionId: number, inspectorSessionId: number, message: string) {
+  async inspectorCommand(
+    sessionId: number,
+    inspectorSessionId: number,
+    message: string
+  ) {
     const kind = RequestKind.InspectorCommand;
     const session = this._getSession(sessionId, kind);
     return session.request<
       aworker.ipc.IInspectorCommandRequestMessage,
       aworker.ipc.IInspectorCommandResponseMessage
-    >(kind, {
-      sessionId: inspectorSessionId,
-      message: message,
-    }, NOSLATED_INSPECTOR_TIMEOUT_MS);
+    >(
+      kind,
+      {
+        sessionId: inspectorSessionId,
+        message: message,
+      },
+      NOSLATED_INSPECTOR_TIMEOUT_MS
+    );
   }
 
   async tracingStart(sessionId: number, categories: string[]) {
@@ -259,9 +388,13 @@ export class NoslatedServer {
     return session.request<
       aworker.ipc.ITracingStartRequestMessage,
       aworker.ipc.ITracingStartResponseMessage
-    >(kind, {
-      categories,
-    }, NOSLATED_INSPECTOR_TIMEOUT_MS);
+    >(
+      kind,
+      {
+        categories,
+      },
+      NOSLATED_INSPECTOR_TIMEOUT_MS
+    );
   }
 
   async tracingStop(sessionId: number) {
@@ -274,7 +407,14 @@ export class NoslatedServer {
   }
 
   terminateSession(sessionId: number) {
-    this._closeSession(sessionId, new NoslatedError(CanonicalCode.CANCELLED, aworker.ipc.RequestKind.Nil, 'Session terminated'));
+    this._closeSession(
+      sessionId,
+      new NoslatedError(
+        CanonicalCode.CANCELLED,
+        aworker.ipc.RequestKind.Nil,
+        'Session terminated'
+      )
+    );
   }
 
   unref() {
@@ -287,25 +427,36 @@ export class NoslatedServer {
 
   private _onConnection = (socket: net.Socket) => {
     const sid = this._nextSessionId.next();
-    const session = new Session(sid, socket, this._onRequest, this._onDisconnect, this._onError, this._logger);
+    const session = new Session(
+      sid,
+      socket,
+      this._onRequest,
+      this._onDisconnect,
+      this._onError,
+      this._logger
+    );
     this._sessions.set(sid, session);
-  }
+  };
 
   private _onDisconnect = (session: Session) => {
     this._sessions.delete(session.sid);
     this.onDisconnect?.(session.sid);
-  }
+  };
 
   private _onError = (error: Error, session?: Session) => {
     if (session) {
-      this._logger.error('unexpected error on session(%s)', session?.sid, error);
+      this._logger.error(
+        'unexpected error on session(%s)',
+        session?.sid,
+        error
+      );
       this._closeSession(session.sid, error);
     } else {
       // unrecoverable error.
       this._logger.error('unexpected socket error', error);
       throw error;
     }
-  }
+  };
 
   private _closeSession(sessionId: number, error?: Error) {
     const session = this._sessions.get(sessionId);
@@ -319,7 +470,11 @@ export class NoslatedServer {
   private _getSession(sessionId: number, kind: RequestKind) {
     const session = this._sessions.get(sessionId);
     if (session == null) {
-      throw new NoslatedError(CanonicalCode.CONNECTION_RESET, kind, 'session not connected');
+      throw new NoslatedError(
+        CanonicalCode.CONNECTION_RESET,
+        kind,
+        'session not connected'
+      );
     }
     return session;
   }
@@ -328,37 +483,69 @@ export class NoslatedServer {
     if (this.onRequest == null) {
       return callback(CanonicalCode.NOT_IMPLEMENTED);
     }
-    this.onRequest(session.sid, RequestKind[message.requestKind], message.content, callback);
-  }
+    this.onRequest(
+      session.sid,
+      RequestKind[message.requestKind],
+      message.content,
+      callback
+    );
+  };
 }
 
 export class NoslatedClient {
   private _socket?: net.Socket;
   private _session?: Session;
-  onRequest?: (method: string, streamId: number | undefined | null, metadata: aworker.ipc.ITriggerMetadata, hasInputData: boolean, hasOutputData: boolean, callback: any) => void;
-  onStreamPush?: (streamId: number, isEos: boolean, chunk: Uint8Array, isError: boolean) => void;
+  onRequest?: (
+    method: string,
+    streamId: number | undefined | null,
+    metadata: aworker.ipc.ITriggerMetadata,
+    hasInputData: boolean,
+    hasOutputData: boolean,
+    callback: any
+  ) => void;
+  onStreamPush?: (
+    streamId: number,
+    isEos: boolean,
+    chunk: Uint8Array,
+    isError: boolean
+  ) => void;
   onCollectMetrics?: () => aworker.ipc.ICollectMetricsResponseMessage;
   onResourceNotification?: (resourceId: string, token: string) => void;
   onDisconnect?: () => void;
 
-  constructor(private _serverPath: string, private _credential: string, private _logger: Logger = kNoopLogger) {}
+  constructor(
+    private _serverPath: string,
+    private _credential: string,
+    private _logger: Logger = kNoopLogger
+  ) {}
 
   public async start() {
     const socket = net.connect(this._serverPath);
     this._socket = socket;
-    const [ event ] = await raceEvent(socket, ['connect', 'error']).promise;
+    const [event] = await raceEvent(socket, ['connect', 'error']).promise;
     if (event !== 'connect') {
-      throw new Error(`Failed to connect: ${event}`)
+      throw new Error(`Failed to connect: ${event}`);
     }
-    this._session = new Session(0, socket, this._onRequest, this._onClose, this._onError, this._logger);
+    this._session = new Session(
+      0,
+      socket,
+      this._onRequest,
+      this._onClose,
+      this._onError,
+      this._logger
+    );
     try {
       await this._session.request<
         aworker.ipc.ICredentialsRequestMessage,
         aworker.ipc.ICredentialsResponseMessage
-      >(RequestKind.Credentials, {
-        type: aworker.ipc.CredentialTargetType.Data,
-        cred: this._credential,
-      }, NOSLATED_CONNECT_TIMEOUT_MS);
+      >(
+        RequestKind.Credentials,
+        {
+          type: aworker.ipc.CredentialTargetType.Data,
+          cred: this._credential,
+        },
+        NOSLATED_CONNECT_TIMEOUT_MS
+      );
     } catch (e) {
       this._session.destroy();
       throw e;
@@ -366,55 +553,93 @@ export class NoslatedClient {
   }
 
   close() {
-    this._session?.destroy(new NoslatedError(CanonicalCode.CANCELLED, aworker.ipc.RequestKind.Nil, 'Session terminated'));
+    this._session?.destroy(
+      new NoslatedError(
+        CanonicalCode.CANCELLED,
+        aworker.ipc.RequestKind.Nil,
+        'Session terminated'
+      )
+    );
   }
 
-  streamPush(streamId: number, isEos: boolean, data: Uint8Array | null, isError: boolean) {
+  streamPush(
+    streamId: number,
+    isEos: boolean,
+    data: Uint8Array | null,
+    isError: boolean
+  ) {
     if (this._session == null) {
       throw new Error('Noslated client not connected');
     }
     return this._session.request<
       aworker.ipc.IStreamPushRequestMessage,
       aworker.ipc.IStreamPushResponseMessage
-    >(RequestKind.StreamPush, {
-      sid: streamId,
-      isEos,
-      isError,
-      data,
-    }, NOSLATED_STREAM_PUSH_TIMEOUT_MS);
+    >(
+      RequestKind.StreamPush,
+      {
+        sid: streamId,
+        isEos,
+        isError,
+        data,
+      },
+      NOSLATED_STREAM_PUSH_TIMEOUT_MS
+    );
   }
 
-  daprInvoke(appId: string, methodName: string, data: Uint8Array, timeout: number) {
+  daprInvoke(
+    appId: string,
+    methodName: string,
+    data: Uint8Array,
+    timeout: number
+  ) {
     if (this._session == null) {
       throw new Error('Noslated client not connected');
     }
     return this._session.request<
       aworker.ipc.IDaprInvokeRequestMessage,
       aworker.ipc.IDaprInvokeResponseMessage
-    >(RequestKind.DaprInvoke, {
-      appId,
-      methodName,
-      data,
-    }, timeout);
+    >(
+      RequestKind.DaprInvoke,
+      {
+        appId,
+        methodName,
+        data,
+      },
+      timeout
+    );
   }
 
-  daprBinding(name: string, metadata: string, operation: string, data: Uint8Array, timeout: number) {
+  daprBinding(
+    name: string,
+    metadata: string,
+    operation: string,
+    data: Uint8Array,
+    timeout: number
+  ) {
     if (this._session == null) {
       throw new Error('Noslated client not connected');
     }
     return this._session.request<
       aworker.ipc.IDaprBindingRequestMessage,
       aworker.ipc.IDaprBindingResponseMessage
-    >(RequestKind.DaprBinding, {
-      name,
-      metadata,
-      operation,
-      data,
-    }, timeout);
+    >(
+      RequestKind.DaprBinding,
+      {
+        name,
+        metadata,
+        operation,
+        data,
+      },
+      timeout
+    );
   }
 
-
-  extensionBinding(name: string, metadata: string, operation: string, data: Uint8Array | null) {
+  extensionBinding(
+    name: string,
+    metadata: string,
+    operation: string,
+    data: Uint8Array | null
+  ) {
     if (this._session == null) {
       throw new Error('Noslated client not connected');
     }
@@ -422,15 +647,23 @@ export class NoslatedClient {
     return this._session.request<
       aworker.ipc.IExtensionBindingRequestMessage,
       aworker.ipc.IExtensionBindingResponseMessage
-    >(RequestKind.ExtensionBinding, {
-      name,
-      metadata,
-      operation,
-      data
-    }, NOSLATED_SEND_BEACON_TIMEOUT_MS);
+    >(
+      RequestKind.ExtensionBinding,
+      {
+        name,
+        metadata,
+        operation,
+        data,
+      },
+      NOSLATED_SEND_BEACON_TIMEOUT_MS
+    );
   }
 
-  resourcePut(resourceId: string, action: aworker.ipc.ResourcePutAction, token?: string) {
+  resourcePut(
+    resourceId: string,
+    action: aworker.ipc.ResourcePutAction,
+    token?: string
+  ) {
     if (this._session == null) {
       throw new Error('Noslated client not connected');
     }
@@ -438,22 +671,26 @@ export class NoslatedClient {
     return this._session.request<
       aworker.ipc.IResourcePutRequestMessage,
       aworker.ipc.IResourcePutResponseMessage
-    >(RequestKind.ResourcePut, {
-      resourceId,
-      action,
-      token,
-    }, NOSLATED_RESOURCE_NOTIFICATION_TIMEOUT_MS);
+    >(
+      RequestKind.ResourcePut,
+      {
+        resourceId,
+        action,
+        token,
+      },
+      NOSLATED_RESOURCE_NOTIFICATION_TIMEOUT_MS
+    );
   }
 
   private _onClose = () => {
     this.onDisconnect?.();
-  }
+  };
 
   private _onError = (error: Error) => {
     // TODO:
     console.error(error);
     this._session?.destroy(error);
-  }
+  };
 
   private _onRequest = (session: Session, message: Message, callback: any) => {
     if (message.requestKind === RequestKind.Trigger) {
@@ -461,7 +698,14 @@ export class NoslatedClient {
         return callback(CanonicalCode.NOT_IMPLEMENTED);
       }
       const body = message.content as aworker.ipc.ITriggerRequestMessage;
-      this.onRequest(body.method, body.sid, body.metadata, body.hasInputData === true, body.hasOutputData === true, callback);
+      this.onRequest(
+        body.method,
+        body.sid,
+        body.metadata,
+        body.hasInputData === true,
+        body.hasOutputData === true,
+        callback
+      );
       return;
     }
     if (message.requestKind === RequestKind.StreamPush) {
@@ -469,7 +713,12 @@ export class NoslatedClient {
         return callback(CanonicalCode.NOT_IMPLEMENTED);
       }
       const body = message.content as aworker.ipc.IStreamPushRequestMessage;
-      this.onStreamPush(body.sid, body.isEos, body.data ?? Buffer.alloc(0), body.isError === true);
+      this.onStreamPush(
+        body.sid,
+        body.isEos,
+        body.data ?? Buffer.alloc(0),
+        body.isError === true
+      );
       return callback(CanonicalCode.OK, {});
     }
     if (message.requestKind === RequestKind.CollectMetrics) {
@@ -483,13 +732,14 @@ export class NoslatedClient {
       if (this.onResourceNotification == null) {
         return callback(CanonicalCode.NOT_IMPLEMENTED);
       }
-      const body = message.content as aworker.ipc.IResourceNotificationRequestMessage;
+      const body =
+        message.content as aworker.ipc.IResourceNotificationRequestMessage;
       this.onResourceNotification(body.resourceId, body.token);
       callback(CanonicalCode.OK, null, {});
       return;
     }
     return callback(CanonicalCode.NOT_IMPLEMENTED);
-  }
+  };
 }
 
 interface RequestRecord {
@@ -512,24 +762,39 @@ class Session {
     private _request: (sess: Session, message: Message, callback: any) => void,
     private _close: (sess: Session) => void,
     private _error: (error: Error, sess: Session) => void,
-    private _logger: Logger,
+    private _logger: Logger
   ) {
-    this._socket.on('error', (e) => {
+    this._socket.on('error', e => {
       this._socketError = e;
     });
     this._socket.on('close', this._onClose);
-    this._interceptor = new ProtocolInterceptor(this._socket, kShouldVerifyProtocol, this._onData);
+    this._interceptor = new ProtocolInterceptor(
+      this._socket,
+      kShouldVerifyProtocol,
+      this._onData
+    );
   }
 
-  request<T, R>(kind: RequestKind, body: T, timeoutMs: number = NOSLATED_DEFAULT_REQUEST_TIMEOUT_MS): Promise<R> {
+  request<T, R>(
+    kind: RequestKind,
+    body: T,
+    timeoutMs: number = NOSLATED_DEFAULT_REQUEST_TIMEOUT_MS
+  ): Promise<R> {
     const messageType = kRequestKindDataMap[kind][0];
     const requestId = this._nextRequestId.next();
-    this._logger.debug('request: session(%s) kind(%s), id(%s)', this.sid, kind, requestId);
+    this._logger.debug(
+      'request: session(%s) kind(%s), id(%s)',
+      this.sid,
+      kind,
+      requestId
+    );
     const content = messageType.encode(body).finish();
     this._writeRequest(kind, requestId, content);
     const deferred = createDeferred<R>();
     const timer = setTimeout(() => {
-      deferred.reject(new NoslatedError(CanonicalCode.TIMEOUT, kind, 'Request Timeout'));
+      deferred.reject(
+        new NoslatedError(CanonicalCode.TIMEOUT, kind, 'Request Timeout')
+      );
     }, timeoutMs);
     this._requestMap.set(requestId, {
       kind,
@@ -544,7 +809,12 @@ class Session {
     this._socket.destroy(err);
   }
 
-  private _writeResponse(kind: RequestKind, requestId: number, code: CanonicalCode, content: Uint8Array) {
+  private _writeResponse(
+    kind: RequestKind,
+    requestId: number,
+    code: CanonicalCode,
+    content: Uint8Array
+  ) {
     const header: aworker.ipc.IMessageHeader = {
       code,
       contentLength: content.byteLength,
@@ -556,7 +826,11 @@ class Session {
     this._interceptor.write(headerBuffer, content);
   }
 
-  private _writeRequest(kind: RequestKind, requestId: number, content: Uint8Array) {
+  private _writeRequest(
+    kind: RequestKind,
+    requestId: number,
+    content: Uint8Array
+  ) {
     const header: aworker.ipc.IMessageHeader = {
       code: CanonicalCode.OK,
       contentLength: content.byteLength,
@@ -591,26 +865,58 @@ class Session {
         });
       }
     }
-  }
+  };
 
   private _onRequest = (message: Message) => {
-    this._logger.debug('on request: session(%s), kind(%s), id(%s)', this.sid, message.requestKind, message.requestId);
-    this._request(this, message, (code: CanonicalCode = CanonicalCode.INTERNAL_ERROR, error: any, body: any) => {
-      this._logger.debug('on request handled: session(%s), kind(%s), id(%s), code(%s)', this.sid, message.requestKind, message.requestId, code);
-      let content;
-      if (code === CanonicalCode.OK) {
-        const messageType = kRequestKindDataMap[message.requestKind][1];
-        content = messageType.encode(body).finish();
-      } else {
-        this._logger.debug('error', error ?? new Error().stack);
-        content = aworker.ipc.ErrorResponseMessage.encode(error ?? { message: 'Internal Error' }).finish();
+    this._logger.debug(
+      'on request: session(%s), kind(%s), id(%s)',
+      this.sid,
+      message.requestKind,
+      message.requestId
+    );
+    this._request(
+      this,
+      message,
+      (
+        code: CanonicalCode = CanonicalCode.INTERNAL_ERROR,
+        error: any,
+        body: any
+      ) => {
+        this._logger.debug(
+          'on request handled: session(%s), kind(%s), id(%s), code(%s)',
+          this.sid,
+          message.requestKind,
+          message.requestId,
+          code
+        );
+        let content;
+        if (code === CanonicalCode.OK) {
+          const messageType = kRequestKindDataMap[message.requestKind][1];
+          content = messageType.encode(body).finish();
+        } else {
+          this._logger.debug('error', error ?? new Error().stack);
+          content = aworker.ipc.ErrorResponseMessage.encode(
+            error ?? { message: 'Internal Error' }
+          ).finish();
+        }
+        this._writeResponse(
+          message.requestKind,
+          message.requestId,
+          code,
+          content
+        );
       }
-      this._writeResponse(message.requestKind, message.requestId, code, content);
-    });
-  }
+    );
+  };
 
   private _onResponse = (message: Message) => {
-    this._logger.debug('on response: session(%s), kind(%s), id(%s), code', this.sid, message.requestKind, message.requestId, message.code);
+    this._logger.debug(
+      'on response: session(%s), kind(%s), id(%s), code',
+      this.sid,
+      message.requestKind,
+      message.requestId,
+      message.code
+    );
     const record = this._requestMap.get(message.requestId);
     if (record == null) {
       return;
@@ -621,11 +927,15 @@ class Session {
       record.deferred.resolve(message.content);
     } else {
       const errorResp: aworker.ipc.IErrorResponseMessage = message.content;
-      const error = new NoslatedError(message.code, message.requestKind, errorResp.message ?? 'Request failed');
+      const error = new NoslatedError(
+        message.code,
+        message.requestKind,
+        errorResp.message ?? 'Request failed'
+      );
       error.peerStack = errorResp.stack ?? error.stack;
       record.deferred.reject(error);
     }
-  }
+  };
 
   private _onClose = () => {
     for (const record of this._requestMap.values()) {
@@ -635,13 +945,17 @@ class Session {
         /**
          * If the session is closed without any error, it must be closed on the other side.
          */
-        error = new NoslatedError(CanonicalCode.CONNECTION_RESET, record.kind, 'Session closed')
+        error = new NoslatedError(
+          CanonicalCode.CONNECTION_RESET,
+          record.kind,
+          'Session closed'
+        );
       }
       record.deferred.reject(error);
     }
     this._requestMap.clear();
     this._close(this);
-  }
+  };
 }
 
 interface Message {
@@ -667,13 +981,20 @@ export class MessageParser {
     let buf;
     if (this._header == null && this._byteLength >= kMessageHeaderByteLength) {
       buf = this._read(kMessageHeaderByteLength);
-      const header = aworker.ipc.MessageHeader.decode(buf, kMessageHeaderByteLength);
+      const header = aworker.ipc.MessageHeader.decode(
+        buf,
+        kMessageHeaderByteLength
+      );
       this._header = header;
     }
     if (this._header && this._byteLength >= this._header.contentLength) {
       const header = this._header;
       buf = this._read(header.contentLength);
-      const messageType = this._getMessageType(header.messageKind, header.requestKind, header.code);
+      const messageType = this._getMessageType(
+        header.messageKind,
+        header.requestKind,
+        header.code
+      );
       const content = messageType.decode(buf, header.contentLength);
       this._header = null;
       return {
@@ -686,11 +1007,17 @@ export class MessageParser {
     }
   }
 
-  private _getMessageType(messageKind: MessageKind, requestKind: RequestKind, code: CanonicalCode) {
+  private _getMessageType(
+    messageKind: MessageKind,
+    requestKind: RequestKind,
+    code: CanonicalCode
+  ) {
     if (messageKind === MessageKind.Response && code !== CanonicalCode.OK) {
       return aworker.ipc.ErrorResponseMessage;
     }
-    return kRequestKindDataMap[requestKind][messageKind === MessageKind.Request ? 0 : 1];
+    return kRequestKindDataMap[requestKind][
+      messageKind === MessageKind.Request ? 0 : 1
+    ];
   }
 
   private _read(byteLength: number): Uint8Array {
@@ -700,8 +1027,8 @@ export class MessageParser {
     let res = this._bufs.shift()!;
     if (res.byteLength < byteLength) {
       const pendingBufs = [res];
-      let totalByteLength = res.byteLength
-      for (; totalByteLength < byteLength;) {
+      let totalByteLength = res.byteLength;
+      for (; totalByteLength < byteLength; ) {
         const next = this._bufs.shift()!;
         pendingBufs.push(next);
         totalByteLength += next.byteLength;
@@ -710,7 +1037,11 @@ export class MessageParser {
     }
     if (res.byteLength > byteLength) {
       const view = Buffer.from(res.buffer, res.byteOffset, byteLength);
-      const unconsumed = Buffer.from(res.buffer, res.byteOffset + byteLength, res.byteLength - byteLength);
+      const unconsumed = Buffer.from(
+        res.buffer,
+        res.byteOffset + byteLength,
+        res.byteLength - byteLength
+      );
       this._bufs.unshift(unconsumed);
       res = view;
     }
@@ -730,7 +1061,9 @@ class IdGenerator {
   }
 }
 
-export function keyValuePairsToObject(keyValuePairs: aworker.ipc.IKeyValuePair[]): Record<string, string> {
+export function keyValuePairsToObject(
+  keyValuePairs: aworker.ipc.IKeyValuePair[]
+): Record<string, string> {
   const obj = Object.create(null);
   keyValuePairs.forEach(kv => {
     obj[kv.key] = kv.value;
@@ -738,7 +1071,9 @@ export function keyValuePairsToObject(keyValuePairs: aworker.ipc.IKeyValuePair[]
   return obj;
 }
 
-function keyValuePairsToArray(keyValuePairs: aworker.ipc.IKeyValuePair[]): [string, string][] {
+function keyValuePairsToArray(
+  keyValuePairs: aworker.ipc.IKeyValuePair[]
+): [string, string][] {
   const res: [string, string][] = [];
   keyValuePairs.forEach(it => {
     res.push([it.key, it.value]);
@@ -760,7 +1095,11 @@ export function flattenToKeyValuePairs(arr: string[]) {
 export class ProtocolInterceptor {
   private _parser = new MessageParser();
 
-  constructor(private _socket: Socket, private _shouldVerify: boolean, private _onData:  (chunk: Buffer) => void) {
+  constructor(
+    private _socket: Socket,
+    private _shouldVerify: boolean,
+    private _onData: (chunk: Buffer) => void
+  ) {
     if (this._shouldVerify) {
       this._socket.on('data', this._interceptOnData);
     } else {
@@ -779,7 +1118,7 @@ export class ProtocolInterceptor {
   private _interceptOnData = (chunk: Buffer) => {
     // TODO(chengzhong.wcz): how to verify received data?
     this._onData(chunk);
-  }
+  };
 
   private _verify(headerBuffer: Uint8Array, contentBuffer: Uint8Array) {
     const totalLength = headerBuffer.byteLength + contentBuffer.byteLength;

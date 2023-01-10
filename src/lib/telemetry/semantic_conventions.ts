@@ -53,15 +53,11 @@ const WorkerMetricsAttributes = {
 export {
   DelegateMetrics,
   DelegateMetricAttributes,
-
   PlaneMetricAttributes,
-
   DataPlaneMetrics,
   DataPlaneMetricAttributes,
-
   ControlPlaneMetrics,
   ControlPlaneMetricAttributes,
-
   WorkerMetrics,
   WorkerMetricsAttributes,
 };

@@ -32,7 +32,12 @@ export class HeraldImpl {
    * @param {ServerWritableStream<root.noslated.control.SetPlatformEnvironmentVariablesRequest, root.noslated.control.SetPlatformEnvironmentVariablesResponse>} call The call object.
    * @return {Promise<root.noslated.control.ISetPlatformEnvironmentVariablesResponse>} The result.
    */
-  async setPlatformEnvironmentVariables(call: ServerWritableStream<root.noslated.control.SetPlatformEnvironmentVariablesRequest, root.noslated.control.SetPlatformEnvironmentVariablesResponse>): Promise<root.noslated.control.ISetPlatformEnvironmentVariablesResponse> {
+  async setPlatformEnvironmentVariables(
+    call: ServerWritableStream<
+      root.noslated.control.SetPlatformEnvironmentVariablesRequest,
+      root.noslated.control.SetPlatformEnvironmentVariablesResponse
+    >
+  ): Promise<root.noslated.control.ISetPlatformEnvironmentVariablesResponse> {
     const { envs } = call.request;
 
     this.logger.info('Setting platform environment variables %o.', envs);
@@ -56,10 +61,13 @@ export class HeraldImpl {
        */
       let runtime = profile?.runtime || 'aworker';
       switch (runtime) {
-        case 'nodejs': runtime = 'nodejs'; break;
+        case 'nodejs':
+          runtime = 'nodejs';
+          break;
         case 'aworker':
         default:
-          runtime = 'aworker'; break;
+          runtime = 'aworker';
+          break;
       }
       this.plane.workerLauncher.starters[runtime].checkV8Options(v8Options);
     }
@@ -70,26 +78,46 @@ export class HeraldImpl {
    * @param {ServerWritableStream<root.noslated.SetFunctionProfileRequest, root.noslated.SetFunctionProfileResponse>} call The call object.
    * @return {Promise<root.noslated.ISetFunctionProfileResponse>} The result.
    */
-  async setFunctionProfile(call: ServerWritableStream<root.noslated.SetFunctionProfileRequest, root.noslated.SetFunctionProfileResponse>): Promise<root.noslated.ISetFunctionProfileResponse> {
+  async setFunctionProfile(
+    call: ServerWritableStream<
+      root.noslated.SetFunctionProfileRequest,
+      root.noslated.SetFunctionProfileResponse
+    >
+  ): Promise<root.noslated.ISetFunctionProfileResponse> {
     const orig = this.plane.functionProfile.profile.map(p => p.toJSON());
     const { profiles = [], mode } = call.request;
-    this.logger.info('Setting function profiles with %s, count: %d', mode, profiles.length);
+    this.logger.info(
+      'Setting function profiles with %s, count: %d',
+      mode,
+      profiles.length
+    );
 
     // 验证 worker v8options
     try {
       await this.plane.workerLauncher.ready();
       this.checkV8Options(profiles);
     } catch (e) {
-      this.logger.warn('Failed to validate function profile: %o, profile: %j', e, profiles);
+      this.logger.warn(
+        'Failed to validate function profile: %o, profile: %j',
+        e,
+        profiles
+      );
       return { set: false };
     }
 
     let error;
     let dataSet = false;
     try {
-      await this.plane.functionProfile.set(profiles as RawFunctionProfile[], mode as Mode);
+      await this.plane.functionProfile.set(
+        profiles as RawFunctionProfile[],
+        mode as Mode
+      );
       await this.plane.dataPlaneClientManager.ready();
-      const results = await this.plane.dataPlaneClientManager.setFunctionProfile(profiles as RawFunctionProfile[], mode as Mode);
+      const results =
+        await this.plane.dataPlaneClientManager.setFunctionProfile(
+          profiles as RawFunctionProfile[],
+          mode as Mode
+        );
       if (!results.length) dataSet = true;
       else {
         dataSet = results.reduce<boolean>((ans, item) => {
@@ -98,7 +126,11 @@ export class HeraldImpl {
       }
     } catch (e) {
       error = e;
-      this.logger.warn('Setting function profile fail: %o, profile: %j', e, profiles);
+      this.logger.warn(
+        'Setting function profile fail: %o, profile: %j',
+        e,
+        profiles
+      );
     }
 
     if (error || !dataSet) {

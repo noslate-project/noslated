@@ -19,11 +19,13 @@ class DaprAdaptor extends Base {
     if (appId === 'hello-world' && methodName === 'echo') {
       return {
         status: 200,
-        data: Buffer.from(JSON.stringify({
-          appId,
-          methodName,
-          data: data.toString('utf8'),
-        })),
+        data: Buffer.from(
+          JSON.stringify({
+            appId,
+            methodName,
+            data: data.toString('utf8'),
+          })
+        ),
       };
     }
     return {
@@ -38,12 +40,14 @@ class DaprAdaptor extends Base {
     if (name === 'key-value' && operation === 'get') {
       return {
         status: 200,
-        data: Buffer.from(JSON.stringify({
-          name,
-          metadata,
-          operation,
-          data: data.toString('utf8'),
-        })),
+        data: Buffer.from(
+          JSON.stringify({
+            name,
+            metadata,
+            operation,
+            data: data.toString('utf8'),
+          })
+        ),
       };
     }
     return {

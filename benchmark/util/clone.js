@@ -5,8 +5,8 @@ const { structuredClone, jsonClone } = require('#self/lib/util');
 const value = require('../../build/lib/json/function_profile_schema');
 
 const bench = common.createBenchmark(main, {
-  n: [ 5e4 ],
-  type: [ 'json', 'structured-clone' ],
+  n: [5e4],
+  type: ['json', 'structured-clone'],
 });
 
 function main({ n, type }) {
@@ -24,7 +24,8 @@ function main({ n, type }) {
       }
       break;
     }
-    default: break;
+    default:
+      break;
   }
   bench.end(n);
 }

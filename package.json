@@ -30,7 +30,7 @@
     "clean": "make clean",
     "dev": "node index.js",
     "lint": "make jslint",
-    "fix-lint": "make jslint-fix"
+    "lint:fix": "make jsformat"
   },
   "repository": {
     "type": "git",
@@ -38,7 +38,7 @@
   },
   "author": "Noslate Team <noslate-support@list.alibaba-inc.com>",
   "engines": {
-    "node": "^18.10.0"
+    "node": "^16.18.1"
   },
   "dependencies": {
     "@datastructures-js/priority-queue": "6.1.1",

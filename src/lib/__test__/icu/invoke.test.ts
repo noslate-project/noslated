@@ -12,7 +12,7 @@ import { ServerWritableStream } from '@grpc/grpc-js';
 
 const invokePath = require.resolve('#self/lib/icu/invoke');
 
-describe(common.testName(__filename), function() {
+describe(common.testName(__filename), function () {
   // Debug version of Node.js may take longer time to bootstrap.
   this.timeout(30_000);
 
@@ -34,25 +34,38 @@ describe(common.testName(__filename), function() {
 
   it('invoke methods', async () => {
     host.addService((grpcDescriptor as any).noslated.test.TestService.service, {
-      async ping(call: ServerWritableStream<root.noslated.test.IPing, root.noslated.test.IPong>) {
+      async ping(
+        call: ServerWritableStream<
+          root.noslated.test.IPing,
+          root.noslated.test.IPong
+        >
+      ) {
         return { msg: call.request.msg };
       },
     });
 
-    const cp = childProcess.spawn(process.execPath, [
-      invokePath,
-      '--sock', address,
-      '--service', 'noslated.test.TestService',
-      '--include', path.resolve(FIXTURES_DIR, 'proto'),
-      'ping', '{"msg": "foobar"}',
-    ], {
-      stdio: 'pipe',
-      env: {
-        ...process.env,
-        GRPC_TRACE: '',
-        GRPC_VERBOSITY: 'NONE',
-      },
-    });
+    const cp = childProcess.spawn(
+      process.execPath,
+      [
+        invokePath,
+        '--sock',
+        address,
+        '--service',
+        'noslated.test.TestService',
+        '--include',
+        path.resolve(FIXTURES_DIR, 'proto'),
+        'ping',
+        '{"msg": "foobar"}',
+      ],
+      {
+        stdio: 'pipe',
+        env: {
+          ...process.env,
+          GRPC_TRACE: '',
+          GRPC_VERBOSITY: 'NONE',
+        },
+      }
+    );
     cleanup = () => cp.kill();
     cp.stderr.pipe(process.stderr);
 
@@ -67,20 +80,28 @@ describe(common.testName(__filename), function() {
   });
 
   it('invoke non-exist methods', async () => {
-    const cp = childProcess.spawn(process.execPath, [
-      invokePath,
-      '--sock', address,
-      '--service', 'noslated.test.TestService',
-      '--include', path.resolve(FIXTURES_DIR, 'proto'),
-      'non-exists', '{"msg": "foobar"}',
-    ], {
-      stdio: 'pipe',
-      env: {
-        ...process.env,
-        GRPC_TRACE: '',
-        GRPC_VERBOSITY: 'NONE',
-      },
-    });
+    const cp = childProcess.spawn(
+      process.execPath,
+      [
+        invokePath,
+        '--sock',
+        address,
+        '--service',
+        'noslated.test.TestService',
+        '--include',
+        path.resolve(FIXTURES_DIR, 'proto'),
+        'non-exists',
+        '{"msg": "foobar"}',
+      ],
+      {
+        stdio: 'pipe',
+        env: {
+          ...process.env,
+          GRPC_TRACE: '',
+          GRPC_VERBOSITY: 'NONE',
+        },
+      }
+    );
     cleanup = () => cp.kill();
     cp.stdout.pipe(process.stdout);
 
@@ -91,6 +112,9 @@ describe(common.testName(__filename), function() {
     });
     await once(cp, 'exit');
 
-    assert.strictEqual(output.trim(), "IcuError: no method named 'non-exists' in service 'noslated.test.TestService'.");
+    assert.strictEqual(
+      output.trim(),
+      "IcuError: no method named 'non-exists' in service 'noslated.test.TestService'."
+    );
   });
 });

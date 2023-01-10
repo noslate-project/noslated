@@ -10,7 +10,10 @@ export class DataPlaneClient extends BasePlaneClient {
    * @param {typeof import('#self/config/default')} config The global config object.
    */
   constructor(planeId: number, config: Config) {
-    const heraldPath = path.join(config.dirs.noslatedSock, `dp-${planeId}.sock`);
+    const heraldPath = path.join(
+      config.dirs.noslatedSock,
+      `dp-${planeId}.sock`
+    );
     super('data plane client', heraldPath, planeId, config);
   }
 

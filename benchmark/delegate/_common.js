@@ -68,18 +68,25 @@ function createPlainHttp(filename, callback) {
     });
     try {
       fs.unlinkSync(serverPath);
-    } catch { /** ignore */ }
+    } catch {
+      /** ignore */
+    }
     server.listen(serverPath);
 
     async function send(socket) {
       const id = seq++;
       return new Promise(resolve => {
-        msgTable.set(id, { resolve, readable: new Readable({ read: () => {} }) });
+        msgTable.set(id, {
+          resolve,
+          readable: new Readable({ read: () => {} }),
+        });
         socket.write(JSON.stringify({ id }) + '\n');
       });
     }
 
-    const cp = childProcess.spawn(process.execPath, [ filename, 'child' ], { stdio: [ 'ignore', 'inherit', 'inherit', 'ipc' ] });
+    const cp = childProcess.spawn(process.execPath, [filename, 'child'], {
+      stdio: ['ignore', 'inherit', 'inherit', 'ipc'],
+    });
     cp.on('exit', () => {
       process.exit(1);
     });
@@ -88,16 +95,15 @@ function createPlainHttp(filename, callback) {
         const readable = await send(socket);
         readable.pipe(res);
       });
-      httpServer.listen(common.PORT)
-        .on('listening', () => {
-          callback(setup, () => {
-            cp.removeAllListeners('exit');
-            socket.destroy();
-            httpServer.close();
-            server.close();
-            cp.kill();
-          });
+      httpServer.listen(common.PORT).on('listening', () => {
+        callback(setup, () => {
+          cp.removeAllListeners('exit');
+          socket.destroy();
+          httpServer.close();
+          server.close();
+          cp.kill();
         });
+      });
     }
   }
 }
@@ -106,8 +112,14 @@ function createDelegateChild(filename) {
   process.env._NOSLATED_IPC_PATH = serverPath;
   process.env._NOSLATED_CODE_PATH = __dirname;
   process.env._NOSLATED_WORKER_CREDENTIAL = credentials;
-  process.env._NOSLATED_FUNC_INITIALIZER = `${path.basename(path.relative(__dirname, filename), '.js')}.initializer`;
-  process.env._NOSLATED_FUNC_HANDLER = `${path.basename(path.relative(__dirname, filename), '.js')}.handler`;
+  process.env._NOSLATED_FUNC_INITIALIZER = `${path.basename(
+    path.relative(__dirname, filename),
+    '.js'
+  )}.initializer`;
+  process.env._NOSLATED_FUNC_HANDLER = `${path.basename(
+    path.relative(__dirname, filename),
+    '.js'
+  )}.handler`;
   require('../../build/starter/noslated_node');
 }
 
@@ -119,8 +131,12 @@ function createDelegate(filename, options, callback) {
   return main;
 
   function main(setup) {
-    require('#self/lib/logger').setSink(require('#self/lib/logger').getPrettySink('benchmark.log'));
-    const { NoslatedDelegateService: DelegateService } = require('#self/delegate/index');
+    require('#self/lib/logger').setSink(
+      require('#self/lib/logger').getPrettySink('benchmark.log')
+    );
+    const {
+      NoslatedDelegateService: DelegateService,
+    } = require('#self/delegate/index');
     const delegate = new DelegateService(serverPath);
     delegate.register(credentials);
     delegate.on('bind', async () => {
@@ -128,12 +144,12 @@ function createDelegate(filename, options, callback) {
       benchRun();
     });
     delegate.start();
-    const cp = childProcess.fork(filename, [ 'child' ], {
+    const cp = childProcess.fork(filename, ['child'], {
       env: {
         ...process.env,
         _NOSLATED_LOG_LEVEL: 'error',
       },
-      stdio: [ 'ignore', 'inherit', 'inherit', 'ipc' ],
+      stdio: ['ignore', 'inherit', 'inherit', 'ipc'],
     });
     cp.on('exit', () => {
       process.exit(1);
@@ -152,15 +168,18 @@ function createDelegate(filename, options, callback) {
 
     function createServer() {
       const server = http.createServer(async (req, res) => {
-        doBench(req.url).then(() => {
-          res.end('foobar');
-        }, e => {
-          if (e.code !== CanonicalCode.CANCELLED) {
-            console.error('unexpected error', e);
+        doBench(req.url).then(
+          () => {
+            res.end('foobar');
+          },
+          e => {
+            if (e.code !== CanonicalCode.CANCELLED) {
+              console.error('unexpected error', e);
+            }
+            res.statusCode = 500;
+            res.end('foobar');
           }
-          res.statusCode = 500;
-          res.end('foobar');
-        });
+        );
       });
       return server;
     }
@@ -170,7 +189,12 @@ function createDelegate(filename, options, callback) {
       if (method === '/init') {
         resp = await delegate.trigger(credentials, 'init');
       } else {
-        resp = await delegate.trigger(credentials, 'invoke', options?.getInput(), {});
+        resp = await delegate.trigger(
+          credentials,
+          'invoke',
+          options?.getInput(),
+          {}
+        );
       }
 
       resp.on('data', () => {});
@@ -195,11 +219,9 @@ function createGrpcClient(callback) {
   const grpc = require('@grpc/grpc-js');
   const protoLoader = require('@grpc/proto-loader');
   const server = new grpc.Server();
-  const packageDefinition = protoLoader.loadSync(
-    PROTO_PATH,
-    {
-      keepCase: true,
-    });
+  const packageDefinition = protoLoader.loadSync(PROTO_PATH, {
+    keepCase: true,
+  });
   const protoDescriptor = grpc.loadPackageDefinition(packageDefinition);
 
   server.addService(protoDescriptor.service.service, {
@@ -217,11 +239,9 @@ function createGrpc(filename, callback) {
   function main(setup) {
     const grpc = require('@grpc/grpc-js');
     const protoLoader = require('@grpc/proto-loader');
-    const packageDefinition = protoLoader.loadSync(
-      PROTO_PATH,
-      {
-        keepCase: true,
-      });
+    const packageDefinition = protoLoader.loadSync(PROTO_PATH, {
+      keepCase: true,
+    });
     const protoDescriptor = grpc.loadPackageDefinition(packageDefinition);
     /** @type {import('@grpc/grpc-js').Client} */
     let client;
@@ -239,12 +259,15 @@ function createGrpc(filename, callback) {
 
     function createServer() {
       const server = http.createServer(async (req, res) => {
-        doBench(req.url).then(() => {
-          res.end('foobar');
-        }, () => {
-          res.statusCode = 500;
-          res.end('foobar');
-        });
+        doBench(req.url).then(
+          () => {
+            res.end('foobar');
+          },
+          () => {
+            res.statusCode = 500;
+            res.end('foobar');
+          }
+        );
       });
       return server;
     }
@@ -259,9 +282,14 @@ function createGrpc(filename, callback) {
         });
       });
     }
-    const cp = childProcess.fork(filename, [ 'child' ], { stdio: [ 'ignore', 'inherit', 'inherit', 'ipc' ] });
+    const cp = childProcess.fork(filename, ['child'], {
+      stdio: ['ignore', 'inherit', 'inherit', 'ipc'],
+    });
     cp.on('message', () => {
-      client = new protoDescriptor.service(serverPort, grpc.credentials.createInsecure());
+      client = new protoDescriptor.service(
+        serverPort,
+        grpc.credentials.createInsecure()
+      );
       benchRun();
     });
     cp.on('exit', (code, signal) => {

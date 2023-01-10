@@ -60,13 +60,17 @@ export class ServerResponse extends Writable {
 
   #sendHeader = (error?: unknown) => {
     if (error) {
-      this.#headerCallback(CanonicalCode.INTERNAL_ERROR, safeError(error), null);
+      this.#headerCallback(
+        CanonicalCode.INTERNAL_ERROR,
+        safeError(error),
+        null
+      );
       return;
     }
     const params: TriggerResponse = {
       status: this.#statusCode,
       metadata: {
-        headers: Object.entries(this.#headers).flatMap(([ key, val ]) => {
+        headers: Object.entries(this.#headers).flatMap(([key, val]) => {
           if (!Array.isArray(val)) {
             return [{ key, value: String(val) }];
           }
@@ -78,20 +82,30 @@ export class ServerResponse extends Writable {
     this.#headerCallback(CanonicalCode.OK, null, params);
   };
 
-  constructor(worker: NoslatedNodeWorker, sid: number | null, headerCallback: (code: CanonicalCode, err: ErrorResponse | null, data: TriggerResponse | null) => void) {
+  constructor(
+    worker: NoslatedNodeWorker,
+    sid: number | null,
+    headerCallback: (
+      code: CanonicalCode,
+      err: ErrorResponse | null,
+      data: TriggerResponse | null
+    ) => void
+  ) {
     super({
       write: (chunk, encoding, callback) => {
         if (sid == null) {
           return callback();
         }
-        worker.streamPush(sid, /* isEos */false, chunk, /* isError */false)
+        worker
+          .streamPush(sid, /* isEos */ false, chunk, /* isError */ false)
           .then(
             () => {
               callback();
             },
             (err: any) => {
               callback(err);
-            });
+            }
+          );
       },
       destroy: (error, callback) => {
         if (!this.#headersSent) {
@@ -100,14 +114,21 @@ export class ServerResponse extends Writable {
         if (sid == null) {
           return callback(null);
         }
-        worker.streamPush(sid, /* isEos */true, /* chunk */null, /* isError */ error != null)
+        worker
+          .streamPush(
+            sid,
+            /* isEos */ true,
+            /* chunk */ null,
+            /* isError */ error != null
+          )
           .then(
             () => {
               callback(null);
             },
             (err: any) => {
               callback(err);
-            });
+            }
+          );
       },
       autoDestroy: true,
     });
@@ -160,7 +181,11 @@ export class ServerResponse extends Writable {
     return STATUS_CODES[this.#statusCode];
   }
 
-  writeHead(statusCode: number, statusMessage?: string, headers?: Record<string, string>) {
+  writeHead(
+    statusCode: number,
+    statusMessage?: string,
+    headers?: Record<string, string>
+  ) {
     if (typeof statusMessage !== 'string') {
       headers = statusMessage;
       statusMessage = undefined;
@@ -178,7 +203,7 @@ export class ServerResponse extends Writable {
         if (key) this.setHeader(key, headers[n + 1]);
       }
     } else if (headers) {
-      for (const [ key, val ] of Object.entries(headers)) {
+      for (const [key, val] of Object.entries(headers)) {
         this.setHeader(key, val);
       }
     }

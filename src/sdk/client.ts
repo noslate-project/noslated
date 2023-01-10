@@ -3,8 +3,16 @@ import { Readable } from 'stream';
 import { Validator as JSONValidator } from 'jsonschema';
 import { config, dumpConfig } from '#self/config';
 import loggers from '#self/lib/logger';
-import { tuplesToPairs, pairsToTuples, mapToPairs } from '#self/lib/rpc/key_value_pair';
-import { TriggerResponse, MetadataInit, Metadata } from '#self/delegate/request_response';
+import {
+  tuplesToPairs,
+  pairsToTuples,
+  mapToPairs,
+} from '#self/lib/rpc/key_value_pair';
+import {
+  TriggerResponse,
+  MetadataInit,
+  Metadata,
+} from '#self/delegate/request_response';
 import { bufferFromStream, DeepRequired, jsonClone } from '#self/lib/util';
 import { DataPlaneClientManager } from './data_plane_client_manager';
 import { ControlPlaneClientManager } from './control_plane_client_manager';
@@ -37,7 +45,10 @@ export class NoslatedClient extends EventEmitter {
     dumpConfig('sdk', config);
 
     this.dataPlaneClientManager = new DataPlaneClientManager(this, config);
-    this.controlPlaneClientManager = new ControlPlaneClientManager(this, config);
+    this.controlPlaneClientManager = new ControlPlaneClientManager(
+      this,
+      config
+    );
     this.logger = loggers.get('noslated client');
     this.validator = new JSONValidator();
 
@@ -55,8 +66,12 @@ export class NoslatedClient extends EventEmitter {
   async start() {
     this.logger.debug('starting...');
 
-    this.dataPlaneClientManager.on('newClientReady', plane => this.emit('newDataPlaneClientReady', plane));
-    this.controlPlaneClientManager.on('newClientReady', plane => this.emit('newControlPlaneClientReady', plane));
+    this.dataPlaneClientManager.on('newClientReady', plane =>
+      this.emit('newDataPlaneClientReady', plane)
+    );
+    this.controlPlaneClientManager.on('newClientReady', plane =>
+      this.emit('newControlPlaneClientReady', plane)
+    );
 
     await Promise.all([
       this.dataPlaneClientManager.ready(),
@@ -83,7 +98,11 @@ export class NoslatedClient extends EventEmitter {
    * @param {import('#self/delegate/request_response').Metadata} metadata The metadata.
    * @return {Promise<import('#self/delegate/request_response').TriggerResponse>} The invoke response.
    */
-  async invoke(name: string, data: Readable | Buffer, metadata?: InvokeMetadata) {
+  async invoke(
+    name: string,
+    data: Readable | Buffer,
+    metadata?: InvokeMetadata
+  ) {
     return this.#invoke('invoke', name, data, metadata);
   }
 
@@ -94,7 +113,11 @@ export class NoslatedClient extends EventEmitter {
    * @param {import('#self/delegate/request_response').Metadata} metadata The metadata.
    * @return {Promise<import('#self/delegate/request_response').TriggerResponse>} The invoke response.
    */
-  async invokeService(name: string, data: Readable | Buffer, metadata?: InvokeMetadata) {
+  async invokeService(
+    name: string,
+    data: Readable | Buffer,
+    metadata?: InvokeMetadata
+  ) {
     return this.#invoke('invokeService', name, data, metadata);
   }
 
@@ -106,13 +129,23 @@ export class NoslatedClient extends EventEmitter {
   async setPlatformEnvironmentVariables(envs: root.noslated.IKeyValuePair[]) {
     // wash envs and throw Error if neccessary
     envs.forEach(kv => {
-      if ((kv.key as string).startsWith('NOSLATED_') || (kv.key as string).startsWith('NOSLATE_')) {
+      if (
+        (kv.key as string).startsWith('NOSLATED_') ||
+        (kv.key as string).startsWith('NOSLATE_')
+      ) {
         throw new Error(
-          `Platform environment variables' key can't start with NOSLATED_ and NOSLATE_. (Failed: ${kv.key})`);
-      } if (typeof kv.value !== 'string' && kv.value !== undefined && kv.value !== null) {
+          `Platform environment variables' key can't start with NOSLATED_ and NOSLATE_. (Failed: ${kv.key})`
+        );
+      }
+      if (
+        typeof kv.value !== 'string' &&
+        kv.value !== undefined &&
+        kv.value !== null
+      ) {
         throw new Error(
           `Platform environment variables' value can't be out of string. (Failed: ${kv.key}, ` +
-          `${kv.value} (${typeof kv.value}))`);
+            `${kv.value} (${typeof kv.value}))`
+        );
       }
     });
 
@@ -126,9 +159,11 @@ export class NoslatedClient extends EventEmitter {
 
     // Set platform environment variables. If failed, do not cache current `platformEnvironmentVariables`.
     if (client) {
-      const ret = await (client as any).setPlatformEnvironmentVariables({ envs });
+      const ret = await (client as any).setPlatformEnvironmentVariables({
+        envs,
+      });
       if (!ret?.set) {
-        throw new Error('Platform environment variables didn\'t set.');
+        throw new Error("Platform environment variables didn't set.");
       }
     }
 
@@ -148,7 +183,10 @@ export class NoslatedClient extends EventEmitter {
    * @param {RawFunctionProfile[]} profiles function profile
    * @param {'IMMEDIATELY' | 'WAIT'} mode set mode
    */
-  async setFunctionProfile(profiles: RawFunctionProfile[], mode: Mode = 'IMMEDIATELY') {
+  async setFunctionProfile(
+    profiles: RawFunctionProfile[],
+    mode: Mode = 'IMMEDIATELY'
+  ) {
     const client = this.controlPlaneClientManager.sample();
     profiles = JSON.parse(JSON.stringify(profiles));
 
@@ -157,7 +195,7 @@ export class NoslatedClient extends EventEmitter {
     if (client) {
       const ret = await (client as any).setFunctionProfile({ profiles, mode });
       if (!ret?.set) {
-        throw new Error('Function profile didn\'t set.');
+        throw new Error("Function profile didn't set.");
       }
     }
 
@@ -181,27 +219,37 @@ export class NoslatedClient extends EventEmitter {
     this.validator.validate(profiles, kServiceProfileSchema);
     profiles = jsonClone(profiles);
 
-    const serviceProfiles: root.noslated.data.IFunctionService[] = profiles.map(it => {
-      const item: root.noslated.data.IFunctionService = {
-        name: it.name,
-        type: it.type
-      };
+    const serviceProfiles: root.noslated.data.IFunctionService[] = profiles.map(
+      it => {
+        const item: root.noslated.data.IFunctionService = {
+          name: it.name,
+          type: it.type,
+        };
 
-      if (it.selector) {
-        item.selector = mapToPairs<string>(it.selector as Record<'functionName', string>);
+        if (it.selector) {
+          item.selector = mapToPairs<string>(
+            it.selector as Record<'functionName', string>
+          );
+        }
+        if (it.selectors) {
+          item.selectors = it.selectors.map(it => {
+            return {
+              proportion: it.proportion,
+              selector: mapToPairs(
+                it.selector as Record<'functionName', string>
+              ),
+            };
+          });
+        }
+        return item;
       }
-      if (it.selectors) {
-        item.selectors = it.selectors.map(it => {
-          return {
-            proportion: it.proportion,
-            selector: mapToPairs(it.selector as Record<'functionName', string>)
-          };
-        });
-      }
-      return item;
-    });
+    );
 
-    await this.dataPlaneClientManager.callToAllAvailableClients('setServiceProfiles', [{ profiles: serviceProfiles }], 'all');
+    await this.dataPlaneClientManager.callToAllAvailableClients(
+      'setServiceProfiles',
+      [{ profiles: serviceProfiles }],
+      'all'
+    );
     this.serviceProfiles = serviceProfiles;
   }
 
@@ -226,7 +274,11 @@ export class NoslatedClient extends EventEmitter {
       this.useInspectorSet.delete(funcName);
     }
 
-    await this.dataPlaneClientManager.callToAllAvailableClients('useInspector', [{ funcName, use }], 'all');
+    await this.dataPlaneClientManager.callToAllAvailableClients(
+      'useInspector',
+      [{ funcName, use }],
+      'all'
+    );
   }
 
   /**
@@ -237,7 +289,12 @@ export class NoslatedClient extends EventEmitter {
    * @param {import('#self/delegate/request_response').Metadata} metadata The metadata.
    * @return {Promise<import('#self/delegate/request_response').TriggerResponse>} The invoke response.
    */
-  async #invoke(type: InvokeType, name: string, data: Readable | Buffer, metadata?: InvokeMetadata): Promise<TriggerResponse> {
+  async #invoke(
+    type: InvokeType,
+    name: string,
+    data: Readable | Buffer,
+    metadata?: InvokeMetadata
+  ): Promise<TriggerResponse> {
     /** @type {DataPlaneClient} */
     const plane = this.dataPlaneClientManager.sample();
     if (plane == null) {
@@ -252,20 +309,24 @@ export class NoslatedClient extends EventEmitter {
       body = data;
     }
 
-    const result: DeepRequired<root.noslated.data.IInvokeResponse> = await plane[type]({
-      name,
-      url: metadata?.url,
-      method: metadata?.method,
-      headers: tuplesToPairs(metadata?.headers ?? []),
-      baggage: tuplesToPairs(metadata?.baggage ?? []),
-      // TODO: negotiate with deadline;
-      timeout: metadata?.timeout,
-      body,
-      requestId: metadata?.requestId ?? kDefaultRequestId
-    } as root.noslated.data.IInvokeRequest, {
-      // TODO: proper deadline definition;
-      deadline: Date.now() + (metadata?.timeout ?? 10_000) + 1_000,
-    });
+    const result: DeepRequired<root.noslated.data.IInvokeResponse> =
+      await plane[type](
+        {
+          name,
+          url: metadata?.url,
+          method: metadata?.method,
+          headers: tuplesToPairs(metadata?.headers ?? []),
+          baggage: tuplesToPairs(metadata?.baggage ?? []),
+          // TODO: negotiate with deadline;
+          timeout: metadata?.timeout,
+          body,
+          requestId: metadata?.requestId ?? kDefaultRequestId,
+        } as root.noslated.data.IInvokeRequest,
+        {
+          // TODO: proper deadline definition;
+          deadline: Date.now() + (metadata?.timeout ?? 10_000) + 1_000,
+        }
+      );
     if (result.error) {
       const error = new Error();
       Object.assign(error, result.error);

@@ -1,11 +1,12 @@
 import { NoslatedClient } from './util';
 
 function objectToKeyValueMap(object: object) {
-  const entries = Object.entries(object)
-    .map(([ key, value ]) => [ key, `${value}` ]);
+  const entries = Object.entries(object).map(([key, value]) => [
+    key,
+    `${value}`,
+  ]);
   return Object.fromEntries(entries);
 }
-
 
 type BufferSource = Buffer | Uint8Array | string;
 interface ServiceRequestInit {
@@ -130,7 +131,12 @@ export function makeDapr(client: NoslatedClient) {
           req = init;
         }
         const data = await req.buffer();
-        const res = await client.daprInvoke(req.app, req.method, data, req.timeout);
+        const res = await client.daprInvoke(
+          req.app,
+          req.method,
+          data,
+          req.timeout
+        );
         return new Response(res);
       },
       binding: async (init: BindingRequestInit | BindingRequest) => {
@@ -141,7 +147,13 @@ export function makeDapr(client: NoslatedClient) {
           req = init;
         }
         const data = await req.buffer();
-        const res = await client.daprBinding(req.name, JSON.stringify(req.metadata), req.operation, data, req.timeout);
+        const res = await client.daprBinding(
+          req.name,
+          JSON.stringify(req.metadata),
+          req.operation,
+          data,
+          req.timeout
+        );
         return new Response(res);
       },
     },

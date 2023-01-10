@@ -2,7 +2,11 @@
 import EventEmitter from 'events';
 
 export class TaskQueueItem<T> {
-  constructor(public parent: TaskQueue<T>, public queueId: number, public task: T) {}
+  constructor(
+    public parent: TaskQueue<T>,
+    public queueId: number,
+    public task: T
+  ) {}
 
   /**
    * Done the task item.
@@ -22,7 +26,9 @@ export class TaskQueue<T> extends EventEmitter {
     this.running = [];
 
     this.on('done', queueId => {
-      process.nextTick(() => { this._runTask(queueId); });
+      process.nextTick(() => {
+        this._runTask(queueId);
+      });
     });
 
     for (let i = 0; i < this.queueCount; i++) {
@@ -52,12 +58,16 @@ export class TaskQueue<T> extends EventEmitter {
 
     if (!this.running[min]) {
       this.running[min] = true;
-      process.nextTick(() => { this._runTask(min); });
+      process.nextTick(() => {
+        this._runTask(min);
+      });
     }
   }
 
   taskDone(item: TaskQueueItem<T>) {
-    process.nextTick(() => { this.emit('done', item.queueId); });
+    process.nextTick(() => {
+      this.emit('done', item.queueId);
+    });
   }
 
   _runTask(queueId: number) {

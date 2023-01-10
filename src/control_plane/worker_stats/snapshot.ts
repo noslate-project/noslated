@@ -21,7 +21,11 @@ export class WorkerStatsSnapshot extends BaseOf(EventEmitter) {
   private gcLogTimers: Set<NodeJS.Timeout>;
   private statLogger: StatLogger;
 
-  constructor(profileManager: FunctionProfileManager, public config: Config, private turf: Turf) {
+  constructor(
+    profileManager: FunctionProfileManager,
+    public config: Config,
+    private turf: Turf
+  ) {
     super();
 
     this.logger = loggers.get('worker_stats snapshot');
@@ -62,7 +66,7 @@ export class WorkerStatsSnapshot extends BaseOf(EventEmitter) {
       this.brokers.delete(key);
     }
 
-    for (const [ key, value ] of this.brokers.entries()) {
+    for (const [key, value] of this.brokers.entries()) {
       value.sync([], psData);
       newMap.set(key, value);
     }
@@ -80,11 +84,22 @@ export class WorkerStatsSnapshot extends BaseOf(EventEmitter) {
   /**
    * Get or create broker by function name and `isInspector`.
    */
-  getOrCreateBroker(functionName: string, isInspector: boolean, disposable = false): Broker | null {
+  getOrCreateBroker(
+    functionName: string,
+    isInspector: boolean,
+    disposable = false
+  ): Broker | null {
     let broker = this.getBroker(functionName, isInspector);
     if (broker) return broker;
     if (!this.profiles.get(functionName)) return null;
-    broker = new Broker(this.profiles, this.config, functionName, isInspector, disposable, this.turf);
+    broker = new Broker(
+      this.profiles,
+      this.config,
+      functionName,
+      isInspector,
+      disposable,
+      this.turf
+    );
     this.brokers.set(Broker.getKey(functionName, isInspector), broker);
     return broker;
   }
@@ -92,7 +107,11 @@ export class WorkerStatsSnapshot extends BaseOf(EventEmitter) {
   /**
    * Get worker object.
    */
-  getWorker(functionName: string, isInspector: boolean, workerName: string): Worker | null {
+  getWorker(
+    functionName: string,
+    isInspector: boolean,
+    workerName: string
+  ): Worker | null {
     const broker = this.getBroker(functionName, isInspector);
     if (!broker) return null;
     return broker.getWorker(workerName) || null;
@@ -105,7 +124,13 @@ export class WorkerStatsSnapshot extends BaseOf(EventEmitter) {
    * @param {string} credential The credential.
    * @param {boolean} isInspector Whether it's using inspector or not.
    */
-  register(funcName: string, processName: string, credential: string, isInspector: boolean, disposable = false): Worker {
+  register(
+    funcName: string,
+    processName: string,
+    credential: string,
+    isInspector: boolean,
+    disposable = false
+  ): Worker {
     const broker = this.getOrCreateBroker(funcName, isInspector, disposable);
     if (!broker) {
       throw new Error(`No function named ${funcName} in function profile.`);
@@ -132,28 +157,30 @@ export class WorkerStatsSnapshot extends BaseOf(EventEmitter) {
   }
 
   toProtobufObject(): root.noslated.data.IBrokerStats[] {
-    return [ ...this.brokers.values() ].map(broker => ({
+    return [...this.brokers.values()].map(broker => ({
       name: broker.name,
       inspector: broker.isInspector,
       profile: broker.data,
       redundantTimes: broker.redundantTimes,
-      startingPool: [ ...broker.startingPool.entries() ].map(([ key, value ]) => ({
+      startingPool: [...broker.startingPool.entries()].map(([key, value]) => ({
         workerName: key,
         credential: value.credential,
         estimateRequestLeft: value.estimateRequestLeft,
         maxActivateRequests: value.maxActivateRequests,
       })),
-      workers: [ ...broker.workers.values() ].map(worker => ({
+      workers: [...broker.workers.values()].map(worker => ({
         name: worker.name,
         credential: worker.credential,
         registerTime: worker.registerTime,
         pid: worker.pid,
         turfContainerStates: worker.turfContainerStates,
         containerStatus: worker.containerStatus,
-        data: worker.data ? {
-          maxActivateRequests: worker.data.maxActivateRequests,
-          activeRequestCount: worker.data.activeRequestCount
-        } : null,
+        data: worker.data
+          ? {
+              maxActivateRequests: worker.data.maxActivateRequests,
+              activeRequestCount: worker.data.activeRequestCount,
+            }
+          : null,
       })),
     }));
   }
@@ -166,33 +193,52 @@ export class WorkerStatsSnapshot extends BaseOf(EventEmitter) {
    */
   async #tryGC(broker: Broker, worker: Worker) {
     if (!broker.getWorker(worker.name)) {
-      throw new Error(`Worker ${worker.name} not belongs to broker ${Broker.getKey(broker.name, broker.isInspector)}`);
+      throw new Error(
+        `Worker ${worker.name} not belongs to broker ${Broker.getKey(
+          broker.name,
+          broker.isInspector
+        )}`
+      );
     }
 
     // 进入该状态，必然要被 GC
-    if (worker.containerStatus === ContainerStatus.Stopped || worker.containerStatus === ContainerStatus.Unknown) {
+    if (
+      worker.containerStatus === ContainerStatus.Stopped ||
+      worker.containerStatus === ContainerStatus.Unknown
+    ) {
       let state;
       let emitExceptionMessage;
 
       try {
         await this.turf.stop(worker.name);
       } catch (e) {
-        this.logger.warn(`Failed to stop worker [${worker.name}] via \`.#tryGC()\`.`, e);
+        this.logger.warn(
+          `Failed to stop worker [${worker.name}] via \`.#tryGC()\`.`,
+          e
+        );
       }
 
       try {
-        state = await this.turf.state(worker.name) as TurfState;
+        state = (await this.turf.state(worker.name)) as TurfState;
         const stime = state['rusage.stime'] ?? 0;
         const utime = state['rusage.utime'] ?? 0;
         //TODO(yilong.lyl): fix typo @zl131478
         const rss = state['rusage.masrss'];
 
-        this.statLogger.exit(state.name, state.pid, state.exitcode ?? null, state['killed.signal'] ?? null, stime + utime, rss, worker.requestId ?? null);
+        this.statLogger.exit(
+          state.name,
+          state.pid,
+          state.exitcode ?? null,
+          state['killed.signal'] ?? null,
+          stime + utime,
+          rss,
+          worker.requestId ?? null
+        );
 
-        this.logger.info(`%s's last state: %j`, worker.name, state);
+        this.logger.info("%s's last state: %j", worker.name, state);
       } catch (e) {
         emitExceptionMessage = 'failed_to_state';
-        this.logger.warn(`Failed to state worker [%s]`, worker.name, e);
+        this.logger.warn('Failed to state worker [%s]', worker.name, e);
       }
 
       broker.removeItemFromStartingPool(worker.name);
@@ -202,18 +248,34 @@ export class WorkerStatsSnapshot extends BaseOf(EventEmitter) {
         // 清理 turf 数据
         await this.turf.delete(worker.name);
       } catch (e) {
-        this.logger.warn(`Failed to delete worker [%s] via \`.#tryGC()\`.`, worker.name, e);
+        this.logger.warn(
+          'Failed to delete worker [%s] via `.#tryGC()`.',
+          worker.name,
+          e
+        );
       }
 
       // 清理 log 文件
       const gcLogTimer = setTimeout(() => {
         this.gcLogTimers.delete(gcLogTimer);
         const logDir = starters.logPath(this.config.logger.dir, worker.name);
-        fs.promises.rmdir(logDir, { recursive: true }).then(() => {
-          this.logger.debug(`[%s]'s log directory removed: %s.`, worker.name, logDir);
-        }).catch(e => {
-          this.logger.warn(`Failed to rm [%s]'s log directory: %s.`, worker.name, logDir, e);
-        });
+        fs.promises
+          .rmdir(logDir, { recursive: true })
+          .then(() => {
+            this.logger.debug(
+              "[%s]'s log directory removed: %s.",
+              worker.name,
+              logDir
+            );
+          })
+          .catch(e => {
+            this.logger.warn(
+              "Failed to rm [%s]'s log directory: %s.",
+              worker.name,
+              logDir,
+              e
+            );
+          });
       }, this.config.worker.gcLogDelay);
       this.gcLogTimers.add(gcLogTimer);
 
@@ -235,7 +297,7 @@ export class WorkerStatsSnapshot extends BaseOf(EventEmitter) {
 
     await Promise.allSettled(gcs);
 
-    for (const broker of [ ...this.brokers.values() ]) {
+    for (const broker of [...this.brokers.values()]) {
       if (!broker.workers.size && !broker.data) {
         this.brokers.delete(Broker.getKey(broker.name, broker.isInspector));
       }

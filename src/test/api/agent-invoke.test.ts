@@ -17,16 +17,16 @@ const item = {
   },
 };
 
-describe(common.testName(__filename), function() {
+describe(common.testName(__filename), function () {
   // Debug version of Node.js may take longer time to bootstrap.
   this.timeout(30_000);
 
   const env = new DefaultEnvironment();
 
   it('invoke readable', async () => {
-    await env.agent.setFunctionProfile([ item.profile ] as any);
+    await env.agent.setFunctionProfile([item.profile] as any);
 
-    const readable = Readable.from([ Buffer.from('foobar') ]);
+    const readable = Readable.from([Buffer.from('foobar')]);
     const response = await env.agent.invoke(item.name, readable);
     assert.ok(response instanceof TriggerResponse);
     assert.ok(response.metadata instanceof Metadata);
@@ -35,7 +35,7 @@ describe(common.testName(__filename), function() {
   });
 
   it('invoke with malfunctioning readable in immediate', async () => {
-    await env.agent.setFunctionProfile([ item.profile ] as any);
+    await env.agent.setFunctionProfile([item.profile] as any);
 
     const readable = new Readable({
       read() {
@@ -55,13 +55,9 @@ describe(common.testName(__filename), function() {
 
   // TODO: serialization error, performance cost on iterating.
   it.skip('invoke with mis-typing metadata', async () => {
-    await env.agent.setFunctionProfile([ item.profile ] as any);
+    await env.agent.setFunctionProfile([item.profile] as any);
 
-    const fatalCases = [
-      'foo',
-      [ 'foo' ],
-      [ 'foo', null ],
-    ];
+    const fatalCases = ['foo', ['foo'], ['foo', null]];
     for (const esac of fatalCases) {
       let err: Error;
       try {
@@ -72,13 +68,12 @@ describe(common.testName(__filename), function() {
       } catch (e) {
         err = e as Error;
       }
-      assert.throws(() => { throw err; }, /Expect a key value pair/);
+      assert.throws(() => {
+        throw err;
+      }, /Expect a key value pair/);
     }
 
-    const tolerableCases = [
-      [[ 'foo', null ]],
-      [[ null, 1 ]],
-    ];
+    const tolerableCases = [[['foo', null]], [[null, 1]]];
     for (const esac of tolerableCases) {
       const stream = await env.agent.invoke(item.name, Buffer.from('foo'), {
         headers: esac,
@@ -89,7 +84,7 @@ describe(common.testName(__filename), function() {
 
   // TODO(kaidi.zkd): readable.destroy 之后，服务的识别成正常的 `end` 事件了
   it.skip('invoke with malfunctioning readable in async', async () => {
-    await env.agent.setFunctionProfile([ item.profile ] as any);
+    await env.agent.setFunctionProfile([item.profile] as any);
 
     const readable = new Readable({
       read() {},

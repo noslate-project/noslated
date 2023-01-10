@@ -8,7 +8,7 @@ import { Guest } from '#self/lib/rpc/guest';
 
 const listenPath = require.resolve('#self/lib/icu/listen');
 
-describe(common.testName(__filename), function() {
+describe(common.testName(__filename), function () {
   // Debug version of Node.js may take longer time to bootstrap.
   this.timeout(30_000);
 
@@ -31,14 +31,18 @@ describe(common.testName(__filename), function() {
   it('subscribe events', async () => {
     const newSubscriberFuture = once(host, Host.events.NEW_SUBSCRIBER);
 
-    const cp = childProcess.spawn(process.execPath, [ listenPath, '--sock', address, 'foobar' ], {
-      stdio: 'pipe',
-      env: {
-        ...process.env,
-        GRPC_TRACE: '',
-        GRPC_VERBOSITY: 'NONE',
-      },
-    });
+    const cp = childProcess.spawn(
+      process.execPath,
+      [listenPath, '--sock', address, 'foobar'],
+      {
+        stdio: 'pipe',
+        env: {
+          ...process.env,
+          GRPC_TRACE: '',
+          GRPC_VERBOSITY: 'NONE',
+        },
+      }
+    );
     cleanup = () => cp.kill();
     cp.stderr.pipe(process.stderr);
 
@@ -57,7 +61,10 @@ describe(common.testName(__filename), function() {
     const foobarFuture = once(readline, 'foobar');
 
     await newSubscriberFuture;
-    host.broadcast('foobar', 'noslated.KeyValuePair', { key: 'foo', value: 'bar' });
+    host.broadcast('foobar', 'noslated.KeyValuePair', {
+      key: 'foo',
+      value: 'bar',
+    });
     const [{ data }] = await foobarFuture;
     const parsed = JSON.parse(data);
 

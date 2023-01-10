@@ -55,19 +55,17 @@ describe(common.testName(__filename), () => {
     });
 
     const pkgJsonFilesDirs = pkgJson.files
-      .filter((it: string) => !it.startsWith('bin/') && !it.startsWith('build/'))
+      .filter(
+        (it: string) => !it.startsWith('bin/') && !it.startsWith('build/')
+      )
       .sort();
     assert.deepStrictEqual(actualPaths.sort(), pkgJsonFilesDirs);
 
     // Check bins
-    const excludedBins = [
-      'aworker',
-      'dev',
-      'node',
-      'turf',
-      'turfd',
-    ];
-    const existingBins = fs.readdirSync(path.resolve(config.projectRoot, 'bin'));
+    const excludedBins = ['aworker', 'dev', 'node', 'turf', 'turfd'];
+    const existingBins = fs.readdirSync(
+      path.resolve(config.projectRoot, 'bin')
+    );
     const actualBins = existingBins.filter(it => {
       return !excludedBins.includes(it) && !isIgnoredPattern(it);
     });
@@ -79,10 +77,10 @@ describe(common.testName(__filename), () => {
     assert.deepStrictEqual(actualBins.sort(), pkgJsonFilesBins);
 
     // Check sources
-    const excludedBuilds = [
-      'test',
-    ];
-    const existingBuilds = fs.readdirSync(path.resolve(config.projectRoot, 'build'));
+    const excludedBuilds = ['test'];
+    const existingBuilds = fs.readdirSync(
+      path.resolve(config.projectRoot, 'build')
+    );
     const actualBuilds = existingBuilds.filter(it => {
       return !excludedBuilds.includes(it) && !isIgnoredPattern(it);
     });

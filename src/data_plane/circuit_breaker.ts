@@ -40,7 +40,9 @@ class CircuitBreaker extends EventEmitter {
       if (this.thresholdConsecutiveCheckTimes >= 3) {
         this.opened = false;
         this.thresholdConsecutiveCheckTimes = 0;
-        logger.info(`circuit breaker [${this.name}] status change to [${this.opened}]`);
+        logger.info(
+          `circuit breaker [${this.name}] status change to [${this.opened}]`
+        );
         this.emit('status-changed', this.opened);
       }
     } else {
@@ -51,7 +53,9 @@ class CircuitBreaker extends EventEmitter {
       if (this.thresholdConsecutiveCheckTimes >= 5) {
         this.opened = true;
         this.thresholdConsecutiveCheckTimes = 0;
-        logger.info(`circuit breaker [${this.name}] status change to [${this.opened}]`);
+        logger.info(
+          `circuit breaker [${this.name}] status change to [${this.opened}]`
+        );
         this.emit('status-changed', this.opened);
       }
     }
@@ -70,25 +74,33 @@ export class SystemCircuitBreaker extends EventEmitter {
   #opened: boolean;
 
   #statusChanged = () => {
-    this.#opened = this.breakers.some((breaker) => {
+    this.#opened = this.breakers.some(breaker => {
       return breaker.opened;
     });
 
     let current = '';
-    this.breakers.forEach((breaker) => {
+    this.breakers.forEach(breaker => {
       current += ` (name: ${breaker.name}, status: ${breaker.opened})`;
     });
 
     logger.info('system circuit breaker status change, current is:', current);
     this.emit('status-changed', this.opened);
-  }
+  };
 
   _getActiveRequestCount() {
-    return sum(Array.from(this.#dataFlowController.brokers.values()).flatMap(it => it.workers).map((w) => w.activeRequestCount));
+    return sum(
+      Array.from(this.#dataFlowController.brokers.values())
+        .flatMap(it => it.workers)
+        .map(w => w.activeRequestCount)
+    );
   }
 
   _getPendingRequestCount() {
-    return sum(Array.from(this.#dataFlowController.brokers.values()).map(it => it.requestQueue.length));
+    return sum(
+      Array.from(this.#dataFlowController.brokers.values()).map(
+        it => it.requestQueue.length
+      )
+    );
   }
 
   _getOsLoad1() {
@@ -98,29 +110,35 @@ export class SystemCircuitBreaker extends EventEmitter {
   #checkRequestCount = () => {
     const activeRequestCount = this._getActiveRequestCount();
     const pendingRequestCount = this._getPendingRequestCount();
-    return compare(activeRequestCount + pendingRequestCount, this.#config.requestCountLimit);
-  }
+    return compare(
+      activeRequestCount + pendingRequestCount,
+      this.#config.requestCountLimit
+    );
+  };
 
   #checkPendingRequestCount = () => {
     const pendingRequestCount = this._getPendingRequestCount();
     return compare(pendingRequestCount, this.#config.pendingRequestCountLimit);
-  }
+  };
 
   #checkSystemLoad = () => {
     const load1 = this._getOsLoad1();
     return compare(load1, this.#config.systemLoad1Limit);
-  }
+  };
 
   #check = () => {
     this.breakers.forEach(it => it.check());
-  }
+  };
 
   /**
    *
    * @param {import('./data_flow_controller').DataFlowController} dataFlowController -
    * @param {SystemCircuitBreakerConfig} config -
    */
-  constructor(dataFlowController: DataFlowController, config: SystemCircuitBreakerConfig) {
+  constructor(
+    dataFlowController: DataFlowController,
+    config: SystemCircuitBreakerConfig
+  ) {
     super();
     this.#dataFlowController = dataFlowController;
     this.#config = config;
@@ -128,12 +146,12 @@ export class SystemCircuitBreaker extends EventEmitter {
     this.#opened = false;
 
     const breakerSet = [
-      [ 'request-count', this.#checkRequestCount ],
-      [ 'pending-request-count', this.#checkPendingRequestCount ],
-      [ 'system-load', this.#checkSystemLoad ]
+      ['request-count', this.#checkRequestCount],
+      ['pending-request-count', this.#checkPendingRequestCount],
+      ['system-load', this.#checkSystemLoad],
     ] as const;
 
-    this.breakers = breakerSet.map(([ name, checker ]) => {
+    this.breakers = breakerSet.map(([name, checker]) => {
       const breaker = new CircuitBreaker(checker, name);
       // TODO: exposes change reason (i.e. which subsidiary state has been changed).
       breaker.on('status-changed', this.#statusChanged);

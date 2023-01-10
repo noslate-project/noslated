@@ -70,7 +70,7 @@ const seedScriptCases: any = [
 ];
 
 const prose = process.platform === 'darwin' ? it.skip : it;
-describe(common.testName(__filename), function() {
+describe(common.testName(__filename), function () {
   // Debug version of Node.js may take longer time to bootstrap.
   this.timeout(30_000);
 
@@ -87,20 +87,31 @@ describe(common.testName(__filename), function() {
 
     for (const item of defaultSeedCases) {
       prose(item.name, async () => {
-        await env.agent.setFunctionProfile([ item.profile ]);
+        await env.agent.setFunctionProfile([item.profile]);
         let first: Buffer;
         {
-          const response = await env.agent.invoke(item.name, item.input.data, item.input.metadata);
+          const response = await env.agent.invoke(
+            item.name,
+            item.input.data,
+            item.input.metadata
+          );
           first = await bufferFromStream(response);
         }
 
         await killWorker(env.control, item.name);
 
-        await once(env.control.capacityManager.workerStatsSnapshot, 'workerStopped');
+        await once(
+          env.control.capacityManager.workerStatsSnapshot,
+          'workerStopped'
+        );
 
         let second;
         {
-          const response = await env.agent.invoke(item.name, item.input.data, item.input.metadata);
+          const response = await env.agent.invoke(
+            item.name,
+            item.input.data,
+            item.input.metadata
+          );
           second = await bufferFromStream(response);
         }
         assert.notStrictEqual(first.toString(), second.toString());
@@ -117,7 +128,7 @@ describe(common.testName(__filename), function() {
 
         const env = new DefaultEnvironment();
         prose('testing invoke result', async () => {
-          await env.agent.setFunctionProfile([ item.profile ]);
+          await env.agent.setFunctionProfile([item.profile]);
           await testWorker(env.agent, item);
         });
       });

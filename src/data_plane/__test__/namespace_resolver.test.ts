@@ -20,12 +20,15 @@ describe(common.testName(__filename), () => {
           url: `file://${common.baselineDir}/aworker_storage`,
           sourceFile: 'index.js',
           signature: 'md5:234234',
-        }
+        },
       ]);
 
-      await assertWorkerInvoke(env.agent.invoke('aworker_echo_with_storage', Buffer.alloc(0), {
-        method: 'POST',
-      }), Buffer.from('test-value'));
+      await assertWorkerInvoke(
+        env.agent.invoke('aworker_echo_with_storage', Buffer.alloc(0), {
+          method: 'POST',
+        }),
+        Buffer.from('test-value')
+      );
     });
 
     it('should use namespace config work', async () => {
@@ -36,13 +39,16 @@ describe(common.testName(__filename), () => {
           url: `file://${common.baselineDir}/aworker_storage`,
           sourceFile: 'index.js',
           signature: 'md5:234234',
-          namespace: 'aworker'
-        }
+          namespace: 'aworker',
+        },
       ]);
 
-      await assertWorkerInvoke(env.agent.invoke('aworker_echo_with_storage', Buffer.alloc(0), {
-        method: 'POST',
-      }), Buffer.from('test-value'));
+      await assertWorkerInvoke(
+        env.agent.invoke('aworker_echo_with_storage', Buffer.alloc(0), {
+          method: 'POST',
+        }),
+        Buffer.from('test-value')
+      );
     });
 
     it('should shard namespace work', async () => {
@@ -55,8 +61,8 @@ describe(common.testName(__filename), () => {
           signature: 'md5:234234',
           namespace: 'shared',
           resourceLimit: {
-            memory: 100 * kMegaBytes
-          }
+            memory: 100 * kMegaBytes,
+          },
         },
         {
           name: 'aworker_echo_with_storage_shard',
@@ -66,8 +72,8 @@ describe(common.testName(__filename), () => {
           signature: 'md5:2342345',
           namespace: 'shared',
           resourceLimit: {
-            memory: 100 * kMegaBytes
-          }
+            memory: 100 * kMegaBytes,
+          },
         },
         {
           name: 'aworker_echo_without_storage_shard',
@@ -76,25 +82,38 @@ describe(common.testName(__filename), () => {
           sourceFile: 'index.js',
           signature: 'md5:234234',
           resourceLimit: {
-            memory: 100 * kMegaBytes
-          }
-        }
+            memory: 100 * kMegaBytes,
+          },
+        },
       ]);
 
       // 设置 kv storage 内容
-      await assertWorkerInvoke(env.agent.invoke('aworker_echo_with_storage', Buffer.alloc(0), {
-        method: 'POST',
-      }), Buffer.from('test-value'));
+      await assertWorkerInvoke(
+        env.agent.invoke('aworker_echo_with_storage', Buffer.alloc(0), {
+          method: 'POST',
+        }),
+        Buffer.from('test-value')
+      );
 
       // 读取共享 namespace kv storage 内容
-      await assertWorkerInvoke(env.agent.invoke('aworker_echo_with_storage_shard', Buffer.alloc(0), {
-        method: 'POST',
-      }), Buffer.from('test-value'));
+      await assertWorkerInvoke(
+        env.agent.invoke('aworker_echo_with_storage_shard', Buffer.alloc(0), {
+          method: 'POST',
+        }),
+        Buffer.from('test-value')
+      );
 
       // 未设置共享 namespace，使用默认方式，无法共享数据
-      await assertWorkerInvoke(env.agent.invoke('aworker_echo_without_storage_shard', Buffer.alloc(0), {
-        method: 'POST',
-      }), Buffer.alloc(0));
+      await assertWorkerInvoke(
+        env.agent.invoke(
+          'aworker_echo_without_storage_shard',
+          Buffer.alloc(0),
+          {
+            method: 'POST',
+          }
+        ),
+        Buffer.alloc(0)
+      );
     });
   });
 });

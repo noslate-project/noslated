@@ -44,13 +44,17 @@ interface BaseFunctionProfile {
   signature: string;
 }
 
-interface NodejsFunctionProfile extends BaseFunctionProfile, ProcessFunctionProfile {
+interface NodejsFunctionProfile
+  extends BaseFunctionProfile,
+    ProcessFunctionProfile {
   runtime: 'nodejs';
   handler: string;
   initializer?: string;
 }
 
-interface AworkerFunctionProfile extends BaseFunctionProfile, ProcessFunctionProfile {
+interface AworkerFunctionProfile
+  extends BaseFunctionProfile,
+    ProcessFunctionProfile {
   runtime: 'aworker';
   sourceFile: string;
 }

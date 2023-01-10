@@ -11,7 +11,11 @@ import * as common from '#self/test/common';
 import { config } from '#self/config';
 import { FunctionProfileManager as ProfileManager } from '#self/lib/function_profile';
 import { TurfContainerStates } from '#self/lib/turf';
-import { ContainerStatus, ContainerStatusReport, ControlPanelEvent } from '#self/lib/constants';
+import {
+  ContainerStatus,
+  ContainerStatusReport,
+  ControlPanelEvent,
+} from '#self/lib/constants';
 import { AworkerFunctionProfile } from '#self/lib/json/function_profile';
 import { StateManager } from '#self/control_plane/worker_stats/state_manager';
 import { ControlPlane } from '#self/control_plane/control_plane';
@@ -21,16 +25,18 @@ import { CapacityManager } from '#self/control_plane/capacity_manager';
 import { DefaultEnvironment } from '#self/test/env/environment';
 
 describe(common.testName(__filename), () => {
-  const funcData: AworkerFunctionProfile[] = [{
-    name: 'func',
-    url: `file://${__dirname}`,
-    runtime: 'aworker',
-    signature: 'xxx',
-    sourceFile: 'index.js',
-    resourceLimit: {
-      memory: 512000000,
+  const funcData: AworkerFunctionProfile[] = [
+    {
+      name: 'func',
+      url: `file://${__dirname}`,
+      runtime: 'aworker',
+      signature: 'xxx',
+      sourceFile: 'index.js',
+      resourceLimit: {
+        memory: 512000000,
+      },
     },
-  }];
+  ];
 
   const env = new DefaultEnvironment();
 
@@ -81,7 +87,9 @@ describe(common.testName(__filename), () => {
   describe('.sync()', () => {
     it('should sync data (null)', () => {
       const worker = new Worker(config, 'hello', 'world');
-      worker.sync(null, [{ name: 'hello', status: TurfContainerStates.stopped, pid: 1 }]);
+      worker.sync(null, [
+        { name: 'hello', status: TurfContainerStates.stopped, pid: 1 },
+      ]);
       assert.deepStrictEqual(_.omit(worker.toJSON(), ['registerTime']), {
         name: 'hello',
         credential: 'world',
@@ -95,7 +103,10 @@ describe(common.testName(__filename), () => {
 
     it('should sync data', () => {
       const worker = new Worker(config, 'hello', 'world');
-      worker.sync({ name: 'hello', maxActivateRequests: 10, activeRequestCount: 5 }, [{ name: 'hello', status: TurfContainerStates.stopped, pid: 1 }]);
+      worker.sync(
+        { name: 'hello', maxActivateRequests: 10, activeRequestCount: 5 },
+        [{ name: 'hello', status: TurfContainerStates.stopped, pid: 1 }]
+      );
       assert.deepStrictEqual(_.omit(worker.toJSON(), ['registerTime']), {
         name: 'hello',
         credential: 'world',
@@ -138,17 +149,20 @@ describe(common.testName(__filename), () => {
         { name: 'hello', maxActivateRequests: 10, activeRequestCount: 5 },
         [{ name: 'hello', status: TurfContainerStates.stopped, pid: 1 }]
       );
-      assert.deepStrictEqual(_.omit(JSON.parse(JSON.stringify(worker)), ['registerTime']), {
-        name: 'hello',
-        credential: 'world',
-        containerStatus: ContainerStatus.Stopped,
-        turfContainerStates: TurfContainerStates.stopped,
-        pid: 1,
-        data: {
-          maxActivateRequests: 10,
-          activeRequestCount: 5,
-        },
-      });
+      assert.deepStrictEqual(
+        _.omit(JSON.parse(JSON.stringify(worker)), ['registerTime']),
+        {
+          name: 'hello',
+          credential: 'world',
+          containerStatus: ContainerStatus.Stopped,
+          turfContainerStates: TurfContainerStates.stopped,
+          pid: 1,
+          data: {
+            maxActivateRequests: 10,
+            activeRequestCount: 5,
+          },
+        }
+      );
       assert(typeof worker.registerTime, 'number');
 
       worker.sync(
@@ -156,17 +170,23 @@ describe(common.testName(__filename), () => {
         [{ name: 'helloo', status: TurfContainerStates.stopped, pid: 1 }]
       );
 
-      assert.deepStrictEqual(_.omit(JSON.parse(JSON.stringify(worker)), ['registerTime', 'firstUnknownTime']), {
-        name: 'hello',
-        credential: 'world',
-        containerStatus: ContainerStatus.Stopped,
-        turfContainerStates: null,
-        pid: null,
-        data: {
-          maxActivateRequests: 10,
-          activeRequestCount: 5,
-        },
-      });
+      assert.deepStrictEqual(
+        _.omit(JSON.parse(JSON.stringify(worker)), [
+          'registerTime',
+          'firstUnknownTime',
+        ]),
+        {
+          name: 'hello',
+          credential: 'world',
+          containerStatus: ContainerStatus.Stopped,
+          turfContainerStates: null,
+          pid: null,
+          data: {
+            maxActivateRequests: 10,
+            activeRequestCount: 5,
+          },
+        }
+      );
       assert(typeof worker.registerTime, 'number');
     });
 
@@ -176,34 +196,43 @@ describe(common.testName(__filename), () => {
         { name: 'hello', maxActivateRequests: 10, activeRequestCount: 5 },
         [{ name: 'helloo', status: TurfContainerStates.stopped, pid: 1 }]
       );
-      assert.deepStrictEqual(_.omit(JSON.parse(JSON.stringify(worker)), ['registerTime', 'firstUnknownTime']), {
-        name: 'hello',
-        credential: 'world',
-        containerStatus: ContainerStatus.Created,
-        turfContainerStates: null,
-        pid: null,
-        data: {
-          maxActivateRequests: 10,
-          activeRequestCount: 5,
-        },
-      });
+      assert.deepStrictEqual(
+        _.omit(JSON.parse(JSON.stringify(worker)), [
+          'registerTime',
+          'firstUnknownTime',
+        ]),
+        {
+          name: 'hello',
+          credential: 'world',
+          containerStatus: ContainerStatus.Created,
+          turfContainerStates: null,
+          pid: null,
+          data: {
+            maxActivateRequests: 10,
+            activeRequestCount: 5,
+          },
+        }
+      );
       assert(typeof worker.registerTime, 'number');
 
       worker.sync(
         { name: 'hello', maxActivateRequests: 10, activeRequestCount: 5 },
         [{ name: 'hello', status: TurfContainerStates.stopped, pid: 1 }]
       );
-      assert.deepStrictEqual(_.omit(JSON.parse(JSON.stringify(worker)), ['registerTime']), {
-        name: 'hello',
-        credential: 'world',
-        containerStatus: ContainerStatus.Stopped,
-        turfContainerStates: TurfContainerStates.stopped,
-        pid: 1,
-        data: {
-          maxActivateRequests: 10,
-          activeRequestCount: 5,
-        },
-      });
+      assert.deepStrictEqual(
+        _.omit(JSON.parse(JSON.stringify(worker)), ['registerTime']),
+        {
+          name: 'hello',
+          credential: 'world',
+          containerStatus: ContainerStatus.Stopped,
+          turfContainerStates: TurfContainerStates.stopped,
+          pid: 1,
+          data: {
+            maxActivateRequests: 10,
+            activeRequestCount: 5,
+          },
+        }
+      );
       assert(typeof worker.registerTime, 'number');
     });
   });
@@ -214,11 +243,15 @@ describe(common.testName(__filename), () => {
       TurfContainerStates.starting,
       TurfContainerStates.running,
       TurfContainerStates.stopping,
-      TurfContainerStates.stopped
+      TurfContainerStates.stopped,
     ];
 
     it('should get', () => {
-      const data = { name: 'hello', maxActivateRequests: 10, activeRequestCount: 5 };
+      const data = {
+        name: 'hello',
+        maxActivateRequests: 10,
+        activeRequestCount: 5,
+      };
       const worker = new Worker(config, 'hello', 'world');
 
       worker.sync(data, []);
@@ -244,10 +277,17 @@ describe(common.testName(__filename), () => {
     });
 
     it('should state to stop when ready sync missing', () => {
-      const data = { name: 'hello', maxActivateRequests: 10, activeRequestCount: 5 };
+      const data = {
+        name: 'hello',
+        maxActivateRequests: 10,
+        activeRequestCount: 5,
+      };
       const worker = new Worker(config, 'hello', 'world');
 
-      worker.updateContainerStatus(ContainerStatus.Ready, ContainerStatusReport.ContainerInstalled);
+      worker.updateContainerStatus(
+        ContainerStatus.Ready,
+        ContainerStatusReport.ContainerInstalled
+      );
 
       worker.sync(data, []);
 
@@ -257,23 +297,34 @@ describe(common.testName(__filename), () => {
 
   describe('update state', () => {
     it('should update state by event work, shrink', async () => {
-      const data = { name: 'hello', maxActivateRequests: 10, activeRequestCount: 5 };
+      const data = {
+        name: 'hello',
+        maxActivateRequests: 10,
+        activeRequestCount: 5,
+      };
       const worker = new Worker(config, 'hello', 'world');
 
       worker.sync(data, []);
       assert.strictEqual(worker.containerStatus, ContainerStatus.Created);
       assert.strictEqual(worker.isInitializating(), true);
 
-      worker.sync(data, [{ name: 'hello', status: TurfContainerStates.running, pid: 1 }]);
+      worker.sync(data, [
+        { name: 'hello', status: TurfContainerStates.running, pid: 1 },
+      ]);
 
       assert.strictEqual(worker.containerStatus, ContainerStatus.Created);
 
-      worker.updateContainerStatusByEvent(ContainerStatusReport.ContainerInstalled);
+      worker.updateContainerStatusByEvent(
+        ContainerStatusReport.ContainerInstalled
+      );
 
       assert.strictEqual(worker.containerStatus, ContainerStatus.Ready);
       assert.strictEqual(worker.isRunning(), true);
 
-      worker.updateContainerStatus(ContainerStatus.PendingStop, ControlPanelEvent.Shrink);
+      worker.updateContainerStatus(
+        ContainerStatus.PendingStop,
+        ControlPanelEvent.Shrink
+      );
 
       assert.strictEqual(worker.containerStatus, ContainerStatus.PendingStop);
 
@@ -283,60 +334,92 @@ describe(common.testName(__filename), () => {
     });
 
     it('should update state by event work, gc', async () => {
-      const data = { name: 'hello', maxActivateRequests: 10, activeRequestCount: 5 };
+      const data = {
+        name: 'hello',
+        maxActivateRequests: 10,
+        activeRequestCount: 5,
+      };
       const worker = new Worker(config, 'hello', 'world');
 
       worker.sync(data, []);
       assert.strictEqual(worker.containerStatus, ContainerStatus.Created);
 
-      worker.sync(data, [{ name: 'hello', status: TurfContainerStates.forkwait, pid: 1 }]);
+      worker.sync(data, [
+        { name: 'hello', status: TurfContainerStates.forkwait, pid: 1 },
+      ]);
       assert.strictEqual(worker.containerStatus, ContainerStatus.Created);
 
-      worker.sync(data, [{ name: 'hello', status: TurfContainerStates.running, pid: 1 }]);
+      worker.sync(data, [
+        { name: 'hello', status: TurfContainerStates.running, pid: 1 },
+      ]);
 
       assert.strictEqual(worker.containerStatus, ContainerStatus.Created);
 
-      worker.updateContainerStatusByEvent(ContainerStatusReport.ContainerInstalled);
+      worker.updateContainerStatusByEvent(
+        ContainerStatusReport.ContainerInstalled
+      );
 
       assert.strictEqual(worker.containerStatus, ContainerStatus.Ready);
 
-      worker.updateContainerStatusByEvent(ContainerStatusReport.ContainerDisconnected);
+      worker.updateContainerStatusByEvent(
+        ContainerStatusReport.ContainerDisconnected
+      );
 
       assert.strictEqual(worker.containerStatus, ContainerStatus.Stopped);
     });
 
     it('update state has order', async () => {
-      const data = { name: 'hello', maxActivateRequests: 10, activeRequestCount: 5 };
+      const data = {
+        name: 'hello',
+        maxActivateRequests: 10,
+        activeRequestCount: 5,
+      };
       const worker = new Worker(config, 'hello', 'world');
 
       worker.sync(data, []);
       assert.strictEqual(worker.containerStatus, ContainerStatus.Created);
 
-      worker.updateContainerStatusByEvent(ContainerStatusReport.ContainerInstalled);
+      worker.updateContainerStatusByEvent(
+        ContainerStatusReport.ContainerInstalled
+      );
 
       assert.strictEqual(worker.containerStatus, ContainerStatus.Ready);
 
-      worker.sync(data, [{ name: 'hello', status: TurfContainerStates.stopped, pid: 1 }]);
+      worker.sync(data, [
+        { name: 'hello', status: TurfContainerStates.stopped, pid: 1 },
+      ]);
 
       assert.strictEqual(worker.containerStatus, ContainerStatus.Stopped);
 
-      worker.updateContainerStatus(ContainerStatus.Created, ControlPanelEvent.Expand);
+      worker.updateContainerStatus(
+        ContainerStatus.Created,
+        ControlPanelEvent.Expand
+      );
 
       assert.strictEqual(worker.containerStatus, ContainerStatus.Stopped);
 
-      worker.updateContainerStatus(ContainerStatus.PendingStop, ControlPanelEvent.Shrink);
+      worker.updateContainerStatus(
+        ContainerStatus.PendingStop,
+        ControlPanelEvent.Shrink
+      );
 
       assert.strictEqual(worker.containerStatus, ContainerStatus.Stopped);
 
-      worker.updateContainerStatusByEvent(ContainerStatusReport.ContainerDisconnected);
+      worker.updateContainerStatusByEvent(
+        ContainerStatusReport.ContainerDisconnected
+      );
 
       assert.strictEqual(worker.containerStatus, ContainerStatus.Stopped);
 
-      worker.sync(data, [{ name: 'hello', status: TurfContainerStates.unknown, pid: 1 }]);
+      worker.sync(data, [
+        { name: 'hello', status: TurfContainerStates.unknown, pid: 1 },
+      ]);
 
       assert.strictEqual(worker.containerStatus, ContainerStatus.Unknown);
 
-      worker.sync(data, [{ name: 'hello', status: TurfContainerStates.stopped, pid: 1 }]);
+      worker.sync(data, [
+        { name: 'hello', status: TurfContainerStates.stopped, pid: 1 },
+      ]);
 
       assert.strictEqual(worker.containerStatus, ContainerStatus.Unknown);
     });
@@ -345,7 +428,9 @@ describe(common.testName(__filename), () => {
       const worker = new Worker(config, 'hello', 'world');
       assert.strictEqual(worker.containerStatus, ContainerStatus.Created);
 
-      worker.updateContainerStatusByEvent('Unsupported' as ContainerStatusReport);
+      worker.updateContainerStatusByEvent(
+        'Unsupported' as ContainerStatusReport
+      );
       assert.strictEqual(worker.containerStatus, ContainerStatus.Unknown);
     });
   });
@@ -361,20 +446,34 @@ describe(common.testName(__filename), () => {
     });
 
     it('with data', () => {
-      const data = { name: 'hello', maxActivateRequests: 10, activeRequestCount: 5 };
+      const data = {
+        name: 'hello',
+        maxActivateRequests: 10,
+        activeRequestCount: 5,
+      };
       const worker = new Worker(config, 'hello', 'world');
 
-      worker.sync(data, [{ pid: 1, status: TurfContainerStates.starting, name: 'hello' }]);
+      worker.sync(data, [
+        { pid: 1, status: TurfContainerStates.starting, name: 'hello' },
+      ]);
 
-      assert.strictEqual(worker.turfContainerStates, TurfContainerStates.starting);
+      assert.strictEqual(
+        worker.turfContainerStates,
+        TurfContainerStates.starting
+      );
       assert.strictEqual(worker.containerStatus, ContainerStatus.Created);
 
       clock.tick(config.worker.defaultInitializerTimeout + 1000);
       const spy = sinon.spy(worker.logger, 'info');
 
-      worker.sync(data, [{ pid: 1, status: TurfContainerStates.running, name: 'hello' }]);
+      worker.sync(data, [
+        { pid: 1, status: TurfContainerStates.running, name: 'hello' },
+      ]);
 
-      assert.strictEqual(worker.turfContainerStates, TurfContainerStates.running);
+      assert.strictEqual(
+        worker.turfContainerStates,
+        TurfContainerStates.running
+      );
       assert.strictEqual(worker.containerStatus, ContainerStatus.Stopped);
 
       assert(spy.calledWithMatch(/connect timeout/));
@@ -385,17 +484,27 @@ describe(common.testName(__filename), () => {
     it('without data', () => {
       const worker = new Worker(config, 'hello', 'world');
 
-      worker.sync(null, [{ pid: 1, status: TurfContainerStates.starting, name: 'hello' }]);
+      worker.sync(null, [
+        { pid: 1, status: TurfContainerStates.starting, name: 'hello' },
+      ]);
 
-      assert.strictEqual(worker.turfContainerStates, TurfContainerStates.starting);
+      assert.strictEqual(
+        worker.turfContainerStates,
+        TurfContainerStates.starting
+      );
       assert.strictEqual(worker.containerStatus, ContainerStatus.Created);
 
       clock.tick(config.worker.defaultInitializerTimeout + 1000);
       const spy = sinon.spy(worker.logger, 'info');
 
-      worker.sync(null, [{ pid: 1, status: TurfContainerStates.running, name: 'hello' }]);
+      worker.sync(null, [
+        { pid: 1, status: TurfContainerStates.running, name: 'hello' },
+      ]);
 
-      assert.strictEqual(worker.turfContainerStates, TurfContainerStates.running);
+      assert.strictEqual(
+        worker.turfContainerStates,
+        TurfContainerStates.running
+      );
       assert.strictEqual(worker.containerStatus, ContainerStatus.Stopped);
 
       assert(spy.calledWithMatch(/connect timeout/));
@@ -406,15 +515,22 @@ describe(common.testName(__filename), () => {
     it('created to stop when unsupported state timeout', () => {
       const worker = new Worker(config, 'hello', 'world');
 
-      worker.sync(null, [{ pid: 1, status: TurfContainerStates.starting, name: 'hello' }]);
+      worker.sync(null, [
+        { pid: 1, status: TurfContainerStates.starting, name: 'hello' },
+      ]);
 
-      assert.strictEqual(worker.turfContainerStates, TurfContainerStates.starting);
+      assert.strictEqual(
+        worker.turfContainerStates,
+        TurfContainerStates.starting
+      );
       assert.strictEqual(worker.containerStatus, ContainerStatus.Created);
 
       clock.tick(config.worker.defaultInitializerTimeout + 1000);
       const spy = sinon.spy(worker.logger, 'info');
 
-      worker.sync(null, [{ pid: 1, status: 'unsupported' as TurfContainerStates, name: 'hello' }]);
+      worker.sync(null, [
+        { pid: 1, status: 'unsupported' as TurfContainerStates, name: 'hello' },
+      ]);
 
       assert.strictEqual(worker.containerStatus, ContainerStatus.Stopped);
 
@@ -426,16 +542,26 @@ describe(common.testName(__filename), () => {
     it('do nothing when unsupported state', () => {
       const worker = new Worker(config, 'hello', 'world');
 
-      worker.sync(null, [{ pid: 1, status: TurfContainerStates.running, name: 'hello' }]);
+      worker.sync(null, [
+        { pid: 1, status: TurfContainerStates.running, name: 'hello' },
+      ]);
 
-      assert.strictEqual(worker.turfContainerStates, TurfContainerStates.running);
+      assert.strictEqual(
+        worker.turfContainerStates,
+        TurfContainerStates.running
+      );
       assert.strictEqual(worker.containerStatus, ContainerStatus.Created);
 
-      worker.updateContainerStatus(ContainerStatus.Ready, ContainerStatusReport.ContainerInstalled);
+      worker.updateContainerStatus(
+        ContainerStatus.Ready,
+        ContainerStatusReport.ContainerInstalled
+      );
 
       clock.tick(config.worker.defaultInitializerTimeout + 1000);
 
-      worker.sync(null, [{ pid: 1, status: 'unsupported' as TurfContainerStates, name: 'hello' }]);
+      worker.sync(null, [
+        { pid: 1, status: 'unsupported' as TurfContainerStates, name: 'hello' },
+      ]);
 
       assert.strictEqual(worker.containerStatus, ContainerStatus.Ready);
     });
@@ -444,19 +570,33 @@ describe(common.testName(__filename), () => {
   describe('worker ready', () => {
     let worker: Worker;
     beforeEach(async () => {
-      await agent.setFunctionProfile([{
-        name: 'func1',
-        url: `file://${__dirname}`,
-        runtime: 'aworker',
-        signature: 'xxx',
-        sourceFile: 'index.js',
-        worker: {
-          initializationTimeout: 1000
-        }
-      }], 'WAIT');
+      await agent.setFunctionProfile(
+        [
+          {
+            name: 'func1',
+            url: `file://${__dirname}`,
+            runtime: 'aworker',
+            signature: 'xxx',
+            sourceFile: 'index.js',
+            worker: {
+              initializationTimeout: 1000,
+            },
+          },
+        ],
+        'WAIT'
+      );
 
-      capacityManager.workerStatsSnapshot.register('func1', 'worker1', 'cred1', false);
-      worker = capacityManager.workerStatsSnapshot.getWorker('func1', false, 'worker1')!;
+      capacityManager.workerStatsSnapshot.register(
+        'func1',
+        'worker1',
+        'cred1',
+        false
+      );
+      worker = capacityManager.workerStatsSnapshot.getWorker(
+        'func1',
+        false,
+        'worker1'
+      )!;
     });
 
     afterEach(() => {
@@ -472,7 +612,7 @@ describe(common.testName(__filename), () => {
           name: 'worker1',
           isInspector: false,
           event: ContainerStatusReport.ContainerInstalled,
-          requestId: ''
+          requestId: '',
         });
       }, 500 + 10);
 
@@ -482,31 +622,36 @@ describe(common.testName(__filename), () => {
     });
 
     it('should throw error when ready timeout', async () => {
-      await assert.rejects(async () => {
-        await worker.ready();
-      }, {
-        message: /initialization timeout/
-      });
+      await assert.rejects(
+        async () => {
+          await worker.ready();
+        },
+        {
+          message: /initialization timeout/,
+        }
+      );
     });
 
     it('should throw error when set stopped before ready', async () => {
-      process.on('unhandledRejection', (promise, reason) => {
-      });
+      process.on('unhandledRejection', (promise, reason) => {});
       setTimeout(() => {
         stateManager.updateContainerStatusByReport({
           functionName: 'func1',
           name: 'worker1',
           isInspector: false,
           event: ContainerStatusReport.ContainerDisconnected,
-          requestId: ''
+          requestId: '',
         });
       }, 500);
 
-      await assert.rejects(async () => {
-        await worker.ready();
-      }, {
-        message: /stopped unexpected after start/
-      });
+      await assert.rejects(
+        async () => {
+          await worker.ready();
+        },
+        {
+          message: /stopped unexpected after start/,
+        }
+      );
     });
 
     it('should do nothing when emit stopped after ready', async () => {
@@ -516,7 +661,7 @@ describe(common.testName(__filename), () => {
           name: 'worker1',
           isInspector: false,
           event: ContainerStatusReport.ContainerInstalled,
-          requestId: ''
+          requestId: '',
         });
       }, 200);
 
@@ -529,7 +674,9 @@ describe(common.testName(__filename), () => {
 
       await worker.ready();
 
-      worker.updateContainerStatusByEvent(ContainerStatusReport.ContainerDisconnected);
+      worker.updateContainerStatusByEvent(
+        ContainerStatusReport.ContainerDisconnected
+      );
 
       assert(spy.notCalled);
     });
@@ -545,11 +692,14 @@ describe(common.testName(__filename), () => {
     it('should do nothing when setStopped before wait ready', async () => {
       worker.setStopped();
 
-      await assert.rejects(async () => {
-        await worker.ready();
-      }, {
-        message: /stopped unexpected after start./
-      });
+      await assert.rejects(
+        async () => {
+          await worker.ready();
+        },
+        {
+          message: /stopped unexpected after start./,
+        }
+      );
     });
 
     it('should do nothing when timeout but ready', async () => {
@@ -561,7 +711,10 @@ describe(common.testName(__filename), () => {
         _setReady();
       });
 
-      worker.updateContainerStatus(ContainerStatus.Ready, ContainerStatusReport.ContainerInstalled);
+      worker.updateContainerStatus(
+        ContainerStatus.Ready,
+        ContainerStatusReport.ContainerInstalled
+      );
 
       await assert.doesNotReject(async () => {
         await worker.ready();

@@ -50,7 +50,9 @@ describe(common.testName(__filename), () => {
 
   it('Base close errors', async () => {
     class Foo extends Base {
-      async _init() { /** empty */ }
+      async _init() {
+        /** empty */
+      }
       async _close() {
         throw new Error('foo');
       }

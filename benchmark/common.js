@@ -12,15 +12,15 @@ class Benchmark {
     this._ended = false;
 
     // Holds process.hrtime value
-    this._time = [ 0, 0 ];
+    this._time = [0, 0];
 
     // Use the file name as the name of the benchmark
     this.name = require.main.filename.slice(__dirname.length + 1);
 
     // Execution arguments i.e. flags used to run the jobs
-    this.flags = process.env.NODE_BENCHMARK_FLAGS ?
-      process.env.NODE_BENCHMARK_FLAGS.split(/\s+/) :
-      [];
+    this.flags = process.env.NODE_BENCHMARK_FLAGS
+      ? process.env.NODE_BENCHMARK_FLAGS.split(/\s+/)
+      : [];
 
     // Parse job-specific configuration from the command line arguments
     const argv = process.argv.slice(2);
@@ -54,7 +54,7 @@ class Benchmark {
     // Check for the test mode first.
     const testIndex = argv.indexOf('--test');
     if (testIndex !== -1) {
-      for (const [ key, rawValue ] of Object.entries(configs)) {
+      for (const [key, rawValue] of Object.entries(configs)) {
         let value = Array.isArray(rawValue) ? rawValue[0] : rawValue;
         // Set numbers to one by default to reduce the runtime.
         if (typeof value === 'number') {
@@ -64,19 +64,21 @@ class Benchmark {
             value = 1;
           }
         }
-        cliOptions[key] = [ value ];
+        cliOptions[key] = [value];
       }
       // Override specific test options.
       if (options.test) {
-        for (const [ key, value ] of Object.entries(options.test)) {
-          cliOptions[key] = Array.isArray(value) ? value : [ value ];
+        for (const [key, value] of Object.entries(options.test)) {
+          cliOptions[key] = Array.isArray(value) ? value : [value];
         }
       }
       argv.splice(testIndex, 1);
     } else {
       // Accept single values instead of arrays.
-      for (const [ key, value ] of Object.entries(configs)) {
-        if (!Array.isArray(value)) { configs[key] = [ value ]; }
+      for (const [key, value] of Object.entries(configs)) {
+        if (!Array.isArray(value)) {
+          configs[key] = [value];
+        }
       }
     }
 
@@ -89,9 +91,11 @@ class Benchmark {
         console.error(`bad argument: ${arg}`);
         process.exit(1);
       }
-      const [ , key, value ] = match;
+      const [, key, value] = match;
       if (Object.prototype.hasOwnProperty.call(configs, key)) {
-        if (!cliOptions[key]) { cliOptions[key] = []; }
+        if (!cliOptions[key]) {
+          cliOptions[key] = [];
+        }
         cliOptions[key].push(
           // Infer the type from the config object and parse accordingly
           typeof configs[key][0] === 'number' ? +value : value
@@ -116,7 +120,8 @@ class Benchmark {
       for (const value of values) {
         if (typeof value !== 'number' && typeof value !== 'string') {
           throw new TypeError(
-            `configuration "${key}" had type ${typeof value}`);
+            `configuration "${key}" had type ${typeof value}`
+          );
         }
         if (typeof value !== typeof values[0]) {
           // This is a requirement for being able to consistently and
@@ -145,12 +150,14 @@ class Benchmark {
 
   http(options, cb) {
     const http_options = { ...options };
-    http_options.benchmarker = http_options.benchmarker ||
-                               this.config.benchmarker ||
-                               this.extra_options.benchmarker ||
-                               http_benchmarkers.default_http_benchmarker;
+    http_options.benchmarker =
+      http_options.benchmarker ||
+      this.config.benchmarker ||
+      this.extra_options.benchmarker ||
+      http_benchmarkers.default_http_benchmarker;
     http_benchmarkers.run(
-      http_options, (error, code, used_benchmarker, result, elapsed) => {
+      http_options,
+      (error, code, used_benchmarker, result, elapsed) => {
         if (cb) {
           cb(code);
         }
@@ -185,10 +192,10 @@ class Benchmark {
 
       // Create configuration arguments
       const childArgs = [];
-      for (const [ key, value ] of Object.entries(config)) {
+      for (const [key, value] of Object.entries(config)) {
         childArgs.push(`${key}=${value}`);
       }
-      for (const [ key, value ] of Object.entries(this.extra_options)) {
+      for (const [key, value] of Object.entries(this.extra_options)) {
         childArgs.push(`${key}=${value}`);
       }
 
@@ -240,7 +247,9 @@ class Benchmark {
       throw new Error('called end() with operation count <= 0');
     }
     if (elapsed[0] === 0 && elapsed[1] === 0) {
-      if (!process.env.NODEJS_BENCHMARK_ZERO_ALLOWED) { throw new Error('insufficient clock precision for short benchmark'); }
+      if (!process.env.NODEJS_BENCHMARK_ZERO_ALLOWED) {
+        throw new Error('insufficient clock precision for short benchmark');
+      }
       // Avoid dividing by zero
       elapsed[1] = 1;
     }
@@ -271,7 +280,7 @@ function formatResult(data) {
 
   let rate = data.rate.toString().split('.');
   rate[0] = rate[0].replace(/(\d)(?=(?:\d\d\d)+(?!\d))/g, '$1,');
-  rate = (rate[1] ? rate.join('.') : rate[0]);
+  rate = rate[1] ? rate.join('.') : rate[0];
   return `${data.name}${conf}: ${rate}`;
 }
 

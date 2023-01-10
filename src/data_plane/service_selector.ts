@@ -12,7 +12,8 @@ export interface DefaultServiceSelector {
   functionName: string;
 }
 
-export interface ServiceProfileItem extends Omit<root.noslated.data.IFunctionService, 'selectors' | 'selector'> {
+export interface ServiceProfileItem
+  extends Omit<root.noslated.data.IFunctionService, 'selectors' | 'selector'> {
   name: string;
   type: ServiceType;
   selectors?: LoadBalanceSelector[];
@@ -55,7 +56,7 @@ class ServiceSelector {
     const rnd = Math.random();
     let prev = 0;
 
-    for (const selector of (item.selectors as LoadBalanceSelector[])) {
+    for (const selector of item.selectors as LoadBalanceSelector[]) {
       prev += selector.proportion;
       if (rnd < prev) {
         return selector.selector;
@@ -65,6 +66,4 @@ class ServiceSelector {
   }
 }
 
-export {
-  ServiceSelector,
-};
+export { ServiceSelector };

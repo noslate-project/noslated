@@ -21,7 +21,7 @@ const cases = [
     input: {
       data: Buffer.from(''),
       metadata: {
-        timeout: 5000
+        timeout: 5000,
       },
     },
     expect: {
@@ -32,7 +32,8 @@ const cases = [
     },
     attachError: {
       message: /CanonicalCode::INTERNAL_ERROR/,
-      peerStack: /Error: Initializer not_functions.initializer is not a function\n[\s\S]+\s+at initializer \(.+\/starter\/base_node.js.+\)/m,
+      peerStack:
+        /Error: Initializer not_functions.initializer is not a function\n[\s\S]+\s+at initializer \(.+\/starter\/base_node.js.+\)/m,
     },
   },
   {
@@ -51,7 +52,8 @@ const cases = [
     expect: {
       error: {
         message: /CanonicalCode::INTERNAL_ERROR/,
-        peerStack: /Error: Handler not_functions.handler is not a function.\n[\s\S]+\s+at handler \(.+\/starter\/base_node.js.+\)/m,
+        peerStack:
+          /Error: Handler not_functions.handler is not a function.\n[\s\S]+\s+at handler \(.+\/starter\/base_node.js.+\)/m,
       },
     },
   },
@@ -68,7 +70,7 @@ const cases = [
     input: {
       data: Buffer.from(''),
       metadata: {
-        timeout: 5000
+        timeout: 5000,
       },
     },
     expect: {
@@ -79,7 +81,8 @@ const cases = [
     },
     attachError: {
       message: /CanonicalCode::INTERNAL_ERROR/,
-      peerStack: /This file is not a valid JavaScript file\.[\s\S]+SyntaxError: Unexpected identifier\n[\s\S]+\s+at parseInitializer \(.+\/starter\/base_node.js.+\)/m,
+      peerStack:
+        /This file is not a valid JavaScript file\.[\s\S]+SyntaxError: Unexpected identifier\n[\s\S]+\s+at parseInitializer \(.+\/starter\/base_node.js.+\)/m,
     },
   },
   {
@@ -98,7 +101,8 @@ const cases = [
     expect: {
       error: {
         message: /CanonicalCode::INTERNAL_ERROR/,
-        peerStack: /This file is not a valid JavaScript file\.[\s\S]+SyntaxError: Unexpected identifier\n[\s\S]+\s+at parseHandler \(.+\/starter\/base_node.js.+\)/m,
+        peerStack:
+          /This file is not a valid JavaScript file\.[\s\S]+SyntaxError: Unexpected identifier\n[\s\S]+\s+at parseHandler \(.+\/starter\/base_node.js.+\)/m,
       },
     },
   },
@@ -109,7 +113,7 @@ describe(common.testName(__filename), function () {
   const env = new DefaultEnvironment();
 
   for (const item of cases) {
-    it(item.name, async function() {
+    it(item.name, async function () {
       this.timeout(6000);
 
       // TODO: proper error handling in bootstrap
@@ -118,7 +122,7 @@ describe(common.testName(__filename), function () {
         attachError = e;
       });
 
-      await env.agent.setFunctionProfile([ item.profile ] as any);
+      await env.agent.setFunctionProfile([item.profile] as any);
       await testWorker(env.agent, item);
 
       if (item.attachError) {

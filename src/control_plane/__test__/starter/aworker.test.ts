@@ -14,7 +14,8 @@ import FakeTimers from '@sinonjs/fake-timers';
 import { sleep } from '#self/lib/util';
 import { startTurfD, stopTurfD } from '#self/test/turf';
 
-const conditionalDescribe = (process.platform === 'darwin' ? describe.skip : describe);
+const conditionalDescribe =
+  process.platform === 'darwin' ? describe.skip : describe;
 
 describe(common.testName(__filename), function () {
   this.timeout(10000);
@@ -49,11 +50,18 @@ describe(common.testName(__filename), function () {
         await aworker.ready();
         await aworker.waitSeedReady();
 
-        assert.deepStrictEqual(_.pick(await turf.state(Aworker.SEED_CONTAINER_NAME), [ 'name', 'state', 'status' ]), {
-          name: Aworker.SEED_CONTAINER_NAME,
-          state: 'forkwait',
-          status: '0',
-        });
+        assert.deepStrictEqual(
+          _.pick(await turf.state(Aworker.SEED_CONTAINER_NAME), [
+            'name',
+            'state',
+            'status',
+          ]),
+          {
+            name: Aworker.SEED_CONTAINER_NAME,
+            state: 'forkwait',
+            status: '0',
+          }
+        );
       } finally {
         await aworker?.close();
       }
@@ -62,13 +70,20 @@ describe(common.testName(__filename), function () {
 
   conditionalDescribe('#keepSeedAliveTimer', () => {
     it('seed should keep alive', async () => {
-      const aworker = new Aworker(dummyPlane as unknown as ControlPlane, config);
+      const aworker = new Aworker(
+        dummyPlane as unknown as ControlPlane,
+        config
+      );
       await aworker.ready();
       await aworker.waitSeedReady();
 
       let psData = await turf.ps();
       {
-        const seed = psData.find((it: TurfProcess) => it.name === Aworker.SEED_CONTAINER_NAME && it.status === TurfContainerStates.forkwait);
+        const seed = psData.find(
+          (it: TurfProcess) =>
+            it.name === Aworker.SEED_CONTAINER_NAME &&
+            it.status === TurfContainerStates.forkwait
+        );
         assert(seed);
         process.kill(seed.pid, 'SIGKILL');
       }
@@ -78,7 +93,13 @@ describe(common.testName(__filename), function () {
 
       psData = await turf.ps();
 
-      assert(psData.some((it: TurfProcess) => it.name === Aworker.SEED_CONTAINER_NAME && it.status === TurfContainerStates.forkwait));
+      assert(
+        psData.some(
+          (it: TurfProcess) =>
+            it.name === Aworker.SEED_CONTAINER_NAME &&
+            it.status === TurfContainerStates.forkwait
+        )
+      );
 
       await aworker.close();
     });
@@ -92,16 +113,21 @@ describe(common.testName(__filename), function () {
         await aworker.ready();
         await aworker.waitSeedReady();
 
-        const bundlePath = path.join(testUtil.TMP_DIR(), 'bundles', Aworker.SEED_CONTAINER_NAME);
+        const bundlePath = path.join(
+          testUtil.TMP_DIR(),
+          'bundles',
+          Aworker.SEED_CONTAINER_NAME
+        );
         fs.mkdirSync(path.join(bundlePath, 'code'), { recursive: true });
         fs.writeFileSync(path.join(bundlePath, 'code', 'index.js'), '');
         mm(turf, 'create', async (...args: any[]) => {
-          assert.deepStrictEqual(args, [ 'foo', bundlePath ]);
+          assert.deepStrictEqual(args, ['foo', bundlePath]);
         });
 
         mm(turf, 'start', async (...args: any[]) => {
           assert.deepStrictEqual(args, [
-            'foo', {
+            'foo',
+            {
               stdout: args[1].stdout,
               stderr: args[1].stderr,
               seed: Aworker.SEED_CONTAINER_NAME,
@@ -119,7 +145,8 @@ describe(common.testName(__filename), function () {
             runtime: 'aworker',
           } as any,
           bundlePath,
-          {});
+          {}
+        );
       } finally {
         await aworker?.close();
       }
@@ -128,7 +155,7 @@ describe(common.testName(__filename), function () {
     it('should start without seed', async () => {
       let aworker;
       try {
-        mm(Aworker.prototype, 'keepSeedAlive', async function(this: any) {
+        mm(Aworker.prototype, 'keepSeedAlive', async function (this: any) {
           // This means we mocked the seed process creation function. No seed process will be spawned in this test case.
           this.logger.info('dummy keeper');
         });
@@ -136,16 +163,21 @@ describe(common.testName(__filename), function () {
         aworker = new Aworker(dummyPlane as ControlPlane, config);
         await aworker.ready();
 
-        const bundlePath = path.join(testUtil.TMP_DIR(), 'bundles', Aworker.SEED_CONTAINER_NAME);
+        const bundlePath = path.join(
+          testUtil.TMP_DIR(),
+          'bundles',
+          Aworker.SEED_CONTAINER_NAME
+        );
         fs.mkdirSync(path.join(bundlePath, 'code'), { recursive: true });
         fs.writeFileSync(path.join(bundlePath, 'code', 'index.js'), '');
         mm(turf, 'create', async (...args: any[]) => {
-          assert.deepStrictEqual(args, [ 'foo', bundlePath ]);
+          assert.deepStrictEqual(args, ['foo', bundlePath]);
         });
 
         mm(turf, 'start', async (...args: any[]) => {
           assert.deepStrictEqual(args, [
-            'foo', {
+            'foo',
+            {
               stdout: args[1].stdout,
               stderr: args[1].stderr,
             },
@@ -162,7 +194,8 @@ describe(common.testName(__filename), function () {
             runtime: 'aworker',
           } as any,
           bundlePath,
-          {});
+          {}
+        );
       } finally {
         await aworker?.close();
       }

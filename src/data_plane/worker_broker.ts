@@ -6,7 +6,11 @@ import { RpcError, RpcStatus } from '#self/lib/rpc/error';
 import { Base } from '#self/lib/sdk_base';
 import { PlaneMetricAttributes } from '#self/lib/telemetry/semantic_conventions';
 import { Readable } from 'stream';
-import { Metadata, MetadataInit, TriggerResponse } from '#self/delegate/request_response';
+import {
+  Metadata,
+  MetadataInit,
+  TriggerResponse,
+} from '#self/delegate/request_response';
 import { NoslatedDelegateService } from '#self/delegate';
 import { PrefixedLogger } from '#self/lib/loggers';
 import { DataFlowController } from './data_flow_controller';
@@ -21,12 +25,12 @@ import { DataPlaneHost } from './data_plane_host';
 
 export enum RequestQueueStatus {
   PASS_THROUGH = 0,
-  QUEUEING = 1
+  QUEUEING = 1,
 }
 
 enum CredentialStatus {
   PENDING = 1,
-  BOUND = 2
+  BOUND = 2,
 }
 
 /**
@@ -112,7 +116,14 @@ export class Worker extends EventEmitter {
    * @param {string} credential The worker's credential.
    * @param {number} maxActivateRequests Max activate request count for this worker.
    */
-  constructor(public broker: WorkerBroker, public delegate: NoslatedDelegateService, public name: string, public credential: string, public maxActivateRequests: number, public disposable: boolean) {
+  constructor(
+    public broker: WorkerBroker,
+    public delegate: NoslatedDelegateService,
+    public name: string,
+    public credential: string,
+    public maxActivateRequests: number,
+    public disposable: boolean
+  ) {
     super();
     this.activeRequestCount = 0;
     this.logger = new PrefixedLogger('worker', this.name);
@@ -149,7 +160,10 @@ export class Worker extends EventEmitter {
    * @param {import('#self/delegate/request_response').Metadata|object} metadata The metadata object.
    * @return {Promise<import('#self/delegate/request_response').TriggerResponse>} The response.
    */
-  async pipe(inputStream: Readable|Buffer|PendingRequest, metadata?: MetadataInit): Promise<TriggerResponse> {
+  async pipe(
+    inputStream: Readable | Buffer | PendingRequest,
+    metadata?: MetadataInit
+  ): Promise<TriggerResponse> {
     let waitMs = 0;
 
     let requestId = metadata?.requestId;
@@ -164,11 +178,18 @@ export class Worker extends EventEmitter {
     requestId = requestId ?? kDefaultRequestId;
 
     this.activeRequestCount++;
-    this.logger.info(`[${requestId}] Event dispatched, activeRequestCount: ${this.activeRequestCount}, wait: ${waitMs}ms.`);
+    this.logger.info(
+      `[${requestId}] Event dispatched, activeRequestCount: ${this.activeRequestCount}, wait: ${waitMs}ms.`
+    );
 
     let ret;
     try {
-      ret = await this.delegate.trigger(this.credential, 'invoke', inputStream, metadata || { requestId });
+      ret = await this.delegate.trigger(
+        this.credential,
+        'invoke',
+        inputStream,
+        metadata || { requestId }
+      );
     } finally {
       this.activeRequestCount--;
       if (this.activeRequestCount === 0) {
@@ -222,7 +243,11 @@ export class WorkerBroker extends Base {
    * @param {string} name The serverless function name.
    * @param {{ inspect?: boolean }} options The broker's options.
    */
-  constructor(public dataFlowController: DataFlowController, public name: string, public options: BrokerOptions = {}) {
+  constructor(
+    public dataFlowController: DataFlowController,
+    public name: string,
+    public options: BrokerOptions = {}
+  ) {
     super();
 
     this.profileManager = dataFlowController.profileManager;
@@ -230,7 +255,10 @@ export class WorkerBroker extends Base {
     this.host = dataFlowController.host;
     this.config = dataFlowController.config;
 
-    this.logger = new PrefixedLogger('worker broker', `${name}${options.inspect ? ':inspect' : ''}`);
+    this.logger = new PrefixedLogger(
+      'worker broker',
+      `${name}${options.inspect ? ':inspect' : ''}`
+    );
     /**
      * @type {PendingRequest[]}
      */
@@ -270,7 +298,10 @@ export class WorkerBroker extends Base {
       }
     }
 
-    const idx = _.findIndex(this.pendingCredentials, ['credential', credential]);
+    const idx = _.findIndex(this.pendingCredentials, [
+      'credential',
+      credential,
+    ]);
 
     if (idx !== undefined) {
       return credential;
@@ -291,7 +322,10 @@ export class WorkerBroker extends Base {
       }
     }
 
-    const idx = _.findIndex(this.pendingCredentials, ['credential', credential]);
+    const idx = _.findIndex(this.pendingCredentials, [
+      'credential',
+      credential,
+    ]);
 
     if (idx !== undefined) {
       return true;
@@ -305,7 +339,9 @@ export class WorkerBroker extends Base {
    * @param {string} credential The worker's credential.
    */
   removeWorker(credential: string) {
-    this.pendingCredentials = this.pendingCredentials.filter(c => credential !== c.credential);
+    this.pendingCredentials = this.pendingCredentials.filter(
+      c => credential !== c.credential
+    );
     this.workers = this.workers.filter(w => w.credential !== credential);
     this.credentialStatusMap.delete(credential);
   }
@@ -317,7 +353,11 @@ export class WorkerBroker extends Base {
   tryConsumeQueue(notThatBusyWorker: Worker) {
     if (notThatBusyWorker.trafficOff) return;
 
-    while (this.requestQueue.length && notThatBusyWorker.maxActivateRequests > notThatBusyWorker.activeRequestCount) {
+    while (
+      this.requestQueue.length &&
+      notThatBusyWorker.maxActivateRequests >
+        notThatBusyWorker.activeRequestCount
+    ) {
       if (notThatBusyWorker.trafficOff) break;
 
       const request: PendingRequest | undefined = this.requestQueue.shift();
@@ -328,19 +368,29 @@ export class WorkerBroker extends Base {
 
       request.stopTimer();
 
-      notThatBusyWorker.pipe(request, undefined).then(ret => {
-        request.resolve(ret);
-      }).catch(err => {
-        request.reject(err);
-      }).finally(() => {
-        if (this.disposable) {
-          this.afterDisposableInvoke(notThatBusyWorker, request.metadata.requestId);
-        }
-      });
+      notThatBusyWorker
+        .pipe(request, undefined)
+        .then(ret => {
+          request.resolve(ret);
+        })
+        .catch(err => {
+          request.reject(err);
+        })
+        .finally(() => {
+          if (this.disposable) {
+            this.afterDisposableInvoke(
+              notThatBusyWorker,
+              request.metadata.requestId
+            );
+          }
+        });
 
-      this.dataFlowController.queuedRequestDurationHistogram.record(Date.now() - request.startEpoch, {
-        [PlaneMetricAttributes.FUNCTION_NAME]: this.name,
-      });
+      this.dataFlowController.queuedRequestDurationHistogram.record(
+        Date.now() - request.startEpoch,
+        {
+          [PlaneMetricAttributes.FUNCTION_NAME]: this.name,
+        }
+      );
 
       // disposable 只消费一个请求
       if (this.disposable) break;
@@ -359,7 +409,7 @@ export class WorkerBroker extends Base {
       isInspector: this.options.inspect === true,
       name: worker.name,
       event: ContainerStatusReport.RequestDrained,
-      requestId
+      requestId,
     });
   }
 
@@ -386,7 +436,8 @@ export class WorkerBroker extends Base {
   registerCredential(name: string, credential: string) {
     if (this.isCredentialPending(credential)) {
       throw new Error(
-        `Credential ${credential} already exists in ${this.name}.`);
+        `Credential ${credential} already exists in ${this.name}.`
+      );
     }
     this.pendingCredentials.push({ credential, name });
     this.credentialStatusMap.set(credential, CredentialStatus.PENDING);
@@ -416,7 +467,10 @@ export class WorkerBroker extends Base {
       return 1;
     }
 
-    return profile.worker?.maxActivateRequests || this.config.worker.maxActivateRequests;
+    return (
+      profile.worker?.maxActivateRequests ||
+      this.config.worker.maxActivateRequests
+    );
   }
 
   /**
@@ -429,7 +483,9 @@ export class WorkerBroker extends Base {
       return this.config.worker.replicaCountLimit;
     }
 
-    return profile.worker?.replicaCountLimit || this.config.worker.replicaCountLimit;
+    return (
+      profile.worker?.replicaCountLimit || this.config.worker.replicaCountLimit
+    );
   }
 
   /**
@@ -460,7 +516,10 @@ export class WorkerBroker extends Base {
       return 0;
     }
 
-    return profile.worker?.reservationCount || this.config.worker.reservationCountPerFunction;
+    return (
+      profile.worker?.reservationCount ||
+      this.config.worker.reservationCountPerFunction
+    );
   }
 
   /**
@@ -480,7 +539,8 @@ export class WorkerBroker extends Base {
     const profile = this.profileManager.get(this.name);
     if (!profile) {
       throw new Error(
-        `Function '${this.name}' is no more existing in profile manager.`);
+        `Function '${this.name}' is no more existing in profile manager.`
+      );
     }
     return profile;
   }
@@ -508,7 +568,8 @@ export class WorkerBroker extends Base {
     const c = this.isCredentialPending(credential);
     if (!c) {
       throw new Error(
-        `Credential ${credential} has not registered in ${this.name} yet.`);
+        `Credential ${credential} has not registered in ${this.name} yet.`
+      );
     }
 
     const status = this.credentialStatusMap.get(credential);
@@ -534,17 +595,22 @@ export class WorkerBroker extends Base {
     try {
       const now = performance.now();
       await this.delegate.trigger(credential, 'init', null, {
-        timeout: profile.worker?.initializationTimeout !== undefined ?
-          profile.worker.initializationTimeout :
-          this.config.worker.defaultInitializerTimeout,
+        timeout:
+          profile.worker?.initializationTimeout !== undefined
+            ? profile.worker.initializationTimeout
+            : this.config.worker.defaultInitializerTimeout,
       });
-      this.logger.info('worker(%s) initialization cost: %sms.', credential, performance.now() - now);
+      this.logger.info(
+        'worker(%s) initialization cost: %sms.',
+        credential,
+        performance.now() - now
+      );
       // 同步 Container 状态
       await (this.host as any).broadcastContainerStatusReport({
         functionName: this.name,
         isInspector: this.options.inspect === true,
         name: worker.name,
-        event: ContainerStatusReport.ContainerInstalled
+        event: ContainerStatusReport.ContainerInstalled,
       });
     } catch (e: any) {
       this.logger.debug('Unexpected error on invokeing initializer', e.message);
@@ -566,7 +632,10 @@ export class WorkerBroker extends Base {
   getAvailableWorker() {
     if (!this.workers.length) return null;
 
-    const worker = _.maxBy(this.workers.filter(w => !w.trafficOff), w => (w.maxActivateRequests - w.activeRequestCount));
+    const worker = _.maxBy(
+      this.workers.filter(w => !w.trafficOff),
+      w => w.maxActivateRequests - w.activeRequestCount
+    );
     if (worker && worker.maxActivateRequests > worker.activeRequestCount) {
       return worker;
     }
@@ -580,7 +649,7 @@ export class WorkerBroker extends Base {
    * @param {import('#self/delegate/request_response').Metadata|object} metadata The metadata.
    * @return {PendingRequest} The created pending request.
    */
-  createPendingRequest(input: Readable|Buffer, metadata: Metadata) {
+  createPendingRequest(input: Readable | Buffer, metadata: Metadata) {
     this.logger.info('create pending request(%s).', metadata.requestId);
     const request = new PendingRequest(input, metadata, metadata.timeout);
     this.dataFlowController.queuedRequestCounter.add(1, {
@@ -591,14 +660,25 @@ export class WorkerBroker extends Base {
     request.once('timeout', () => {
       this.logger.debug('A request wait timeout.');
       this.requestQueue = this.requestQueue.filter(r => r !== request);
-      request.reject(new Error(`Timeout for waiting worker in ${metadata.timeout}ms, request(${request.requestId}).`));
-      this.dataFlowController.queuedRequestDurationHistogram.record(Date.now() - request.startEpoch, {
-        [PlaneMetricAttributes.FUNCTION_NAME]: this.name,
-      });
+      request.reject(
+        new Error(
+          `Timeout for waiting worker in ${metadata.timeout}ms, request(${request.requestId}).`
+        )
+      );
+      this.dataFlowController.queuedRequestDurationHistogram.record(
+        Date.now() - request.startEpoch,
+        {
+          [PlaneMetricAttributes.FUNCTION_NAME]: this.name,
+        }
+      );
     });
 
     // broadcast that there's no enough container
-    this.host.broadcastRequestQueueing(this, this.dataFlowController.currentWorkersInformation, request.requestId);
+    this.host.broadcastRequestQueueing(
+      this,
+      this.dataFlowController.currentWorkersInformation,
+      request.requestId
+    );
     return request;
   }
 
@@ -609,7 +689,10 @@ export class WorkerBroker extends Base {
     const { profile } = this;
     if (profile?.worker?.fastFailRequestsOnStarting !== true) return;
 
-    (this.host as any).broadcastRequestQueueing(this, this.dataFlowController.currentWorkersInformation);
+    (this.host as any).broadcastRequestQueueing(
+      this,
+      this.dataFlowController.currentWorkersInformation
+    );
     throw new Error(`No available worker process for ${this.name} now.`);
   }
 
@@ -617,16 +700,21 @@ export class WorkerBroker extends Base {
    * Fast fail all pendings due to start error
    * @param {root.noslated.data.IStartWorkerFastFailRequest} startWorkerFastFailRequest The fast fail request.
    */
-  fastFailAllPendingsDueToStartError(startWorkerFastFailRequest: root.noslated.data.IStartWorkerFastFailRequest) {
+  fastFailAllPendingsDueToStartError(
+    startWorkerFastFailRequest: root.noslated.data.IStartWorkerFastFailRequest
+  ) {
     const { requestQueue } = this;
     this.requestQueue = [];
     const err = new Error(startWorkerFastFailRequest.displayMessage as string);
     for (const pendingRequest of requestQueue) {
       pendingRequest.stopTimer();
       pendingRequest.reject(err);
-      this.dataFlowController.queuedRequestDurationHistogram.record(Date.now() - pendingRequest.startEpoch, {
-        [PlaneMetricAttributes.FUNCTION_NAME]: this.name,
-      });
+      this.dataFlowController.queuedRequestDurationHistogram.record(
+        Date.now() - pendingRequest.startEpoch,
+        {
+          [PlaneMetricAttributes.FUNCTION_NAME]: this.name,
+        }
+      );
     }
   }
 
@@ -636,11 +724,13 @@ export class WorkerBroker extends Base {
    * @param {import('#self/delegate/request_response').Metadata|object} metadata The metadata.
    * @return {Promise<import('#self/delegate/request_response').TriggerResponse>} The response.
    */
-  async invoke(inputStream: Readable|Buffer, metadata: Metadata) {
+  async invoke(inputStream: Readable | Buffer, metadata: Metadata) {
     await this.ready();
     const acquiredToken = this.tokenBucket?.acquire() ?? true;
     if (!acquiredToken) {
-      throw new RpcError('rate limit exceeded', { code: RpcStatus.RESOURCE_EXHAUSTED });
+      throw new RpcError('rate limit exceeded', {
+        code: RpcStatus.RESOURCE_EXHAUSTED,
+      });
     }
 
     switch (this.requestQueueStatus) {
@@ -675,7 +765,9 @@ export class WorkerBroker extends Base {
       }
 
       default: {
-        throw new Error(`Request queue status ${this.requestQueueStatus} unreachable.`);
+        throw new Error(
+          `Request queue status ${this.requestQueueStatus} unreachable.`
+        );
       }
     }
   }

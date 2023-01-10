@@ -7,7 +7,7 @@ import { assertInvoke } from '#self/test/util';
 import { Guest } from '#self/lib/rpc/guest';
 import { DefaultEnvironment } from '#self/test/env/environment';
 
-describe(common.testName(__filename), function() {
+describe(common.testName(__filename), function () {
   // Debug version of Node.js may take longer time to bootstrap.
   this.timeout(30_000);
 
@@ -36,7 +36,7 @@ describe(common.testName(__filename), function() {
 
     {
       const future = once(guest, 'workerTrafficStats');
-      const [ msg ] = await future;
+      const [msg] = await future;
       // no workers yet.
       assert.strictEqual(msg.brokers.length, 0);
     }
@@ -55,9 +55,9 @@ describe(common.testName(__filename), function() {
 
     {
       const future = once(guest, 'workerTrafficStats');
-      const [ msg ] = await future;
+      const [msg] = await future;
       assert.strictEqual(msg.brokers.length, 1);
-      const [ broker ] = msg.brokers;
+      const [broker] = msg.brokers;
       assert.strictEqual(broker.functionName, 'node_worker_echo');
       assert.strictEqual(broker.workers.length, 1);
     }

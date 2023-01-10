@@ -15,7 +15,7 @@ export default {
     // worker launcher 扩容并发度
     expandConcurrency: 2,
     // worker launcher 扩容队列消费间隔
-    expandInterval: 0
+    expandInterval: 0,
   },
 
   dataPlane: {
@@ -90,11 +90,11 @@ export default {
      * @see https://github.com/grpc/grpc-node/tree/master/packages/grpc-js#supported-channel-options
      */
     channelOptions: {
-      'grpc.max_receive_message_length': /* 10M */10 * 1024 * 1024,
-      'grpc.max_send_message_length': /* 10M */10 * 1024 * 1024,
+      'grpc.max_receive_message_length': /* 10M */ 10 * 1024 * 1024,
+      'grpc.max_send_message_length': /* 10M */ 10 * 1024 * 1024,
       /** disable grpc global subchannel pool */
       'grpc.use_local_subchannel_pool': 1,
-      'grpc-node.max_session_memory': /* 10M, in megabytes */10,
+      'grpc-node.max_session_memory': /* 10M, in megabytes */ 10,
     },
   },
 };

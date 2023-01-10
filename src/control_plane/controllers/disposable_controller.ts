@@ -50,14 +50,17 @@ export class DisposableController extends BaseController {
       this.stopWorker(worker.name, requestId)
         .then(() => {
           this.logger.info(
-            `stop worker [${worker.name}] because container status is [${ContainerStatus[worker.containerStatus]
+            `stop worker [${worker.name}] because container status is [${
+              ContainerStatus[worker.containerStatus]
             }] and disposable=true, cost: ${performance.now() - now}.`
           );
         })
-        .catch((error) => {
+        .catch(error => {
           this.logger.error(
-            `stop worker [${worker.name}] because container status is [${ContainerStatus[worker.containerStatus]
-            }] and disposable=true failed, wait sync to gc, cost: ${performance.now() - now
+            `stop worker [${worker.name}] because container status is [${
+              ContainerStatus[worker.containerStatus]
+            }] and disposable=true failed, wait sync to gc, cost: ${
+              performance.now() - now
             }.`,
             error
           );

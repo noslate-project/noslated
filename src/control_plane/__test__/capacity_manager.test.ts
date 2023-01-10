@@ -16,7 +16,11 @@ import * as starters from '#self/control_plane/starter/index';
 import { CapacityManager } from '#self/control_plane/capacity_manager';
 import { TurfContainerStates, TurfProcess } from '#self/lib/turf/types';
 import { noslated } from '#self/proto/root';
-import { ContainerStatus, ContainerStatusReport, ControlPanelEvent } from '#self/lib/constants';
+import {
+  ContainerStatus,
+  ContainerStatusReport,
+  ControlPanelEvent,
+} from '#self/lib/constants';
 import { Turf } from '#self/lib/turf';
 import { startTurfD, stopTurfD } from '#self/test/turf';
 
@@ -26,33 +30,40 @@ describe(common.testName(__filename), function () {
   const brokerData1 = {
     functionName: 'func',
     inspector: false,
-    workers: [{
-      name: 'hello',
-      maxActivateRequests: 10,
-      activeRequestCount: 1,
-    }, {
-      name: 'foo',
-      maxActivateRequests: 10,
-      activeRequestCount: 6,
-    }],
+    workers: [
+      {
+        name: 'hello',
+        maxActivateRequests: 10,
+        activeRequestCount: 1,
+      },
+      {
+        name: 'foo',
+        maxActivateRequests: 10,
+        activeRequestCount: 6,
+      },
+    ],
   };
 
   const brokerData2 = {
     functionName: 'lambda',
     inspector: false,
-    workers: [{
-      name: 'coco',
-      maxActivateRequests: 10,
-      activeRequestCount: 1,
-    }, {
-      name: 'cocos',
-      maxActivateRequests: 10,
-      activeRequestCount: 3,
-    }, {
-      name: 'alibaba',
-      maxActivateRequests: 10,
-      activeRequestCount: 4,
-    }],
+    workers: [
+      {
+        name: 'coco',
+        maxActivateRequests: 10,
+        activeRequestCount: 1,
+      },
+      {
+        name: 'cocos',
+        maxActivateRequests: 10,
+        activeRequestCount: 3,
+      },
+      {
+        name: 'alibaba',
+        maxActivateRequests: 10,
+        activeRequestCount: 4,
+      },
+    ],
   };
 
   let clock: Clock;
@@ -87,19 +98,25 @@ describe(common.testName(__filename), function () {
   describe('#syncWorkerData()', () => {
     it('should sync', async () => {
       const { functionProfileManager } = capacityManager;
-      functionProfileManager.set([{
-        name: 'func',
-        url: `file://${__dirname}`,
-        runtime: 'aworker',
-        signature: 'xxx',
-        sourceFile: 'index.js',
-      }, {
-        name: 'lambda',
-        url: `file://${__dirname}`,
-        runtime: 'aworker',
-        signature: 'xxx',
-        sourceFile: 'index.js',
-      }], 'WAIT');
+      functionProfileManager.set(
+        [
+          {
+            name: 'func',
+            url: `file://${__dirname}`,
+            runtime: 'aworker',
+            signature: 'xxx',
+            sourceFile: 'index.js',
+          },
+          {
+            name: 'lambda',
+            url: `file://${__dirname}`,
+            runtime: 'aworker',
+            signature: 'xxx',
+            sourceFile: 'index.js',
+          },
+        ],
+        'WAIT'
+      );
 
       const { promise, resolve } = createDeferred<void>();
       functionProfileManager.once('changed', () => {
@@ -107,7 +124,12 @@ describe(common.testName(__filename), function () {
       });
       await promise;
 
-      capacityManager.workerStatsSnapshot.register('func', 'hello', 'world', false);
+      capacityManager.workerStatsSnapshot.register(
+        'func',
+        'hello',
+        'world',
+        false
+      );
       capacityManager.workerStatsSnapshot.register('func', 'foo', 'bar', false);
 
       let correctCalled = false;
@@ -126,14 +148,22 @@ describe(common.testName(__filename), function () {
         { name: 'fou', status: TurfContainerStates.running, pid: 129 },
       ];
 
-      const sync = capacityManager.workerStatsSnapshot.sync.bind(capacityManager.workerStatsSnapshot);
-      const correct = capacityManager.workerStatsSnapshot.correct.bind(capacityManager.workerStatsSnapshot);
-      mm(capacityManager.workerStatsSnapshot, 'sync', async (data: noslated.data.IBrokerStats[], _psData: TurfProcess[]) => {
-        assert.deepStrictEqual(psData, _psData);
-        assert.deepStrictEqual(data, [brokerData1]);
-        syncCalled = true;
-        return sync(data, _psData);
-      });
+      const sync = capacityManager.workerStatsSnapshot.sync.bind(
+        capacityManager.workerStatsSnapshot
+      );
+      const correct = capacityManager.workerStatsSnapshot.correct.bind(
+        capacityManager.workerStatsSnapshot
+      );
+      mm(
+        capacityManager.workerStatsSnapshot,
+        'sync',
+        async (data: noslated.data.IBrokerStats[], _psData: TurfProcess[]) => {
+          assert.deepStrictEqual(psData, _psData);
+          assert.deepStrictEqual(data, [brokerData1]);
+          syncCalled = true;
+          return sync(data, _psData);
+        }
+      );
       mm(capacityManager.workerStatsSnapshot, 'correct', async () => {
         correctCalled = true;
         return correct();
@@ -159,12 +189,20 @@ describe(common.testName(__filename), function () {
 
       let workerStoppedBroker;
       let workerStoppedWorker: any;
-      capacityManager.workerStatsSnapshot.on('workerStopped', (emitExceptionMessage, state, broker, worker) => {
-        assert.strictEqual(emitExceptionMessage, undefined);
-        assert.deepStrictEqual(state, { name: 'emp-ee92f66', pid: 123, state: 'stopped', status: 9 });
-        workerStoppedWorker = worker;
-        workerStoppedBroker = broker;
-      });
+      capacityManager.workerStatsSnapshot.on(
+        'workerStopped',
+        (emitExceptionMessage, state, broker, worker) => {
+          assert.strictEqual(emitExceptionMessage, undefined);
+          assert.deepStrictEqual(state, {
+            name: 'emp-ee92f66',
+            pid: 123,
+            state: 'stopped',
+            status: 9,
+          });
+          workerStoppedWorker = worker;
+          workerStoppedBroker = broker;
+        }
+      );
 
       await control.stateManager.syncWorkerData([brokerData1]);
       assert(syncCalled);
@@ -174,7 +212,10 @@ describe(common.testName(__filename), function () {
       assert(deleteCalled);
 
       assert.strictEqual(capacityManager.workerStatsSnapshot.brokers.size, 1);
-      const broker = capacityManager.workerStatsSnapshot.getBroker('func', false);
+      const broker = capacityManager.workerStatsSnapshot.getBroker(
+        'func',
+        false
+      );
 
       // foo should be corrected because it's stopped in psData.
       assert.strictEqual(broker?.startingPool.size, 1);
@@ -193,22 +234,34 @@ describe(common.testName(__filename), function () {
       });
       assert.strictEqual(typeof worker?.registerTime, 'number');
       assert.strictEqual(workerStoppedBroker, broker);
-      assert.deepStrictEqual(_.omit(workerStoppedWorker.toJSON(), ['registerTime']), {
-        name: 'foo',
-        credential: 'bar',
-        pid: 123,
-        data: {
-          maxActivateRequests: 10,
-          activeRequestCount: 6,
-        },
-        containerStatus: ContainerStatus.Stopped,
-        turfContainerStates: TurfContainerStates.stopped,
-      });
+      assert.deepStrictEqual(
+        _.omit(workerStoppedWorker.toJSON(), ['registerTime']),
+        {
+          name: 'foo',
+          credential: 'bar',
+          pid: 123,
+          data: {
+            maxActivateRequests: 10,
+            activeRequestCount: 6,
+          },
+          containerStatus: ContainerStatus.Stopped,
+          turfContainerStates: TurfContainerStates.stopped,
+        }
+      );
 
       // should delete directory after 5 minutes.
       let rmdirCalled = false;
       mm(fs.promises, 'rmdir', async (name: any, options: any) => {
-        assert.strictEqual(name, path.dirname(starters.logPath(capacityManager.workerStatsSnapshot.config.logger.dir, 'foo', 'dummy')));
+        assert.strictEqual(
+          name,
+          path.dirname(
+            starters.logPath(
+              capacityManager.workerStatsSnapshot.config.logger.dir,
+              'foo',
+              'dummy'
+            )
+          )
+        );
         assert.deepStrictEqual(options, { recursive: true });
         rmdirCalled = true;
       });
@@ -221,25 +274,31 @@ describe(common.testName(__filename), function () {
   describe('get #virtualMemoryUsed()', () => {
     it('should get virtual memory used', async () => {
       const { functionProfileManager } = capacityManager;
-      functionProfileManager.set([{
-        name: 'func',
-        url: `file://${__dirname}`,
-        runtime: 'aworker',
-        signature: 'xxx',
-        sourceFile: 'index.js',
-        resourceLimit: {
-          memory: 512000000,
-        },
-      }, {
-        name: 'lambda',
-        url: `file://${__dirname}`,
-        runtime: 'aworker',
-        signature: 'xxx',
-        sourceFile: 'index.js',
-        resourceLimit: {
-          memory: 128000000,
-        },
-      }], 'WAIT');
+      functionProfileManager.set(
+        [
+          {
+            name: 'func',
+            url: `file://${__dirname}`,
+            runtime: 'aworker',
+            signature: 'xxx',
+            sourceFile: 'index.js',
+            resourceLimit: {
+              memory: 512000000,
+            },
+          },
+          {
+            name: 'lambda',
+            url: `file://${__dirname}`,
+            runtime: 'aworker',
+            signature: 'xxx',
+            sourceFile: 'index.js',
+            resourceLimit: {
+              memory: 128000000,
+            },
+          },
+        ],
+        'WAIT'
+      );
 
       const { promise, resolve } = createDeferred<void>();
       functionProfileManager.once('changed', () => {
@@ -255,12 +314,32 @@ describe(common.testName(__filename), function () {
         { pid: 5, name: 'alibaba', status: TurfContainerStates.running },
       ]);
 
-      capacityManager.workerStatsSnapshot.register('func', 'hello', 'world', false);
+      capacityManager.workerStatsSnapshot.register(
+        'func',
+        'hello',
+        'world',
+        false
+      );
       capacityManager.workerStatsSnapshot.register('func', 'foo', 'bar', false);
-      capacityManager.workerStatsSnapshot.register('lambda', 'coco', 'nut', false);
+      capacityManager.workerStatsSnapshot.register(
+        'lambda',
+        'coco',
+        'nut',
+        false
+      );
       // 未 ready 不计入 virtual memory size
-      capacityManager.workerStatsSnapshot.register('lambda', 'cocos', '2d', false);
-      capacityManager.workerStatsSnapshot.register('lambda', 'alibaba', 'seed of hope', false);
+      capacityManager.workerStatsSnapshot.register(
+        'lambda',
+        'cocos',
+        '2d',
+        false
+      );
+      capacityManager.workerStatsSnapshot.register(
+        'lambda',
+        'alibaba',
+        'seed of hope',
+        false
+      );
 
       await control.stateManager.syncWorkerData([brokerData1, brokerData2]);
 
@@ -269,7 +348,7 @@ describe(common.testName(__filename), function () {
         name: 'hello',
         isInspector: false,
         event: ContainerStatusReport.ContainerInstalled,
-        requestId: ''
+        requestId: '',
       });
 
       capacityManager.updateWorkerContainerStatus({
@@ -277,7 +356,7 @@ describe(common.testName(__filename), function () {
         name: 'foo',
         isInspector: false,
         event: ContainerStatusReport.ContainerInstalled,
-        requestId: ''
+        requestId: '',
       });
 
       capacityManager.updateWorkerContainerStatus({
@@ -285,7 +364,7 @@ describe(common.testName(__filename), function () {
         name: 'coco',
         isInspector: false,
         event: ContainerStatusReport.ContainerInstalled,
-        requestId: ''
+        requestId: '',
       });
 
       capacityManager.updateWorkerContainerStatus({
@@ -293,32 +372,43 @@ describe(common.testName(__filename), function () {
         name: 'alibaba',
         isInspector: false,
         event: ContainerStatusReport.ContainerInstalled,
-        requestId: ''
+        requestId: '',
       });
 
-      assert.strictEqual(capacityManager.virtualMemoryUsed, 512000000 * 2 + 128000000 * 2);
+      assert.strictEqual(
+        capacityManager.virtualMemoryUsed,
+        512000000 * 2 + 128000000 * 2
+      );
     });
   });
 
   describe('#tryBatchLaunch()', () => {
     it('should try batch launch', async () => {
       let called = 0;
-      mm(capacityManager.plane.workerLauncher, 'tryLaunch', async (event: ControlPanelEvent, name: any, options: any) => {
-        assert.strictEqual(event, ControlPanelEvent.Expand);
-        assert.strictEqual(name, 'func');
-        assert.deepStrictEqual(options, { inspect: true });
-        called++;
-      });
+      mm(
+        capacityManager.plane.workerLauncher,
+        'tryLaunch',
+        async (event: ControlPanelEvent, name: any, options: any) => {
+          assert.strictEqual(event, ControlPanelEvent.Expand);
+          assert.strictEqual(name, 'func');
+          assert.deepStrictEqual(options, { inspect: true });
+          called++;
+        }
+      );
       await control.controller.tryBatchLaunch('func', 10, { inspect: true });
       assert.strictEqual(called, 10);
 
       called = 0;
-      mm(capacityManager.plane.workerLauncher, 'tryLaunch', async (event: ControlPanelEvent, name: any, options: any) => {
-        assert.strictEqual(event, ControlPanelEvent.Expand);
-        assert.strictEqual(name, 'func');
-        assert.deepStrictEqual(options, { inspect: false });
-        called++;
-      });
+      mm(
+        capacityManager.plane.workerLauncher,
+        'tryLaunch',
+        async (event: ControlPanelEvent, name: any, options: any) => {
+          assert.strictEqual(event, ControlPanelEvent.Expand);
+          assert.strictEqual(name, 'func');
+          assert.deepStrictEqual(options, { inspect: false });
+          called++;
+        }
+      );
       await control.controller.tryBatchLaunch('func', 3, { inspect: false });
       assert.strictEqual(called, 3);
 
@@ -357,19 +447,25 @@ describe(common.testName(__filename), function () {
   describe('#forceDismissAllWorkersInCertainBrokers()', () => {
     it('should force dismiss', async () => {
       const { functionProfileManager } = capacityManager;
-      functionProfileManager.set([{
-        name: 'func',
-        url: `file://${__dirname}`,
-        runtime: 'aworker',
-        signature: 'xxx',
-        sourceFile: 'index.js',
-      }, {
-        name: 'lambda',
-        url: `file://${__dirname}`,
-        runtime: 'aworker',
-        signature: 'xxx',
-        sourceFile: 'index.js',
-      }], 'WAIT');
+      functionProfileManager.set(
+        [
+          {
+            name: 'func',
+            url: `file://${__dirname}`,
+            runtime: 'aworker',
+            signature: 'xxx',
+            sourceFile: 'index.js',
+          },
+          {
+            name: 'lambda',
+            url: `file://${__dirname}`,
+            runtime: 'aworker',
+            signature: 'xxx',
+            sourceFile: 'index.js',
+          },
+        ],
+        'WAIT'
+      );
 
       const { promise, resolve } = createDeferred<void>();
       functionProfileManager.once('changed', () => {
@@ -377,11 +473,31 @@ describe(common.testName(__filename), function () {
       });
       await promise;
 
-      capacityManager.workerStatsSnapshot.register('func', 'hello', 'world', false);
+      capacityManager.workerStatsSnapshot.register(
+        'func',
+        'hello',
+        'world',
+        false
+      );
       capacityManager.workerStatsSnapshot.register('func', 'foo', 'bar', false);
-      capacityManager.workerStatsSnapshot.register('lambda', 'coco', 'nut', false);
-      capacityManager.workerStatsSnapshot.register('lambda', 'cocos', '2d', false);
-      capacityManager.workerStatsSnapshot.register('lambda', 'alibaba', 'seed of hope', false);
+      capacityManager.workerStatsSnapshot.register(
+        'lambda',
+        'coco',
+        'nut',
+        false
+      );
+      capacityManager.workerStatsSnapshot.register(
+        'lambda',
+        'cocos',
+        '2d',
+        false
+      );
+      capacityManager.workerStatsSnapshot.register(
+        'lambda',
+        'alibaba',
+        'seed of hope',
+        false
+      );
 
       await control.stateManager.syncWorkerData([brokerData1, brokerData2]);
 
@@ -399,27 +515,41 @@ describe(common.testName(__filename), function () {
 
       stopNames = [];
       await control.controller.stopAllWorkers(['func', 'lambda']);
-      assert.deepStrictEqual(stopNames.sort(), ['alibaba', 'coco', 'cocos', 'foo', 'hello']);
+      assert.deepStrictEqual(stopNames.sort(), [
+        'alibaba',
+        'coco',
+        'cocos',
+        'foo',
+        'hello',
+      ]);
     });
   });
 
   describe('#autoScale()', () => {
     for (let id = 0; id < 2; id++) {
-      it(`should auto scale with ${id === 0 ? 'enough' : 'not enough'} memory`, async () => {
+      it(`should auto scale with ${
+        id === 0 ? 'enough' : 'not enough'
+      } memory`, async () => {
         const { functionProfileManager } = capacityManager;
-        functionProfileManager.set([{
-          name: 'func',
-          url: `file://${__dirname}`,
-          runtime: 'aworker',
-          signature: 'xxx',
-          sourceFile: 'index.js',
-        }, {
-          name: 'lambda',
-          url: `file://${__dirname}`,
-          runtime: 'aworker',
-          signature: 'xxx',
-          sourceFile: 'index.js',
-        }], 'WAIT');
+        functionProfileManager.set(
+          [
+            {
+              name: 'func',
+              url: `file://${__dirname}`,
+              runtime: 'aworker',
+              signature: 'xxx',
+              sourceFile: 'index.js',
+            },
+            {
+              name: 'lambda',
+              url: `file://${__dirname}`,
+              runtime: 'aworker',
+              signature: 'xxx',
+              sourceFile: 'index.js',
+            },
+          ],
+          'WAIT'
+        );
 
         const { promise, resolve } = createDeferred<void>();
         functionProfileManager.once('changed', () => {
@@ -435,20 +565,46 @@ describe(common.testName(__filename), function () {
           { pid: 5, name: 'alibaba', status: TurfContainerStates.running },
         ]);
 
-        capacityManager.workerStatsSnapshot.register('func', 'hello', 'world', false);
-        capacityManager.workerStatsSnapshot.register('func', 'foo', 'bar', false);
-        capacityManager.workerStatsSnapshot.register('lambda', 'coco', 'nut', false);
-        capacityManager.workerStatsSnapshot.register('lambda', 'cocos', '2d', false);
-        capacityManager.workerStatsSnapshot.register('lambda', 'alibaba', 'seed of hope', false);
+        capacityManager.workerStatsSnapshot.register(
+          'func',
+          'hello',
+          'world',
+          false
+        );
+        capacityManager.workerStatsSnapshot.register(
+          'func',
+          'foo',
+          'bar',
+          false
+        );
+        capacityManager.workerStatsSnapshot.register(
+          'lambda',
+          'coco',
+          'nut',
+          false
+        );
+        capacityManager.workerStatsSnapshot.register(
+          'lambda',
+          'cocos',
+          '2d',
+          false
+        );
+        capacityManager.workerStatsSnapshot.register(
+          'lambda',
+          'alibaba',
+          'seed of hope',
+          false
+        );
 
-        if (id === 0) mm(capacityManager, 'virtualMemoryPoolSize', 512 * 1024 * 1024 * 6);
+        if (id === 0)
+          mm(capacityManager, 'virtualMemoryPoolSize', 512 * 1024 * 1024 * 6);
 
         capacityManager.updateWorkerContainerStatus({
           functionName: 'func',
           name: 'hello',
           isInspector: false,
           event: ContainerStatusReport.ContainerInstalled,
-          requestId: ''
+          requestId: '',
         });
 
         capacityManager.updateWorkerContainerStatus({
@@ -456,7 +612,7 @@ describe(common.testName(__filename), function () {
           name: 'foo',
           isInspector: false,
           event: ContainerStatusReport.ContainerInstalled,
-          requestId: ''
+          requestId: '',
         });
 
         capacityManager.updateWorkerContainerStatus({
@@ -464,7 +620,7 @@ describe(common.testName(__filename), function () {
           name: 'coco',
           isInspector: false,
           event: ContainerStatusReport.ContainerInstalled,
-        requestId: ''
+          requestId: '',
         });
 
         capacityManager.updateWorkerContainerStatus({
@@ -472,7 +628,7 @@ describe(common.testName(__filename), function () {
           name: 'cocos',
           isInspector: false,
           event: ContainerStatusReport.ContainerInstalled,
-        requestId: ''
+          requestId: '',
         });
 
         capacityManager.updateWorkerContainerStatus({
@@ -481,40 +637,72 @@ describe(common.testName(__filename), function () {
           isInspector: false,
           event: ContainerStatusReport.ContainerInstalled,
 
-        requestId: ''
+          requestId: '',
         });
 
         await control.stateManager.syncWorkerData([brokerData1, brokerData2]);
 
-        capacityManager.workerStatsSnapshot!.getWorker('func', false, 'hello')!.data!.activeRequestCount = 10;
-        capacityManager.workerStatsSnapshot!.getWorker('func', false, 'foo')!.data!.activeRequestCount = 10;
-        capacityManager.workerStatsSnapshot!.getWorker('lambda', false, 'coco')!.data!.activeRequestCount = 3;
-        capacityManager.workerStatsSnapshot!.getWorker('lambda', false, 'cocos')!.data!.activeRequestCount = 1;
-        capacityManager.workerStatsSnapshot!.getWorker('lambda', false, 'alibaba')!.data!.activeRequestCount = 2;
-        capacityManager.workerStatsSnapshot!.getBroker('lambda', false)!.redundantTimes = 60;
+        capacityManager.workerStatsSnapshot!.getWorker(
+          'func',
+          false,
+          'hello'
+        )!.data!.activeRequestCount = 10;
+        capacityManager.workerStatsSnapshot!.getWorker(
+          'func',
+          false,
+          'foo'
+        )!.data!.activeRequestCount = 10;
+        capacityManager.workerStatsSnapshot!.getWorker(
+          'lambda',
+          false,
+          'coco'
+        )!.data!.activeRequestCount = 3;
+        capacityManager.workerStatsSnapshot!.getWorker(
+          'lambda',
+          false,
+          'cocos'
+        )!.data!.activeRequestCount = 1;
+        capacityManager.workerStatsSnapshot!.getWorker(
+          'lambda',
+          false,
+          'alibaba'
+        )!.data!.activeRequestCount = 2;
+        capacityManager.workerStatsSnapshot!.getBroker(
+          'lambda',
+          false
+        )!.redundantTimes = 60;
 
         let tryLaunchCalled = 0;
         let reduceCapacityCalled = 0;
         let stopWorkerCalled = 0;
-        mm(capacityManager.plane.workerLauncher, 'tryLaunch', async (event: ControlPanelEvent, name: any, options: any) => {
-          assert.strictEqual(event, ControlPanelEvent.Expand);
-          assert.strictEqual(name, 'func');
-          assert.deepStrictEqual(options, { inspect: false });
-          tryLaunchCalled++;
-        });
-        mm(capacityManager.plane.dataPlaneClientManager, 'reduceCapacity', async (data: { brokers: string | any[]; }) => {
-          assert.strictEqual(data.brokers.length, 1);
-          assert.strictEqual(data.brokers[0].functionName, 'lambda');
-          assert.strictEqual(data.brokers[0].inspector, false);
-          assert.deepStrictEqual(
-            data.brokers[0].workers,
-            [{ name: 'cocos', credential: '2d' }, { name: 'alibaba', credential: 'seed of hope' }]);
-          reduceCapacityCalled++;
+        mm(
+          capacityManager.plane.workerLauncher,
+          'tryLaunch',
+          async (event: ControlPanelEvent, name: any, options: any) => {
+            assert.strictEqual(event, ControlPanelEvent.Expand);
+            assert.strictEqual(name, 'func');
+            assert.deepStrictEqual(options, { inspect: false });
+            tryLaunchCalled++;
+          }
+        );
+        mm(
+          capacityManager.plane.dataPlaneClientManager,
+          'reduceCapacity',
+          async (data: { brokers: string | any[] }) => {
+            assert.strictEqual(data.brokers.length, 1);
+            assert.strictEqual(data.brokers[0].functionName, 'lambda');
+            assert.strictEqual(data.brokers[0].inspector, false);
+            assert.deepStrictEqual(data.brokers[0].workers, [
+              { name: 'cocos', credential: '2d' },
+              { name: 'alibaba', credential: 'seed of hope' },
+            ]);
+            reduceCapacityCalled++;
 
-          const ret = JSON.parse(JSON.stringify(data));
-          ret.brokers[0].workers.pop();
-          return ret.brokers;
-        });
+            const ret = JSON.parse(JSON.stringify(data));
+            ret.brokers[0].workers.pop();
+            return ret.brokers;
+          }
+        );
         mm(control.controller, 'stopWorker', async (name: any) => {
           assert.strictEqual(name, 'cocos');
           stopWorkerCalled++;
@@ -530,19 +718,25 @@ describe(common.testName(__filename), function () {
 
     it('should auto shrink when function not exist in function profile manager', async () => {
       const { functionProfileManager } = capacityManager;
-      functionProfileManager.set([{
-        name: 'func',
-        url: `file://${__dirname}`,
-        runtime: 'aworker',
-        signature: 'xxx',
-        sourceFile: 'index.js',
-      }, {
-        name: 'lambda',
-        url: `file://${__dirname}`,
-        runtime: 'aworker',
-        signature: 'xxx',
-        sourceFile: 'index.js',
-      }], 'WAIT');
+      functionProfileManager.set(
+        [
+          {
+            name: 'func',
+            url: `file://${__dirname}`,
+            runtime: 'aworker',
+            signature: 'xxx',
+            sourceFile: 'index.js',
+          },
+          {
+            name: 'lambda',
+            url: `file://${__dirname}`,
+            runtime: 'aworker',
+            signature: 'xxx',
+            sourceFile: 'index.js',
+          },
+        ],
+        'WAIT'
+      );
 
       const { promise, resolve } = createDeferred<void>();
       functionProfileManager.once('changed', () => {
@@ -558,11 +752,31 @@ describe(common.testName(__filename), function () {
         { pid: 5, name: 'alibaba', status: TurfContainerStates.running },
       ]);
 
-      capacityManager.workerStatsSnapshot.register('func', 'hello', 'world', false);
+      capacityManager.workerStatsSnapshot.register(
+        'func',
+        'hello',
+        'world',
+        false
+      );
       capacityManager.workerStatsSnapshot.register('func', 'foo', 'bar', false);
-      capacityManager.workerStatsSnapshot.register('lambda', 'coco', 'nut', false);
-      capacityManager.workerStatsSnapshot.register('lambda', 'cocos', '2d', false);
-      capacityManager.workerStatsSnapshot.register('lambda', 'alibaba', 'seed of hope', false);
+      capacityManager.workerStatsSnapshot.register(
+        'lambda',
+        'coco',
+        'nut',
+        false
+      );
+      capacityManager.workerStatsSnapshot.register(
+        'lambda',
+        'cocos',
+        '2d',
+        false
+      );
+      capacityManager.workerStatsSnapshot.register(
+        'lambda',
+        'alibaba',
+        'seed of hope',
+        false
+      );
 
       functionProfileManager.set([], 'WAIT');
 
@@ -577,7 +791,7 @@ describe(common.testName(__filename), function () {
         name: 'hello',
         isInspector: false,
         event: ContainerStatusReport.ContainerInstalled,
-        requestId: ''
+        requestId: '',
       });
 
       capacityManager.updateWorkerContainerStatus({
@@ -585,7 +799,7 @@ describe(common.testName(__filename), function () {
         name: 'foo',
         isInspector: false,
         event: ContainerStatusReport.ContainerInstalled,
-        requestId: ''
+        requestId: '',
       });
 
       capacityManager.updateWorkerContainerStatus({
@@ -593,7 +807,7 @@ describe(common.testName(__filename), function () {
         name: 'coco',
         isInspector: false,
         event: ContainerStatusReport.ContainerInstalled,
-        requestId: ''
+        requestId: '',
       });
 
       capacityManager.updateWorkerContainerStatus({
@@ -601,7 +815,7 @@ describe(common.testName(__filename), function () {
         name: 'cocos',
         isInspector: false,
         event: ContainerStatusReport.ContainerInstalled,
-        requestId: ''
+        requestId: '',
       });
 
       capacityManager.updateWorkerContainerStatus({
@@ -609,17 +823,43 @@ describe(common.testName(__filename), function () {
         name: 'alibaba',
         isInspector: false,
         event: ContainerStatusReport.ContainerInstalled,
-        requestId: ''
+        requestId: '',
       });
 
       await control.stateManager.syncWorkerData([brokerData1, brokerData2]);
-      capacityManager.workerStatsSnapshot!.getWorker('func', false, 'hello')!.data!.activeRequestCount = 10;
-      capacityManager.workerStatsSnapshot!.getWorker('func', false, 'foo')!.data!.activeRequestCount = 10;
-      capacityManager.workerStatsSnapshot!.getBroker('func', false)!.redundantTimes = 60;
-      capacityManager.workerStatsSnapshot!.getWorker('lambda', false, 'coco')!.data!.activeRequestCount = 3;
-      capacityManager.workerStatsSnapshot!.getWorker('lambda', false, 'cocos')!.data!.activeRequestCount = 1;
-      capacityManager.workerStatsSnapshot!.getWorker('lambda', false, 'alibaba')!.data!.activeRequestCount = 2;
-      capacityManager.workerStatsSnapshot!.getBroker('lambda', false)!.redundantTimes = 60;
+      capacityManager.workerStatsSnapshot!.getWorker(
+        'func',
+        false,
+        'hello'
+      )!.data!.activeRequestCount = 10;
+      capacityManager.workerStatsSnapshot!.getWorker(
+        'func',
+        false,
+        'foo'
+      )!.data!.activeRequestCount = 10;
+      capacityManager.workerStatsSnapshot!.getBroker(
+        'func',
+        false
+      )!.redundantTimes = 60;
+      capacityManager.workerStatsSnapshot!.getWorker(
+        'lambda',
+        false,
+        'coco'
+      )!.data!.activeRequestCount = 3;
+      capacityManager.workerStatsSnapshot!.getWorker(
+        'lambda',
+        false,
+        'cocos'
+      )!.data!.activeRequestCount = 1;
+      capacityManager.workerStatsSnapshot!.getWorker(
+        'lambda',
+        false,
+        'alibaba'
+      )!.data!.activeRequestCount = 2;
+      capacityManager.workerStatsSnapshot!.getBroker(
+        'lambda',
+        false
+      )!.redundantTimes = 60;
 
       let tryLaunchCalled = 0;
       let reduceCapacityCalled = 0;
@@ -627,32 +867,32 @@ describe(common.testName(__filename), function () {
       mm(capacityManager.plane.workerLauncher, 'tryLaunch', async () => {
         tryLaunchCalled++;
       });
-      mm(capacityManager.plane.dataPlaneClientManager, 'reduceCapacity', async (data: { brokers: string | any[]; }) => {
-        assert.strictEqual(data.brokers.length, 2);
+      mm(
+        capacityManager.plane.dataPlaneClientManager,
+        'reduceCapacity',
+        async (data: { brokers: string | any[] }) => {
+          assert.strictEqual(data.brokers.length, 2);
 
-        assert.strictEqual(data.brokers[0].functionName, 'func');
-        assert.strictEqual(data.brokers[0].inspector, false);
-        assert.deepStrictEqual(
-          data.brokers[0].workers,
-          [
+          assert.strictEqual(data.brokers[0].functionName, 'func');
+          assert.strictEqual(data.brokers[0].inspector, false);
+          assert.deepStrictEqual(data.brokers[0].workers, [
             { name: 'foo', credential: 'bar' },
             { name: 'hello', credential: 'world' },
           ]);
 
-        assert.strictEqual(data.brokers[1].functionName, 'lambda');
-        assert.strictEqual(data.brokers[1].inspector, false);
-        assert.deepStrictEqual(
-          data.brokers[1].workers,
-          [
+          assert.strictEqual(data.brokers[1].functionName, 'lambda');
+          assert.strictEqual(data.brokers[1].inspector, false);
+          assert.deepStrictEqual(data.brokers[1].workers, [
             { name: 'cocos', credential: '2d' },
             { name: 'alibaba', credential: 'seed of hope' },
             { name: 'coco', credential: 'nut' },
           ]);
 
-        reduceCapacityCalled++;
+          reduceCapacityCalled++;
 
-        return data.brokers;
-      });
+          return data.brokers;
+        }
+      );
       let left = ['cocos', 'coco', 'alibaba', 'foo', 'hello'];
       mm(control.controller, 'stopWorker', async (name: string) => {
         assert(left.includes(name));
@@ -689,22 +929,36 @@ describe(common.testName(__filename), function () {
       });
 
       const { functionProfileManager } = capacityManager;
-      functionProfileManager.set([{
-        name: 'func',
-        url: `file://${__dirname}`,
-        runtime: 'aworker',
-        signature: 'xxx',
-        sourceFile: 'index.js',
-      }], 'WAIT');
+      functionProfileManager.set(
+        [
+          {
+            name: 'func',
+            url: `file://${__dirname}`,
+            runtime: 'aworker',
+            signature: 'xxx',
+            sourceFile: 'index.js',
+          },
+        ],
+        'WAIT'
+      );
       await EventEmitter.once(functionProfileManager, 'changed');
 
-      capacityManager.workerStatsSnapshot.register('func', 'hello', 'world', false);
+      capacityManager.workerStatsSnapshot.register(
+        'func',
+        'hello',
+        'world',
+        false
+      );
       capacityManager.workerStatsSnapshot.register('func', 'foo', 'bar', false);
 
       mm(brokerData1.workers[0], 'activeRequestCount', 10);
       mm(brokerData1.workers[1], 'activeRequestCount', 10);
-      mm(brokerData1.workers[0], 'resourceLimit', { memory: 512 * 1024 * 1024 });
-      mm(brokerData1.workers[1], 'resourceLimit', { memory: 512 * 1024 * 1024 });
+      mm(brokerData1.workers[0], 'resourceLimit', {
+        memory: 512 * 1024 * 1024,
+      });
+      mm(brokerData1.workers[1], 'resourceLimit', {
+        memory: 512 * 1024 * 1024,
+      });
       mm(capacityManager, 'virtualMemoryPoolSize', 1024 * 1024 * 1024);
 
       await control.stateManager.syncWorkerData([brokerData1]);

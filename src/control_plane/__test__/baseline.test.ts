@@ -64,7 +64,8 @@ const cases = [
     },
     expect: {
       error: {
-        message: /Replica count exceeded limit \(0 \/ 0\) for function node_worker_echo\./,
+        message:
+          /Replica count exceeded limit \(0 \/ 0\) for function node_worker_echo\./,
       },
     },
   },
@@ -88,7 +89,8 @@ const cases = [
     },
     expect: {
       error: {
-        message: /Replica count exceeded limit \(0 \/ 0\) for function node_worker_echo\./,
+        message:
+          /Replica count exceeded limit \(0 \/ 0\) for function node_worker_echo\./,
       },
     },
   },
@@ -101,10 +103,7 @@ const cases = [
       handler: 'index.handler',
       signature: 'md5:234234',
       worker: {
-        v8Options: [
-          '--max-heap-size=100',
-          '--no-compilation-cache',
-        ],
+        v8Options: ['--max-heap-size=100', '--no-compilation-cache'],
       },
     },
     input: {
@@ -114,7 +113,9 @@ const cases = [
       },
     },
     expect: {
-      data: Buffer.from('["--max-heap-size=409","--max-heap-size=100","--no-compilation-cache"]'),
+      data: Buffer.from(
+        '["--max-heap-size=409","--max-heap-size=100","--no-compilation-cache"]'
+      ),
     },
   },
   {
@@ -126,10 +127,7 @@ const cases = [
       handler: 'index.handler',
       signature: 'md5:234234',
       worker: {
-        execArgv: [
-          '--max-heap-size=100',
-          '--no-compilation-cache',
-        ],
+        execArgv: ['--max-heap-size=100', '--no-compilation-cache'],
       },
     },
     input: {
@@ -139,7 +137,9 @@ const cases = [
       },
     },
     expect: {
-      data: Buffer.from('["--max-heap-size=409","--max-heap-size=100","--no-compilation-cache"]'),
+      data: Buffer.from(
+        '["--max-heap-size=409","--max-heap-size=100","--no-compilation-cache"]'
+      ),
     },
   },
   {
@@ -151,10 +151,7 @@ const cases = [
       sourceFile: 'index.js',
       signature: 'md5:234234',
       worker: {
-        v8Options: [
-          '--max-heap-size=100',
-          '--no-compilation-cache',
-        ],
+        v8Options: ['--max-heap-size=100', '--no-compilation-cache'],
       },
     },
     input: {
@@ -164,11 +161,20 @@ const cases = [
       },
     },
     before: async ({ control }: DefaultEnvironment) => {
-      const doStart = control.workerLauncher.starters.aworker.doStart.bind(control.workerLauncher.starters.aworker);
+      const doStart = control.workerLauncher.starters.aworker.doStart.bind(
+        control.workerLauncher.starters.aworker
+      );
       mm(
         control.workerLauncher.starters.aworker,
         'doStart',
-        async (name: any, bundlePath: any, args: string[], profile: any, appendEnvs: any, options: any) => {
+        async (
+          name: any,
+          bundlePath: any,
+          args: string[],
+          profile: any,
+          appendEnvs: any,
+          options: any
+        ) => {
           assert.deepStrictEqual(args.slice(0, 5), [
             'aworker',
             '--max-heap-size=409',
@@ -177,7 +183,8 @@ const cases = [
             '-A',
           ]);
           return doStart(name, bundlePath, args, profile, appendEnvs, options);
-        });
+        }
+      );
     },
     expect: {
       data: Buffer.from('echo'),
@@ -192,10 +199,7 @@ const cases = [
       sourceFile: 'index.js',
       signature: 'md5:234234',
       worker: {
-        execArgv: [
-          '--max-heap-size=100',
-          '--no-compilation-cache',
-        ],
+        execArgv: ['--max-heap-size=100', '--no-compilation-cache'],
       },
     },
     input: {
@@ -205,11 +209,20 @@ const cases = [
       },
     },
     before: async ({ control }: DefaultEnvironment) => {
-      const doStart = control.workerLauncher.starters.aworker.doStart.bind(control.workerLauncher.starters.aworker);
+      const doStart = control.workerLauncher.starters.aworker.doStart.bind(
+        control.workerLauncher.starters.aworker
+      );
       mm(
         control.workerLauncher.starters.aworker,
         'doStart',
-        async (name: any, bundlePath: any, args: string[], profile: any, appendEnvs: any, options: any) => {
+        async (
+          name: any,
+          bundlePath: any,
+          args: string[],
+          profile: any,
+          appendEnvs: any,
+          options: any
+        ) => {
           assert.deepStrictEqual(args.slice(0, 5), [
             'aworker',
             '--max-heap-size=409',
@@ -218,7 +231,8 @@ const cases = [
             '-A',
           ]);
           return doStart(name, bundlePath, args, profile, appendEnvs, options);
-        });
+        }
+      );
     },
     expect: {
       data: Buffer.from('echo'),
@@ -246,7 +260,10 @@ const cases = [
       },
     },
     after: async ({ control }: DefaultEnvironment) => {
-      const broker = control.capacityManager.workerStatsSnapshot.getBroker('aworker_echo', false)!;
+      const broker = control.capacityManager.workerStatsSnapshot.getBroker(
+        'aworker_echo',
+        false
+      )!;
       while (true) {
         if (broker.workerCount !== 4) {
           await sleep(10);
@@ -281,7 +298,10 @@ const cases = [
       },
     },
     after: async ({ control }: DefaultEnvironment) => {
-      const broker = control.capacityManager.workerStatsSnapshot.getBroker('aworker_echo', false)!;
+      const broker = control.capacityManager.workerStatsSnapshot.getBroker(
+        'aworker_echo',
+        false
+      )!;
       while (true) {
         if (broker.workerCount !== 2) {
           await sleep(10);
@@ -316,8 +336,13 @@ const cases = [
       },
     },
     after: async ({ control }: DefaultEnvironment) => {
-      await control.controller.tryBatchLaunch('aworker_echo', 1, { inspect: false });
-      const broker = control.capacityManager.workerStatsSnapshot.getBroker('aworker_echo', false)!;
+      await control.controller.tryBatchLaunch('aworker_echo', 1, {
+        inspect: false,
+      });
+      const broker = control.capacityManager.workerStatsSnapshot.getBroker(
+        'aworker_echo',
+        false
+      )!;
       while (true) {
         if (broker.workerCount !== 2) {
           await sleep(10);
@@ -329,10 +354,14 @@ const cases = [
       await sleep(2000); // wait for data plane sync
 
       const idx = _.random(0, 1, false);
-      const names = [ ...broker.workers.keys() ];
+      const names = [...broker.workers.keys()];
 
       mm(broker.workers.get(names[idx])!.data, 'activeRequestCount', 4);
-      mm(broker.workers.get(names[idx === 0 ? 1 : 0])!.data, 'activeRequestCount', 2);
+      mm(
+        broker.workers.get(names[idx === 0 ? 1 : 0])!.data,
+        'activeRequestCount',
+        2
+      );
       mm(broker, 'redundantTimes', 60);
 
       await control.capacityManager.autoScale();
@@ -365,8 +394,13 @@ const cases = [
       },
     },
     after: async ({ control }: DefaultEnvironment) => {
-      await control.controller.tryBatchLaunch('aworker_echo', 1, { inspect: false });
-      const broker = control.capacityManager.workerStatsSnapshot.getBroker('aworker_echo', false)!;
+      await control.controller.tryBatchLaunch('aworker_echo', 1, {
+        inspect: false,
+      });
+      const broker = control.capacityManager.workerStatsSnapshot.getBroker(
+        'aworker_echo',
+        false
+      )!;
       while (true) {
         if (broker.workerCount !== 2) {
           await sleep(10);
@@ -378,13 +412,20 @@ const cases = [
       await sleep(2000); // wait for data plane sync
 
       const idx = _.random(0, 1, false);
-      const names = [ ...broker.workers.keys() ];
-      const workers = [ broker.workers.get(names[0])!, broker.workers.get(names[1])! ].sort((a, b) => {
-        return (a.registerTime < b.registerTime) ? -1 : 1;
+      const names = [...broker.workers.keys()];
+      const workers = [
+        broker.workers.get(names[0])!,
+        broker.workers.get(names[1])!,
+      ].sort((a, b) => {
+        return a.registerTime < b.registerTime ? -1 : 1;
       });
 
       mm(broker.workers.get(names[idx])!.data, 'activeRequestCount', 4);
-      mm(broker.workers.get(names[idx === 0 ? 1 : 0])!.data, 'activeRequestCount', 2);
+      mm(
+        broker.workers.get(names[idx === 0 ? 1 : 0])!.data,
+        'activeRequestCount',
+        2
+      );
       mm(broker, 'redundantTimes', 60);
 
       await control.capacityManager.autoScale();
@@ -417,8 +458,13 @@ const cases = [
       },
     },
     after: async ({ control }: DefaultEnvironment) => {
-      await control.controller.tryBatchLaunch('aworker_echo', 1, { inspect: false });
-      const broker = control.capacityManager.workerStatsSnapshot.getBroker('aworker_echo', false)!;
+      await control.controller.tryBatchLaunch('aworker_echo', 1, {
+        inspect: false,
+      });
+      const broker = control.capacityManager.workerStatsSnapshot.getBroker(
+        'aworker_echo',
+        false
+      )!;
       while (true) {
         if (broker.workerCount !== 2) {
           await sleep(10);
@@ -430,13 +476,20 @@ const cases = [
       await sleep(2000); // wait for data plane sync
 
       const idx = _.random(0, 1, false);
-      const names = [ ...broker.workers.keys() ];
-      const workers = [ broker.workers.get(names[0])!, broker.workers.get(names[1])! ].sort((a, b) => {
-        return (a.registerTime < b.registerTime) ? -1 : 1;
+      const names = [...broker.workers.keys()];
+      const workers = [
+        broker.workers.get(names[0])!,
+        broker.workers.get(names[1])!,
+      ].sort((a, b) => {
+        return a.registerTime < b.registerTime ? -1 : 1;
       });
 
       mm(broker.workers.get(names[idx])!.data, 'activeRequestCount', 4);
-      mm(broker.workers.get(names[idx === 0 ? 1 : 0])!.data, 'activeRequestCount', 2);
+      mm(
+        broker.workers.get(names[idx === 0 ? 1 : 0])!.data,
+        'activeRequestCount',
+        2
+      );
       mm(broker, 'redundantTimes', 60);
 
       await control.capacityManager.autoScale();
@@ -451,7 +504,7 @@ const cases = [
   },
 ];
 
-describe(common.testName(__filename), function() {
+describe(common.testName(__filename), function () {
   // Debug version of Node.js may take longer time to bootstrap.
   this.timeout(30_000);
 
@@ -466,7 +519,11 @@ describe(common.testName(__filename), function() {
   });
 
   beforeEach(async () => {
-    mm(config.dataPlane, 'daprAdaptorModulePath', require.resolve('#self/test/baseline/dapr-adaptor'));
+    mm(
+      config.dataPlane,
+      'daprAdaptorModulePath',
+      require.resolve('#self/test/baseline/dapr-adaptor')
+    );
   });
 
   afterEach(async () => {
@@ -484,13 +541,14 @@ describe(common.testName(__filename), function() {
 
       const env = new DefaultEnvironment();
 
-      const _it = ((item as any).seed && process.platform === 'darwin') ? it.skip : it;
+      const _it =
+        (item as any).seed && process.platform === 'darwin' ? it.skip : it;
       _it('test worker', async () => {
         if (item.before) {
           await item.before(env);
         }
 
-        await env.agent.setFunctionProfile([ item.profile ] as any);
+        await env.agent.setFunctionProfile([item.profile] as any);
         await testWorker(env.agent, item);
         if (item.after) {
           await item.after(env);

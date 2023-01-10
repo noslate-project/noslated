@@ -14,14 +14,17 @@ import { getMeter } from '#self/lib/telemetry/otel';
 import { Meter } from '@opentelemetry/api';
 import { RawFunctionProfile } from '#self/lib/json/function_profile';
 import { StateManager } from './worker_stats/state_manager';
-import { BaseController, DisposableController, ReservationController } from './controllers';
+import {
+  BaseController,
+  DisposableController,
+  ReservationController,
+} from './controllers';
 import { Turf } from '#self/lib/turf';
 
 /**
  * ControlPlane
  */
 export class ControlPlane extends BaseOf(EventEmitter) {
-
   meter: Meter;
   turf: Turf;
   dataPlaneClientManager: DataPlaneClientManager;
@@ -47,10 +50,17 @@ export class ControlPlane extends BaseOf(EventEmitter) {
     this.dataPlaneClientManager = new DataPlaneClientManager(this, config);
     this.herald = new Herald(this, config);
     this.codeManager = new CodeManager(this.config.dirs.noslatedWork);
-    this.functionProfile = new FunctionProfileManager(config, this.onPresetFunctionProfile.bind(this));
+    this.functionProfile = new FunctionProfileManager(
+      config,
+      this.onPresetFunctionProfile.bind(this)
+    );
     this.workerLauncher = new WorkerLauncher(this, config);
     this.capacityManager = new CapacityManager(this, config);
-    this.workerTelemetry = new WorkerTelemetry(this.meter, this.capacityManager.workerStatsSnapshot, this.turf);
+    this.workerTelemetry = new WorkerTelemetry(
+      this.meter,
+      this.capacityManager.workerStatsSnapshot,
+      this.turf
+    );
     this.stateManager = new StateManager(this);
     this.controller = new BaseController(this);
     this.reservationController = new ReservationController(this);
@@ -111,7 +121,10 @@ export class ControlPlane extends BaseOf(EventEmitter) {
    * @param {'IMMEDIATELY' | 'WAIT'} mode The set mode.
    * @return {Promise<void>} The set result.
    */
-  async onPresetFunctionProfile(profile: RawFunctionProfile[] = [], mode: Mode) {
+  async onPresetFunctionProfile(
+    profile: RawFunctionProfile[] = [],
+    mode: Mode
+  ) {
     const promises = profile.map(({ name, url, signature }) => {
       return this.codeManager.ensure(name, url, signature);
     });

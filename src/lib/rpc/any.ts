@@ -14,7 +14,12 @@ export class Any<T = unknown> {
   #object: T;
   #Type: ProtobufType;
 
-  constructor(typeUrl: string, data: Uint8Array, object: T, Type: ProtobufType) {
+  constructor(
+    typeUrl: string,
+    data: Uint8Array,
+    object: T,
+    Type: ProtobufType
+  ) {
     this.#typeUrl = typeUrl;
     this.#data = data;
     this.#object = object;

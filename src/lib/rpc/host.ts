@@ -4,16 +4,26 @@ import {
   ServerDuplexStream,
   ServiceDefinition,
   UntypedServiceImplementation,
-  ServerCredentials
+  ServerCredentials,
 } from '@grpc/grpc-js';
 import { dirname } from 'path';
-import { descriptor, RequestType, HostEvents, delegateServiceImplementations, kDefaultChannelOptions } from './util';
+import {
+  descriptor,
+  RequestType,
+  HostEvents,
+  delegateServiceImplementations,
+  kDefaultChannelOptions,
+} from './util';
 import { Any } from './any';
 import * as root from '#self/proto/root';
 
 const fs = require('fs').promises;
 
-function mapGetOrDefault<KeyType, ValueType>(map: Map<KeyType, ValueType[]>, key: KeyType, defaults: ValueType[]) {
+function mapGetOrDefault<KeyType, ValueType>(
+  map: Map<KeyType, ValueType[]>,
+  key: KeyType,
+  defaults: ValueType[]
+) {
   let val = map.get(key);
   if (val == null) {
     map.set(key, defaults);
@@ -27,12 +37,24 @@ export class Host extends EventEmitter {
     NEW_CONNECTION: 'new-connection',
     DISCONNECTED: 'disconnected',
     NEW_SUBSCRIBER: 'new-subscriber',
-  }
+  };
 
   #address: string;
   #server: Server;
-  #subscriberMap: Map<string, ServerDuplexStream<root.noslated.IRequest, root.noslated.ISubscriptionChunk>[]> = new Map();
-  #callMap: WeakMap<ServerDuplexStream<root.noslated.IRequest, root.noslated.ISubscriptionChunk>, { subscribedEvents: Set<string> }> = new WeakMap();
+  #subscriberMap: Map<
+    string,
+    ServerDuplexStream<
+      root.noslated.IRequest,
+      root.noslated.ISubscriptionChunk
+    >[]
+  > = new Map();
+  #callMap: WeakMap<
+    ServerDuplexStream<
+      root.noslated.IRequest,
+      root.noslated.ISubscriptionChunk
+    >,
+    { subscribedEvents: Set<string> }
+  > = new WeakMap();
   #logger;
 
   constructor(address: string, logger = console) {
@@ -41,16 +63,28 @@ export class Host extends EventEmitter {
     this.#logger = logger;
     this.#server = new Server(kDefaultChannelOptions);
     const Host = (descriptor as any).noslated.Host.service;
-    this.#server.addService(Host, delegateServiceImplementations(Host, {
-      connect: this.#onConnection,
-    }, this.#onerror));
+    this.#server.addService(
+      Host,
+      delegateServiceImplementations(
+        Host,
+        {
+          connect: this.#onConnection,
+        },
+        this.#onerror
+      )
+    );
   }
 
   #onerror = (err: unknown) => {
     this.#logger.error('unexpected error on host', err);
-  }
+  };
 
-  #onConnection = (call: ServerDuplexStream<root.noslated.IRequest, root.noslated.ISubscriptionChunk>) => {
+  #onConnection = (
+    call: ServerDuplexStream<
+      root.noslated.IRequest,
+      root.noslated.ISubscriptionChunk
+    >
+  ) => {
     this.#callMap.set(call, {
       subscribedEvents: new Set(),
     });
@@ -72,9 +106,14 @@ export class Host extends EventEmitter {
     });
     this._livenessProbe(call);
     this.emit(Host.events.NEW_CONNECTION);
-  }
+  };
 
-  #onDisconnect = (call: ServerDuplexStream<root.noslated.IRequest, root.noslated.ISubscriptionChunk>) => {
+  #onDisconnect = (
+    call: ServerDuplexStream<
+      root.noslated.IRequest,
+      root.noslated.ISubscriptionChunk
+    >
+  ) => {
     const item = this.#callMap.get(call);
 
     if (!item) {
@@ -88,12 +127,18 @@ export class Host extends EventEmitter {
     }
 
     this.emit(Host.events.DISCONNECTED);
-  }
+  };
 
   /**
    * subscribe true/false 代表是订阅还是取消订阅
    */
-  #subscribe = (call: ServerDuplexStream<root.noslated.IRequest, root.noslated.ISubscriptionChunk>, { eventName, subscribe }: root.noslated.ISubscriptionRequest) => {
+  #subscribe = (
+    call: ServerDuplexStream<
+      root.noslated.IRequest,
+      root.noslated.ISubscriptionChunk
+    >,
+    { eventName, subscribe }: root.noslated.ISubscriptionRequest
+  ) => {
     const item = this.#callMap.get(call);
 
     if (!item) {
@@ -120,40 +165,60 @@ export class Host extends EventEmitter {
       subscribedEvents.delete(eventName);
       this.#removeSubscriber(eventName, call);
     }
-  }
+  };
 
-  #addSubscriber = (eventName: string, call: ServerDuplexStream<root.noslated.IRequest, root.noslated.ISubscriptionChunk>) => {
+  #addSubscriber = (
+    eventName: string,
+    call: ServerDuplexStream<
+      root.noslated.IRequest,
+      root.noslated.ISubscriptionChunk
+    >
+  ) => {
     const subscribers = mapGetOrDefault(this.#subscriberMap, eventName, []);
     subscribers.push(call);
 
     this.emit(Host.events.NEW_SUBSCRIBER, eventName);
-  }
+  };
 
-  #removeSubscriber = (eventName: string, call: ServerDuplexStream<root.noslated.IRequest, root.noslated.ISubscriptionChunk>) => {
+  #removeSubscriber = (
+    eventName: string,
+    call: ServerDuplexStream<
+      root.noslated.IRequest,
+      root.noslated.ISubscriptionChunk
+    >
+  ) => {
     const subscribers = mapGetOrDefault(this.#subscriberMap, eventName, []);
     const idx = subscribers.indexOf(call);
     if (idx >= 0) {
       subscribers.splice(idx, 1);
     }
-  }
+  };
 
-  _livenessProbe = (call: ServerDuplexStream<root.noslated.ILivenessProbeRequest, root.noslated.ISubscriptionChunk>) => {
+  _livenessProbe = (
+    call: ServerDuplexStream<
+      root.noslated.ILivenessProbeRequest,
+      root.noslated.ISubscriptionChunk
+    >
+  ) => {
     call.write({
       timestamp: Date.now(),
       events: [
         {
           name: HostEvents.LIVENESS,
-          data: Any.pack<root.noslated.ILivenessProbeEventData>('noslated.LivenessProbeEventData', {
-            timestamp: Date.now(),
-            component_liveness: {
-              key: 'host',
-              value: 'ok',
-            },
-          }),
+          data: Any.pack<root.noslated.ILivenessProbeEventData>(
+            'noslated.LivenessProbeEventData',
+            {
+              timestamp: Date.now(),
+              component_liveness: {
+                key: 'host',
+                value: 'ok',
+              },
+            }
+          ),
         },
       ],
     });
-  }
+  };
 
   get address() {
     return this.#address;
@@ -178,7 +243,10 @@ export class Host extends EventEmitter {
     }
   }
 
-  addService(serviceDefinition: ServiceDefinition, impl: UntypedServiceImplementation) {
+  addService(
+    serviceDefinition: ServiceDefinition,
+    impl: UntypedServiceImplementation
+  ) {
     this.#server.addService(
       serviceDefinition,
       delegateServiceImplementations(serviceDefinition, impl, this.#onerror)
@@ -188,22 +256,25 @@ export class Host extends EventEmitter {
   async start(...args: any[]) {
     const { protocol, pathname } = new URL(this.#address);
     if (protocol === 'unix:') {
-      await fs.unlink(pathname)
-        .catch((e: Error) => {
-          if (e.code === 'ENOENT') {
-            return;
-          }
-          throw e;
-        });
+      await fs.unlink(pathname).catch((e: Error) => {
+        if (e.code === 'ENOENT') {
+          return;
+        }
+        throw e;
+      });
       await fs.mkdir(dirname(pathname), { recursive: true });
     }
     await new Promise<void>((resolve, reject) => {
-      this.#server.bindAsync(this.#address, ServerCredentials.createInsecure(), error => {
-        if (error) {
-          return reject(error);
+      this.#server.bindAsync(
+        this.#address,
+        ServerCredentials.createInsecure(),
+        error => {
+          if (error) {
+            return reject(error);
+          }
+          resolve();
         }
-        resolve();
-      });
+      );
     });
     this.#server.start();
   }

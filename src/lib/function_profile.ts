@@ -6,19 +6,29 @@ import loggers from './logger';
 import * as utils from './util';
 import SCHEMA_JSON from './json/function_profile_schema.json';
 import SPEC_JSON from './json/spec.template.json';
-import type { NodejsFunctionProfile, RawFunctionProfile, RawWithDefaultsFunctionProfile, AworkerFunctionProfile } from './json/function_profile';
+import type {
+  NodejsFunctionProfile,
+  RawFunctionProfile,
+  RawWithDefaultsFunctionProfile,
+  AworkerFunctionProfile,
+} from './json/function_profile';
 import { Config } from '#self/config';
 
 const logger = loggers.get('function_profile');
 
 export type Mode = 'IMMEDIATELY' | 'WAIT';
-type PresetFunction = (profile: RawFunctionProfile[], mode: Mode) => Promise<void>;
+type PresetFunction = (
+  profile: RawFunctionProfile[],
+  mode: Mode
+) => Promise<void>;
 
 /**
  * Per function profile
  */
 // @ts-expect-error Mixin type
-export interface PerFunctionProfile extends NodejsFunctionProfile, AworkerFunctionProfile {}
+export interface PerFunctionProfile
+  extends NodejsFunctionProfile,
+    AworkerFunctionProfile {}
 export class PerFunctionProfile {
   #json;
   #config;
@@ -135,7 +145,10 @@ export class FunctionProfileManager extends EventEmitter {
     this.profile = [];
     this.jsonValidator = new JSONValidator();
     this.internal = {
-      async IMMEDIATELY(this: FunctionProfileManager, profile: RawFunctionProfile[]) {
+      async IMMEDIATELY(
+        this: FunctionProfileManager,
+        profile: RawFunctionProfile[]
+      ) {
         this.profile = PerFunctionProfile.fromJSONArray(profile, this.config);
         if (this.preset) {
           const preset = this.preset;
@@ -220,7 +233,7 @@ export class FunctionProfileManager extends EventEmitter {
 
     const ret = this.jsonValidator.validate(profile, SCHEMA_JSON as any);
     if (!ret.valid) {
-      throw (ret.errors[0] || new Error('invalid function profile'));
+      throw ret.errors[0] || new Error('invalid function profile');
     }
 
     try {

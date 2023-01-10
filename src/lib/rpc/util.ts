@@ -18,7 +18,7 @@ if (process.env.GRPC_VERBOSITY == null) {
 
 function loadDescriptor(includePaths: string[] = []) {
   const protoDir = path.resolve(__dirname, '../../../proto/noslated');
-  const files = [ protoDir, ...includePaths ].flatMap(dir => {
+  const files = [protoDir, ...includePaths].flatMap(dir => {
     const files = fs.readdirSync(dir).filter(it => it.endsWith('.proto'));
     return files.map(it => path.join(dir, it));
   });
@@ -37,8 +37,12 @@ function loadDescriptor(includePaths: string[] = []) {
  * @param {grpc.Client} client -
  * @param {grpc.ServiceDefinition} clientDefinition -
  */
-function delegateClientMethods(delegate: any, client: grpc.Client, clientDefinition: grpc.ServiceDefinition) {
-  for (const [ method, descriptor ] of Object.entries(clientDefinition)) {
+function delegateClientMethods(
+  delegate: any,
+  client: grpc.Client,
+  clientDefinition: grpc.ServiceDefinition
+) {
+  for (const [method, descriptor] of Object.entries(clientDefinition)) {
     if (method in delegate && delegate[method] !== undefined) {
       continue;
     }
@@ -56,9 +60,13 @@ function delegateClientMethods(delegate: any, client: grpc.Client, clientDefinit
  * @param {object} impl -
  * @param {(err: any) => void} onerror -
  */
-function delegateServiceImplementations(serviceDefinition: grpc.ServiceDefinition, impl: any, onerror?: (err: unknown) => void) {
+function delegateServiceImplementations(
+  serviceDefinition: grpc.ServiceDefinition,
+  impl: any,
+  onerror?: (err: unknown) => void
+) {
   const delegate = Object.create(null);
-  for (const [ method, descriptor ] of Object.entries(serviceDefinition)) {
+  for (const [method, descriptor] of Object.entries(serviceDefinition)) {
     if (typeof impl[method] !== 'function') {
       continue;
     }
@@ -68,7 +76,10 @@ function delegateServiceImplementations(serviceDefinition: grpc.ServiceDefinitio
       };
       continue;
     }
-    delegate[method] = (call: grpc.ServerUnaryCall<unknown, unknown>, callback: (error?: Error | null, resp?: unknown) => void) => {
+    delegate[method] = (
+      call: grpc.ServerUnaryCall<unknown, unknown>,
+      callback: (error?: Error | null, resp?: unknown) => void
+    ) => {
       Promise.resolve()
         .then(() => {
           return impl[method](call);
@@ -76,7 +87,8 @@ function delegateServiceImplementations(serviceDefinition: grpc.ServiceDefinitio
         .then(
           resp => {
             callback(null, resp);
-          }, err => {
+          },
+          err => {
             const isUnexpected = !(err instanceof RpcError);
             callback(err);
             /** Not instanceof RpcError, may be unexpected. */
@@ -90,14 +102,14 @@ function delegateServiceImplementations(serviceDefinition: grpc.ServiceDefinitio
   return delegate;
 }
 
-
 /**
  * @type {import('@grpc/grpc-js').ChannelOptions}
  */
 const kDefaultChannelOptions = config.grpc.channelOptions;
 
 const { root, grpcDescriptor } = loadDescriptor();
-const RequestType = (root as any).nested.noslated.RequestType as typeof protoRoot.noslated.RequestType;
+const RequestType = (root as any).nested.noslated
+  .RequestType as typeof protoRoot.noslated.RequestType;
 const HostEvents = {
   LIVENESS: 'host.liveness',
 };
@@ -109,12 +121,9 @@ export {
   grpcDescriptor as descriptor,
   loadDescriptor,
   kDefaultChannelOptions,
-
   RequestType,
   HostEvents,
-
   delegateClientMethods,
   delegateServiceImplementations,
-
   ServerUnaryCall,
 };

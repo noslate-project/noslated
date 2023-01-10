@@ -32,8 +32,11 @@ describe(common.testName(__filename), () => {
     guest.subscribe('foobar');
 
     await newSubscriberFuture;
-    host.broadcast('foobar', 'noslated.KeyValuePair', { key: 'foo', value: 'bar' });
-    const [ data ] = await foobarFuture;
+    host.broadcast('foobar', 'noslated.KeyValuePair', {
+      key: 'foo',
+      value: 'bar',
+    });
+    const [data] = await foobarFuture;
     assert.strictEqual(data.key, 'foo');
     assert.strictEqual(data.value, 'bar');
   });
@@ -48,7 +51,7 @@ describe(common.testName(__filename), () => {
     await connectionFuture;
 
     guest.livenessCheckpoint();
-    const [ data ] = await livenessFuture;
+    const [data] = await livenessFuture;
     assert.strictEqual(typeof data.timestamp, 'number');
   });
 });

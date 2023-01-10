@@ -53,25 +53,23 @@ const cases = [
         // Although body of GET requests should be empty, node.js worker does
         // support populate that.
         method: 'GET',
-        headers: [
-          [ 'foo', 'bar' ],
-        ],
-        baggage: [
-          [ 'foo', 'bar' ],
-        ],
+        headers: [['foo', 'bar']],
+        baggage: [['foo', 'bar']],
       },
     },
     expect: {
-      data: Buffer.from(JSON.stringify({
-        url: 'http://example.com/foobar',
-        method: 'GET',
-        headers: {
-          foo: 'bar',
-        },
-        baggage: {
-          foo: 'bar',
-        },
-      })),
+      data: Buffer.from(
+        JSON.stringify({
+          url: 'http://example.com/foobar',
+          method: 'GET',
+          headers: {
+            foo: 'bar',
+          },
+          baggage: {
+            foo: 'bar',
+          },
+        })
+      ),
     },
   },
   {
@@ -89,18 +87,14 @@ const cases = [
       metadata: {
         url: 'http://example.com/foobar',
         method: 'GET',
-        headers: [
-          [ 'foo', 'bar' ],
-        ],
+        headers: [['foo', 'bar']],
       },
     },
     expect: {
       data: Buffer.from(''),
       status: 200,
       metadata: {
-        headers: [
-          [ 'foo', 'bar' ],
-        ],
+        headers: [['foo', 'bar']],
       },
     },
   },
@@ -123,9 +117,7 @@ const cases = [
       data: Buffer.from(''),
       status: 200,
       metadata: {
-        headers: [
-          [ 'x-initialized', 'true' ],
-        ],
+        headers: [['x-initialized', 'true']],
       },
     },
   },
@@ -146,7 +138,11 @@ const cases = [
     expect: {
       data: JSON.stringify({
         status: 200,
-        text: JSON.stringify({ appId: 'hello-world', methodName: 'echo', data: 'foobar' }),
+        text: JSON.stringify({
+          appId: 'hello-world',
+          methodName: 'echo',
+          data: 'foobar',
+        }),
       }),
     },
   },
@@ -163,9 +159,7 @@ const cases = [
       // empty body in GET request.
       data: null,
       metadata: {
-        headers: [
-          [ 'DAPR_METHOD', '-。-' ],
-        ],
+        headers: [['DAPR_METHOD', '-。-']],
       },
     },
     expect: {
@@ -214,9 +208,7 @@ const cases = [
       // empty body in GET request.
       data: null,
       metadata: {
-        headers: [
-          [ 'DAPR_OPERATION', '-。-' ],
-        ],
+        headers: [['DAPR_OPERATION', '-。-']],
       },
     },
     expect: {
@@ -228,7 +220,10 @@ const cases = [
   },
   {
     before: async (env: DefaultEnvironment) => {
-      const spy = sinon.spy(env.data.dataFlowController.namespaceResolver.beaconHost, 'sendBeacon');
+      const spy = sinon.spy(
+        env.data.dataFlowController.namespaceResolver.beaconHost,
+        'sendBeacon'
+      );
 
       return spy;
     },
@@ -243,15 +238,17 @@ const cases = [
     input: {
       name: 'node_worker_beacon',
       metadata: {
-        headers: [
-          [ 'trace-id', 'a-unique-trace-node-id' ],
-        ],
+        headers: [['trace-id', 'a-unique-trace-node-id']],
       },
     },
     after: async (env: DefaultEnvironment, beforeRet: any) => {
       const spy: SinonSpy = beforeRet;
       const written = spy.args[0]?.[2];
-      assert.ok(Buffer.from('node_worker_beacon|a-unique-trace-node-id\n').equals(written));
+      assert.ok(
+        Buffer.from('node_worker_beacon|a-unique-trace-node-id\n').equals(
+          written
+        )
+      );
       spy.restore();
     },
     expect: {},
@@ -313,19 +310,17 @@ const cases = [
       metadata: {
         url: 'http://example.com/foo',
         method: 'GET',
-        headers: [
-          [ 'foo', 'bar' ],
-        ],
+        headers: [['foo', 'bar']],
       },
     },
     expect: {
-      data: Buffer.from(JSON.stringify({
-        url: 'http://example.com/foo',
-        method: 'GET',
-        headers: [
-          [ 'foo', 'bar' ],
-        ],
-      })),
+      data: Buffer.from(
+        JSON.stringify({
+          url: 'http://example.com/foo',
+          method: 'GET',
+          headers: [['foo', 'bar']],
+        })
+      ),
     },
   },
   {
@@ -343,17 +338,13 @@ const cases = [
       metadata: {
         url: 'http://example.com/foo',
         method: 'GET',
-        headers: [
-          [ 'foo', 'bar' ],
-        ],
+        headers: [['foo', 'bar']],
       },
     },
     expect: {
       data: Buffer.from(''),
       metadata: {
-        headers: [
-          [ 'foo', 'bar' ],
-        ],
+        headers: [['foo', 'bar']],
       },
     },
   },
@@ -374,9 +365,7 @@ const cases = [
     expect: {
       data: Buffer.from(''),
       metadata: {
-        headers: [
-          [ 'x-installed', 'true' ],
-        ],
+        headers: [['x-installed', 'true']],
       },
     },
   },
@@ -395,7 +384,9 @@ const cases = [
       metadata: {},
     },
     expect: {
-      data: Buffer.from('{"appId":"hello-world","methodName":"echo","data":"foobar"}'),
+      data: Buffer.from(
+        '{"appId":"hello-world","methodName":"echo","data":"foobar"}'
+      ),
     },
   },
   {
@@ -411,9 +402,7 @@ const cases = [
       // empty body in GET request.
       data: null,
       metadata: {
-        headers: [
-          [ 'DAPR_METHOD', 'not a recognizable method' ],
-        ],
+        headers: [['DAPR_METHOD', 'not a recognizable method']],
       },
     },
     expect: {
@@ -459,9 +448,7 @@ const cases = [
       // empty body in GET request.
       data: null,
       metadata: {
-        headers: [
-          [ 'DAPR_OPERATION', 'not a recognizable operation' ],
-        ],
+        headers: [['DAPR_OPERATION', 'not a recognizable operation']],
       },
     },
     expect: {
@@ -504,17 +491,18 @@ const cases = [
       data: Buffer.from('hello world'),
       metadata: {
         headers: [
-          [ 'x-powered-by', 'Express' ],
-          [ 'content-length', '11' ],
-          [ 'x-anc-remote-address', '127.0.0.1' ],
-          [ 'x-anc-remote-family', 'IPv4' ],
-          [ 'x-anc-remote-port', `${ResourceServer.port}` ],
+          ['x-powered-by', 'Express'],
+          ['content-length', '11'],
+          ['x-anc-remote-address', '127.0.0.1'],
+          ['x-anc-remote-family', 'IPv4'],
+          ['x-anc-remote-port', `${ResourceServer.port}`],
         ],
       },
     },
     after: async (env: DefaultEnvironment) => {
-      const resourceUsages = env.data.dataFlowController.getResourceUsages()
-        .filter((it) => it!.functionName === 'aworker_fetch');
+      const resourceUsages = env.data.dataFlowController
+        .getResourceUsages()
+        .filter(it => it!.functionName === 'aworker_fetch');
       assert.strictEqual(resourceUsages.length, 1);
       assert.strictEqual(resourceUsages[0]!.activeFetchRequestCount, 0);
     },
@@ -536,8 +524,9 @@ const cases = [
       data: 'TypeError: Failed to drain request body',
     },
     after: async (env: DefaultEnvironment) => {
-      const resourceUsages = env.data.dataFlowController.getResourceUsages()
-        .filter((it) => it!.functionName === 'aworker_fetch_body_error');
+      const resourceUsages = env.data.dataFlowController
+        .getResourceUsages()
+        .filter(it => it!.functionName === 'aworker_fetch_body_error');
       assert.strictEqual(resourceUsages.length, 1);
       assert.strictEqual(resourceUsages[0]!.activeFetchRequestCount, 0);
     },
@@ -615,7 +604,9 @@ const cases = [
       // 若不正常，则触发 mocha 超时，导致失败。
       do {
         await sleep(10);
-        const worker = env.data.dataFlowController.getBroker('node_worker_echo')!.getAvailableWorker();
+        const worker = env.data.dataFlowController
+          .getBroker('node_worker_echo')!
+          .getAvailableWorker();
         if (!worker) continue;
         const ps = await env.turf.ps();
         for (const p of ps) {
@@ -644,7 +635,8 @@ const cases = [
     },
     expect: {
       error: {
-        message: /No enough virtual memory to start worker process for node_worker_echo now\./,
+        message:
+          /No enough virtual memory to start worker process for node_worker_echo now\./,
       },
     },
   },
@@ -665,7 +657,8 @@ const cases = [
     },
     expect: {
       error: {
-        message: /Failed to ensure \(or download\) code for node_worker_echo now\./,
+        message:
+          /Failed to ensure \(or download\) code for node_worker_echo now\./,
       },
     },
   },
@@ -716,10 +709,12 @@ const cases = [
       url: `file://${baselineDir}/node_worker_env`,
       handler: 'index.handler',
       signature: 'md5:234234',
-      environments: [{
-        key: 'foo',
-        value: 'bar',
-      }],
+      environments: [
+        {
+          key: 'foo',
+          value: 'bar',
+        },
+      ],
     },
     input: {
       data: null,
@@ -729,21 +724,25 @@ const cases = [
       mm(process.env, 'TZ', 'Asia/Tokyo');
       mm(naming, 'processName', () => 'hello-world');
       mm(naming, 'codeBundleName', () => 'bundle-name');
-      await env.agent.setPlatformEnvironmentVariables([{
-        key: 'POD_IP',
-        value: address.ip(),
-      }]);
+      await env.agent.setPlatformEnvironmentVariables([
+        {
+          key: 'POD_IP',
+          value: address.ip(),
+        },
+      ]);
     },
     expect: {
-      data: Buffer.from(JSON.stringify({
-        PATH: '/bin:/usr/bin',
-        TERM: 'xterm',
-        TZ: 'Asia/Tokyo',
-        POD_IP: address.ip(),
-        foo: 'bar',
-        NOSLATE_WORKER_ID: 'hello-world',
-        HOME: `${config.dirs.noslatedWork}/bundles/bundle-name/code`,
-      })),
+      data: Buffer.from(
+        JSON.stringify({
+          PATH: '/bin:/usr/bin',
+          TERM: 'xterm',
+          TZ: 'Asia/Tokyo',
+          POD_IP: address.ip(),
+          foo: 'bar',
+          NOSLATE_WORKER_ID: 'hello-world',
+          HOME: `${config.dirs.noslatedWork}/bundles/bundle-name/code`,
+        })
+      ),
     },
   },
   {
@@ -754,10 +753,12 @@ const cases = [
       url: `file://${baselineDir}/aworker_env`,
       sourceFile: 'index.js',
       signature: 'md5:234234',
-      environments: [{
-        key: 'foo',
-        value: 'bar',
-      }],
+      environments: [
+        {
+          key: 'foo',
+          value: 'bar',
+        },
+      ],
     },
     input: {
       data: null,
@@ -767,29 +768,35 @@ const cases = [
       mm(process.env, 'TZ', 'Asia/Tokyo');
       mm(naming, 'processName', () => 'hello-world-ii');
       mm(naming, 'codeBundleName', () => 'bundle-name-ii');
-      await env.agent.setPlatformEnvironmentVariables([{
-        key: 'POD_IP',
-        value: address.ip(),
-      }, {
-        key: 'NULL',
-        value: null,
-      }, {
-        key: 'UNDEFINED',
-        value: undefined,
-      }]);
+      await env.agent.setPlatformEnvironmentVariables([
+        {
+          key: 'POD_IP',
+          value: address.ip(),
+        },
+        {
+          key: 'NULL',
+          value: null,
+        },
+        {
+          key: 'UNDEFINED',
+          value: undefined,
+        },
+      ]);
     },
     expect: {
-      data: Buffer.from(JSON.stringify({
-        PATH: '/bin:/usr/bin',
-        TERM: 'xterm',
-        TZ: 'Asia/Tokyo',
-        POD_IP: address.ip(),
-        NULL: '',
-        UNDEFINED: '',
-        foo: 'bar',
-        NOSLATE_WORKER_ID: 'hello-world-ii',
-        HOME: `${config.dirs.noslatedWork}/bundles/bundle-name-ii/code`,
-      })),
+      data: Buffer.from(
+        JSON.stringify({
+          PATH: '/bin:/usr/bin',
+          TERM: 'xterm',
+          TZ: 'Asia/Tokyo',
+          POD_IP: address.ip(),
+          NULL: '',
+          UNDEFINED: '',
+          foo: 'bar',
+          NOSLATE_WORKER_ID: 'hello-world-ii',
+          HOME: `${config.dirs.noslatedWork}/bundles/bundle-name-ii/code`,
+        })
+      ),
     },
   },
   {
@@ -809,15 +816,20 @@ const cases = [
       mm(process.env, 'TZ', 'Asia/Tokyo');
     },
     expect: {
-      data: Buffer.from(JSON.stringify({
-        TZ: 'Asia/Tokyo',
-        exemplar: '2022-02-24T05:28:38.000Z',
-      })),
+      data: Buffer.from(
+        JSON.stringify({
+          TZ: 'Asia/Tokyo',
+          exemplar: '2022-02-24T05:28:38.000Z',
+        })
+      ),
     },
   },
   {
     before: async (env: DefaultEnvironment) => {
-      const spy = sinon.spy(env.data.dataFlowController.namespaceResolver.beaconHost, 'sendBeacon');
+      const spy = sinon.spy(
+        env.data.dataFlowController.namespaceResolver.beaconHost,
+        'sendBeacon'
+      );
 
       return spy;
     },
@@ -832,15 +844,15 @@ const cases = [
     input: {
       data: null,
       metadata: {
-        headers: [
-          [ 'trace-id', 'a-unique-trace-id' ],
-        ],
+        headers: [['trace-id', 'a-unique-trace-id']],
       },
     },
     after: async (env: DefaultEnvironment, beforeRet: any) => {
       const spy: SinonSpy = beforeRet;
       const written = spy.args[0]?.[2];
-      assert.ok(Buffer.from('aworker_beacon|a-unique-trace-id\n').equals(written));
+      assert.ok(
+        Buffer.from('aworker_beacon|a-unique-trace-id\n').equals(written)
+      );
       spy.restore();
     },
     expect: {},
@@ -862,16 +874,26 @@ const cases = [
     expect: {
       data: JSON.stringify({
         status: 200,
-        text: JSON.stringify({ appId: 'hello-world', methodName: 'echo', data: 'foobar' }),
+        text: JSON.stringify({
+          appId: 'hello-world',
+          methodName: 'echo',
+          data: 'foobar',
+        }),
       }),
     },
     after: async (env: DefaultEnvironment) => {
-      const broker = env.control.capacityManager.workerStatsSnapshot.getBroker('node_worker_without_disposable_true', false)!;
+      const broker = env.control.capacityManager.workerStatsSnapshot.getBroker(
+        'node_worker_without_disposable_true',
+        false
+      )!;
       assert.deepStrictEqual(broker.workers.size, 1);
       const worker = broker.workers.values().next().value;
       assert.deepStrictEqual(worker.containerStatus, ContainerStatus.Ready);
-      assert.deepStrictEqual(worker.turfContainerStates, TurfContainerStates.running);
-    }
+      assert.deepStrictEqual(
+        worker.turfContainerStates,
+        TurfContainerStates.running
+      );
+    },
   },
   {
     name: 'node_worker_with_disposable_true',
@@ -882,8 +904,8 @@ const cases = [
       handler: 'invoke.handler',
       signature: 'md5:234234',
       worker: {
-        disposable: true
-      }
+        disposable: true,
+      },
     },
     input: {
       // empty body in GET request.
@@ -893,19 +915,29 @@ const cases = [
     expect: {
       data: JSON.stringify({
         status: 200,
-        text: JSON.stringify({ appId: 'hello-world', methodName: 'echo', data: 'foobar' }),
+        text: JSON.stringify({
+          appId: 'hello-world',
+          methodName: 'echo',
+          data: 'foobar',
+        }),
       }),
     },
     after: async (env: DefaultEnvironment) => {
-      const broker = env.control.capacityManager.workerStatsSnapshot.getBroker('node_worker_with_disposable_true', false)!;
+      const broker = env.control.capacityManager.workerStatsSnapshot.getBroker(
+        'node_worker_with_disposable_true',
+        false
+      )!;
       assert.deepStrictEqual(broker.workers.size, 1);
       const worker = broker.workers.values().next().value;
       assert.deepStrictEqual(worker.containerStatus, ContainerStatus.Stopped);
-      assert.deepStrictEqual(worker.turfContainerStates, TurfContainerStates.running);
+      assert.deepStrictEqual(
+        worker.turfContainerStates,
+        TurfContainerStates.running
+      );
       // wait turf kill or sync gc
       await sleep(3000);
       assert.deepStrictEqual(broker.workers.size, 0);
-    }
+    },
   },
   {
     name: 'aworker_without_disposable_true',
@@ -922,15 +954,23 @@ const cases = [
       metadata: {},
     },
     expect: {
-      data: Buffer.from('{"appId":"hello-world","methodName":"echo","data":"foobar"}'),
+      data: Buffer.from(
+        '{"appId":"hello-world","methodName":"echo","data":"foobar"}'
+      ),
     },
     after: async (env: DefaultEnvironment) => {
-      const broker = env.control.capacityManager.workerStatsSnapshot.getBroker('aworker_without_disposable_true', false)!;
+      const broker = env.control.capacityManager.workerStatsSnapshot.getBroker(
+        'aworker_without_disposable_true',
+        false
+      )!;
       assert.deepStrictEqual(broker.workers.size, 1);
       const worker = broker.workers.values().next().value;
       assert.deepStrictEqual(worker.containerStatus, ContainerStatus.Ready);
-      assert.deepStrictEqual(worker.turfContainerStates, TurfContainerStates.running);
-    }
+      assert.deepStrictEqual(
+        worker.turfContainerStates,
+        TurfContainerStates.running
+      );
+    },
   },
   {
     name: 'aworker_with_disposable_true',
@@ -941,8 +981,8 @@ const cases = [
       sourceFile: 'invoke.js',
       signature: 'md5:234234',
       worker: {
-        disposable: true
-      }
+        disposable: true,
+      },
     },
     input: {
       // empty body in GET request.
@@ -950,18 +990,26 @@ const cases = [
       metadata: {},
     },
     expect: {
-      data: Buffer.from('{"appId":"hello-world","methodName":"echo","data":"foobar"}'),
+      data: Buffer.from(
+        '{"appId":"hello-world","methodName":"echo","data":"foobar"}'
+      ),
     },
     after: async (env: DefaultEnvironment) => {
-      const broker = env.control.capacityManager.workerStatsSnapshot.getBroker('aworker_with_disposable_true', false)!;
+      const broker = env.control.capacityManager.workerStatsSnapshot.getBroker(
+        'aworker_with_disposable_true',
+        false
+      )!;
       assert.deepStrictEqual(broker.workers.size, 1);
       const worker = broker.workers.values().next().value;
       assert.deepStrictEqual(worker.containerStatus, ContainerStatus.Stopped);
-      assert.deepStrictEqual(worker.turfContainerStates, TurfContainerStates.running);
+      assert.deepStrictEqual(
+        worker.turfContainerStates,
+        TurfContainerStates.running
+      );
       // wait turf kill or sync gc
       await sleep(3000);
       assert.deepStrictEqual(broker.workers.size, 0);
-    }
+    },
   },
   {
     before: async (env: DefaultEnvironment) => {
@@ -979,7 +1027,7 @@ const cases = [
       data: Buffer.from('foobar'),
       metadata: {
         method: 'POST',
-        requestId: 'node_worker_echo_with_request_id'
+        requestId: 'node_worker_echo_with_request_id',
       },
     },
     expect: {
@@ -988,9 +1036,12 @@ const cases = [
     after: async (env: DefaultEnvironment, beforeRet: any) => {
       const spy: SinonSpy = beforeRet;
       const spyCall = spy.getCall(-1);
-      assert.strictEqual(spyCall.args[2].requestId, 'node_worker_echo_with_request_id');
+      assert.strictEqual(
+        spyCall.args[2].requestId,
+        'node_worker_echo_with_request_id'
+      );
       spy.restore();
-    }
+    },
   },
   {
     before: async (env: DefaultEnvironment) => {
@@ -1010,7 +1061,7 @@ const cases = [
         // ServiceWorker doesn't support populate GET requests body. As
         // Request in Fetch Spec disallow that.
         method: 'POST',
-        requestId: 'aworker_echo_with_request_id'
+        requestId: 'aworker_echo_with_request_id',
       },
     },
     expect: {
@@ -1019,13 +1070,16 @@ const cases = [
     after: async (env: DefaultEnvironment, beforeRet: any) => {
       const spy: SinonSpy = beforeRet;
       const spyCall = spy.getCall(-1);
-      assert.strictEqual(spyCall.args[2].requestId, 'aworker_echo_with_request_id');
+      assert.strictEqual(
+        spyCall.args[2].requestId,
+        'aworker_echo_with_request_id'
+      );
       spy.restore();
-    }
-  }
+    },
+  },
 ];
 
-describe(common.testName(__filename), function() {
+describe(common.testName(__filename), function () {
   // Debug version of Node.js may take longer time to bootstrap.
   this.timeout(30_000);
 
@@ -1039,11 +1093,15 @@ describe(common.testName(__filename), function() {
     await resourceServer.close();
   });
 
-  for (const type of [ /* 'native', */ 'noslated' ]) {
+  for (const type of [/* 'native', */ 'noslated']) {
     describe(`${type} server`, () => {
       beforeEach(async () => {
         mm(config.delegate, 'type', type);
-        mm(config.dataPlane, 'daprAdaptorModulePath', require.resolve('./dapr-adaptor'));
+        mm(
+          config.dataPlane,
+          'daprAdaptorModulePath',
+          require.resolve('./dapr-adaptor')
+        );
       });
 
       afterEach(() => {
@@ -1060,7 +1118,7 @@ describe(common.testName(__filename), function() {
           });
           const env = new DefaultEnvironment();
 
-          const _it = (item.seed && process.platform === 'darwin') ? it.skip : it;
+          const _it = item.seed && process.platform === 'darwin' ? it.skip : it;
           _it(item.name, async () => {
             let beforeRet;
 
@@ -1068,7 +1126,7 @@ describe(common.testName(__filename), function() {
               beforeRet = await item.before(env);
             }
 
-            await env.agent.setFunctionProfile([ item.profile ]);
+            await env.agent.setFunctionProfile([item.profile]);
             await testWorker(env.agent, item);
             if (item.after) {
               await item.after(env, beforeRet);

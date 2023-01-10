@@ -12,8 +12,16 @@ declare module 'lru-cache' {
     readonly max: number;
     readonly maxSize: number;
     readonly sizeCalculation?: (value: V, key: K) => number | undefined;
-    readonly dispose?: (this: LRUCache<K, V>, key: K, value: V) => void | undefined;
-    readonly disposeAfter?: (this: LRUCache<K, V>, key: K, value: V) => void | undefined;
+    readonly dispose?: (
+      this: LRUCache<K, V>,
+      key: K,
+      value: V
+    ) => void | undefined;
+    readonly disposeAfter?: (
+      this: LRUCache<K, V>,
+      key: K,
+      value: V
+    ) => void | undefined;
     readonly noDisposeOnSet: boolean;
     readonly ttl: number;
     readonly noUpdateTTL: boolean;
@@ -79,7 +87,10 @@ declare module 'lru-cache' {
     /**
      *
      */
-    find(predicate: (value: V, key: K, cache: LRUCache<K, V>) => boolean, options?: LRUCache.GetOptions): V | undefined;
+    find(
+      predicate: (value: V, key: K, cache: LRUCache<K, V>) => boolean,
+      options?: LRUCache.GetOptions
+    ): V | undefined;
 
     /**
      * Return an array of [key, entry] objects which can be passed to cache.load()
@@ -102,13 +113,19 @@ declare module 'lru-cache' {
      * Just like `Array.prototype.forEach`. Iterates over all the keys in the cache,
      * in order of recent-ness. (Ie, more recently used items are iterated over first.)
      */
-    forEach<T = this>(callbackFn: (this: T, value: V, key: K, cache: this) => void, thisArg?: T): void;
+    forEach<T = this>(
+      callbackFn: (this: T, value: V, key: K, cache: this) => void,
+      thisArg?: T
+    ): void;
 
     /**
      * The same as `cache.forEach(...)` but items are iterated over in reverse order.
      * (ie, less recently used items are iterated over first.)
      */
-    rforEach<T = this>(callbackFn: (this: T, value: V, key: K, cache: this) => void, thisArg?: T): void;
+    rforEach<T = this>(
+      callbackFn: (this: T, value: V, key: K, cache: this) => void,
+      thisArg?: T
+    ): void;
 
     /**
      * Evict the least recently used item, returning its value.
@@ -174,7 +191,12 @@ declare module 'lru-cache' {
        * Function that is called on items when they are dropped from the cache,
        * as `this.dispose(value, key, reason)`.
        */
-      dispose?: (this: LRUCache<K, V>, value: V, key: K, reason: DisposalReason) => void | undefined;
+      dispose?: (
+        this: LRUCache<K, V>,
+        value: V,
+        key: K,
+        reason: DisposalReason
+      ) => void | undefined;
 
       /**
        * The same as `dispose`, but called after the entry is completely
@@ -184,7 +206,11 @@ declare module 'lru-cache' {
        * However, note that it is very easy to inadvertently create infinite
        * recursion in this way.
        */
-      disposeAfter?: (this: LRUCache<K, V>, value: V, key: K) => void | undefined;
+      disposeAfter?: (
+        this: LRUCache<K, V>,
+        value: V,
+        key: K
+      ) => void | undefined;
 
       /**
        * Set to true to suppress calling the `dispose()` function if the entry
@@ -297,4 +323,3 @@ declare module 'lru-cache' {
 
   export = LRUCache;
 }
-

@@ -18,7 +18,10 @@ export class DataPlane extends Base {
     dumpConfig('data', config);
 
     this.logger = loggers.get('data plane');
-    const sockPath = path.join(config.dirs.noslatedSock, `dp-${getCurrentPlaneId()}.sock`);
+    const sockPath = path.join(
+      config.dirs.noslatedSock,
+      `dp-${getCurrentPlaneId()}.sock`
+    );
     fs.mkdirSync(path.dirname(sockPath), { recursive: true });
 
     this.host = new DataPlaneHost(`unix://${sockPath}`, this.config);
@@ -26,10 +29,7 @@ export class DataPlane extends Base {
   }
 
   _close() {
-    return Promise.all([
-      this.dataFlowController.close(),
-      this.host.close(),
-    ]);
+    return Promise.all([this.dataFlowController.close(), this.host.close()]);
   }
 
   async _init() {

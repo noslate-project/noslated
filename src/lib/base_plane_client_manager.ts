@@ -22,7 +22,11 @@ export class BasePlaneClientManager extends BaseOf(EventEmitter) {
    * @param {number} sockCount UDS files count for this plane manager.
    * @param {ILogger} logger The logger object.
    */
-  constructor(public config: Config, private sockCount: number, private logger: ILogger) {
+  constructor(
+    public config: Config,
+    private sockCount: number,
+    private logger: ILogger
+  ) {
     super();
 
     this.sockDir = config.dirs.noslatedSock;
@@ -45,7 +49,10 @@ export class BasePlaneClientManager extends BaseOf(EventEmitter) {
   }
 
   #onClientError(client: BasePlaneClient, err: Error) {
-    this.logger.error('A client occurred a fatal error. Try regenerate one.', err);
+    this.logger.error(
+      'A client occurred a fatal error. Try regenerate one.',
+      err
+    );
 
     // regenerate
     let planeId = null;
@@ -82,10 +89,7 @@ export class BasePlaneClientManager extends BaseOf(EventEmitter) {
 
     client.on(Guest.events.CONNECTIVITY_STATE_CHANGED, events.stateChanged);
     client.on('error', events.error);
-    client.ready().then(
-      () => this.#onClientReady(client),
-      events.error
-    );
+    client.ready().then(() => this.#onClientReady(client), events.error);
   }
 
   /**
@@ -163,7 +167,11 @@ export class BasePlaneClientManager extends BaseOf(EventEmitter) {
    * @param {any[]} args The call arguments.
    * @param {'all' | 'allSettled' | 'any' | 'race'} promiseMethod The promise metohd.
    */
-  async callToAllAvailableClients(func: string, args: any[], promiseMethod: PromiseMethod = 'all') {
+  async callToAllAvailableClients(
+    func: string,
+    args: any[],
+    promiseMethod: PromiseMethod = 'all'
+  ) {
     const promises = [];
     for (const client of this.#clients) {
       if (this.#clientAvailableMap.get(client)) {
@@ -188,7 +196,7 @@ export class BasePlaneClientManager extends BaseOf(EventEmitter) {
    * @return {Guest[]} All clients.
    */
   clients() {
-    return [ ...this.#clients ];
+    return [...this.#clients];
   }
 
   /**
@@ -196,7 +204,7 @@ export class BasePlaneClientManager extends BaseOf(EventEmitter) {
    * @return {Guest[]} All available clients.
    */
   availableClients(): BasePlaneClient[] {
-    return this.#clients.filter((c) => {
+    return this.#clients.filter(c => {
       return c && this.#clientAvailableMap.get(c);
     });
   }
@@ -214,7 +222,9 @@ export class BasePlaneClientManager extends BaseOf(EventEmitter) {
 
 interface BasePlaneClientEventMap {
   error: (/* client: BasePlaneClient by bind*/ err: Error) => void;
-  stateChanged: (/* client: BasePlaneClient by bind*/ state: connectivityState) => void
+  stateChanged: (
+    /* client: BasePlaneClient by bind*/ state: connectivityState
+  ) => void;
 }
 
 type PromiseMethod = 'all' | 'allSettled' | 'any' | 'race';

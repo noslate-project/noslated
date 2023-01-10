@@ -13,7 +13,11 @@ export function normalizeFuncNameToName(funcName: string) {
  * @param url download URL
  * @return `{BUNDLE_PREFIX}-{func_name}-{url_hashing}-{oss_hashing}`
  */
-export function codeBundleName(funcName: string, signature: string, url: string): string {
+export function codeBundleName(
+  funcName: string,
+  signature: string,
+  url: string
+): string {
   const hash = crypto.createHash('sha1');
   hash.update(url);
   const urlHash = hash.digest('hex').substring(0, 8);

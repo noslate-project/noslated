@@ -8,7 +8,6 @@ import walk from 'walk';
 import * as util from '#self/lib/util';
 import * as testUtil from '#self/test/util';
 
-
 describe('test/lib/util.test.js', () => {
   describe('tryQ', () => {
     it('should return number', () => {
@@ -27,7 +26,9 @@ describe('test/lib/util.test.js', () => {
     });
 
     it('should return null', () => {
-      const ret = util.tryQ(() => { return null; });
+      const ret = util.tryQ(() => {
+        return null;
+      });
       assert(ret === null);
     });
 
@@ -42,7 +43,9 @@ describe('test/lib/util.test.js', () => {
     it('should resolve', async () => {
       const { promise, resolve } = util.createDeferred();
 
-      setTimeout(() => { resolve(123); }, 100);
+      setTimeout(() => {
+        resolve(123);
+      }, 100);
       const now = Date.now();
       const ret = await promise;
       assert(Date.now() - now >= 98); // 允许误差
@@ -52,7 +55,9 @@ describe('test/lib/util.test.js', () => {
     it('should reject', async () => {
       const { promise, reject } = util.createDeferred();
 
-      setTimeout(() => { reject(new Error('123')); }, 100);
+      setTimeout(() => {
+        reject(new Error('123'));
+      }, 100);
       const now = Date.now();
       await assert.rejects(async () => {
         await promise;
@@ -63,8 +68,13 @@ describe('test/lib/util.test.js', () => {
 
   describe('bufferFromStream', () => {
     it('should create from stream', async () => {
-      const readable = fs.createReadStream(path.join(testUtil.FIXTURES_DIR, 'lorum.txt'));
-      const content = fs.readFileSync(path.join(testUtil.FIXTURES_DIR, 'lorum.txt'), 'utf8');
+      const readable = fs.createReadStream(
+        path.join(testUtil.FIXTURES_DIR, 'lorum.txt')
+      );
+      const content = fs.readFileSync(
+        path.join(testUtil.FIXTURES_DIR, 'lorum.txt'),
+        'utf8'
+      );
       const buff = await util.bufferFromStream(readable);
       assert(Buffer.isBuffer(buff));
       assert.strictEqual(buff.toString('utf8'), content);
@@ -81,10 +91,12 @@ describe('test/lib/util.test.js', () => {
       testUtil.stopResourceServer();
     });
 
-    afterEach(() => { mm.restore(); });
+    afterEach(() => {
+      mm.restore();
+    });
 
     // TODO: find a way to test properly
-    it.skip('should download and extract', async function() {
+    it.skip('should download and extract', async function () {
       this.timeout(10000);
 
       const COUNT_CMD = 'find . -type f | wc -l';
@@ -126,12 +138,16 @@ describe('test/lib/util.test.js', () => {
       assert(origZip);
       assert(unlinkCalled);
       assert.strictEqual(unlinkError, undefined);
-      assert.throws(() => { fs.accessSync(origZip); }, /no such file or directory/);
+      assert.throws(() => {
+        fs.accessSync(origZip);
+      }, /no such file or directory/);
       mm.restore();
 
-      const fileCount = cp.execSync(COUNT_CMD, {
-        cwd: target,
-      }).toString();
+      const fileCount = cp
+        .execSync(COUNT_CMD, {
+          cwd: target,
+        })
+        .toString();
       assert.strictEqual(fileCount.trim(), '1526');
 
       const base = path.join(testUtil.FIXTURES_DIR, 'emp_unit_test_standard');
@@ -157,7 +173,7 @@ describe('test/lib/util.test.js', () => {
       assert(ret === target);
     });
 
-    it('should failed to download', async function() {
+    it('should failed to download', async function () {
       this.timeout(30000);
 
       const tarball = 'foobar';
@@ -186,7 +202,9 @@ describe('test/lib/util.test.js', () => {
         await util.downloadZipAndExtractToDir(tarball, target);
       }, /End-of-central-directory[\w\W]+unzip:[\w\W]+cannot find zipfile directory in one of/);
 
-      assert.throws(() => { fs.accessSync(origZip); }, /no such file or directory/);
+      assert.throws(() => {
+        fs.accessSync(origZip);
+      }, /no such file or directory/);
     });
 
     it('should failed if target directory deleted', async () => {
@@ -212,16 +230,29 @@ describe('test/lib/util.test.js', () => {
       const target = path.join(testUtil.TMP_DIR(), 'tarball4');
 
       const origSpawn = cp.spawn;
-      mm(cp, 'spawn', (...args: [string, cp.SpawnOptionsWithStdioTuple<cp.StdioNull, cp.StdioNull, cp.StdioNull>]) => {
-        const child: cp.ChildProcess = origSpawn(...args);
-        if (args[0] === 'unzip') {
-          process.nextTick(() => {
-            child.emit('error', new Error('hello'));
-          });
-        }
+      mm(
+        cp,
+        'spawn',
+        (
+          ...args: [
+            string,
+            cp.SpawnOptionsWithStdioTuple<
+              cp.StdioNull,
+              cp.StdioNull,
+              cp.StdioNull
+            >
+          ]
+        ) => {
+          const child: cp.ChildProcess = origSpawn(...args);
+          if (args[0] === 'unzip') {
+            process.nextTick(() => {
+              child.emit('error', new Error('hello'));
+            });
+          }
 
-        return child;
-      });
+          return child;
+        }
+      );
 
       const origJoin = path.join;
       let origZip: string;
@@ -259,7 +290,9 @@ describe('test/lib/util.test.js', () => {
 
       await util.sleep(500); // wait 500ms to delete origZip in `downloadZipAndExtractToDir`
 
-      assert.throws(() => { fs.accessSync(origZip); }, /no such file or directory/);
+      assert.throws(() => {
+        fs.accessSync(origZip);
+      }, /no such file or directory/);
       assert.strictEqual(unlinkError, undefined);
       assert(unlinkCalled);
     });
@@ -268,14 +301,14 @@ describe('test/lib/util.test.js', () => {
   describe('raceEvent', () => {
     it('should remove all event listener on complete', async () => {
       const ee = new EventEmitter();
-      const raceFuture = util.raceEvent(ee, [ 'foo', 'bar', 'error' ]).promise;
+      const raceFuture = util.raceEvent(ee, ['foo', 'bar', 'error']).promise;
 
       ee.emit('foo', 1, 2, 3);
-      const [ event, args ] = await raceFuture;
+      const [event, args] = await raceFuture;
       assert.strictEqual(event, 'foo');
-      assert.deepStrictEqual(args, [ 1, 2, 3 ]);
+      assert.deepStrictEqual(args, [1, 2, 3]);
 
-      [ 'foo', 'bar', 'error' ].forEach(it => {
+      ['foo', 'bar', 'error'].forEach(it => {
         assert.strictEqual(ee.listenerCount(it), 0);
       });
     });
