@@ -10,13 +10,21 @@ describe(common.testName(__filename), () => {
   describe('Config Loader', () => {
     it('should resolveConfig work base default and env', async () => {
       const config = resolveConfig();
-      const defaultConfigWithEnv: any = extend(true, {}, defaultConfig, resolveEnvConfig());
+      const defaultConfigWithEnv: any = extend(
+        true,
+        {},
+        defaultConfig,
+        resolveEnvConfig()
+      );
 
       assert.deepStrictEqual(defaultConfigWithEnv, config);
     });
 
     it('should resolveConfig with platform config file', async () => {
-      process.env.NOSLATED_PLATFORM_CONFIG_PATH = join(FIXTURES_DIR, 'mockPlatformConfig.json');
+      process.env.NOSLATED_PLATFORM_CONFIG_PATH = join(
+        FIXTURES_DIR,
+        'mockPlatformConfig.json'
+      );
 
       const config = resolveConfig();
 
@@ -26,7 +34,10 @@ describe(common.testName(__filename), () => {
     });
 
     it('should resolveConfig with config file', async () => {
-      process.env.NOSLATED_PLATFORM_CONFIG_PATH = join(FIXTURES_DIR, 'mockPlatformConfig.json');
+      process.env.NOSLATED_PLATFORM_CONFIG_PATH = join(
+        FIXTURES_DIR,
+        'mockPlatformConfig.json'
+      );
       process.env.NOSLATED_CONFIG_PATH = join(FIXTURES_DIR, 'mockConfig.json');
 
       const config = resolveConfig();

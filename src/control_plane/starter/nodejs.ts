@@ -21,7 +21,7 @@ export class NodejsStarter extends BaseStarter implements WorkerStarter {
   }
 
   _initValidV8Options() {
-    const options = cp.execFileSync(this.binPath, [ '--v8-options' ], {
+    const options = cp.execFileSync(this.binPath, ['--v8-options'], {
       encoding: 'utf8',
     });
     this._validV8Options = BaseStarter.parseV8OptionsString(options);
@@ -31,10 +31,22 @@ export class NodejsStarter extends BaseStarter implements WorkerStarter {
     // empty
   }
 
-  async start(serverSockPath: string, name: string, credential: string, profile: NodejsFunctionProfile, bundlePath: string, options: BaseOptions) {
+  async start(
+    serverSockPath: string,
+    name: string,
+    credential: string,
+    profile: NodejsFunctionProfile,
+    bundlePath: string,
+    options: BaseOptions
+  ) {
     const commonExecArgv = this.getCommonExecArgv(profile, options);
     const execArgv = this.getExecArgvFromProfiler(profile);
-    const commands = [ this.bin, ...commonExecArgv, ...execArgv, NOSLATED_STARTER_PATH ];
+    const commands = [
+      this.bin,
+      ...commonExecArgv,
+      ...execArgv,
+      NOSLATED_STARTER_PATH,
+    ];
 
     const sourceDir = await fs.promises.realpath(path.join(bundlePath, 'code'));
     const envs = {

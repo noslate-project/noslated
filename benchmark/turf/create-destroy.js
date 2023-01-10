@@ -10,8 +10,8 @@ process.env.TURF_WORKDIR = path.resolve(__dirname, '../../.turf');
 const bundlePath = path.resolve(__dirname, '../fixtures/turf_bundle');
 
 const bench = common.createBenchmark(main, {
-  n: [ 1e3 ],
-  parallel: [ 1 ],
+  n: [1e3],
+  parallel: [1],
 });
 
 async function run(turf, i, n) {

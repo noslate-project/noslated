@@ -6,9 +6,15 @@ import {
   ChannelInterface,
   ClientDuplexStream,
   credentials,
-  getClientChannel
+  getClientChannel,
 } from '@grpc/grpc-js';
-import { descriptor, RequestType, HostEvents, delegateClientMethods, kDefaultChannelOptions } from './util';
+import {
+  descriptor,
+  RequestType,
+  HostEvents,
+  delegateClientMethods,
+  kDefaultChannelOptions,
+} from './util';
 import { Any } from './any';
 import { BackoffCounter, createDeferred, Deferred, raceEvent } from '../util';
 import { ServiceClient } from '@grpc/grpc-js/build/src/make-client';
@@ -18,19 +24,29 @@ import { loggers } from '../loggers';
 
 const logger = loggers.get('guest');
 
-const kStreamDisconnectedCode = [ status.CANCELLED, status.UNAVAILABLE ];
+const kStreamDisconnectedCode = [status.CANCELLED, status.UNAVAILABLE];
 
 class StreamClient extends EventEmitter {
-  #streamClient: ClientDuplexStream<root.noslated.IRequest, root.noslated.ISubscriptionChunk> | null = null;
+  #streamClient: ClientDuplexStream<
+    root.noslated.IRequest,
+    root.noslated.ISubscriptionChunk
+  > | null = null;
   #ready = false;
   #closed = false;
 
   #backoffCounter: BackoffCounter;
   #backoffTimer: ReturnType<typeof setTimeout> | null = null;
 
-  constructor(private hostClient: IHostClient, initialBackoff: number, maxReconnectBackoff: number) {
+  constructor(
+    private hostClient: IHostClient,
+    initialBackoff: number,
+    maxReconnectBackoff: number
+  ) {
     super();
-    this.#backoffCounter = new BackoffCounter(initialBackoff, maxReconnectBackoff);
+    this.#backoffCounter = new BackoffCounter(
+      initialBackoff,
+      maxReconnectBackoff
+    );
     this.#createClient();
   }
 
@@ -54,7 +70,7 @@ class StreamClient extends EventEmitter {
       this.#onConnectionUnstable(error);
     });
     this.#streamClient?.on('end', () => {
-      this.#onConnectionUnstable()
+      this.#onConnectionUnstable();
     });
   }
 
@@ -128,14 +144,19 @@ export class Guest extends EventEmitter {
     this.#initialReconnectBackoffMs = options?.initialReconnectBackoffMs ?? 100;
     this.#maxReconnectBackoffMs = options?.maxReconnectBackoffMs ?? 5_000;
 
-    this.#hostClient = new (descriptor as any).noslated.Host(this.#address, credentials.createInsecure(), {
-      'grpc.enable_http_proxy': 0,
-      'grpc.initial_reconnect_backoff_ms': this.#initialReconnectBackoffMs,
-      'grpc.max_reconnect_backoff_ms': this.#maxReconnectBackoffMs,
-      ...kDefaultChannelOptions,
-    });
+    this.#hostClient = new (descriptor as any).noslated.Host(
+      this.#address,
+      credentials.createInsecure(),
+      {
+        'grpc.enable_http_proxy': 0,
+        'grpc.initial_reconnect_backoff_ms': this.#initialReconnectBackoffMs,
+        'grpc.max_reconnect_backoff_ms': this.#maxReconnectBackoffMs,
+        ...kDefaultChannelOptions,
+      }
+    );
     this.#channel = getClientChannel(this.#hostClient);
-    this.#streamClientInitTimeoutMs = options?.streamClientInitTimeoutMs ?? 2_000;
+    this.#streamClientInitTimeoutMs =
+      options?.streamClientInitTimeoutMs ?? 2_000;
     this.#streamClient = null;
   }
 
@@ -149,22 +170,23 @@ export class Guest extends EventEmitter {
       return;
     }
 
-    this.#channel.getConnectivityState(/** exit idle */true);
+    this.#channel.getConnectivityState(/** exit idle */ true);
 
     let watchDeadline;
-    if ([ connectivityState.READY ].includes(newState)) {
+    if ([connectivityState.READY].includes(newState)) {
       watchDeadline = Infinity;
     } else {
       /** typically, this won't time out. the state will go error and reconnect. */
       watchDeadline = Date.now() + 10_000;
     }
-    this.#channel.watchConnectivityState(
-      newState,
-      watchDeadline,
-      err => this.#onConnectionStateChanged(newState, err as Error));
+    this.#channel.watchConnectivityState(newState, watchDeadline, err =>
+      this.#onConnectionStateChanged(newState, err as Error)
+    );
 
     const stable = newState === connectivityState.READY;
-    const unstable = newState === connectivityState.IDLE && oldState === connectivityState.READY;
+    const unstable =
+      newState === connectivityState.IDLE &&
+      oldState === connectivityState.READY;
     /** only emit state changed event when significant state changes */
     if (this.#started && (unstable || stable)) {
       this.emit(Guest.events.CONNECTIVITY_STATE_CHANGED, newState);
@@ -172,18 +194,22 @@ export class Guest extends EventEmitter {
     if (stable) {
       this.#onConnectionStable();
     } else if (unstable) {
-      this.#onConnectionUnstable()
+      this.#onConnectionUnstable();
     }
-  }
+  };
 
   #onConnectionUnstable = () => {
     this.#streamClient?.destroy();
     this.#streamClient = null;
-  }
+  };
 
   #onConnectionStable = () => {
     if (this.#streamClient == null) {
-      this.#streamClient = new StreamClient(this.#hostClient, this.#initialReconnectBackoffMs, this.#maxReconnectBackoffMs);
+      this.#streamClient = new StreamClient(
+        this.#hostClient,
+        this.#initialReconnectBackoffMs,
+        this.#maxReconnectBackoffMs
+      );
       this.#streamClient.on('event', (event: string, ...args: any[]) => {
         this.emit(event, ...args);
       });
@@ -194,7 +220,7 @@ export class Guest extends EventEmitter {
         subscription: { eventName, subscribe: true },
       });
     }
-  }
+  };
 
   /**
    * Wait for arbitrary stream client ready.
@@ -203,23 +229,24 @@ export class Guest extends EventEmitter {
   async #waitForStreamClientReady(timeout: number) {
     const deferred = createDeferred<void>();
     const initTimeout = setTimeout(() => {
-      const err = new Error('Guest stream client failed to receive liveness signal in time.');
+      const err = new Error(
+        'Guest stream client failed to receive liveness signal in time.'
+      );
       err.code = status.DEADLINE_EXCEEDED;
       deferred.reject(err);
     }, timeout);
 
-    const { promise, off } = raceEvent(this, [ HostEvents.LIVENESS, 'error' ]);
+    const { promise, off } = raceEvent(this, [HostEvents.LIVENESS, 'error']);
     const raceFuture = promise.then(([event, args]) => {
       if (event !== HostEvents.LIVENESS) {
         throw args[0];
       }
     });
 
-    return Promise.race([deferred.promise, raceFuture])
-      .finally(() => {
-        clearTimeout(initTimeout);
-        off();
-      });
+    return Promise.race([deferred.promise, raceFuture]).finally(() => {
+      clearTimeout(initTimeout);
+      off();
+    });
   }
 
   #onError = (e: Error) => {
@@ -228,7 +255,7 @@ export class Guest extends EventEmitter {
       this.emit('error', e);
     }
     this.close();
-  }
+  };
 
   get address() {
     return this.#address;
@@ -267,9 +294,13 @@ export class Guest extends EventEmitter {
   }
 
   addService(clientDescriptor: ServiceClientConstructor) {
-    const client = new clientDescriptor(this.#address, credentials.createInsecure(), {
-      channelOverride: this.#channel,
-    });
+    const client = new clientDescriptor(
+      this.#address,
+      credentials.createInsecure(),
+      {
+        channelOverride: this.#channel,
+      }
+    );
     this.#clients.set(clientDescriptor, client);
     delegateClientMethods(this, client, clientDescriptor.service);
     return client;
@@ -300,12 +331,15 @@ export class Guest extends EventEmitter {
    */
   async start(options?: GuestStartOptions) {
     await new Promise<void>((resolve, reject) => {
-      this.#hostClient.waitForReady(/* deadline */ Date.now() + (options?.connectionTimeout ?? 10_000), error => {
-        if (error) {
-          return reject(error);
+      this.#hostClient.waitForReady(
+        /* deadline */ Date.now() + (options?.connectionTimeout ?? 10_000),
+        error => {
+          if (error) {
+            return reject(error);
+          }
+          resolve();
         }
-        resolve();
-      });
+      );
     });
 
     this.#channel.watchConnectivityState(

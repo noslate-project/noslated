@@ -4,7 +4,13 @@ import cp from 'child_process';
 import Logger from '../logger';
 import { createDeferred, isNotNullish, sleep } from '../util';
 import { TurfSession } from './session';
-import { TurfStartOptions, TurfException, TurfProcess, TurfState, TurfCode } from './types';
+import {
+  TurfStartOptions,
+  TurfException,
+  TurfProcess,
+  TurfState,
+  TurfCode,
+} from './types';
 
 const logger = Logger.get('turf/wrapper');
 
@@ -13,29 +19,28 @@ const TurfStateLineMatcher = /(\S+):\s+(\S+)/;
 
 export { TurfContainerStates } from './types';
 
-const TurfStopIgnorableCodes = [
-  TurfCode.ECHILD,
-  TurfCode.ENOENT,
-];
-const TurfStopRetryableCodes = [
-  TurfCode.EAGAIN,
-];
+const TurfStopIgnorableCodes = [TurfCode.ECHILD, TurfCode.ENOENT];
+const TurfStopRetryableCodes = [TurfCode.EAGAIN];
 
 export class Turf {
   session: TurfSession;
   constructor(public turfPath: string, public sockPath: string) {
     this.session = new TurfSession(sockPath);
-    this.session.on('error', (err) => this._onSessionError(err));
+    this.session.on('error', err => this._onSessionError(err));
   }
 
   private _onSessionError(err: unknown) {
     logger.error('unexpected error on turf session:', err);
     this.session = new TurfSession(this.sockPath);
-    this.session.on('error', (err) => this._onSessionError(err));
-    this.session.connect()
-      .then(() => {
+    this.session.on('error', err => this._onSessionError(err));
+    this.session.connect().then(
+      () => {
         logger.info('turf session re-connected');
-      }, () => { /** identical to error event */ });
+      },
+      () => {
+        /** identical to error event */
+      }
+    );
   }
 
   async connect() {
@@ -52,12 +57,15 @@ export class Turf {
 
     const deferred = createDeferred<string>();
 
-    const opt: cp.SpawnOptions = { env: process.env, stdio: ['ignore', 'pipe', 'pipe'] };
+    const opt: cp.SpawnOptions = {
+      env: process.env,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    };
     if (cwd) {
       opt.cwd = cwd;
     }
 
-    const command = [ cmd ].concat(args).join(' ');
+    const command = [cmd].concat(args).join(' ');
     const start = process.hrtime.bigint();
     const child = cp.spawn(cmd, args, opt);
     const result = {
@@ -72,11 +80,16 @@ export class Turf {
     });
     // Listen on 'close' event instead of 'exit' event to wait stdout and stderr to be closed.
     child.on('close', (code, signal) => {
-      logger.debug(`ran ${command}, cwd: ${opt.cwd || process.cwd()}, consume %s ns`, process.hrtime.bigint() - start);
+      logger.debug(
+        `ran ${command}, cwd: ${opt.cwd || process.cwd()}, consume %s ns`,
+        process.hrtime.bigint() - start
+      );
       const stdout = Buffer.concat(result.stdout).toString('utf8');
       if (code !== 0) {
-        const stderr = Buffer.concat(result.stderr).toString('utf8')
-        const err = new Error(`Turf exited with non-zero code(${code}, ${signal}): ${stderr}`) as TurfException;
+        const stderr = Buffer.concat(result.stderr).toString('utf8');
+        const err = new Error(
+          `Turf exited with non-zero code(${code}, ${signal}): ${stderr}`
+        ) as TurfException;
         err.code = code;
         err.signal = signal;
         err.stderr = stderr;
@@ -92,12 +105,17 @@ export class Turf {
   async #send(args: string[]) {
     const start = process.hrtime.bigint();
     const command = args.join(' ');
-    const ret = await this.session.send(args)
-      .finally(() => {
-        logger.debug(`send %s, consume %s ns`, command, process.hrtime.bigint() - start);
-      });
+    const ret = await this.session.send(args).finally(() => {
+      logger.debug(
+        'send %s, consume %s ns',
+        command,
+        process.hrtime.bigint() - start
+      );
+    });
     if (ret.header.code !== 0) {
-      const err = new Error(`Turf response with non-zero code(${ret.header.code})`);
+      const err = new Error(
+        `Turf response with non-zero code(${ret.header.code})`
+      );
       err.code = ret.header.code;
       throw err;
     }
@@ -112,13 +130,13 @@ export class Turf {
   }
 
   async create(containerName: string, bundlePath: string) {
-    return await this.#sendOrExec([ 'create', '-b', bundlePath, containerName ]);
+    return await this.#sendOrExec(['create', '-b', bundlePath, containerName]);
   }
 
   async start(containerName: string, options: TurfStartOptions = {}) {
-    const args = [ 'start' ];
+    const args = ['start'];
 
-    const ADDITIONAL_KEYS = [ 'seed', 'stdout', 'stderr' ] as const;
+    const ADDITIONAL_KEYS = ['seed', 'stdout', 'stderr'] as const;
     for (const key of ADDITIONAL_KEYS) {
       const val = options[key];
       if (val) {
@@ -153,11 +171,11 @@ export class Turf {
       await this.#stop(containerName, false);
     } catch (e: any) {
       if (!TurfStopRetryableCodes.includes(e.code)) {
-        logger.info(`%s stop failed`, containerName, e.message);
+        logger.info('%s stop failed', containerName, e.message);
         throw e;
       }
       // TODO(chengzhong.wcz): yield retrying to callers.
-      logger.info(`%s stop failed, retrying`, containerName);
+      logger.info('%s stop failed, retrying', containerName);
       let retry = 3;
       while (retry >= 1) {
         retry--;
@@ -166,17 +184,21 @@ export class Turf {
           await this.#stop(containerName, true);
         } catch (e: any) {
           if (retry === 0 || !TurfStopRetryableCodes.includes(e.code)) {
-            logger.info(`%s force stop failed, ignore error`, containerName, e.message);
+            logger.info(
+              '%s force stop failed, ignore error',
+              containerName,
+              e.message
+            );
             return;
           }
-          logger.info(`%s force stop, retrying`, containerName, retry);
+          logger.info('%s force stop, retrying', containerName, retry);
         }
       }
     }
   }
 
   async delete(containerName: string) {
-    return this.#exec([ 'delete', containerName ]);
+    return this.#exec(['delete', containerName]);
   }
 
   async destroy(containerName: string) {
@@ -189,27 +211,29 @@ export class Turf {
    * ps
    */
   async ps(): Promise<TurfProcess[]> {
-    const ret = await this.#exec([ 'ps' ]);
+    const ret = await this.#exec(['ps']);
     const lines = ret.split('\n').filter(l => l);
     if (!lines.length) return [];
-    const arr = lines.map(line => {
-      const match = TurfPsLineMatcher.exec(line);
-      if (match == null) {
-        return null;
-      }
-      const [ /** match */, name, pid, status ] = match;
-      return {
-        status,
-        pid: Number.parseInt(pid),
-        name,
-      } as TurfProcess;
-    }).filter(isNotNullish);
+    const arr = lines
+      .map(line => {
+        const match = TurfPsLineMatcher.exec(line);
+        if (match == null) {
+          return null;
+        }
+        const [, /** match */ name, pid, status] = match;
+        return {
+          status,
+          pid: Number.parseInt(pid),
+          name,
+        } as TurfProcess;
+      })
+      .filter(isNotNullish);
 
     return arr;
   }
 
   async state(name: string): Promise<TurfState | null> {
-    const ret = await this.#exec([ 'state', name ]);
+    const ret = await this.#exec(['state', name]);
     const lines = ret.split('\n').filter(l => l);
     if (!lines.length) return null;
     const obj = lines.reduce((obj, line) => {
@@ -218,8 +242,12 @@ export class Turf {
       if (match == null) {
         return obj;
       }
-      const [ /** match */, name, value ] = match;
-      if (name === 'pid' || name.startsWith('stat.') || name.startsWith('rusage.')) {
+      const [, /** match */ name, value] = match;
+      if (
+        name === 'pid' ||
+        name.startsWith('stat.') ||
+        name.startsWith('rusage.')
+      ) {
         obj[name] = Number.parseInt(value);
       } else {
         obj[name] = value;

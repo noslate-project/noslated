@@ -18,7 +18,9 @@ class InspectorSocketServer {
   #server;
   #wss;
   #onRequest = (req: IncomingMessage, res: ServerResponse) => {
-    const url = tryQ(() => new URL(req.url ?? '', `http://${req.headers.host}`));
+    const url = tryQ(
+      () => new URL(req.url ?? '', `http://${req.headers.host}`)
+    );
     if (url == null) {
       res.statusCode = 400;
       res.end(HandShakeFailedResponse);
@@ -39,7 +41,8 @@ class InspectorSocketServer {
     } else if (command === 'protocol') {
       body = kInspectorProtocolJsonText;
     } else if (command === 'version') {
-      body = '{"Browser": "node.js/v12.18.4 noslated/","Protocol-Version": "1.3"}';
+      body =
+        '{"Browser": "node.js/v12.18.4 noslated/","Protocol-Version": "1.3"}';
     }
 
     if (body.length > 0) {
@@ -52,7 +55,9 @@ class InspectorSocketServer {
     res.end();
   };
   #onUpgrade = async (req: IncomingMessage, socket: Socket, head: Buffer) => {
-    const url = tryQ(() => new URL(req.url ?? '', `http://${req.headers.host}`));
+    const url = tryQ(
+      () => new URL(req.url ?? '', `http://${req.headers.host}`)
+    );
     if (url == null) {
       socket.end(HandShakeFailedResponse);
       return;
@@ -102,7 +107,8 @@ class InspectorSocketServer {
           return reject(err);
         }
         resolve();
-      }));
+      })
+    );
   }
 
   address() {
@@ -120,6 +126,4 @@ class InspectorSocketServer {
   }
 }
 
-export {
-  InspectorSocketServer,
-}
+export { InspectorSocketServer };

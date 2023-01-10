@@ -26,13 +26,11 @@ describe(testName(__filename), () => {
         handler: 'index.handler',
         signature: 'md5:234234',
       };
-      await env.agent.setFunctionProfile([
-        expectedProfile,
-      ]);
+      await env.agent.setFunctionProfile([expectedProfile]);
 
       const ret = await (guest as any).getFunctionProfile({});
       assert.strictEqual(ret.profiles.length, 1);
-      const [ actualProfile ] = ret.profiles;
+      const [actualProfile] = ret.profiles;
       assert.deepStrictEqual(actualProfile, expectedProfile);
     });
   });

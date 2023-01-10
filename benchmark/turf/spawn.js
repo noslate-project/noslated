@@ -4,8 +4,8 @@ const common = require('../common');
 const childProcess = require('child_process');
 
 const bench = common.createBenchmark(main, {
-  n: [ 1e3 ],
-  parallel: [ 3 ],
+  n: [1e3],
+  parallel: [3],
 });
 
 async function spawn() {
@@ -26,8 +26,10 @@ async function spawn() {
     cp.on('close', (code, signal) => {
       const stdout = Buffer.concat(result.stdout).toString('utf8');
       if (code !== 0) {
-        const stderr = Buffer.concat(result.stderr).toString('utf8')
-        const err = new Error(`Exited with non-zero code(${code}, ${signal}): ${stderr}`);
+        const stderr = Buffer.concat(result.stderr).toString('utf8');
+        const err = new Error(
+          `Exited with non-zero code(${code}, ${signal}): ${stderr}`
+        );
         err.code = code;
         err.signal = signal;
         err.stderr = stderr;
@@ -36,7 +38,7 @@ async function spawn() {
       }
       resolve(stdout);
     });
-  })
+  });
 }
 
 async function run(n) {

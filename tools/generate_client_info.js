@@ -20,4 +20,8 @@ module.exports = {
 };
 `;
 
-fs.writeFileSync(path.resolve(__dirname, '../src/starter/generated.js'), content, 'utf8');
+fs.writeFileSync(
+  path.resolve(__dirname, '../src/starter/generated.js'),
+  content,
+  'utf8'
+);

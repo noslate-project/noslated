@@ -7,7 +7,6 @@ import loggers from '#self/lib/logger';
 import * as naming from '#self/lib/naming';
 import * as utils from '#self/lib/util';
 
-
 async function exists(filepath: string) {
   let exists = true;
   try {
@@ -30,11 +29,19 @@ export class CodeManager extends EventEmitter {
   }
 
   getBundleDir(name: string, url: string, signature: string) {
-    return path.join(this.workDir, 'bundles', naming.codeBundleName(name, signature, url));
+    return path.join(
+      this.workDir,
+      'bundles',
+      naming.codeBundleName(name, signature, url)
+    );
   }
 
   getHTTPCacheDir(url: string) {
-    return path.join(this.workDir, 'caches', url.replace(/[^0-9a-zA-Z_\-.]/g, '_'));
+    return path.join(
+      this.workDir,
+      'caches',
+      url.replace(/[^0-9a-zA-Z_\-.]/g, '_')
+    );
   }
 
   async ensureFromHTTP(url: string, bundlePath: string) {

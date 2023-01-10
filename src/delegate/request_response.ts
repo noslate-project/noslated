@@ -58,7 +58,7 @@ class Metadata {
       headers: this.headers,
       baggage: this.baggage,
       timeout: this.timeout,
-      requestId: this.requestId
+      requestId: this.requestId,
     };
   }
 }
@@ -120,9 +120,4 @@ function flattenKeyValuePairs(pairs: [unknown, unknown][]): string[] {
   return raw;
 }
 
-export {
-  Metadata,
-  MetadataInit,
-  TriggerResponse,
-  flattenKeyValuePairs,
-};
+export { Metadata, MetadataInit, TriggerResponse, flattenKeyValuePairs };

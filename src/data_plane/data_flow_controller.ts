@@ -12,7 +12,10 @@ import { SystemCircuitBreaker } from './circuit_breaker';
 import { Worker, WorkerBroker } from './worker_broker';
 import { ServiceProfileItem, ServiceSelector } from './service_selector';
 import { getMeter } from '#self/lib/telemetry/otel';
-import { DataPlaneMetrics, PlaneMetricAttributes } from '#self/lib/telemetry/semantic_conventions';
+import {
+  DataPlaneMetrics,
+  PlaneMetricAttributes,
+} from '#self/lib/telemetry/semantic_conventions';
 import { WorkerTelemetry } from './worker_telemetry';
 import { NamespaceResolver } from './namespace_resolver';
 import { Host } from '#self/lib/rpc/host';
@@ -58,15 +61,28 @@ export class DataFlowController extends BaseOf(EventEmitter) {
     super();
 
     this.meter = getMeter();
-    this.#invokeCounter = this.meter.createCounter(DataPlaneMetrics.INVOKE_COUNT, {});
-    this.#invokeDurationHistogram = this.meter.createHistogram(DataPlaneMetrics.INVOKE_DURATION, {});
+    this.#invokeCounter = this.meter.createCounter(
+      DataPlaneMetrics.INVOKE_COUNT,
+      {}
+    );
+    this.#invokeDurationHistogram = this.meter.createHistogram(
+      DataPlaneMetrics.INVOKE_DURATION,
+      {}
+    );
 
-    this.queuedRequestCounter = this.meter.createCounter(DataPlaneMetrics.QUEUED_REQUEST_COUNT, {});
-    this.queuedRequestDurationHistogram = this.meter.createHistogram(DataPlaneMetrics.QUEUED_REQUEST_DURATION, {});
+    this.queuedRequestCounter = this.meter.createCounter(
+      DataPlaneMetrics.QUEUED_REQUEST_COUNT,
+      {}
+    );
+    this.queuedRequestDurationHistogram = this.meter.createHistogram(
+      DataPlaneMetrics.QUEUED_REQUEST_DURATION,
+      {}
+    );
 
-    const delegateSockPath = this.delegateSockPath = path.join(
+    const delegateSockPath = (this.delegateSockPath = path.join(
       this.config.dirs.noslatedSock,
-      `dlgt-${getCurrentPlaneId()}.sock`);
+      `dlgt-${getCurrentPlaneId()}.sock`
+    ));
 
     fs.mkdirSync(path.dirname(delegateSockPath), { recursive: true });
 
@@ -92,7 +108,10 @@ export class DataFlowController extends BaseOf(EventEmitter) {
      * @type Map<string, WorkerBroker>
      */
     this.credentialBrokerMap = new Map();
-    this.circuitBreaker = new SystemCircuitBreaker(this, this.config.systemCircuitBreaker);
+    this.circuitBreaker = new SystemCircuitBreaker(
+      this,
+      this.config.systemCircuitBreaker
+    );
     this.serviceSelector = new ServiceSelector();
 
     this.delegate.on('bind', this.#onBind);
@@ -106,17 +125,19 @@ export class DataFlowController extends BaseOf(EventEmitter) {
 
   getResourceUsages() {
     const credentials = Array.from(this.credentialBrokerMap.entries());
-    return credentials.map(([ credential, broker ]) => {
-      const usage = this.delegate.getResourceUsage(credential);
-      if (usage == null) {
-        return null;
-      }
-      return {
-        workerName: broker.name,
-        functionName: broker.profile.name,
-        ...usage,
-      };
-    }).filter(it => it != null);
+    return credentials
+      .map(([credential, broker]) => {
+        const usage = this.delegate.getResourceUsage(credential);
+        if (usage == null) {
+          return null;
+        }
+        return {
+          workerName: broker.name,
+          functionName: broker.profile.name,
+          ...usage,
+        };
+      })
+      .filter(it => it != null);
   }
 
   /**
@@ -131,7 +152,11 @@ export class DataFlowController extends BaseOf(EventEmitter) {
     realBroker: WorkerBroker,
     toBeClosed: root.noslated.data.ICapacityReductionBroker
   ) {
-    const close = async (realWorker: Worker, worker: root.noslated.data.ICapacityReductionWorker, broker: WorkerBroker) => {
+    const close = async (
+      realWorker: Worker,
+      worker: root.noslated.data.ICapacityReductionWorker,
+      broker: WorkerBroker
+    ) => {
       const closed = await realWorker.closeTraffic();
 
       if (closed) {
@@ -139,7 +164,7 @@ export class DataFlowController extends BaseOf(EventEmitter) {
           functionName: broker.name,
           isInspector: broker.options.inspect === true,
           name: realWorker.name,
-          event: ContainerStatusReport.RequestDrained
+          event: ContainerStatusReport.RequestDrained,
         });
 
         toBeClosed?.workers?.push(worker);
@@ -147,8 +172,11 @@ export class DataFlowController extends BaseOf(EventEmitter) {
     };
 
     const promises = [];
-    for (const worker of (broker?.workers || [])) {
-      const realWorker = realBroker.getWorker(worker.name as string, worker.credential as string);
+    for (const worker of broker?.workers || []) {
+      const realWorker = realBroker.getWorker(
+        worker.name as string,
+        worker.credential as string
+      );
       if (!realWorker) continue;
       if (typeof realWorker === 'string') {
         // extracted from queueing credentials
@@ -173,17 +201,28 @@ export class DataFlowController extends BaseOf(EventEmitter) {
    * @param {root.noslated.data.ICapacityReductionBroker[]} workersInfo The brokers including workers information.
    * @return {Promise<root.noslated.data.ICapacityReductionBroker[]>} The brokers including workers that traffic closed.
    */
-  async closeTraffic(workersInfo: root.noslated.data.ICapacityReductionBroker[]) {
+  async closeTraffic(
+    workersInfo: root.noslated.data.ICapacityReductionBroker[]
+  ) {
     const closed = [];
     const promises = [];
 
     for (const broker of workersInfo) {
-      const realBroker = this.getBroker(broker.functionName as string, { inspect: broker.inspector } as RegisterWorkerOptions);
+      const realBroker = this.getBroker(
+        broker.functionName as string,
+        { inspect: broker.inspector } as RegisterWorkerOptions
+      );
       if (!realBroker) continue;
       const closedBroker = { ...broker };
       closedBroker.workers = [];
       closed.push(closedBroker);
-      promises.push(this.closeCertainWorkersTrafficInOneBroker(broker, realBroker, closedBroker));
+      promises.push(
+        this.closeCertainWorkersTrafficInOneBroker(
+          broker,
+          realBroker,
+          closedBroker
+        )
+      );
     }
 
     const ret = await Promise.allSettled(promises);
@@ -210,7 +249,9 @@ export class DataFlowController extends BaseOf(EventEmitter) {
     }
 
     const worker = broker.getWorkerByOnlyCredential(credential);
-    const tag = worker ? ((worker as Worker).name || `{${credential}}`) : `{${credential}}`;
+    const tag = worker
+      ? (worker as Worker).name || `{${credential}}`
+      : `{${credential}}`;
     logger.info(`Worker ${tag} disconnected from ${broker.name}.`);
 
     broker.removeWorker(credential);
@@ -221,10 +262,10 @@ export class DataFlowController extends BaseOf(EventEmitter) {
         functionName: broker.name,
         name: worker.name,
         event: ContainerStatusReport.ContainerDisconnected,
-        isInspector: broker.options.inspect === true
+        isInspector: broker.options.inspect === true,
       });
     }
-  }
+  };
 
   /**
    * Function that be called when a worker attached to delegate.
@@ -250,10 +291,12 @@ export class DataFlowController extends BaseOf(EventEmitter) {
     }
 
     const worker = broker.getWorkerByOnlyCredential(credential);
-    const tag = worker ? ((worker as Worker).name || `{${credential}}`) : `{${credential}}`;
+    const tag = worker
+      ? (worker as Worker).name || `{${credential}}`
+      : `{${credential}}`;
 
     logger.info(`Worker ${tag} for ${broker.name} attached.`);
-  }
+  };
 
   /**
    * Register worker's credential to delegate for waiting connecting.
@@ -262,7 +305,12 @@ export class DataFlowController extends BaseOf(EventEmitter) {
    * @param {string} credential The worker's credential.
    * @param {{ inspect?: boolean }} [options] The register options.
    */
-  registerWorkerCredential(funcName: any, name: string, credential: string, options: RegisterWorkerOptions = {}) {
+  registerWorkerCredential(
+    funcName: any,
+    name: string,
+    credential: string,
+    options: RegisterWorkerOptions = {}
+  ) {
     const broker = this.getBroker(funcName, options);
     broker?.registerCredential(name, credential);
     this.credentialBrokerMap.set(credential, broker as WorkerBroker);
@@ -297,7 +345,7 @@ export class DataFlowController extends BaseOf(EventEmitter) {
    * @type {root.noslated.data.IBrokerStats[]} The brokers with workers' stats.
    */
   get currentWorkersInformation(): root.noslated.data.IBrokerStats[] {
-    return [ ...this.brokers.values() ].map(broker => ({
+    return [...this.brokers.values()].map(broker => ({
       functionName: broker.name,
       inspector: broker.options.inspect === true,
       disposable: broker.disposable,
@@ -325,7 +373,7 @@ export class DataFlowController extends BaseOf(EventEmitter) {
    */
   cleanOrphanBrokers = async () => {
     const cleanedKeys = [];
-    for (const [ key, broker ] of this.brokers.entries()) {
+    for (const [key, broker] of this.brokers.entries()) {
       if (!this.profileManager.get(broker.name) && !broker.workers.length) {
         cleanedKeys.push(key);
         broker.close();
@@ -333,7 +381,7 @@ export class DataFlowController extends BaseOf(EventEmitter) {
     }
 
     for (const key of cleanedKeys) this.brokers.delete(key);
-  }
+  };
 
   /**
    * Init function (override)
@@ -342,7 +390,10 @@ export class DataFlowController extends BaseOf(EventEmitter) {
     await this.delegate.start();
     if (this.inspectorAgent) await this.inspectorAgent.start();
 
-    this.workerTrafficStatsBroadcastInterval = setInterval(this.broadcastWorkerTrafficStats, 1000);
+    this.workerTrafficStatsBroadcastInterval = setInterval(
+      this.broadcastWorkerTrafficStats,
+      1000
+    );
     this.orphanBrokerCleanInterval = setInterval(this.cleanOrphanBrokers, 1000);
 
     this.circuitBreaker.start();
@@ -378,28 +429,32 @@ export class DataFlowController extends BaseOf(EventEmitter) {
    * @param {import('#self/lib/json/function_profile').RawFunctionProfile[]} profile The function profile
    * @param {'IMMEDIATELY' | 'WAIT'} mode the mode
    */
-  async setFunctionProfile(profile: RawFunctionProfile[], mode: Mode = 'IMMEDIATELY') {
+  async setFunctionProfile(
+    profile: RawFunctionProfile[],
+    mode: Mode = 'IMMEDIATELY'
+  ) {
     // 获取前后 namespace 差异
     const { toAdd, toRemove } = this.compareSharedNamespaces(profile);
 
     // 新增的 namespace 提前创建
-    toAdd.forEach((ns) => {
+    toAdd.forEach(ns => {
       this.namespaceResolver.register(ns);
     });
 
     await this.profileManager.set(profile, mode);
 
     // 过期的 namespace 延后移除
-    toRemove.forEach((ns) => {
+    toRemove.forEach(ns => {
       this.namespaceResolver.unregister(ns);
     });
   }
 
   compareSharedNamespaces(profile: RawFunctionProfile[]) {
-    const existingNamespaces = this.namespaceResolver.existingShardedNamespaceKeys();
+    const existingNamespaces =
+      this.namespaceResolver.existingShardedNamespaceKeys();
     const newNamespaces = new Set<string>();
 
-    profile.forEach((p) => {
+    profile.forEach(p => {
       if (p.namespace) {
         newNamespaces.add(p.namespace);
       }
@@ -432,14 +487,23 @@ export class DataFlowController extends BaseOf(EventEmitter) {
    * @param {{serviceName?: string}} context -
    * @return {Promise<import('#self/delegate/request_response').TriggerResponse>} The invoke response.
    */
-  async invoke(name: string , inputStream: Buffer | Readable, metadata: Metadata, { serviceName = '' }: InvokeContext = {}): Promise<TriggerResponse> {
+  async invoke(
+    name: string,
+    inputStream: Buffer | Readable,
+    metadata: Metadata,
+    { serviceName = '' }: InvokeContext = {}
+  ): Promise<TriggerResponse> {
     if (this.circuitBreaker.opened) {
-      throw new RpcError('System circuit breaker opened.', { code: RpcStatus.FAILED_PRECONDITION });
+      throw new RpcError('System circuit breaker opened.', {
+        code: RpcStatus.FAILED_PRECONDITION,
+      });
     }
     const funcProfile = this.profileManager.get(name);
 
     if (funcProfile == null) {
-      throw new RpcError(`No function named ${name} registered in this node.`, { code: RpcStatus.NOT_FOUND });
+      throw new RpcError(`No function named ${name} registered in this node.`, {
+        code: RpcStatus.NOT_FOUND,
+      });
     }
 
     const startTime = Date.now();
@@ -451,7 +515,10 @@ export class DataFlowController extends BaseOf(EventEmitter) {
       if (broker) {
         return broker.invoke(inputStream, metadata);
       } else {
-        throw new RpcError(`No broker to invoke function [${name}] in this node.`, { code: RpcStatus.NOT_FOUND });
+        throw new RpcError(
+          `No broker to invoke function [${name}] in this node.`,
+          { code: RpcStatus.NOT_FOUND }
+        );
       }
     } finally {
       const endTime = Date.now();
@@ -466,9 +533,15 @@ export class DataFlowController extends BaseOf(EventEmitter) {
     }
   }
 
-  async invokeService(name: string, inputStream: Buffer | Readable, metadata: Metadata) {
+  async invokeService(
+    name: string,
+    inputStream: Buffer | Readable,
+    metadata: Metadata
+  ) {
     if (this.circuitBreaker.opened) {
-      throw new RpcError('System circuit breaker opened.', { code: RpcStatus.FAILED_PRECONDITION });
+      throw new RpcError('System circuit breaker opened.', {
+        code: RpcStatus.FAILED_PRECONDITION,
+      });
     }
 
     const labels = this.serviceSelector.select(name);
@@ -476,12 +549,14 @@ export class DataFlowController extends BaseOf(EventEmitter) {
       throw new RpcError('Service not found.', { code: RpcStatus.NOT_FOUND });
     }
 
-    return this.invoke(labels.functionName, inputStream, metadata, { serviceName: name });
+    return this.invoke(labels.functionName, inputStream, metadata, {
+      serviceName: name,
+    });
   }
 }
 
 interface RegisterWorkerOptions {
-  inspect?: boolean
+  inspect?: boolean;
 }
 
 interface InvokeContext {

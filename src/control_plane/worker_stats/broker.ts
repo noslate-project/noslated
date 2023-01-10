@@ -1,5 +1,9 @@
 import { Config } from '#self/config';
-import { ContainerStatus, ContainerStatusReport, ControlPanelEvent } from '#self/lib/constants';
+import {
+  ContainerStatus,
+  ContainerStatusReport,
+  ControlPanelEvent,
+} from '#self/lib/constants';
 import { FunctionProfileManager } from '#self/lib/function_profile';
 import { RawFunctionProfile } from '#self/lib/json/function_profile';
 import { PrefixedLogger } from '#self/lib/loggers';
@@ -48,9 +52,19 @@ class Broker {
    * @param funcName The function name of this broker.
    * @param isInspector Whether it's using inspector or not.
    */
-  constructor(profiles: FunctionProfileManager, config: Config, funcName: string, isInspector: boolean, public disposable: boolean = false, private turf: Turf) {
+  constructor(
+    profiles: FunctionProfileManager,
+    config: Config,
+    funcName: string,
+    isInspector: boolean,
+    public disposable: boolean = false,
+    private turf: Turf
+  ) {
     this.config = config;
-    this.logger = new PrefixedLogger('worker_stats_snapshot broker', Broker.getKey(funcName, isInspector));
+    this.logger = new PrefixedLogger(
+      'worker_stats_snapshot broker',
+      Broker.getKey(funcName, isInspector)
+    );
 
     this.name = funcName;
     this.profiles = profiles;
@@ -80,7 +94,10 @@ class Broker {
   }
 
   get initializationTimeout() {
-    return this.data?.worker?.initializationTimeout || this.config.worker.defaultInitializerTimeout;
+    return (
+      this.data?.worker?.initializationTimeout ||
+      this.config.worker.defaultInitializerTimeout
+    );
   }
 
   /**
@@ -93,7 +110,13 @@ class Broker {
       throw new Error(`No function profile named ${this.name}.`);
     }
 
-    const worker = new Worker(this.config, processName, credential, this.disposable, this.initializationTimeout);
+    const worker = new Worker(
+      this.config,
+      processName,
+      credential,
+      this.disposable,
+      this.initializationTimeout
+    );
     this.workers.set(processName, worker);
 
     this.startingPool.set(processName, {
@@ -115,7 +138,10 @@ class Broker {
     this.removeItemFromStartingPool(processName);
     if (destroy) {
       this.turf.destroy(processName).catch((e: unknown) => {
-        this.logger.warn(`Failed to destroy worker ${processName} in unregistering.`, e);
+        this.logger.warn(
+          `Failed to destroy worker ${processName} in unregistering.`,
+          e
+        );
       });
     }
   }
@@ -148,7 +174,7 @@ class Broker {
    * @return {number} How much processes (workers) should be scale. (> 0 means expand, < 0 means shrink)
    */
   evaluateWaterLevel(expansionOnly = false) {
-    if(this.disposable) {
+    if (this.disposable) {
       return 0;
     }
 
@@ -170,18 +196,23 @@ class Broker {
     // First check is this function still existing
     if (!expansionOnly) {
       if (waterLevel <= 0.6 && this.workerCount > this.reservationCount) {
-        waterLevelAction = waterLevelAction || Broker.WaterLevelAction.NEED_SHRINK;
+        waterLevelAction =
+          waterLevelAction || Broker.WaterLevelAction.NEED_SHRINK;
       }
 
       // If only one worker left, and still have request, reserve it
-      if (waterLevelAction === Broker.WaterLevelAction.NEED_SHRINK &&
+      if (
+        waterLevelAction === Broker.WaterLevelAction.NEED_SHRINK &&
         this.workerCount === 1 &&
-        this.activeRequestCount !== 0) {
+        this.activeRequestCount !== 0
+      ) {
         waterLevelAction = Broker.WaterLevelAction.NORMAL;
       }
     }
 
-    if (waterLevel >= 0.8) waterLevelAction = waterLevelAction || Broker.WaterLevelAction.NEED_EXPAND;
+    if (waterLevel >= 0.8)
+      waterLevelAction =
+        waterLevelAction || Broker.WaterLevelAction.NEED_EXPAND;
     waterLevelAction = waterLevelAction || Broker.WaterLevelAction.NORMAL;
 
     switch (waterLevelAction) {
@@ -191,8 +222,11 @@ class Broker {
         if (this.redundantTimes >= shrinkRedundantTimes) {
           // up to shrink
           const newMaxActivateRequests = activeRequestCount / 0.7;
-          const deltaMaxActivateRequests = totalMaxActivateRequests - newMaxActivateRequests;
-          let deltaInstance = Math.floor(deltaMaxActivateRequests / this.data.worker!.maxActivateRequests!);
+          const deltaMaxActivateRequests =
+            totalMaxActivateRequests - newMaxActivateRequests;
+          let deltaInstance = Math.floor(
+            deltaMaxActivateRequests / this.data.worker!.maxActivateRequests!
+          );
 
           // reserve at least `this.reservationCount` instances
           if (this.workerCount - deltaInstance < this.reservationCount) {
@@ -213,11 +247,16 @@ class Broker {
         if (waterLevelAction !== Broker.WaterLevelAction.NEED_EXPAND) return 0;
 
         const newMaxActivateRequests = activeRequestCount / 0.7;
-        const deltaMaxActivateRequests = newMaxActivateRequests - totalMaxActivateRequests;
-        let deltaInstanceCount = Math.ceil(deltaMaxActivateRequests / this.data.worker!.maxActivateRequests!);
-        deltaInstanceCount = (this.data.worker!.replicaCountLimit! < this.workerCount + deltaInstanceCount) ?
-          this.data.worker!.replicaCountLimit! - this.workerCount :
-          deltaInstanceCount;
+        const deltaMaxActivateRequests =
+          newMaxActivateRequests - totalMaxActivateRequests;
+        let deltaInstanceCount = Math.ceil(
+          deltaMaxActivateRequests / this.data.worker!.maxActivateRequests!
+        );
+        deltaInstanceCount =
+          this.data.worker!.replicaCountLimit! <
+          this.workerCount + deltaInstanceCount
+            ? this.data.worker!.replicaCountLimit! - this.workerCount
+            : deltaInstanceCount;
 
         return Math.max(deltaInstanceCount, 0);
       }
@@ -235,7 +274,7 @@ class Broker {
    * @type {number}
    */
   get memoryLimit() {
-    return (this.data?.resourceLimit?.memory || 0);
+    return this.data?.resourceLimit?.memory || 0;
   }
 
   /**
@@ -268,13 +307,15 @@ class Broker {
     }
 
     // 将已启动完成、失败的从 `startingPool` 中移除
-    for (const startingName of [ ...this.startingPool.keys() ]) {
+    for (const startingName of [...this.startingPool.keys()]) {
       const worker = newMap.get(startingName);
       if (!worker.isInitializating()) {
         this.logger.debug(
-          `%s removed from starting pool due to status ` +
-          `[%s] - [%s]`,
-          startingName, ContainerStatus[worker.containerStatus], worker.turfContainerStates);
+          '%s removed from starting pool due to status ' + '[%s] - [%s]',
+          startingName,
+          ContainerStatus[worker.containerStatus],
+          worker.turfContainerStates
+        );
         this.startingPool.delete(startingName);
       } else if (worker.data) {
         // 同步 startingPool 中的值
@@ -285,7 +326,8 @@ class Broker {
         if (!item) continue;
 
         item.maxActivateRequests = worker.data.maxActivateRequests;
-        item.estimateRequestLeft = worker.data.maxActivateRequests - worker.data.activeRequestCount;
+        item.estimateRequestLeft =
+          worker.data.maxActivateRequests - worker.data.activeRequestCount;
       }
     }
 
@@ -353,7 +395,11 @@ class Broker {
     return this.workers.get(processName) || null;
   }
 
-  updateWorkerContainerStatus(workerName: string, status: ContainerStatus, event: ControlPanelEvent | ContainerStatusReport) {
+  updateWorkerContainerStatus(
+    workerName: string,
+    status: ContainerStatus,
+    event: ControlPanelEvent | ContainerStatusReport
+  ) {
     const worker = this.workers.get(workerName);
 
     worker?.updateContainerStatus(status, event);
@@ -383,8 +429,11 @@ class Broker {
    * @param compareFn The comparation function.
    * @return The most idle N workers.
    */
-  mostWhatNWorkers(n: number, compareFn: (a: Worker, b: Worker) => number): { name: string, credential: string }[] {
-    const workers = [ ...this.workers.values() ].filter(w => w.isRunning());
+  mostWhatNWorkers(
+    n: number,
+    compareFn: (a: Worker, b: Worker) => number
+  ): { name: string; credential: string }[] {
+    const workers = [...this.workers.values()].filter(w => w.isRunning());
     const nWorkers = workers.sort(compareFn).slice(0, n);
 
     return nWorkers.map(w => ({ name: w.name, credential: w.credential! }));
@@ -448,7 +497,9 @@ class Broker {
 
     /* istanbul ignore else */
     if (this.data) {
-      strategy = this.data.worker?.shrinkStrategy || this.config.worker.defaultShrinkStrategy;
+      strategy =
+        this.data.worker?.shrinkStrategy ||
+        this.config.worker.defaultShrinkStrategy;
     }
 
     let workers = [];
@@ -465,21 +516,25 @@ class Broker {
       case 'LCC':
       default: {
         if (strategy !== 'LCC') {
-          this.logger.warn(`Shrink strategy ${strategy} is not supported, fallback to LCC.`);
+          this.logger.warn(
+            `Shrink strategy ${strategy} is not supported, fallback to LCC.`
+          );
         }
 
         workers = this.mostIdleNWorkers(countToChoose);
       }
     }
 
-    workers.forEach((worker) => {
-      this.updateWorkerContainerStatus(worker.name, ContainerStatus.PendingStop, ControlPanelEvent.Shrink);
+    workers.forEach(worker => {
+      this.updateWorkerContainerStatus(
+        worker.name,
+        ContainerStatus.PendingStop,
+        ControlPanelEvent.Shrink
+      );
     });
 
     return workers;
   }
 }
 
-export {
-  Broker,
-};
+export { Broker };

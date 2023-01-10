@@ -8,7 +8,7 @@ import * as root from '../../proto/test';
 import { ServerWritableStream } from '@grpc/grpc-js';
 import { Config } from '#self/config';
 
-describe(common.testName(__filename), function() {
+describe(common.testName(__filename), function () {
   let client: BasePlaneClient;
   let host: Host;
 
@@ -26,12 +26,22 @@ describe(common.testName(__filename), function() {
 
   describe('#ready()', () => {
     it('should start', async () => {
-      host.addService((grpcDescriptor as any).noslated.test.TestService.service, {
-        async ping(call: ServerWritableStream<root.noslated.test.IPing, root.noslated.test.IPong>) {
-          return { msg: call.request.msg };
-        },
-      });
-      client = new BasePlaneClient('foo', address, 1, { plane: { planeFirstConnectionTimeout: 500 } } as Config);
+      host.addService(
+        (grpcDescriptor as any).noslated.test.TestService.service,
+        {
+          async ping(
+            call: ServerWritableStream<
+              root.noslated.test.IPing,
+              root.noslated.test.IPong
+            >
+          ) {
+            return { msg: call.request.msg };
+          },
+        }
+      );
+      client = new BasePlaneClient('foo', address, 1, {
+        plane: { planeFirstConnectionTimeout: 500 },
+      } as Config);
 
       assert.strictEqual(client.role, 'foo');
       assert.strictEqual(client.planeId, 1);
@@ -43,24 +53,42 @@ describe(common.testName(__filename), function() {
     });
 
     it('should start timeout', async () => {
-      client = new BasePlaneClient('foo', `${__dirname}/definitely-not-exists.sock`, 1, { plane: { planeFirstConnectionTimeout: 500 } } as Config);
-      await assert.rejects(async () => {
-        await client.ready();
-      }, {
-        message: /Failed to connect before the deadline/,
-      });
+      client = new BasePlaneClient(
+        'foo',
+        `${__dirname}/definitely-not-exists.sock`,
+        1,
+        { plane: { planeFirstConnectionTimeout: 500 } } as Config
+      );
+      await assert.rejects(
+        async () => {
+          await client.ready();
+        },
+        {
+          message: /Failed to connect before the deadline/,
+        }
+      );
     });
 
     it('should delay start', async () => {
       await host.close();
-      client = new BasePlaneClient('foo', address, 1, { plane: { planeFirstConnectionTimeout: 10_000 } } as Config);
+      client = new BasePlaneClient('foo', address, 1, {
+        plane: { planeFirstConnectionTimeout: 10_000 },
+      } as Config);
       await sleep(500);
       host = new Host(address);
-      host.addService((grpcDescriptor as any).noslated.test.TestService.service, {
-        async ping(call: ServerWritableStream<root.noslated.test.IPing, root.noslated.test.IPong>) {
-          return { msg: call.request.msg };
-        },
-      });
+      host.addService(
+        (grpcDescriptor as any).noslated.test.TestService.service,
+        {
+          async ping(
+            call: ServerWritableStream<
+              root.noslated.test.IPing,
+              root.noslated.test.IPong
+            >
+          ) {
+            return { msg: call.request.msg };
+          },
+        }
+      );
       host.start();
       await client.ready();
       client.addService((grpcDescriptor as any).noslated.test.TestService);

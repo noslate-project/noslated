@@ -13,7 +13,10 @@ export class ControlPlaneClient extends BasePlaneClient {
    * @param {typeof import('#self/config/default')} config The global config object.
    */
   constructor(planeId: number, config: Config) {
-    const heraldPath = path.join(config.dirs.noslatedSock, `cp-${planeId}.sock`);
+    const heraldPath = path.join(
+      config.dirs.noslatedSock,
+      `cp-${planeId}.sock`
+    );
     super('control plane client', heraldPath, planeId, config);
   }
 

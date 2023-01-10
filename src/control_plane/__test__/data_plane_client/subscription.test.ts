@@ -36,40 +36,46 @@ describe(common.testName(__filename), () => {
   const env = new DefaultEnvironment();
 
   describe('workerTrafficStats', () => {
-    const profiles = [{
-      name: 'func',
-      url: `file://${__dirname}`,
-      runtime: 'aworker' as const,
-      signature: 'xxx',
-      sourceFile: 'index.js',
-      worker: {
-        replicaCountLimit: 10,
+    const profiles = [
+      {
+        name: 'func',
+        url: `file://${__dirname}`,
+        runtime: 'aworker' as const,
+        signature: 'xxx',
+        sourceFile: 'index.js',
+        worker: {
+          replicaCountLimit: 10,
+        },
+        resourceLimit: {
+          memory: 123456,
+        },
       },
-      resourceLimit: {
-        memory: 123456,
+      {
+        name: 'lambda',
+        url: `file://${__dirname}`,
+        runtime: 'aworker' as const,
+        signature: 'xxx',
+        sourceFile: 'index.js',
       },
-    }, {
-      name: 'lambda',
-      url: `file://${__dirname}`,
-      runtime: 'aworker' as const,
-      signature: 'xxx',
-      sourceFile: 'index.js',
-    }];
+    ];
 
-    it('should sync', async function() {
+    it('should sync', async function () {
       this.timeout(10000);
       const brokerData = {
         functionName: 'func',
         inspector: false,
-        workers: [{
-          name: 'hello',
-          maxActivateRequests: 10,
-          activeRequestCount: 1,
-        }, {
-          name: 'foo',
-          maxActivateRequests: 10,
-          activeRequestCount: 6,
-        }],
+        workers: [
+          {
+            name: 'hello',
+            maxActivateRequests: 10,
+            activeRequestCount: 1,
+          },
+          {
+            name: 'foo',
+            maxActivateRequests: 10,
+            activeRequestCount: 6,
+          },
+        ],
       };
 
       const { functionProfile, capacityManager } = env.control;
@@ -81,19 +87,33 @@ describe(common.testName(__filename), () => {
       });
       await promise1;
 
-      capacityManager.workerStatsSnapshot.register('func', 'hello', 'world', false);
+      capacityManager.workerStatsSnapshot.register(
+        'func',
+        'hello',
+        'world',
+        false
+      );
       capacityManager.workerStatsSnapshot.register('func', 'foo', 'bar', false);
 
       const { promise: promise2, resolve: resolve2 } = createDeferred<void>();
-      const syncWorkerData = capacityManager.plane.stateManager.syncWorkerData.bind(capacityManager.plane.stateManager);
+      const syncWorkerData =
+        capacityManager.plane.stateManager.syncWorkerData.bind(
+          capacityManager.plane.stateManager
+        );
       const autoScale = capacityManager.autoScale.bind(capacityManager);
       let syncWorkerDataCalled = 0;
       let autoScaleCalled = 0;
-      mm(capacityManager.plane.stateManager, 'syncWorkerData', async (brokers: any) => {
-        assert.deepStrictEqual(JSON.parse(JSON.stringify(brokers)), [ brokerData ]);
-        syncWorkerDataCalled++;
-        return syncWorkerData(brokers);
-      });
+      mm(
+        capacityManager.plane.stateManager,
+        'syncWorkerData',
+        async (brokers: any) => {
+          assert.deepStrictEqual(JSON.parse(JSON.stringify(brokers)), [
+            brokerData,
+          ]);
+          syncWorkerDataCalled++;
+          return syncWorkerData(brokers);
+        }
+      );
       mm(capacityManager, 'autoScale', async () => {
         autoScaleCalled++;
         const ret = await autoScale();
@@ -101,28 +121,36 @@ describe(common.testName(__filename), () => {
         return ret;
       });
 
-      await waitForAtLeastOneSubscriber(env.data.dataFlowController.host, 'workerTrafficStats');
-      await (env.data.dataFlowController.host as any).broadcastWorkerTrafficStats({ brokers: [ brokerData ] });
+      await waitForAtLeastOneSubscriber(
+        env.data.dataFlowController.host,
+        'workerTrafficStats'
+      );
+      await (
+        env.data.dataFlowController.host as any
+      ).broadcastWorkerTrafficStats({ brokers: [brokerData] });
       await promise2;
 
       assert.strictEqual(syncWorkerDataCalled, 1);
       assert.strictEqual(autoScaleCalled, 1);
     });
 
-    it('should catch throw', async function() {
+    it('should catch throw', async function () {
       this.timeout(10000);
       const brokerData = {
         functionName: 'func',
         inspector: false,
-        workers: [{
-          name: 'hello',
-          maxActivateRequests: 10,
-          activeRequestCount: 10,
-        }, {
-          name: 'foo',
-          maxActivateRequests: 10,
-          activeRequestCount: 10,
-        }],
+        workers: [
+          {
+            name: 'hello',
+            maxActivateRequests: 10,
+            activeRequestCount: 10,
+          },
+          {
+            name: 'foo',
+            maxActivateRequests: 10,
+            activeRequestCount: 10,
+          },
+        ],
       };
 
       const { functionProfile, capacityManager } = env.control;
@@ -134,7 +162,12 @@ describe(common.testName(__filename), () => {
       });
       await promise1;
 
-      capacityManager.workerStatsSnapshot.register('func', 'hello', 'world', false);
+      capacityManager.workerStatsSnapshot.register(
+        'func',
+        'hello',
+        'world',
+        false
+      );
       capacityManager.workerStatsSnapshot.register('func', 'foo', 'bar', false);
 
       capacityManager.updateWorkerContainerStatus({
@@ -142,7 +175,7 @@ describe(common.testName(__filename), () => {
         name: 'hello',
         isInspector: false,
         event: ContainerStatusReport.ContainerInstalled,
-        requestId: ''
+        requestId: '',
       });
 
       capacityManager.updateWorkerContainerStatus({
@@ -150,19 +183,28 @@ describe(common.testName(__filename), () => {
         name: 'foo',
         isInspector: false,
         event: ContainerStatusReport.ContainerInstalled,
-        requestId: ''
+        requestId: '',
       });
 
       const { promise: promise2, resolve: resolve2 } = createDeferred<void>();
-      const syncWorkerData = capacityManager.plane.stateManager.syncWorkerData.bind(capacityManager.plane.stateManager);
+      const syncWorkerData =
+        capacityManager.plane.stateManager.syncWorkerData.bind(
+          capacityManager.plane.stateManager
+        );
       const autoScale = capacityManager.autoScale.bind(capacityManager);
       let syncWorkerDataCalled = 0;
       let autoScaleCalled = 0;
-      mm(capacityManager.plane.stateManager, 'syncWorkerData', async (brokers: any) => {
-        assert.deepStrictEqual(JSON.parse(JSON.stringify(brokers)), [ brokerData ]);
-        syncWorkerDataCalled++;
-        return syncWorkerData(brokers);
-      });
+      mm(
+        capacityManager.plane.stateManager,
+        'syncWorkerData',
+        async (brokers: any) => {
+          assert.deepStrictEqual(JSON.parse(JSON.stringify(brokers)), [
+            brokerData,
+          ]);
+          syncWorkerDataCalled++;
+          return syncWorkerData(brokers);
+        }
+      );
       mm(capacityManager, 'autoScale', async () => {
         autoScaleCalled++;
         try {
@@ -174,12 +216,19 @@ describe(common.testName(__filename), () => {
         }
       });
       mm(env.control.turf, 'ps', async () => {
-        return [{ name: 'foo', pid: 10000, status: TurfContainerStates.running }];
+        return [
+          { name: 'foo', pid: 10000, status: TurfContainerStates.running },
+        ];
       });
 
-      await waitForAtLeastOneSubscriber(env.data.dataFlowController.host, 'workerTrafficStats');
+      await waitForAtLeastOneSubscriber(
+        env.data.dataFlowController.host,
+        'workerTrafficStats'
+      );
       functionProfile.profile[0].runtime = 'hello' as any;
-      await (env.data.dataFlowController.host as any).broadcastWorkerTrafficStats({ brokers: [ brokerData ] });
+      await (
+        env.data.dataFlowController.host as any
+      ).broadcastWorkerTrafficStats({ brokers: [brokerData] });
       await promise2;
 
       assert.strictEqual(syncWorkerDataCalled, 1);

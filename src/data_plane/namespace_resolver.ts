@@ -1,4 +1,8 @@
-import { BeaconHost, Namespace, NoopBeaconHost } from '#self/delegate/namespace';
+import {
+  BeaconHost,
+  Namespace,
+  NoopBeaconHost,
+} from '#self/delegate/namespace';
 import type { DataFlowController } from './data_flow_controller';
 import type { WorkerBroker } from './worker_broker';
 
@@ -22,10 +26,11 @@ export class NamespaceResolver {
   constructor(dataFlowController: DataFlowController) {
     this.dataFlowController = dataFlowController;
 
-    const modPath = this.dataFlowController.config.dataPlane.beaconHostModulePath;
+    const modPath =
+      this.dataFlowController.config.dataPlane.beaconHostModulePath;
     if (modPath) {
       const BeaconHostClass = require(modPath);
-      this.beaconHost = new BeaconHostClass()
+      this.beaconHost = new BeaconHostClass();
     } else {
       this.beaconHost = new NoopBeaconHost();
     }

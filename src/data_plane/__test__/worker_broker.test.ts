@@ -9,33 +9,36 @@ import { Metadata } from '#self/delegate/request_response';
 import { createDeferred, sleep } from '#self/lib/util';
 import { DefaultEnvironment } from '#self/test/env/environment';
 
-const PROFILES = [{
-  name: 'node-http-demo',
-  runtime: 'nodejs',
-  url: 'https://noslate-release.oss-cn-hangzhou.aliyuncs.com/demo/node-http-demo.zip',
-  handler: 'index.handler',
-  initializer: 'index.initializer',
-  signature: '0F32CEE2035C23F134E27FCE7D2BC87D',
-  resourceLimit: {
-    memory: 300 * kMegaBytes,
+const PROFILES = [
+  {
+    name: 'node-http-demo',
+    runtime: 'nodejs',
+    url: 'https://noslate-release.oss-cn-hangzhou.aliyuncs.com/demo/node-http-demo.zip',
+    handler: 'index.handler',
+    initializer: 'index.initializer',
+    signature: '0F32CEE2035C23F134E27FCE7D2BC87D',
+    resourceLimit: {
+      memory: 300 * kMegaBytes,
+    },
+    worker: {
+      initializationTimeout: 500,
+      maxActivateRequests: 1,
+    },
   },
-  worker: {
-    initializationTimeout: 500,
-    maxActivateRequests: 1,
+  {
+    name: 'hello',
+    runtime: 'aworker',
+    url: 'https://noslate-release.oss-cn-hangzhou.aliyuncs.com/demo/aworker-echo.zip',
+    sourceFile: 'index.js',
+    signature: '6D3ADBE5392F1805C163D3DFC5B30FCE',
+    worker: {
+      reservationCount: 1,
+    },
   },
-}, {
-  name: 'hello',
-  runtime: 'aworker',
-  url: 'https://noslate-release.oss-cn-hangzhou.aliyuncs.com/demo/aworker-echo.zip',
-  sourceFile: 'index.js',
-  signature: '6D3ADBE5392F1805C163D3DFC5B30FCE',
-  worker: {
-    reservationCount: 1,
-  },
-}];
+];
 
 const mockHost = {
-  broadcastContainerStatusReport() {}
+  broadcastContainerStatusReport() {},
 };
 
 describe(common.testName(__filename), () => {
@@ -62,17 +65,21 @@ describe(common.testName(__filename), () => {
       const profiles = JSON.parse(JSON.stringify(PROFILES));
       delete profiles[0].worker;
       await profileManager.set(profiles, 'IMMEDIATELY');
-      const broker = new WorkerBroker({
-        profileManager,
-        delegate,
-        config: {
-          worker: {
-            maxActivateRequests: 10,
-            defaultInitializerTimeout: 5000,
+      const broker = new WorkerBroker(
+        {
+          profileManager,
+          delegate,
+          config: {
+            worker: {
+              maxActivateRequests: 10,
+              defaultInitializerTimeout: 5000,
+            },
           },
-        },
-        host: mockHost
-      } as unknown as DataFlowController, 'node-http-demo', {});
+          host: mockHost,
+        } as unknown as DataFlowController,
+        'node-http-demo',
+        {}
+      );
 
       broker.registerCredential('foo', 'bar');
       await broker.bindWorker('bar');
@@ -97,17 +104,21 @@ describe(common.testName(__filename), () => {
       const profiles = JSON.parse(JSON.stringify(PROFILES));
       delete profiles[0].worker.initializationTimeout;
       await profileManager.set(profiles, 'IMMEDIATELY');
-      const broker = new WorkerBroker({
-        profileManager,
-        delegate,
-        config: {
-          worker: {
-            maxActivateRequests: 10,
-            defaultInitializerTimeout: 5000,
+      const broker = new WorkerBroker(
+        {
+          profileManager,
+          delegate,
+          config: {
+            worker: {
+              maxActivateRequests: 10,
+              defaultInitializerTimeout: 5000,
+            },
           },
-        },
-        host: mockHost
-      } as unknown as DataFlowController, 'node-http-demo', {});
+          host: mockHost,
+        } as unknown as DataFlowController,
+        'node-http-demo',
+        {}
+      );
 
       broker.registerCredential('foo', 'bar');
       await broker.bindWorker('bar');
@@ -132,17 +143,21 @@ describe(common.testName(__filename), () => {
       const profiles = JSON.parse(JSON.stringify(PROFILES));
       delete profiles[0].worker.maxActivateRequests;
       await profileManager.set(profiles, 'IMMEDIATELY');
-      const broker = new WorkerBroker({
-        profileManager,
-        delegate,
-        config: {
-          worker: {
-            maxActivateRequests: 10,
-            defaultInitializerTimeout: 5000,
+      const broker = new WorkerBroker(
+        {
+          profileManager,
+          delegate,
+          config: {
+            worker: {
+              maxActivateRequests: 10,
+              defaultInitializerTimeout: 5000,
+            },
           },
-        },
-        host: mockHost
-      } as unknown as DataFlowController, 'node-http-demo', {});
+          host: mockHost,
+        } as unknown as DataFlowController,
+        'node-http-demo',
+        {}
+      );
 
       broker.registerCredential('foo', 'bar');
       await broker.bindWorker('bar');
@@ -157,7 +172,9 @@ describe(common.testName(__filename), () => {
 
   describe('WorkerBroker#getAvailableWorker', () => {
     const dummyDelegate = {
-      async trigger() { /* empty */ },
+      async trigger() {
+        /* empty */
+      },
       resetPeer() {},
     };
 
@@ -169,22 +186,30 @@ describe(common.testName(__filename), () => {
     });
 
     it('no worker', async () => {
-      const broker = new WorkerBroker({
-        profileManager,
-        delegate: dummyDelegate,
-        config: require('#self/config'),
-        host: mockHost
-      } as unknown as DataFlowController, 'node-http-demo', {});
+      const broker = new WorkerBroker(
+        {
+          profileManager,
+          delegate: dummyDelegate,
+          config: require('#self/config'),
+          host: mockHost,
+        } as unknown as DataFlowController,
+        'node-http-demo',
+        {}
+      );
       assert.strictEqual(broker.getAvailableWorker(), null);
     });
 
     it('no `traffic on` worker', async () => {
-      const broker = new WorkerBroker({
-        profileManager,
-        delegate: dummyDelegate,
-        config: require('#self/config'),
-        host: mockHost
-      } as unknown as DataFlowController, 'node-http-demo', {});
+      const broker = new WorkerBroker(
+        {
+          profileManager,
+          delegate: dummyDelegate,
+          config: require('#self/config'),
+          host: mockHost,
+        } as unknown as DataFlowController,
+        'node-http-demo',
+        {}
+      );
 
       broker.registerCredential('foo', 'bar');
       await broker.bindWorker('bar');
@@ -197,12 +222,16 @@ describe(common.testName(__filename), () => {
     });
 
     it('no `traffic on` worker and idle worker', async () => {
-      const broker = new WorkerBroker({
-        profileManager,
-        delegate: dummyDelegate,
-        config: require('#self/config'),
-        host: mockHost
-      } as unknown as DataFlowController, 'node-http-demo', {});
+      const broker = new WorkerBroker(
+        {
+          profileManager,
+          delegate: dummyDelegate,
+          config: require('#self/config'),
+          host: mockHost,
+        } as unknown as DataFlowController,
+        'node-http-demo',
+        {}
+      );
 
       broker.registerCredential('foo', 'bar');
       await broker.bindWorker('bar');
@@ -221,12 +250,16 @@ describe(common.testName(__filename), () => {
     });
 
     it('return idlest worker', async () => {
-      const broker = new WorkerBroker({
-        profileManager,
-        delegate: dummyDelegate,
-        config: require('#self/config'),
-        host: mockHost
-      } as unknown as DataFlowController, 'node-http-demo', {});
+      const broker = new WorkerBroker(
+        {
+          profileManager,
+          delegate: dummyDelegate,
+          config: require('#self/config'),
+          host: mockHost,
+        } as unknown as DataFlowController,
+        'node-http-demo',
+        {}
+      );
 
       broker.registerCredential('foo', 'bar');
       await broker.bindWorker('bar');
@@ -249,7 +282,7 @@ describe(common.testName(__filename), () => {
   });
 
   describe('tryConsumeQueue', () => {
-    it('should consume request queue', async() => {
+    it('should consume request queue', async () => {
       await env.agent.setFunctionProfile([
         {
           name: 'aworker_echo',
@@ -258,18 +291,26 @@ describe(common.testName(__filename), () => {
           sourceFile: 'index.js',
           signature: 'md5:234234',
           worker: {
-            maxActivateRequests: 10
-          }
-        }
+            maxActivateRequests: 10,
+          },
+        },
       ]);
 
-      await env.agent.invoke('aworker_echo', Buffer.from('ok'), { method: 'POST' });
+      await env.agent.invoke('aworker_echo', Buffer.from('ok'), {
+        method: 'POST',
+      });
 
       const dpBroker = env.data.dataFlowController.getBroker('aworker_echo')!;
       const dpWorker = dpBroker.workers[0];
 
-      for (let i = 0; i < 5; i ++) {
-        dpBroker.requestQueue.push(new PendingRequest(Buffer.from('ok'), new Metadata({ method: 'POST' }), 10000));
+      for (let i = 0; i < 5; i++) {
+        dpBroker.requestQueue.push(
+          new PendingRequest(
+            Buffer.from('ok'),
+            new Metadata({ method: 'POST' }),
+            10000
+          )
+        );
       }
 
       assert.strictEqual(dpBroker.requestQueue.length, 5);
@@ -283,7 +324,7 @@ describe(common.testName(__filename), () => {
       assert.strictEqual(dpBroker.requestQueue.length, 0);
     });
 
-    it('should not continue deal request when worker traffic off', async() => {
+    it('should not continue deal request when worker traffic off', async () => {
       await env.agent.setFunctionProfile([
         {
           name: 'aworker_echo',
@@ -292,12 +333,14 @@ describe(common.testName(__filename), () => {
           sourceFile: 'sleep.js',
           signature: 'md5:234234',
           worker: {
-            maxActivateRequests: 10
-          }
-        }
+            maxActivateRequests: 10,
+          },
+        },
       ]);
 
-      await env.agent.invoke('aworker_echo', Buffer.from('200'), { method: 'POST' });
+      await env.agent.invoke('aworker_echo', Buffer.from('200'), {
+        method: 'POST',
+      });
 
       const dpBroker = env.data.dataFlowController.getBroker('aworker_echo')!;
 
@@ -319,19 +362,25 @@ describe(common.testName(__filename), () => {
                 workers: [
                   {
                     name: dpWorker.name,
-                    credential: dpWorker.credential
-                  }
-                ]
-              }
-            ]
+                    credential: dpWorker.credential,
+                  },
+                ],
+              },
+            ],
           });
 
           // worker traffic off
           defer.resolve();
         }
 
-        dpBroker.requestQueue.push(new PendingRequest(Buffer.from('200'), new Metadata({ method: 'POST' }), 10000));
-        times ++;
+        dpBroker.requestQueue.push(
+          new PendingRequest(
+            Buffer.from('200'),
+            new Metadata({ method: 'POST' }),
+            10000
+          )
+        );
+        times++;
       }, 100);
 
       // 堆积一些请求

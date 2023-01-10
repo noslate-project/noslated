@@ -59,7 +59,7 @@ class WorkerState {
       readableCount: this.#readableMap.size,
       resourceCount: this.#resources.size,
       activeFetchRequestCount: this.fetchRequests.size,
-    }
+    };
   }
 
   close() {
@@ -78,13 +78,21 @@ class WorkerState {
       item.destroy();
     }
     for (const item of writables) {
-      item.destroy(new NoslatedStreamError('Peer connection closed', 'PEER_CONNECTION_CLOSED'));
+      item.destroy(
+        new NoslatedStreamError(
+          'Peer connection closed',
+          'PEER_CONNECTION_CLOSED'
+        )
+      );
     }
     for (const item of fetchRequests) {
       item.destroy(new Error('aborted'));
     }
 
-    const group = _.groupBy(Array.from(resources.entries()), item => item[1]._resourceId);
+    const group = _.groupBy(
+      Array.from(resources.entries()),
+      item => item[1]._resourceId
+    );
     _.map(group, list => {
       if (list.length === 0) {
         return;
@@ -104,7 +112,11 @@ class CredentialRegistration {
 
   state = new WorkerState();
 
-  constructor(public credential: string, public sessionId: number, public preemptive: boolean) {}
+  constructor(
+    public credential: string,
+    public sessionId: number,
+    public preemptive: boolean
+  ) {}
 
   setInvokeController(it: InvokeController) {
     this.invokeController = it;
@@ -116,7 +128,4 @@ class CredentialRegistration {
   }
 }
 
-export {
-  WorkerState,
-  CredentialRegistration,
-};
+export { WorkerState, CredentialRegistration };

@@ -7,7 +7,8 @@ const logger = Loggers.get('kv-storages');
 
 const kPerNamespaceCapacity = config.delegate.kvStoragePerNamespaceCapacity;
 const kPerNamespaceMaxSize = config.delegate.kvStoragePerNamespaceMaxSize;
-const kPerNamespaceMaxByteLength = config.delegate.kvStoragePerNamespaceMaxByteLength;
+const kPerNamespaceMaxByteLength =
+  config.delegate.kvStoragePerNamespaceMaxByteLength;
 
 export class KvStorage {
   size = 0;
@@ -37,7 +38,12 @@ export class KvStorage {
       maxSize: lru ? kPerNamespaceMaxByteLength : 0,
       updateAgeOnGet: true,
       dispose: (value, key, reason) => {
-        logger.info('dispose key in kv-storage: namespace(%s), key(%s), reason(%s)', namespace, key, reason);
+        logger.info(
+          'dispose key in kv-storage: namespace(%s), key(%s), reason(%s)',
+          namespace,
+          key,
+          reason
+        );
       },
     });
     this.sink.set(namespace, store);
@@ -52,14 +58,19 @@ export class KvStorage {
   set(namespace: string, key: string, value: Uint8Array) {
     const store = this.getStore(namespace);
     const keyByteLength = Buffer.from(key).byteLength;
-    const existingSize = store.has(key) ? store.get(key)!.byteLength + keyByteLength : 0;
+    const existingSize = store.has(key)
+      ? store.get(key)!.byteLength + keyByteLength
+      : 0;
     const entryByteLength = value.byteLength + keyByteLength;
     /** Check if the entry is larger than capacity */
     if (entryByteLength > kPerNamespaceMaxByteLength) {
       throw new CapacityExceededError('Namespace size limit exceeded.');
     }
     /** Check capacity when the store is not LRU */
-    if (store.maxSize === 0 && entryByteLength - existingSize + this.size >= kPerNamespaceMaxByteLength) {
+    if (
+      store.maxSize === 0 &&
+      entryByteLength - existingSize + this.size >= kPerNamespaceMaxByteLength
+    ) {
       throw new CapacityExceededError('Namespace size limit exceeded.');
     }
     this.size += entryByteLength - existingSize;

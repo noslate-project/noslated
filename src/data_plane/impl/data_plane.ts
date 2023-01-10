@@ -13,25 +13,31 @@ import { IDataPlane } from '#self/lib/interfaces/data_plane';
 const logger = loggers.get('data plane impl');
 
 export class DataPlaneImpl implements IDataPlane {
-
   /**
    * Constructor
    * @param dataFlowController The data flow controller object.
    * @param config The global config object.
    */
-  constructor(private dataFlowController: DataFlowController, private config: Config) {}
+  constructor(
+    private dataFlowController: DataFlowController,
+    private config: Config
+  ) {}
 
   /**
    * No enough memory pool to start worker.
    * @param call The call object.
    * @return The result.
    */
-  async startWorkerFastFail(call: ServerUnaryCall<root.noslated.data.IStartWorkerFastFailRequest>): Promise<void> {
+  async startWorkerFastFail(
+    call: ServerUnaryCall<root.noslated.data.IStartWorkerFastFailRequest>
+  ): Promise<void> {
     const { request } = call;
     rpcAssert(request.funcName);
     rpcAssert(request.inspect != null);
 
-    const broker = this.dataFlowController.getBroker(request.funcName, { inspect: request.inspect });
+    const broker = this.dataFlowController.getBroker(request.funcName, {
+      inspect: request.inspect,
+    });
     if (!broker) return;
     broker.fastFailAllPendingsDueToStartError(request);
   }
@@ -41,7 +47,9 @@ export class DataPlaneImpl implements IDataPlane {
    * @param call The call object.
    * @return The result.
    */
-  async reduceCapacity(call: ServerUnaryCall<root.noslated.data.ICapacityReductionRequest>): Promise<root.noslated.data.ICapacityReductionResponse> {
+  async reduceCapacity(
+    call: ServerUnaryCall<root.noslated.data.ICapacityReductionRequest>
+  ): Promise<root.noslated.data.ICapacityReductionResponse> {
     const brokers = call.request.brokers ?? [];
     const closed = await this.dataFlowController.closeTraffic(brokers);
     return { brokers: closed };
@@ -52,7 +60,9 @@ export class DataPlaneImpl implements IDataPlane {
    * @param call The call object.
    * @return The result.
    */
-  async setFunctionProfile(call: ServerUnaryCall<root.noslated.ISetFunctionProfileRequest>):  Promise<root.noslated.ISetFunctionProfileResponse> {
+  async setFunctionProfile(
+    call: ServerUnaryCall<root.noslated.ISetFunctionProfileRequest>
+  ): Promise<root.noslated.ISetFunctionProfileResponse> {
     const profiles = (call.request.profiles ?? []) as RawFunctionProfile[];
     const mode = call.request.mode ?? 'WAIT';
     rpcAssert(mode === 'IMMEDIATELY' || mode === 'WAIT');
@@ -71,24 +81,29 @@ export class DataPlaneImpl implements IDataPlane {
    * Set service profile
    * @param call The call object.
    */
-  async setServiceProfiles(call: ServerUnaryCall<root.noslated.data.IServiceProfilesAccessor>): Promise<void> {
+  async setServiceProfiles(
+    call: ServerUnaryCall<root.noslated.data.IServiceProfilesAccessor>
+  ): Promise<void> {
     const profiles = call.request.profiles ?? [];
 
     const profilesByMap = profiles.map(it => {
       const item: ServiceProfileItem = {
         name: it.name!,
-        type: it.type! as ServiceType
+        type: it.type! as ServiceType,
       };
 
       if (it.selector) {
-        item.selector = pairsToMap(it.selector as NotNullableInterface<root.noslated.IKeyValuePair>[]) as Record<'functionName', string>;
+        item.selector = pairsToMap(
+          it.selector as NotNullableInterface<root.noslated.IKeyValuePair>[]
+        ) as Record<'functionName', string>;
       }
       if (it.selectors) {
         item.selectors = it.selectors.map(it => {
-
           return {
             proportion: it.proportion || 0,
-            selector: pairsToMap(it.selector as NotNullableInterface<root.noslated.IKeyValuePair>[]) as Record<'functionName', string>
+            selector: pairsToMap(
+              it.selector as NotNullableInterface<root.noslated.IKeyValuePair>[]
+            ) as Record<'functionName', string>,
           };
         });
       }
@@ -104,28 +119,33 @@ export class DataPlaneImpl implements IDataPlane {
     }
   }
 
-  async getServiceProfiles() : Promise<root.noslated.data.IServiceProfilesAccessor> {
+  async getServiceProfiles(): Promise<root.noslated.data.IServiceProfilesAccessor> {
     const profiles = this.dataFlowController.serviceSelector.toJSON();
 
-    const profilesAccessor: root.noslated.data.IFunctionService[] = profiles.map(it => {
-      const item: root.noslated.data.IFunctionService = {
-        name: it.name,
-        type: it.type
-      };
+    const profilesAccessor: root.noslated.data.IFunctionService[] =
+      profiles.map(it => {
+        const item: root.noslated.data.IFunctionService = {
+          name: it.name,
+          type: it.type,
+        };
 
-      if (it.selector) {
-        item.selector = mapToPairs(it.selector as Record<'functionName', string>);
-      }
-      if (it.selectors) {
-        item.selectors = it.selectors.map(it => {
-          return {
-            proportion: it.proportion,
-            selector: mapToPairs(it.selector as Record<'functionName', string>)
-          };
-        });
-      }
-      return item;
-    });
+        if (it.selector) {
+          item.selector = mapToPairs(
+            it.selector as Record<'functionName', string>
+          );
+        }
+        if (it.selectors) {
+          item.selectors = it.selectors.map(it => {
+            return {
+              proportion: it.proportion,
+              selector: mapToPairs(
+                it.selector as Record<'functionName', string>
+              ),
+            };
+          });
+        }
+        return item;
+      });
     return {
       profiles: profilesAccessor,
     };
@@ -134,7 +154,9 @@ export class DataPlaneImpl implements IDataPlane {
   /**
    * Set whether a function is using inspector (this is sent from SDK)
    */
-  async useInspector(call: ServerUnaryCall<root.noslated.data.IUseInspectorRequest>): Promise<void> {
+  async useInspector(
+    call: ServerUnaryCall<root.noslated.data.IUseInspectorRequest>
+  ): Promise<void> {
     const { funcName, use } = call.request;
     rpcAssert(funcName != null);
     rpcAssert(use != null);
@@ -143,7 +165,9 @@ export class DataPlaneImpl implements IDataPlane {
     this.dataFlowController.useInspector(funcName, use);
   }
 
-  async setTracingCategories(call: ServerUnaryCall<root.noslated.data.ISetTracingCategoriesRequest>): Promise<void> {
+  async setTracingCategories(
+    call: ServerUnaryCall<root.noslated.data.ISetTracingCategoriesRequest>
+  ): Promise<void> {
     const { functionName, inspect } = call.request;
     const categories = call.request.categories ?? [];
     rpcAssert(functionName);
@@ -152,16 +176,20 @@ export class DataPlaneImpl implements IDataPlane {
       inspect: !!inspect,
     });
 
-    await Promise.all((broker?.workers ?? []).map(it => {
-      if (categories.length > 0) {
-        return it.delegate.tracingStart(it.credential, categories);
-      } else {
-        return it.delegate.tracingStop(it.credential);
-      }
-    }));
+    await Promise.all(
+      (broker?.workers ?? []).map(it => {
+        if (categories.length > 0) {
+          return it.delegate.tracingStart(it.credential, categories);
+        } else {
+          return it.delegate.tracingStop(it.credential);
+        }
+      })
+    );
   }
 
-  async startInspector(call: ServerUnaryCall<root.noslated.data.IStartInspectorRequest>): Promise<void> {
+  async startInspector(
+    call: ServerUnaryCall<root.noslated.data.IStartInspectorRequest>
+  ): Promise<void> {
     const { functionName, inspect } = call.request;
     rpcAssert(functionName);
 
@@ -169,18 +197,32 @@ export class DataPlaneImpl implements IDataPlane {
       inspect: !!inspect,
     });
 
-    await Promise.all((broker?.workers ?? []).map(it => {
-      it.delegate.inspectorStart(it.credential);
-    }));
+    await Promise.all(
+      (broker?.workers ?? []).map(it => {
+        it.delegate.inspectorStart(it.credential);
+      })
+    );
   }
 
   /**
    * Register worker credential
    */
-  async registerWorkerCredential(call: ServerUnaryCall<root.noslated.data.IRegisterWorkerCredentialRequest>) {
+  async registerWorkerCredential(
+    call: ServerUnaryCall<root.noslated.data.IRegisterWorkerCredentialRequest>
+  ) {
     const { funcName, processName, credential, inspect } = call.request;
-    rpcAssert(funcName != null && processName != null  && credential != null && inspect != null );
-    this.dataFlowController.registerWorkerCredential(funcName, processName, credential, { inspect: !!inspect });
+    rpcAssert(
+      funcName != null &&
+        processName != null &&
+        credential != null &&
+        inspect != null
+    );
+    this.dataFlowController.registerWorkerCredential(
+      funcName,
+      processName,
+      credential,
+      { inspect: !!inspect }
+    );
     return {};
   }
 

@@ -6,7 +6,12 @@ import { createDeferred, Deferred } from '../util';
 const textEncoder = new TextEncoder();
 
 function defineMagic(a: string, b: string, c: string, d: number) {
-  return (d & 0xFF) << 24 | c.charCodeAt(0) << 16 | b.charCodeAt(0) << 8 | a.charCodeAt(0);
+  return (
+    ((d & 0xff) << 24) |
+    (c.charCodeAt(0) << 16) |
+    (b.charCodeAt(0) << 8) |
+    a.charCodeAt(0)
+  );
 }
 
 /**
@@ -33,7 +38,11 @@ class MsgHdr {
   public static byteLength = 8;
   private static magic = defineMagic('T', 'F', 'D', 0x01);
 
-  static encode(messageType: MessageType, code: number, byteLength: number): Uint8Array {
+  static encode(
+    messageType: MessageType,
+    code: number,
+    byteLength: number
+  ): Uint8Array {
     const u8 = Buffer.alloc(this.byteLength);
     u8.writeUint32LE(this.magic, 0);
     u8.writeUint8(messageType, 4);
@@ -55,7 +64,11 @@ class MsgHdr {
     return new MsgHdr(messageType, code, byteLength);
   }
 
-  private constructor(public messageType: MessageType, public code: number, public byteLength: number) {}
+  private constructor(
+    public messageType: MessageType,
+    public code: number,
+    public byteLength: number
+  ) {}
 }
 
 interface Message {
@@ -98,8 +111,8 @@ export class MessageParser {
     let res = this._bufs.shift()!;
     if (res.byteLength < byteLength) {
       const pendingBufs = [res];
-      let totalByteLength = res.byteLength
-      for (; totalByteLength < byteLength;) {
+      let totalByteLength = res.byteLength;
+      for (; totalByteLength < byteLength; ) {
         const next = this._bufs.shift()!;
         pendingBufs.push(next);
         totalByteLength += next.byteLength;
@@ -108,7 +121,11 @@ export class MessageParser {
     }
     if (res.byteLength > byteLength) {
       const view = Buffer.from(res.buffer, res.byteOffset, byteLength);
-      const unconsumed = Buffer.from(res.buffer, res.byteOffset + byteLength, res.byteLength - byteLength);
+      const unconsumed = Buffer.from(
+        res.buffer,
+        res.byteOffset + byteLength,
+        res.byteLength - byteLength
+      );
       this._bufs.unshift(unconsumed);
       res = view;
     }
@@ -137,7 +154,7 @@ export class TurfSession extends EventEmitter {
     this.#connected = true;
     this.#drainQueue();
     this.#connectionDeferred.resolve();
-  }
+  };
 
   #onData = (buffer: Buffer) => {
     this.#parser.push(buffer);
@@ -163,7 +180,7 @@ export class TurfSession extends EventEmitter {
 
     this.#pending = false;
     this.#drainQueue();
-  }
+  };
 
   #onClose = () => {
     const e = new Error('Turf request aborted because session closed');
@@ -174,7 +191,7 @@ export class TurfSession extends EventEmitter {
     this.#connected = false;
 
     this.#closeDeferred.resolve();
-  }
+  };
 
   #onError = (e: unknown) => {
     this.#connectionDeferred.reject(e);
@@ -185,7 +202,7 @@ export class TurfSession extends EventEmitter {
     this.#socket.destroy();
 
     this.emit('error', e);
-  }
+  };
 
   constructor(private sockPath: string) {
     super();

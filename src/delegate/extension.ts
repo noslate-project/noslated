@@ -39,7 +39,12 @@ export class Extension {
     return { status: 200, data };
   }
 
-  async beacon(credentials: string, operation: string, metadata: any, body: Uint8Array) {
+  async beacon(
+    credentials: string,
+    operation: string,
+    metadata: any,
+    body: Uint8Array
+  ) {
     const beaconHost = this.#namespaceResolver.resolve(credentials).beaconHost;
     try {
       await beaconHost.sendBeacon(metadata.type, metadata, body);

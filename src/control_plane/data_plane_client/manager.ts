@@ -12,7 +12,11 @@ import { RawFunctionProfile } from '#self/lib/json/function_profile';
  */
 export class DataPlaneClientManager extends BasePlaneClientManager {
   constructor(public plane: ControlPlane, public config: Config) {
-    super(config, config.plane.dataPlaneCount, loggers.get('data_plane/manager'));
+    super(
+      config,
+      config.plane.dataPlaneCount,
+      loggers.get('data_plane/manager')
+    );
   }
 
   /**
@@ -31,10 +35,14 @@ export class DataPlaneClientManager extends BasePlaneClientManager {
   _onClientReady(client: DataPlaneClient) {
     super._onClientReady(client);
 
-    (client as any).setFunctionProfile({
-      profiles: this.plane.get('functionProfile').profile,
-      mode: 'IMMEDIATELY',
-    }).catch(() => { /** ignore */ });
+    (client as any)
+      .setFunctionProfile({
+        profiles: this.plane.get('functionProfile').profile,
+        mode: 'IMMEDIATELY',
+      })
+      .catch(() => {
+        /** ignore */
+      });
   }
 
   /**
@@ -58,8 +66,13 @@ export class DataPlaneClientManager extends BasePlaneClientManager {
    * @return {object} Containers that can be reduced.
    */
   async reduceCapacity(data: any): Promise<any[]> {
-    const ret: root.noslated.data.ICapacityReductionResponse[] = await this.callToAllAvailableClients('reduceCapacity', [ data ], 'all');
-    return _.flatten(ret.filter(data => data.brokers && data.brokers.length).map(data => data.brokers));
+    const ret: root.noslated.data.ICapacityReductionResponse[] =
+      await this.callToAllAvailableClients('reduceCapacity', [data], 'all');
+    return _.flatten(
+      ret
+        .filter(data => data.brokers && data.brokers.length)
+        .map(data => data.brokers)
+    );
   }
 
   /**
@@ -67,7 +80,9 @@ export class DataPlaneClientManager extends BasePlaneClientManager {
    * @param {root.noslated.data.IRegisterWorkerCredentialRequest} msg -
    * @return {Promise<DataPlaneClient>} The selected data plane guest.
    */
-  async registerWorkerCredential(msg: root.noslated.data.IRegisterWorkerCredentialRequest) {
+  async registerWorkerCredential(
+    msg: root.noslated.data.IRegisterWorkerCredentialRequest
+  ) {
     const dp = this.sample();
     if (!dp) {
       throw new Error('No available data plane.');
@@ -83,11 +98,20 @@ export class DataPlaneClientManager extends BasePlaneClientManager {
    * @param {'IMMEDIATELY' | 'WAIT'} mode The set mode.
    * @return {Promise<({ set: boolean })[]>} The set result.
    */
-  async setFunctionProfile(profile: RawFunctionProfile[], mode: SetFunctionProfileMode): Promise<SetFunctionProfileResult[]> {
-    return await this.callToAllAvailableClients('setFunctionProfile', [{
-      profiles: profile,
-      mode,
-    }], 'all');
+  async setFunctionProfile(
+    profile: RawFunctionProfile[],
+    mode: SetFunctionProfileMode
+  ): Promise<SetFunctionProfileResult[]> {
+    return await this.callToAllAvailableClients(
+      'setFunctionProfile',
+      [
+        {
+          profiles: profile,
+          mode,
+        },
+      ],
+      'all'
+    );
   }
 }
 

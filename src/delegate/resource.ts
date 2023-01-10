@@ -41,7 +41,9 @@ class ResourceStub extends EventEmitter {
   }
 
   acquire(exclusive: boolean, credential: string) {
-    const token = `${exclusive ? kExclusive : kShared}:${nextId()}:${credential}`;
+    const token = `${
+      exclusive ? kExclusive : kShared
+    }:${nextId()}:${credential}`;
     const acquired = this._tryAcquire(token, exclusive);
     if (!acquired) {
       this._waitList.add(token);
@@ -101,12 +103,9 @@ class ResourceStub extends EventEmitter {
     if (this._timer) {
       clearTimeout(this._timer);
     }
-    this._timer = setTimeout(
-      () => {
-        this._onTimeout();
-      },
-      kTimeout
-    );
+    this._timer = setTimeout(() => {
+      this._onTimeout();
+    }, kTimeout);
 
     return true;
   }
@@ -140,13 +139,13 @@ class ResourceStub extends EventEmitter {
     }
     this._timer = null;
     if (newAcquiredTokens.length > 0) {
-      this._timer = setTimeout(
-        () => {
-          this._onTimeout();
-        },
-        kTimeout
+      this._timer = setTimeout(() => {
+        this._onTimeout();
+      }, kTimeout);
+      this.emit(
+        'notification',
+        newAcquiredTokens.map(it => [it, getCredentialFromToken(it)])
       );
-      this.emit('notification', newAcquiredTokens.map(it => [ it, getCredentialFromToken(it) ]));
     }
 
     if (this._activeTokens.size === 0 && this._waitList.size === 0) {
@@ -158,9 +157,15 @@ class ResourceStub extends EventEmitter {
    * Current resource acquisition timed out. Trigger batch iteration.
    */
   _onTimeout() {
-    logger.info('Resource acquisition time out for resource(%s)', this._resourceId);
+    logger.info(
+      'Resource acquisition time out for resource(%s)',
+      this._resourceId
+    );
     this._timer = null;
-    this.emit('timeout', Array.from(this._activeTokens).map(it => [ it, getCredentialFromToken(it) ]));
+    this.emit(
+      'timeout',
+      Array.from(this._activeTokens).map(it => [it, getCredentialFromToken(it)])
+    );
     this._activeTokens = new Set();
     this._next();
   }
@@ -182,6 +187,4 @@ function getCredentialFromToken(token: string) {
   return token.split(':', 3)[2];
 }
 
-export {
-  ResourceStub,
-};
+export { ResourceStub };

@@ -17,7 +17,8 @@ export class ControlPlaneClientManager extends BasePlaneClientManager {
     super(
       config,
       config.plane.controlPlaneCount,
-      loggers.get('control plane client manager'));
+      loggers.get('control plane client manager')
+    );
   }
 
   /**
@@ -38,12 +39,17 @@ export class ControlPlaneClientManager extends BasePlaneClientManager {
     if (this.sdk.functionProfiles == null) {
       return;
     }
-    (client as any).setFunctionProfile({
-      profiles: this.sdk.functionProfiles,
-      mode: this.sdk.functionProfilesMode,
-    }).catch((e: unknown) => {
-      client.logger.warn(`Cannot set ${client.planeId}'s function profile.`, e);
-    });
+    (client as any)
+      .setFunctionProfile({
+        profiles: this.sdk.functionProfiles,
+        mode: this.sdk.functionProfilesMode,
+      })
+      .catch((e: unknown) => {
+        client.logger.warn(
+          `Cannot set ${client.planeId}'s function profile.`,
+          e
+        );
+      });
   }
 
   /**

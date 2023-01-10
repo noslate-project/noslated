@@ -2,11 +2,8 @@ import { EventEmitter, Readable } from 'stream';
 import cp from 'child_process';
 import { promises as fs } from 'fs';
 import os from 'os';
-import path from 'path'
-import {
-  DefaultSerializer,
-  DefaultDeserializer,
-} from 'v8';
+import path from 'path';
+import { DefaultSerializer, DefaultDeserializer } from 'v8';
 import download from 'download';
 import crypto from 'crypto';
 import loggers from './logger';
@@ -47,7 +44,10 @@ export interface Deferred<T> {
 function createDeferred<T>(): Deferred<T> {
   let resolve!: (value: T | PromiseLike<T>) => void;
   let reject!: (reason?: any) => void;
-  const promise = new Promise<T>((_resolve, _reject) => { resolve = _resolve; reject = _reject; });
+  const promise = new Promise<T>((_resolve, _reject) => {
+    resolve = _resolve;
+    reject = _reject;
+  });
   return { promise, resolve, reject };
 }
 
@@ -85,8 +85,8 @@ async function downloadZipAndExtractToDir(url: string, dir: string) {
   await fs.mkdir(path.dirname(dir), { recursive: true });
 
   const zipOrig = path.join(os.tmpdir(), zipFilename);
-  const unzip = cp.spawn('unzip', [ '-q', zipOrig, '-d', dir ], {
-    stdio: [ 'ignore', 'ignore', 'pipe' ],
+  const unzip = cp.spawn('unzip', ['-q', zipOrig, '-d', dir], {
+    stdio: ['ignore', 'ignore', 'pipe'],
   });
 
   let stderr = '';
@@ -141,7 +141,7 @@ function raceEvent(eventEmitter: EventEmitter, events: string[]) {
   const callbacks = events.map(it => {
     return (...args: unknown[]) => {
       off();
-      deferred.resolve([ it, args ]);
+      deferred.resolve([it, args]);
     };
   });
 
@@ -174,14 +174,22 @@ function jsonClone(value: unknown) {
 }
 
 type MaybeNull<T> = T | null;
-export type NotNullRecord<T> = T extends object ? {
-  [Property in keyof T]: T[Property] extends MaybeNull<infer R> ? NotNullRecord<R> : NotNullRecord<T[Property]>;
-} : T;
+export type NotNullRecord<T> = T extends object
+  ? {
+      [Property in keyof T]: T[Property] extends MaybeNull<infer R>
+        ? NotNullRecord<R>
+        : NotNullRecord<T[Property]>;
+    }
+  : T;
 
 type MaybeNill<T> = T | null | undefined;
-export type DeepRequired<T> = T extends object ? Required<{
-  [Property in keyof T]: T[Property] extends MaybeNill<infer R> ? DeepRequired<R> : DeepRequired<T[Property]>;
-}> : T;
+export type DeepRequired<T> = T extends object
+  ? Required<{
+      [Property in keyof T]: T[Property] extends MaybeNill<infer R>
+        ? DeepRequired<R>
+        : DeepRequired<T[Property]>;
+    }>
+  : T;
 
 declare global {
   interface Error {
@@ -207,7 +215,7 @@ export function setDifference<T>(setA: Set<T>, setB: Set<T>): Set<T> {
   const _difference = new Set(setA);
 
   for (const elem of setB) {
-      _difference.delete(elem);
+    _difference.delete(elem);
   }
 
   return _difference;
@@ -215,14 +223,23 @@ export function setDifference<T>(setA: Set<T>, setB: Set<T>): Set<T> {
 
 export class BackoffCounter {
   private count = 0;
-  constructor(private initialTimeout: number, private maxReconnectTimeout: number, private reconnectTimeout: number = Math.floor((maxReconnectTimeout - initialTimeout) / 10)) {}
+  constructor(
+    private initialTimeout: number,
+    private maxReconnectTimeout: number,
+    private reconnectTimeout: number = Math.floor(
+      (maxReconnectTimeout - initialTimeout) / 10
+    )
+  ) {}
 
   next() {
     const count = this.count++;
     if (count === 0) {
       return this.initialTimeout;
     }
-    return Math.min(count * this.reconnectTimeout + this.initialTimeout, this.maxReconnectTimeout);
+    return Math.min(
+      count * this.reconnectTimeout + this.initialTimeout,
+      this.maxReconnectTimeout
+    );
   }
 
   reset() {

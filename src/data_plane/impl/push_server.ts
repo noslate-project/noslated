@@ -19,28 +19,51 @@ export class PushServerImpl implements IPushServer {
   logger: Logger;
   requestLogger: RequestLogger;
 
-  constructor(public dataFlowController: DataFlowController, public config: Config) {
+  constructor(
+    public dataFlowController: DataFlowController,
+    public config: Config
+  ) {
     this.logger = loggers.get('push server');
     this.requestLogger = new RequestLogger();
   }
 
-  async #invoke(type: string, { name, body, url, method, headers, baggage, timeout, requestId }: NotNullableInterface<root.noslated.data.IInvokeRequest>) {
+  async #invoke(
+    type: string,
+    {
+      name,
+      body,
+      url,
+      method,
+      headers,
+      baggage,
+      timeout,
+      requestId,
+    }: NotNullableInterface<root.noslated.data.IInvokeRequest>
+  ) {
     const start = Date.now();
     const metadata = new Metadata({
       url,
       method,
-      headers: pairsToTuples(headers as NotNullableInterface<root.noslated.IKeyValuePair>[] ?? []),
-      baggage: pairsToTuples(baggage as NotNullableInterface<root.noslated.IKeyValuePair>[] ?? []),
+      headers: pairsToTuples(
+        (headers as NotNullableInterface<root.noslated.IKeyValuePair>[]) ?? []
+      ),
+      baggage: pairsToTuples(
+        (baggage as NotNullableInterface<root.noslated.IKeyValuePair>[]) ?? []
+      ),
       // TODO: negotiate with deadline;
       timeout,
-      requestId
+      requestId,
     });
     let bytesSent = 0;
     let status = 0;
     let error: unknown;
 
     try {
-      const response: TriggerResponse = await this.dataFlowController[type](name, body, metadata);
+      const response: TriggerResponse = await this.dataFlowController[type](
+        name,
+        body,
+        metadata
+      );
       const data = await bufferFromStream(response);
       bytesSent = data.byteLength;
       status = response.status;
@@ -58,20 +81,57 @@ export class PushServerImpl implements IPushServer {
       };
     } finally {
       const end = Date.now();
-      this.requestLogger.access(name as string, metadata, end - start, String(status), bytesSent, requestId);
+      this.requestLogger.access(
+        name as string,
+        metadata,
+        end - start,
+        String(status),
+        bytesSent,
+        requestId
+      );
       if (error) {
         this.requestLogger.error(name as string, error as Error, requestId);
       }
     }
   }
 
-  async invoke(call: ServerWritableStream<root.noslated.data.InvokeRequest, root.noslated.data.InvokeResponse>): Promise<InvokeResponse> {
-    const { name, body, url, method, headers, baggage, timeout, requestId } = call.request;
-    return this.#invoke('invoke', { name, body, url, method, headers, baggage, timeout, requestId } as NotNullableInterface<root.noslated.data.IInvokeRequest>);
+  async invoke(
+    call: ServerWritableStream<
+      root.noslated.data.InvokeRequest,
+      root.noslated.data.InvokeResponse
+    >
+  ): Promise<InvokeResponse> {
+    const { name, body, url, method, headers, baggage, timeout, requestId } =
+      call.request;
+    return this.#invoke('invoke', {
+      name,
+      body,
+      url,
+      method,
+      headers,
+      baggage,
+      timeout,
+      requestId,
+    } as NotNullableInterface<root.noslated.data.IInvokeRequest>);
   }
 
-  async invokeService(call: ServerWritableStream<root.noslated.data.InvokeRequest, root.noslated.data.InvokeResponse>): Promise<InvokeResponse> {
-    const { name, body, url, method, headers, baggage, timeout, requestId } = call.request;
-    return this.#invoke('invokeService', { name, body, url, method, headers, baggage, timeout, requestId } as NotNullableInterface<root.noslated.data.IInvokeRequest>);
+  async invokeService(
+    call: ServerWritableStream<
+      root.noslated.data.InvokeRequest,
+      root.noslated.data.InvokeResponse
+    >
+  ): Promise<InvokeResponse> {
+    const { name, body, url, method, headers, baggage, timeout, requestId } =
+      call.request;
+    return this.#invoke('invokeService', {
+      name,
+      body,
+      url,
+      method,
+      headers,
+      baggage,
+      timeout,
+      requestId,
+    } as NotNullableInterface<root.noslated.data.IInvokeRequest>);
   }
 }

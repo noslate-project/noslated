@@ -14,7 +14,8 @@ export class DataPlaneClientManager extends BasePlaneClientManager {
     super(
       config,
       config.plane.dataPlaneCount,
-      loggers.get('data plane client manager'));
+      loggers.get('data plane client manager')
+    );
   }
 
   /**
@@ -34,7 +35,11 @@ export class DataPlaneClientManager extends BasePlaneClientManager {
     super._onClientReady(client);
     const promises = [];
     if (this.sdk.serviceProfiles != null) {
-      promises.push((client as any).setServiceProfiles({ profiles: this.sdk.serviceProfiles }));
+      promises.push(
+        (client as any).setServiceProfiles({
+          profiles: this.sdk.serviceProfiles,
+        })
+      );
     }
 
     for (const funcName of this.sdk.useInspectorSet.values()) {

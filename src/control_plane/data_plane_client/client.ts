@@ -9,8 +9,15 @@ export class DataPlaneClient extends BasePlaneClient {
   #serverSockPath: string;
   subscription: Subscription | null;
 
-  constructor(private manager: DataPlaneClientManager, planeId: number, config: Config) {
-    const dataPlaneSockPath = path.join(config.dirs.noslatedSock, `dp-${planeId}.sock`);
+  constructor(
+    private manager: DataPlaneClientManager,
+    planeId: number,
+    config: Config
+  ) {
+    const dataPlaneSockPath = path.join(
+      config.dirs.noslatedSock,
+      `dp-${planeId}.sock`
+    );
     super('data plane guest', dataPlaneSockPath, planeId, config);
     this.#serverSockPath = '';
     this.subscription = null;

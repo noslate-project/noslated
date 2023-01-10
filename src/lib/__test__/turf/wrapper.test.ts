@@ -26,7 +26,7 @@ describe(common.testName(__filename), () => {
     {
       const result = await turf.ps();
       assert.strictEqual(result.length, 1);
-      const [ item ] = result;
+      const [item] = result;
       assert.strictEqual(item.name, 'foobar');
       assert.strictEqual(item.pid, 0);
       assert.strictEqual(item.status, TurfContainerStates.init);
@@ -37,7 +37,7 @@ describe(common.testName(__filename), () => {
     {
       const result = await turf.ps();
       assert.strictEqual(result.length, 1);
-      const [ item ] = result;
+      const [item] = result;
       assert.strictEqual(item.name, 'foobar');
       assert.strictEqual(item.status, TurfContainerStates.running);
       pid = item.pid;
@@ -47,7 +47,7 @@ describe(common.testName(__filename), () => {
     {
       const result = await turf.ps();
       assert.strictEqual(result.length, 1);
-      const [ item ] = result;
+      const [item] = result;
       assert.strictEqual(item.name, 'foobar');
       assert.strictEqual(item.pid, pid);
       assert.strictEqual(item.status, TurfContainerStates.stopped);

@@ -9,10 +9,14 @@ import { internetDescribe } from './util';
 
 internetDescribe('devtool', () => {
   it('should simple proxy baidu', async () => {
-    const child = cp.spawn(path.join(__dirname, '../bin/dev'), [ path.join(__dirname, '../example/simple_proxy_baidu.js') ], {
-      env: process.env,
-      stdio: [ 'ignore', 'pipe', 'inherit' ],
-    });
+    const child = cp.spawn(
+      path.join(__dirname, '../bin/dev'),
+      [path.join(__dirname, '../example/simple_proxy_baidu.js')],
+      {
+        env: process.env,
+        stdio: ['ignore', 'pipe', 'inherit'],
+      }
+    );
 
     const { resolve, promise } = util.createDeferred<void>();
     let stdout = '';
@@ -32,7 +36,9 @@ internetDescribe('devtool', () => {
       assert(data.length > 1000);
       assert(data.includes('百度一下'));
 
-      ret = await urllib.request('http://127.0.0.1:7001/dsaklfhoiksadjfliasufoijwlkfjsaodciusajdclkj');
+      ret = await urllib.request(
+        'http://127.0.0.1:7001/dsaklfhoiksadjfliasufoijwlkfjsaodciusajdclkj'
+      );
       data = ret.data.toString();
       assert(data.includes('404'));
       assert.strictEqual(ret.status, 404);

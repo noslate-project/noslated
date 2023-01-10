@@ -21,15 +21,17 @@ export function startTurfD() {
   const turfdOutput = process.env.TURFD_OUTPUT != null;
   logger.debug('Starting turf...');
   refreshTurfWorkspace();
-  const turfd = turfDCP = cp.spawn(turfPath, [ '-D', '-f' ], {
+  const turfd = (turfDCP = cp.spawn(turfPath, ['-D', '-f'], {
     cwd: process.cwd(),
     env: process.env,
-    stdio: [ 'ignore', 'pipe', 'pipe' ],
+    stdio: ['ignore', 'pipe', 'pipe'],
     detached: false,
-  });
+  }));
 
   turfd.on('exit', (code, signal) => {
-    logger[signal === 'SIGKILL' ? 'warn' : 'error'](`turfd closed with ${code} / ${signal}`);
+    logger[signal === 'SIGKILL' ? 'warn' : 'error'](
+      `turfd closed with ${code} / ${signal}`
+    );
   });
 
   let data = '';

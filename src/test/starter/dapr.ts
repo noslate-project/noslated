@@ -48,7 +48,6 @@ module.exports = class DaprAdaptor extends Base {
     }
 
     if (name === 'getOp') {
-
       return {
         status: 200,
         data: Buffer.from(`${operation}: ${data}, age: ${metadata.age}`),

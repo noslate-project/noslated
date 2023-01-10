@@ -7,8 +7,5 @@
   },
   "globals": {
     "aworker": "readonly"
-  },
-  "rules": {
-    "prettier/prettier": "off"
   }
 }

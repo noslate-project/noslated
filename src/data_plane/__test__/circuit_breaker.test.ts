@@ -12,7 +12,7 @@ describe(common.testName(__filename), () => {
   let clock: Clock;
   beforeEach(() => {
     clock = FakeTimer.install({
-      toFake: [ 'setInterval' ]
+      toFake: ['setInterval'],
     });
   });
   afterEach(() => {

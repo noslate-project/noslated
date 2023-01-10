@@ -49,7 +49,11 @@ export class NoslatedDelegateService extends EventEmitter {
   #sharedState: DelegateSharedState;
 
   #ops = {
-    Credentials: async (sessionId: number, params: aworker.ipc.CredentialsRequestMessage, callback: CommonCallback) => {
+    Credentials: async (
+      sessionId: number,
+      params: aworker.ipc.CredentialsRequestMessage,
+      callback: CommonCallback
+    ) => {
       const { cred, type } = params;
       logger.debug('on credentials', params);
       if (!this.#credentialsMap.has(cred)) {
@@ -70,8 +74,16 @@ export class NoslatedDelegateService extends EventEmitter {
           this.#sharedState.server!.terminateSession(sessionId);
           reg?.close();
         }
-        reg = new CredentialRegistration(cred, sessionId, reg?.preemptive as boolean);
-        const invokeController = new InvokeController(this.#sharedState, reg, this);
+        reg = new CredentialRegistration(
+          cred,
+          sessionId,
+          reg?.preemptive as boolean
+        );
+        const invokeController = new InvokeController(
+          this.#sharedState,
+          reg,
+          this
+        );
         reg.setInvokeController(invokeController);
 
         this.#credentialsMap.set(cred, reg);
@@ -92,7 +104,11 @@ export class NoslatedDelegateService extends EventEmitter {
         this.emit(Events.diagnosticsBind, cred);
       }
     },
-    InspectorEvent: async (sessionId: number, params: aworker.ipc.InspectorCommandRequestMessage, callback: CommonCallback) => {
+    InspectorEvent: async (
+      sessionId: number,
+      params: aworker.ipc.InspectorCommandRequestMessage,
+      callback: CommonCallback
+    ) => {
       const cred = this.#sessionIdMaps.get(sessionId);
       if (cred == null) {
         callback(CanonicalCode.CLIENT_ERROR);
@@ -105,7 +121,11 @@ export class NoslatedDelegateService extends EventEmitter {
         message: params.message,
       });
     },
-    InspectorStarted: async (sessionId: number, params: any, callback: CommonCallback) => {
+    InspectorStarted: async (
+      sessionId: number,
+      params: any,
+      callback: CommonCallback
+    ) => {
       const cred = this.#sessionIdMaps.get(sessionId);
       if (cred == null) {
         callback(CanonicalCode.CLIENT_ERROR);
@@ -116,7 +136,12 @@ export class NoslatedDelegateService extends EventEmitter {
       this.emit(Events.inspectorStarted, cred);
     },
   };
-  #onRequest = (sessionId: number, op: string, params: any, callback: CommonCallback) => {
+  #onRequest = (
+    sessionId: number,
+    op: string,
+    params: any,
+    callback: CommonCallback
+  ) => {
     logger.debug('received request', sessionId, op, params);
     const handler = this.#ops[op];
     if (handler != null) {
@@ -128,14 +153,28 @@ export class NoslatedDelegateService extends EventEmitter {
       return;
     }
     try {
-      reg?.invokeController![op](params, (code: aworker.ipc.CanonicalCode, ...args: any[]) => {
-        if (code !== CanonicalCode.OK) {
-          logger.error('unexpected exception on handling %s(session %s), code(%s)', op, sessionId, code, ...args);
+      reg?.invokeController![op](
+        params,
+        (code: aworker.ipc.CanonicalCode, ...args: any[]) => {
+          if (code !== CanonicalCode.OK) {
+            logger.error(
+              'unexpected exception on handling %s(session %s), code(%s)',
+              op,
+              sessionId,
+              code,
+              ...args
+            );
+          }
+          callback(code, ...args);
         }
-        callback(code, ...args);
-      });
+      );
     } catch (e) {
-      logger.error('unexpected exception on handling %s(session %s)', op, sessionId, e);
+      logger.error(
+        'unexpected exception on handling %s(session %s)',
+        op,
+        sessionId,
+        e
+      );
       throw e;
     }
   };
@@ -181,7 +220,7 @@ export class NoslatedDelegateService extends EventEmitter {
     }
     const reg = this.#credentialsMap.get(credential);
     return reg;
-  }
+  };
 
   /**
    *
@@ -190,7 +229,10 @@ export class NoslatedDelegateService extends EventEmitter {
    * @param {otel.Meter} [options.meter] -
    * @param {NamespaceResolver} [options.namespaceResolver] -
    */
-  constructor(serverPath?: string | undefined, options?: { meter: Meter; namespaceResolver: NamespaceResolver; }) {
+  constructor(
+    serverPath?: string | undefined,
+    options?: { meter: Meter; namespaceResolver: NamespaceResolver }
+  ) {
     super();
 
     if (typeof serverPath === 'object') {
@@ -200,18 +242,31 @@ export class NoslatedDelegateService extends EventEmitter {
 
     serverPath = serverPath ?? path.resolve('./noslated.sock');
 
-    this.#sharedState = new DelegateSharedState(options?.namespaceResolver ?? new DefaultNamespaceResolver(), serverPath);
+    this.#sharedState = new DelegateSharedState(
+      options?.namespaceResolver ?? new DefaultNamespaceResolver(),
+      serverPath
+    );
 
     this.#sharedState.meter = options?.meter ?? createNoopMeter();
-    this.#sharedState.triggerCounter = this.#sharedState.meter!.createCounter(DelegateMetrics.TRIGGER_COUNT, {});
-    this.#sharedState.triggerDurationHistogram = this.#sharedState.meter!.createHistogram(DelegateMetrics.TRIGGER_DURATION, {});
+    this.#sharedState.triggerCounter = this.#sharedState.meter!.createCounter(
+      DelegateMetrics.TRIGGER_COUNT,
+      {}
+    );
+    this.#sharedState.triggerDurationHistogram =
+      this.#sharedState.meter!.createHistogram(
+        DelegateMetrics.TRIGGER_DURATION,
+        {}
+      );
   }
 
   start() {
     if (this.#sharedState.server) {
       return;
     }
-    const server = new NoslatedServer(this.#sharedState.serverPath, Logger.get('noslated server'));
+    const server = new NoslatedServer(
+      this.#sharedState.serverPath,
+      Logger.get('noslated server')
+    );
     server.onRequest = this.#onRequest;
     server.onDisconnect = this.#onDisconnect;
     this.#sharedState.server = server;
@@ -282,7 +337,10 @@ export class NoslatedDelegateService extends EventEmitter {
     return this.#sharedState.serverPath;
   }
 
-  #triggerPreamble = (credential: string, type?: aworker.ipc.CredentialTargetType) => {
+  #triggerPreamble = (
+    credential: string,
+    type?: aworker.ipc.CredentialTargetType
+  ) => {
     if (!this.#started()) {
       throw new Error('noslated server not started yet');
     }
@@ -315,7 +373,12 @@ export class NoslatedDelegateService extends EventEmitter {
    * @param {Metadata|object} [metadataInit] the metadata
    * @return {TriggerResponse} response
    */
-  async trigger(credential: string, method: string, data: Buffer | Readable | null, metadataInit: MetadataInit | Metadata) {
+  async trigger(
+    credential: string,
+    method: string,
+    data: Buffer | Readable | null,
+    metadataInit: MetadataInit | Metadata
+  ) {
     this.#triggerPreamble(credential);
     const reg = this.#credentialsMap.get(credential);
     return reg?.invokeController?.trigger(method, data, metadataInit);
@@ -343,7 +406,11 @@ export class NoslatedDelegateService extends EventEmitter {
     return this.#sharedState.server!.inspectorGetTargets(sessionId);
   }
 
-  async InspectorStartSession(credential: string, inspectorSessionId: number, targetId: string) {
+  async InspectorStartSession(
+    credential: string,
+    inspectorSessionId: number,
+    targetId: string
+  ) {
     const sessionId = this.#triggerPreamble(
       credential,
       CredentialTargetType.Diagnostics
@@ -366,7 +433,11 @@ export class NoslatedDelegateService extends EventEmitter {
     );
   }
 
-  async SendInspectorCommand(credential: string, inspectorSessionId: number, message: string) {
+  async SendInspectorCommand(
+    credential: string,
+    inspectorSessionId: number,
+    message: string
+  ) {
     const sessionId = this.#triggerPreamble(
       credential,
       CredentialTargetType.Diagnostics
@@ -400,28 +471,36 @@ export class NoslatedDelegateService extends EventEmitter {
   makeResourceStub = (resourceId: string) => {
     const resourceStub = new ResourceStub(resourceId);
     resourceStub.on('notification', notificationTargets => {
-      notificationTargets.forEach(([ token, credential ]: [string, string]) => {
+      notificationTargets.forEach(([token, credential]: [string, string]) => {
         const reg = this.#credentialsMap.get(credential);
         if (reg == null) {
           return;
         }
-        this.#sharedState.server!.resourceNotification(reg.sessionId, resourceId, token)
+        this.#sharedState
+          .server!.resourceNotification(reg.sessionId, resourceId, token)
           .catch(err => {
-            logger.error('unexpected error on resource(%s) notification to target(%s)', resourceId, reg.credential, err);
+            logger.error(
+              'unexpected error on resource(%s) notification to target(%s)',
+              resourceId,
+              reg.credential,
+              err
+            );
           });
       });
     });
     resourceStub.on('timeout', passiveReleasedTargets => {
-      passiveReleasedTargets.forEach(([ token, credential ]: [string, string]) => {
-        const reg = this.#credentialsMap.get(credential);
-        if (reg == null) {
-          return;
+      passiveReleasedTargets.forEach(
+        ([token, credential]: [string, string]) => {
+          const reg = this.#credentialsMap.get(credential);
+          if (reg == null) {
+            return;
+          }
+          reg.state.removeResource(token);
         }
-        reg.state.removeResource(token);
-      });
+      );
     });
     return resourceStub;
-  }
+  };
 
   getResourceUsage(credential: string) {
     const reg = this.#credentialsMap.get(credential);

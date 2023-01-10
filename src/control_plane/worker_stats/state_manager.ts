@@ -12,14 +12,26 @@ export class StateManager {
     this.turf = plane.turf;
   }
 
-  updateContainerStatusByReport(report: NotNullableInterface<root.noslated.data.IContainerStatusReport>) {
+  updateContainerStatusByReport(
+    report: NotNullableInterface<root.noslated.data.IContainerStatusReport>
+  ) {
     const { functionName, name, event, isInspector } = report;
 
-    const broker = this.plane.capacityManager.workerStatsSnapshot.getBroker(functionName, isInspector);
-    const worker = this.plane.capacityManager.workerStatsSnapshot.getWorker(functionName, isInspector, name);
+    const broker = this.plane.capacityManager.workerStatsSnapshot.getBroker(
+      functionName,
+      isInspector
+    );
+    const worker = this.plane.capacityManager.workerStatsSnapshot.getWorker(
+      functionName,
+      isInspector,
+      name
+    );
 
     if (!broker || !worker) {
-      this.logger.warn('containerStatusReport report [%j] skipped because no broker and worker found.', report);
+      this.logger.warn(
+        'containerStatusReport report [%j] skipped because no broker and worker found.',
+        report
+      );
       return;
     }
 
@@ -39,7 +51,10 @@ export class StateManager {
       worker.setStopped();
     }
 
-    if (statusTo === ContainerStatus.Ready && event === ContainerStatusReport.ContainerInstalled) {
+    if (
+      statusTo === ContainerStatus.Ready &&
+      event === ContainerStatusReport.ContainerInstalled
+    ) {
       worker.setReady();
     }
   }
@@ -47,7 +62,10 @@ export class StateManager {
   #getStatusToByEvent(event: string) {
     if (event === ContainerStatusReport.ContainerInstalled) {
       return ContainerStatus.Ready;
-    } else if (event === ContainerStatusReport.RequestDrained || event === ContainerStatusReport.ContainerDisconnected) {
+    } else if (
+      event === ContainerStatusReport.RequestDrained ||
+      event === ContainerStatusReport.ContainerDisconnected
+    ) {
       return ContainerStatus.Stopped;
     } else {
       return ContainerStatus.Unknown;
@@ -58,12 +76,13 @@ export class StateManager {
     const psData = await this.turf.ps();
 
     if (!psData || psData.length === 0) {
-      this.logger.debug('got turf ps data empty, skip current syncWorkerData operation.');
+      this.logger.debug(
+        'got turf ps data empty, skip current syncWorkerData operation.'
+      );
       return;
     }
 
     this.plane.capacityManager.workerStatsSnapshot.sync(data, psData);
     await this.plane.capacityManager.workerStatsSnapshot.correct();
   }
-
 }

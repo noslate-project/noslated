@@ -63,7 +63,7 @@ if (os.platform() === 'darwin') {
   watch = function (dir: string, options: any, listener: WatchListener) {
     const watcher = new Watcher(dir, listener);
     return watcher;
-  }
+  };
 }
 
 type WatchListener = (eventType: string, filename: string | Buffer) => void;

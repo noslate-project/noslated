@@ -27,7 +27,9 @@ describe(common.testName(__filename), () => {
     const ret = await delegate.collectMetrics('foobar');
     assert.ok(Array.isArray(ret.integerRecords));
 
-    const item = ret.integerRecords.find((it: { name: string; }) => it.name === 'test');
+    const item = ret.integerRecords.find(
+      (it: { name: string }) => it.name === 'test'
+    );
     assert.ok(item != null);
     const label = item.labels['my_label'];
     assert.ok(typeof label === 'string');

@@ -24,7 +24,6 @@ class TestEnvironment extends DefaultEnvironment {
     super.after(ctx);
     await this.resourceServer.close();
   }
-
 }
 
 const cases: any = [
@@ -48,20 +47,20 @@ const cases: any = [
   },
 ];
 
-describe(common.testName(__filename), function() {
+describe(common.testName(__filename), function () {
   // Debug version of Node.js may take longer time to bootstrap.
   this.timeout(30_000);
 
   const env = new TestEnvironment();
 
   for (const item of cases) {
-    const _it = (item.seed && process.platform === 'darwin') ? it.skip : it;
+    const _it = item.seed && process.platform === 'darwin' ? it.skip : it;
     _it(item.name, async () => {
       if (item.before) {
         await item.before(env, item);
       }
 
-      await env.agent.setFunctionProfile([ item.profile ]);
+      await env.agent.setFunctionProfile([item.profile]);
       await testWorker(env.agent, item);
       if (item.after) {
         await item.after(env, item);

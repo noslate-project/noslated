@@ -16,7 +16,11 @@ enum ErrorCode {
  * @param {Error} err The error object.
  * @return {root.noslated.data.StartWorkerFastFailRequest} The wrapped object.
  */
-function wrapLaunchErrorObject(name: string, isInspector: boolean, err: Error): root.noslated.data.IStartWorkerFastFailRequest {
+function wrapLaunchErrorObject(
+  name: string,
+  isInspector: boolean,
+  err: Error
+): root.noslated.data.IStartWorkerFastFailRequest {
   let displayMessage;
   switch (err.code) {
     case ErrorCode.kEnsureCodeError: {
@@ -65,7 +69,4 @@ function wrapLaunchErrorObject(name: string, isInspector: boolean, err: Error): 
   };
 }
 
-export {
-  ErrorCode,
-  wrapLaunchErrorObject,
-};
+export { ErrorCode, wrapLaunchErrorObject };

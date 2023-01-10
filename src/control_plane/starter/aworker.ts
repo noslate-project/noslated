@@ -29,7 +29,7 @@ export class AworkerStarter extends BaseStarter {
   }
 
   _initValidV8Options() {
-    const options = cp.execFileSync(this.binPath, [ '--v8-options' ], {
+    const options = cp.execFileSync(this.binPath, ['--v8-options'], {
       encoding: 'utf8',
     });
     this._validV8Options = BaseStarter.parseV8OptionsString(options);
@@ -52,16 +52,23 @@ export class AworkerStarter extends BaseStarter {
 
   async startSeed() {
     this.lastSeedState = undefined;
-    const commands = [ this.bin ];
+    const commands = [this.bin];
     if (this.config.starter.aworker.defaultSeedScript != null) {
-      commands.push('--mode=seed-userland', this.config.starter.aworker.defaultSeedScript);
+      commands.push(
+        '--mode=seed-userland',
+        this.config.starter.aworker.defaultSeedScript
+      );
     } else {
       commands.push('--mode=seed');
     }
     this.logger.info('starting seed with options %j', commands);
 
     // Create the dummy empty bundle path.
-    const bundlePath = path.join(this.config.dirs.noslatedWork, 'bundles', SEED_CONTAINER_NAME);
+    const bundlePath = path.join(
+      this.config.dirs.noslatedWork,
+      'bundles',
+      SEED_CONTAINER_NAME
+    );
     fs.mkdirSync(path.join(bundlePath, 'code'), { recursive: true });
 
     await this.doStart(
@@ -70,7 +77,8 @@ export class AworkerStarter extends BaseStarter {
       commands, // run command
       { runtime: 'aworker' }, // dummy profile: runtime
       this.config.starter.aworker.defaultEnvirons, // environment
-      { additionalSpec: { turf: { seed: true } } }); // additional spec
+      { additionalSpec: { turf: { seed: true } } }
+    ); // additional spec
 
     await this.seedStatus();
   }
@@ -92,7 +100,8 @@ export class AworkerStarter extends BaseStarter {
   async keepSeedAlive() {
     this.keepSeedAliveTimer = null;
     try {
-      const status = await this.turf.state(SEED_CONTAINER_NAME)
+      const status = await this.turf
+        .state(SEED_CONTAINER_NAME)
         .catch((exp: unknown) => {
           const e = castError(exp);
           if (!e.message.includes('not found')) {
@@ -104,12 +113,14 @@ export class AworkerStarter extends BaseStarter {
       let needStart = false;
       if (status == null) {
         needStart = true;
-      } else if (![
-        TurfContainerStates.starting,
-        TurfContainerStates.init,
-        TurfContainerStates.running,
-        TurfContainerStates.forkwait,
-      ].includes(status.state)) {
+      } else if (
+        ![
+          TurfContainerStates.starting,
+          TurfContainerStates.init,
+          TurfContainerStates.running,
+          TurfContainerStates.forkwait,
+        ].includes(status.state)
+      ) {
         needStart = true;
         await this.turf.destroy(SEED_CONTAINER_NAME);
         if (this.closed) return;
@@ -119,24 +130,32 @@ export class AworkerStarter extends BaseStarter {
         this.logger.info('starting seed... oldStatus:', status);
         await this.startSeed();
         if (this.closed) return;
-        this.waitSeedReady().then(() => {
-          this.logger.info('Seed process started.');
-        }).catch(e => {
-          this.logger.warn(e);
-        });
+        this.waitSeedReady()
+          .then(() => {
+            this.logger.info('Seed process started.');
+          })
+          .catch(e => {
+            this.logger.warn(e);
+          });
       }
     } catch (e) {
       this.logger.warn('Failed to keep seed alive.', e);
     } finally {
       if (!this.closed) {
-        this.keepSeedAliveTimer = setTimeout(this.keepSeedAlive.bind(this), 1000);
+        this.keepSeedAliveTimer = setTimeout(
+          this.keepSeedAlive.bind(this),
+          1000
+        );
       }
     }
   }
 
   async _init() {
     await super._init();
-    if (process.platform !== 'darwin' && !process.env.NOSLATED_FORCE_NON_SEED_MODE) {
+    if (
+      process.platform !== 'darwin' &&
+      !process.env.NOSLATED_FORCE_NON_SEED_MODE
+    ) {
       await this.keepSeedAlive();
     }
   }
@@ -155,10 +174,20 @@ export class AworkerStarter extends BaseStarter {
     }
   }
 
-  async start(serverSockPath: string, name: string, credential: string, profile: AworkerFunctionProfile, bundlePath: string, options: BaseOptions) {
+  async start(
+    serverSockPath: string,
+    name: string,
+    credential: string,
+    profile: AworkerFunctionProfile,
+    bundlePath: string,
+    options: BaseOptions
+  ) {
     this.logger.info('start worker(%s)', name);
     const sourceFile = path.join(bundlePath, 'code', profile.sourceFile);
-    const sameOriginSharedDataDir = path.join(SameOriginSharedDataRoot, naming.normalizeFuncNameToName(profile.name));
+    const sameOriginSharedDataDir = path.join(
+      SameOriginSharedDataRoot,
+      naming.normalizeFuncNameToName(profile.name)
+    );
 
     let useSeed = true;
     const seedStatus = await this.seedStatus();
@@ -196,7 +225,18 @@ export class AworkerStarter extends BaseStarter {
       startOptions.seed = SEED_CONTAINER_NAME;
     }
 
-    this.logger.info(`Up to start ${name} (func: ${profile.name}) with ${useSeed ? '' : 'non-'}seed mode.`);
-    await this.doStart(name, bundlePath, commands, profile, this.config.starter.aworker.defaultEnvirons, startOptions);
+    this.logger.info(
+      `Up to start ${name} (func: ${profile.name}) with ${
+        useSeed ? '' : 'non-'
+      }seed mode.`
+    );
+    await this.doStart(
+      name,
+      bundlePath,
+      commands,
+      profile,
+      this.config.starter.aworker.defaultEnvirons,
+      startOptions
+    );
   }
 }

@@ -76,12 +76,12 @@ describe(common.testName(__filename), () => {
 
       const ret = await (guest as any).getServiceProfiles({});
       assert.strictEqual(ret.profiles.length, 1);
-      const [ actualProfile ] = ret.profiles;
+      const [actualProfile] = ret.profiles;
       assert.deepStrictEqual(actualProfile, expectedProfile);
     });
   });
 
-  describe('setTracingCategories', function() {
+  describe('setTracingCategories', function () {
     this.timeout(10_000);
 
     it('should set tracing categories for existing processes', async () => {
@@ -97,22 +97,30 @@ describe(common.testName(__filename), () => {
 
       {
         const data = Buffer.from('foobar');
-        const response = await env.agent.invoke('foobar', data, { method: 'POST' });
+        const response = await env.agent.invoke('foobar', data, {
+          method: 'POST',
+        });
         const buffer = await bufferFromStream(response);
         assert.strictEqual(buffer.toString('utf8'), 'foobar');
       }
 
-      await (guest as any).setTracingCategories({ functionName: 'foobar', categories: [ 'v8', 'aworker' ] });
+      await (guest as any).setTracingCategories({
+        functionName: 'foobar',
+        categories: ['v8', 'aworker'],
+      });
       {
         const data = Buffer.from('foobar');
-        const response = await env.agent.invoke('foobar', data, { method: 'POST' });
+        const response = await env.agent.invoke('foobar', data, {
+          method: 'POST',
+        });
         const buffer = await bufferFromStream(response);
         assert.strictEqual(buffer.toString('utf8'), 'foobar');
       }
 
       // await flushing
       await sleep(2000);
-      const containerName = env.data.dataFlowController.getBroker('foobar')!.workers[0].name;
+      const containerName =
+        env.data.dataFlowController.getBroker('foobar')!.workers[0].name;
       const logDir = BaseStarter.logPath(config.logger.dir, containerName);
       const files = fs.readdirSync(logDir);
 
@@ -120,7 +128,7 @@ describe(common.testName(__filename), () => {
     });
   });
 
-  describe('startInspector', function() {
+  describe('startInspector', function () {
     this.timeout(10_000);
 
     it('should start inspector for existing processes', async () => {
@@ -136,12 +144,17 @@ describe(common.testName(__filename), () => {
 
       {
         const data = Buffer.from('foobar');
-        const response = await env.agent.invoke('foobar', data, { method: 'POST' });
+        const response = await env.agent.invoke('foobar', data, {
+          method: 'POST',
+        });
         const buffer = await bufferFromStream(response);
         assert.strictEqual(buffer.toString('utf8'), 'foobar');
       }
 
-      const inspectorFuture = once(env.data.dataFlowController.delegate, Events.inspectorStarted);
+      const inspectorFuture = once(
+        env.data.dataFlowController.delegate,
+        Events.inspectorStarted
+      );
       await (guest as any).startInspector({ functionName: 'foobar' });
       await inspectorFuture;
 

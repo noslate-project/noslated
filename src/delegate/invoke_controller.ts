@@ -2,10 +2,14 @@ import http from 'http';
 import https from 'https';
 import { Readable, Writable } from 'stream';
 import { tryQ } from '../lib/util';
-import { TriggerResponse, Metadata, flattenKeyValuePairs } from './request_response';
+import {
+  TriggerResponse,
+  Metadata,
+  flattenKeyValuePairs,
+} from './request_response';
 import { NoslatedStreamError } from './error';
 import { DelegateMetricAttributes } from '#self/lib/telemetry/semantic_conventions';
-import { Extension }  from './extension';
+import { Extension } from './extension';
 import { aworker } from '../proto/aworker';
 import { keyValuePairsToObject, flattenToKeyValuePairs } from './noslated_ipc';
 import { DelegateSharedState } from './delegate_shared_state';
@@ -16,19 +20,30 @@ import { kDefaultRequestId } from '#self/lib/constants';
 
 const logger = require('../lib/logger').get('invoke-controller');
 
-const {
-  CanonicalCode,
-  ResourcePutAction,
-} = aworker.ipc;
+const { CanonicalCode, ResourcePutAction } = aworker.ipc;
 
-const kCancelledCanonicalCode = [ CanonicalCode.CANCELLED, CanonicalCode.CONNECTION_RESET ];
+const kCancelledCanonicalCode = [
+  CanonicalCode.CANCELLED,
+  CanonicalCode.CONNECTION_RESET,
+];
 
 const TriggerMethods = {
   invoke: 'invoke',
   init: 'init',
 };
 
-type CommonCallback = (code: aworker.ipc.CanonicalCode, error?: Error | null, data?: { status?: number; sid?: number; headers?: any[]; data?: any; successOrAcquired?: boolean; token?: string; }) => void;
+type CommonCallback = (
+  code: aworker.ipc.CanonicalCode,
+  error?: Error | null,
+  data?: {
+    status?: number;
+    sid?: number;
+    headers?: any[];
+    data?: any;
+    successOrAcquired?: boolean;
+    token?: string;
+  }
+) => void;
 
 export class InvokeController {
   /**
@@ -57,7 +72,11 @@ export class InvokeController {
   #extension: Extension;
 
   #sessionId;
-  constructor(sharedState: DelegateSharedState, registration: CredentialRegistration, delegate: NoslatedDelegateService) {
+  constructor(
+    sharedState: DelegateSharedState,
+    registration: CredentialRegistration,
+    delegate: NoslatedDelegateService
+  ) {
     this.#sharedState = sharedState;
     this.#registration = registration;
     this.#sessionId = registration.sessionId;
@@ -71,7 +90,10 @@ export class InvokeController {
    * @param {*} params -
    * @param {*} callback -
    */
-  async StreamOpen(params: aworker.ipc.StreamOpenRequestMessage, callback: CommonCallback) {
+  async StreamOpen(
+    params: aworker.ipc.StreamOpenRequestMessage,
+    callback: CommonCallback
+  ) {
     const sid = this.#sharedState.server!.nextStreamId(this.#sessionId);
     this.#makeReadable(sid);
     callback(CanonicalCode.OK, null, {
@@ -84,7 +106,10 @@ export class InvokeController {
    * @param {*} params -
    * @param {*} callback -
    */
-  async StreamPush(params: aworker.ipc.StreamPushRequestMessage, callback: CommonCallback) {
+  async StreamPush(
+    params: aworker.ipc.StreamPushRequestMessage,
+    callback: CommonCallback
+  ) {
     const { sid, isEos, data, isError } = params;
     const readable = this.#state.getReadable(sid);
     callback(CanonicalCode.OK);
@@ -109,7 +134,10 @@ export class InvokeController {
    * @param {*} params -
    * @param {*} callback -
    */
-  async Fetch(params: aworker.ipc.FetchRequestMessage, callback: CommonCallback) {
+  async Fetch(
+    params: aworker.ipc.FetchRequestMessage,
+    callback: CommonCallback
+  ) {
     const url = tryQ(() => new URL(params.url));
     if (url == null) {
       callback(CanonicalCode.CLIENT_ERROR);
@@ -135,7 +163,10 @@ export class InvokeController {
     if (hasBody) {
       readable = this.#state.getReadable(sid as number) as Readable;
       if (readable == null) {
-        callback(CanonicalCode.CLIENT_ERROR, new Error('Body readable not created'));
+        callback(
+          CanonicalCode.CLIENT_ERROR,
+          new Error('Body readable not created')
+        );
         return;
       }
     } else {
@@ -144,41 +175,48 @@ export class InvokeController {
 
     let headerSent = false;
     const writable = this.#makeWritable(sid as number);
-    const req = mod?.request(url, {
-      method: params.method,
-      headers,
-    }, res => {
-      const originHeaders = res.rawHeaders.concat([
-        'x-anc-remote-address', `${res.socket.remoteAddress}`,
-        'x-anc-remote-family', `${res.socket.remoteFamily}`,
-        'x-anc-remote-port', `${res.socket.remotePort}`,
-      ]);
-      const headers = flattenToKeyValuePairs(originHeaders);
-      callback(CanonicalCode.OK, null, {
-        status: res.statusCode,
+    const req = mod?.request(
+      url,
+      {
+        method: params.method,
         headers,
-        sid: sid as number,
-      });
-      headerSent = true;
-      res.pipe(writable);
-      res.on('error', e => {
-        writable.destroy(e);
-        // In case of no-ending incoming stream.
-        readable?.destroy();
-        if (params.requestId != null) {
-          this.#state.fetchRequests.delete(params.requestId);
-        }
-      });
-      // In case of no-ending incoming stream.
-      res.on('end', () => {
-        if (hasBody) {
+      },
+      res => {
+        const originHeaders = res.rawHeaders.concat([
+          'x-anc-remote-address',
+          `${res.socket.remoteAddress}`,
+          'x-anc-remote-family',
+          `${res.socket.remoteFamily}`,
+          'x-anc-remote-port',
+          `${res.socket.remotePort}`,
+        ]);
+        const headers = flattenToKeyValuePairs(originHeaders);
+        callback(CanonicalCode.OK, null, {
+          status: res.statusCode,
+          headers,
+          sid: sid as number,
+        });
+        headerSent = true;
+        res.pipe(writable);
+        res.on('error', e => {
+          writable.destroy(e);
+          // In case of no-ending incoming stream.
           readable?.destroy();
-        }
-        if (params.requestId != null) {
-          this.#state.fetchRequests.delete(params.requestId);
-        }
-      });
-    });
+          if (params.requestId != null) {
+            this.#state.fetchRequests.delete(params.requestId);
+          }
+        });
+        // In case of no-ending incoming stream.
+        res.on('end', () => {
+          if (hasBody) {
+            readable?.destroy();
+          }
+          if (params.requestId != null) {
+            this.#state.fetchRequests.delete(params.requestId);
+          }
+        });
+      }
+    );
     if (hasBody) {
       readable?.pipe(req as http.ClientRequest);
       readable?.on('error', e => {
@@ -191,7 +229,10 @@ export class InvokeController {
     }
 
     if (params.requestId != null) {
-      this.#state.fetchRequests.set(params.requestId, req as http.ClientRequest);
+      this.#state.fetchRequests.set(
+        params.requestId,
+        req as http.ClientRequest
+      );
     }
 
     (req as http.ClientRequest).setTimeout(10_000, () => {
@@ -221,7 +262,10 @@ export class InvokeController {
    * @param {*} params -
    * @param {*} callback -
    */
-  async FetchAbort(params: aworker.ipc.FetchAbortRequestMessage, callback: CommonCallback) {
+  async FetchAbort(
+    params: aworker.ipc.FetchAbortRequestMessage,
+    callback: CommonCallback
+  ) {
     if (!this.#state.fetchRequests.has(params.requestId)) {
       return callback(CanonicalCode.OK, null);
     }
@@ -238,7 +282,10 @@ export class InvokeController {
    * @param {*} params -
    * @param {*} callback -
    */
-  async DaprInvoke(params: aworker.ipc.DaprInvokeRequestMessage, callback: CommonCallback) {
+  async DaprInvoke(
+    params: aworker.ipc.DaprInvokeRequestMessage,
+    callback: CommonCallback
+  ) {
     if (this.#sharedState.daprAdaptor == null) {
       callback(CanonicalCode.NOT_IMPLEMENTED);
       return;
@@ -261,7 +308,10 @@ export class InvokeController {
    * @param {*} params -
    * @param {*} callback -
    */
-  async DaprBinding(params: aworker.ipc.DaprBindingRequestMessage, callback: CommonCallback) {
+  async DaprBinding(
+    params: aworker.ipc.DaprBindingRequestMessage,
+    callback: CommonCallback
+  ) {
     if (this.#sharedState.daprAdaptor == null) {
       callback(CanonicalCode.NOT_IMPLEMENTED);
       return;
@@ -285,15 +335,29 @@ export class InvokeController {
    * @param {*} params -
    * @param {*} callback -
    */
-  async ExtensionBinding(params: aworker.ipc.ExtensionBindingRequestMessage, callback: CommonCallback) {
+  async ExtensionBinding(
+    params: aworker.ipc.ExtensionBindingRequestMessage,
+    callback: CommonCallback
+  ) {
     try {
-      const { status, data } = await this.#extension[params.name](this.#registration.credential, params.operation, JSON.parse(params.metadata), params.data);
+      const { status, data } = await this.#extension[params.name](
+        this.#registration.credential,
+        params.operation,
+        JSON.parse(params.metadata),
+        params.data
+      );
       callback(CanonicalCode.OK, null, { status, data });
     } catch (e) {
-      if (typeof (e as aworker.ipc.IExtensionBindingResponseMessage & Error).status === 'number') {
+      if (
+        typeof (e as aworker.ipc.IExtensionBindingResponseMessage & Error)
+          .status === 'number'
+      ) {
         return callback(CanonicalCode.OK, null, {
-          status: (e as aworker.ipc.IExtensionBindingResponseMessage & Error).status,
-          data: Buffer.from((e as aworker.ipc.IExtensionBindingResponseMessage & Error).message),
+          status: (e as aworker.ipc.IExtensionBindingResponseMessage & Error)
+            .status,
+          data: Buffer.from(
+            (e as aworker.ipc.IExtensionBindingResponseMessage & Error).message
+          ),
         });
       }
       logger.error('extension binding failed', e);
@@ -306,9 +370,14 @@ export class InvokeController {
    * @param {*} params -
    * @param {*} callback -
    */
-  async ResourcePut(params: aworker.ipc.IResourcePutRequestMessage, callback: CommonCallback) {
+  async ResourcePut(
+    params: aworker.ipc.IResourcePutRequestMessage,
+    callback: CommonCallback
+  ) {
     const { action, resourceId, token } = params;
-    const resources = this.#sharedState.namespaceResolver.resolve(this.#registration.credential).resources;
+    const resources = this.#sharedState.namespaceResolver.resolve(
+      this.#registration.credential
+    ).resources;
     let resourceStub = resources.get(resourceId);
     if (resourceStub == null) {
       resourceStub = this.#delegate.makeResourceStub(resourceId);
@@ -317,12 +386,24 @@ export class InvokeController {
         resources.delete(resourceId);
       });
     }
-    logger.info('on resource put action(%s) resourceId(%s) with token(%s)', action, resourceId, token);
+    logger.info(
+      'on resource put action(%s) resourceId(%s) with token(%s)',
+      action,
+      resourceId,
+      token
+    );
 
     if (action !== ResourcePutAction.RELEASE) {
-      const { acquired, token } = resourceStub.acquire(action === ResourcePutAction.ACQUIRE_EX, this.#registration.credential);
+      const { acquired, token } = resourceStub.acquire(
+        action === ResourcePutAction.ACQUIRE_EX,
+        this.#registration.credential
+      );
       this.#state.addResource(token, resourceStub);
-      logger.info('resource acquired, resourceId(%s) with token(%s)', resourceId, token);
+      logger.info(
+        'resource acquired, resourceId(%s) with token(%s)',
+        resourceId,
+        token
+      );
       callback(CanonicalCode.OK, null, {
         successOrAcquired: acquired,
         token,
@@ -335,7 +416,6 @@ export class InvokeController {
     callback(CanonicalCode.OK, null, { successOrAcquired: true, token: '' });
   }
 
-
   /**
    * NoslatedDelegateService#trigger
    * @param {string} method the method
@@ -343,7 +423,11 @@ export class InvokeController {
    * @param {Metadata|object} [metadataInit] the metadata
    * @return {TriggerResponse} response
    */
-  async trigger(method: string, data: Buffer|Readable|null, metadataInit: MetadataInit | Metadata) {
+  async trigger(
+    method: string,
+    data: Buffer | Readable | null,
+    metadataInit: MetadataInit | Metadata
+  ) {
     const startTime = Date.now();
     if (typeof method !== 'string') {
       throw new TypeError('expect a string of method');
@@ -351,8 +435,16 @@ export class InvokeController {
     const hasInputData = data != null;
     const hasOutputData = method !== TriggerMethods.init;
 
-    if (hasInputData && !(data instanceof Readable) && !(data instanceof Buffer)) {
-      throw new TypeError(`expect a buffer or readable stream of data, but got ${data[Symbol.toStringTag] || typeof data}`);
+    if (
+      hasInputData &&
+      !(data instanceof Readable) &&
+      !(data instanceof Buffer)
+    ) {
+      throw new TypeError(
+        `expect a buffer or readable stream of data, but got ${
+          data[Symbol.toStringTag] || typeof data
+        }`
+      );
     }
 
     let metadataUrl = '';
@@ -449,7 +541,9 @@ export class InvokeController {
       throw errorsBeforeMetadata;
     }
     response.status = resHead.status;
-    response.metadata = new Metadata(resHead.metadata as unknown as MetadataInit);
+    response.metadata = new Metadata(
+      resHead.metadata as unknown as MetadataInit
+    );
     return response;
   }
 
@@ -491,29 +585,37 @@ export class InvokeController {
       kWritable = Writable;
     }
     const writable = new kWritable({
-      write: (chunk: Buffer, encoding: string, cb: (error?: Error | null) => void) => {
+      write: (
+        chunk: Buffer,
+        encoding: string,
+        cb: (error?: Error | null) => void
+      ) => {
         // TODO: encoding
         if (encoding !== 'buffer') {
           return cb(new TypeError('expect buffer encoding on writable'));
         }
         logger.debug('stream writable write chunk to peer', chunk.byteLength);
-        this.#streamPush(sid, chunk)
-          .then(
-            () => cb(),
-            e => {
-              cb(e);
-              this.#closeStream(sid, /* isError */true);
-            }
-          );
+        this.#streamPush(sid, chunk).then(
+          () => cb(),
+          e => {
+            cb(e);
+            this.#closeStream(sid, /* isError */ true);
+          }
+        );
       },
       destroy: (e: Error, cb: (error?: Error | null) => void) => {
         logger.debug('stream writable write end, error?', e);
         this.#state.removeWritable(writable);
-        if (e instanceof NoslatedStreamError && e.name === 'PEER_CONNECTION_CLOSED') {
+        if (
+          e instanceof NoslatedStreamError &&
+          e.name === 'PEER_CONNECTION_CLOSED'
+        ) {
           return cb();
         }
-        this.#closeStream(sid, /* isError */e !== undefined && e !== null)
-          .then(() => cb());
+        this.#closeStream(
+          sid,
+          /* isError */ e !== undefined && e !== null
+        ).then(() => cb());
       },
     });
 
@@ -525,23 +627,43 @@ export class InvokeController {
     if (this.#sharedState.server == null) {
       return Promise.reject(new Error('Server closed'));
     }
-    return this.#sharedState.server.streamPush(this.#sessionId, sid, /* isEos */false, /* chunk */chunk, /* isError */false);
-  }
+    return this.#sharedState.server.streamPush(
+      this.#sessionId,
+      sid,
+      /* isEos */ false,
+      /* chunk */ chunk,
+      /* isError */ false
+    );
+  };
 
   #closeStream = async (sid: number, isError: boolean) => {
     if (this.#sharedState.server == null) {
       return;
     }
-    return this.#sharedState.server.streamPush(this.#sessionId, sid, /* isEos */true, /* chunk */null, /* isError */isError)
+    return this.#sharedState.server
+      .streamPush(
+        this.#sessionId,
+        sid,
+        /* isEos */ true,
+        /* chunk */ null,
+        /* isError */ isError
+      )
       .catch(e => {
         if (kCancelledCanonicalCode.includes(e.code)) {
           return;
         }
         if (this.#registration.closed) {
-          logger.debug('closing stream but session already closed', this.#registration.credential);
+          logger.debug(
+            'closing stream but session already closed',
+            this.#registration.credential
+          );
           return;
         }
-        logger.error('unexpected error on closing stream', e, this.#registration.credential);
+        logger.error(
+          'unexpected error on closing stream',
+          e,
+          this.#registration.credential
+        );
       });
-  }
+  };
 }

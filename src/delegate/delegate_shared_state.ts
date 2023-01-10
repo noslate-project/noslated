@@ -34,6 +34,4 @@ class DelegateSharedState {
   }
 }
 
-export {
-  DelegateSharedState,
-};
+export { DelegateSharedState };

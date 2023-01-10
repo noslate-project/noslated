@@ -2,12 +2,15 @@ import assert from 'assert';
 import { createDeferred, Deferred } from './util';
 import { Guest } from './rpc/guest';
 
-const baseMaps: WeakMap<Constructor, BaseConstructor<IBase> & any> = new WeakMap();
+const baseMaps: WeakMap<Constructor, BaseConstructor<IBase> & any> =
+  new WeakMap();
 
 /**
  * Derived from https://github.com/node-modules/sdk-base
  */
-export function BaseOf<TBase extends Constructor>(BaseClass: TBase): BaseConstructor<IBase> & TBase {
+export function BaseOf<TBase extends Constructor>(
+  BaseClass: TBase
+): BaseConstructor<IBase> & TBase {
   if (baseMaps.has(BaseClass)) {
     return baseMaps.get(BaseClass)!;
   }
@@ -28,16 +31,21 @@ export function BaseOf<TBase extends Constructor>(BaseClass: TBase): BaseConstru
     }
 
     #start() {
-      assert(typeof this._init === 'function',
-        '[sdk-base] this._init should be a function.');
+      assert(
+        typeof this._init === 'function',
+        '[sdk-base] this._init should be a function.'
+      );
       Promise.resolve()
         .then(() => this._init())
-        .then(() => {
-          this.#ready = true;
-          this.#readyDeferred.resolve();
-        }, err => {
-          this.#readyDeferred.reject(err);
-        });
+        .then(
+          () => {
+            this.#ready = true;
+            this.#readyDeferred.resolve();
+          },
+          err => {
+            this.#readyDeferred.reject(err);
+          }
+        );
     }
 
     get isReady(): boolean {
@@ -59,15 +67,18 @@ export function BaseOf<TBase extends Constructor>(BaseClass: TBase): BaseConstru
       this.#closeDeferred = createDeferred<void>();
       Promise.resolve()
         .then(() => this._close())
-        .then(() => {
-          this.#closed = true;
-          this.#ready = false;
-          this.#closeDeferred?.resolve();
-        }, err => {
-          this.#closed = true;
-          this.#ready = false;
-          this.#closeDeferred?.reject(err);
-        });
+        .then(
+          () => {
+            this.#closed = true;
+            this.#ready = false;
+            this.#closeDeferred?.resolve();
+          },
+          err => {
+            this.#closed = true;
+            this.#ready = false;
+            this.#closeDeferred?.reject(err);
+          }
+        );
 
       return this.#closeDeferred.promise;
     }
@@ -75,11 +86,15 @@ export function BaseOf<TBase extends Constructor>(BaseClass: TBase): BaseConstru
     /**
      * @protected
      */
-    async _init() { /** empty */ }
+    async _init() {
+      /** empty */
+    }
     /**
      * @protected
      */
-    async _close() { /** empty */ }
+    async _close() {
+      /** empty */
+    }
   }
 
   baseMaps.set(BaseClass, Base);

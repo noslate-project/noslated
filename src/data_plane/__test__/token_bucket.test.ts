@@ -11,7 +11,7 @@ describe(common.testName(__filename), () => {
   let clock: Clock;
   beforeEach(() => {
     clock = FakeTimer.install({
-      toFake: [ 'setInterval' ]
+      toFake: ['setInterval'],
     });
   });
   afterEach(() => {
@@ -22,11 +22,14 @@ describe(common.testName(__filename), () => {
   it('should throw error when not start', () => {
     tokenBucket = new TokenBucket({ maxTokenCount: 1 });
 
-    assert.throws(() => {
-      tokenBucket.acquire();
-    }, {
-      message: 'rate limit unavailable'
-    });
+    assert.throws(
+      () => {
+        tokenBucket.acquire();
+      },
+      {
+        message: 'rate limit unavailable',
+      }
+    );
   });
 
   it('should pass when config is empty', () => {
@@ -43,7 +46,7 @@ describe(common.testName(__filename), () => {
   it('should not refill when fillInterval is undefined', () => {
     tokenBucket = new TokenBucket({
       maxTokenCount: 1,
-      tokensPerFill: 2
+      tokensPerFill: 2,
     });
 
     tokenBucket.start();
@@ -58,7 +61,7 @@ describe(common.testName(__filename), () => {
   it('should refill maxTokenCount when tokensPerFill is undefined', () => {
     tokenBucket = new TokenBucket({
       maxTokenCount: 2,
-      fillInterval: 1
+      fillInterval: 1,
     });
 
     tokenBucket.start();

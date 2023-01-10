@@ -13,12 +13,23 @@ import { FunctionProfileManager } from '#self/lib/function_profile';
 import { DataPlaneClientManager } from './data_plane_client/manager';
 import { WorkerStatsSnapshot } from './worker_stats';
 import { kMemoryLimit } from './constants';
-import { LaunchTask, PriorityLaunchQueue, TaskPriority } from './priority_launch_queue';
+import {
+  LaunchTask,
+  PriorityLaunchQueue,
+  TaskPriority,
+} from './priority_launch_queue';
 import { performance } from 'perf_hooks';
 import { ControlPanelEvent } from '#self/lib/constants';
 
 export interface WorkerStarter {
-  start(serverSockPath: string, name: string, credential: string, profile: RawFunctionProfile, bundlePath: string, options: BaseOptions): Promise<void>;
+  start(
+    serverSockPath: string,
+    name: string,
+    credential: string,
+    profile: RawFunctionProfile,
+    bundlePath: string,
+    options: BaseOptions
+  ): Promise<void>;
 }
 
 export class WorkerLauncher extends Base {
@@ -51,7 +62,10 @@ export class WorkerLauncher extends Base {
       aworker: new starters.Aworker(plane, config),
     };
 
-    this.priorityLaunchQueue = new PriorityLaunchQueue(config.controlPlane.expandConcurrency, config.controlPlane.expandInterval);
+    this.priorityLaunchQueue = new PriorityLaunchQueue(
+      config.controlPlane.expandConcurrency,
+      config.controlPlane.expandInterval
+    );
   }
 
   /**
@@ -61,7 +75,7 @@ export class WorkerLauncher extends Base {
     await Promise.all([
       this.starters.nodejs.close(),
       this.starters.aworker.close(),
-      this.priorityLaunchQueue.stop()
+      this.priorityLaunchQueue.stop(),
     ]);
   }
 
@@ -77,7 +91,7 @@ export class WorkerLauncher extends Base {
     await Promise.all([
       this.starters.nodejs.ready(),
       this.starters.aworker.ready(),
-      this.priorityLaunchQueue.start()
+      this.priorityLaunchQueue.start(),
     ]);
   }
 
@@ -104,24 +118,47 @@ export class WorkerLauncher extends Base {
    * @param {{ inspect?: boolean }} options The options object.
    * @return {Promise<void>} The result.
    */
-  async tryLaunch(event: ControlPanelEvent, funcName: string, options: BaseOptions, disposable = false, toReserve = false, requestId?: string) {
+  async tryLaunch(
+    event: ControlPanelEvent,
+    funcName: string,
+    options: BaseOptions,
+    disposable = false,
+    toReserve = false,
+    requestId?: string
+  ) {
     const { promise, resolve, reject } = createDeferred<void>();
     this.priorityLaunchQueue.enqueue({
       functionName: funcName,
       timestamp: performance.now(),
-      priority: disposable ? TaskPriority.HIGH : (toReserve ? TaskPriority.LOW : TaskPriority.NORMAL),
+      priority: disposable
+        ? TaskPriority.HIGH
+        : toReserve
+        ? TaskPriority.LOW
+        : TaskPriority.NORMAL,
       disposable,
       options,
       requestId,
       processer: async (task: LaunchTask) => {
-        this.logger.info('process launch event(%s), request(%s) func(%s), disposable(%s), priority(%s).', event, task.requestId, task.functionName, task.disposable, TaskPriority[task.priority]);
+        this.logger.info(
+          'process launch event(%s), request(%s) func(%s), disposable(%s), priority(%s).',
+          event,
+          task.requestId,
+          task.functionName,
+          task.disposable,
+          TaskPriority[task.priority]
+        );
         try {
-          await this.doTryLaunch(task.functionName, task.options, task.disposable, task.requestId);
+          await this.doTryLaunch(
+            task.functionName,
+            task.options,
+            task.disposable,
+            task.requestId
+          );
           resolve();
         } catch (error) {
           return reject(error);
         }
-      }
+      },
     });
 
     return promise;
@@ -133,7 +170,12 @@ export class WorkerLauncher extends Base {
    * @param {{ inspect?: boolean }} options The options object.
    * @return {Promise<void>} The result.
    */
-  async doTryLaunch(funcName: string, options: BaseOptions, disposable: boolean, requestId?: string) {
+  async doTryLaunch(
+    funcName: string,
+    options: BaseOptions,
+    disposable: boolean,
+    requestId?: string
+  ) {
     const pprofile = this.functionProfile.get(funcName);
     if (!pprofile) {
       const err = new Error(`No function named ${funcName}.`);
@@ -144,22 +186,39 @@ export class WorkerLauncher extends Base {
     const profile = pprofile.toJSON(true);
     const credential = naming.credential(funcName);
     const processName = naming.processName(funcName);
-    const { dataPlaneClientManager, plane: { capacityManager } } = this;
-    const { worker: { replicaCountLimit } } = profile;
+    const {
+      dataPlaneClientManager,
+      plane: { capacityManager },
+    } = this;
+    const {
+      worker: { replicaCountLimit },
+    } = profile;
 
     // get broker / virtualMemoryUsed / virtualMemoryPoolSize, etc.
-    const broker = capacityManager.workerStatsSnapshot.getOrCreateBroker(funcName, !!options.inspect, profile.worker?.disposable);
+    const broker = capacityManager.workerStatsSnapshot.getOrCreateBroker(
+      funcName,
+      !!options.inspect,
+      profile.worker?.disposable
+    );
     if (!broker) {
-      const err = new Error(`No broker named ${funcName}, ${JSON.stringify(options)}`);
+      const err = new Error(
+        `No broker named ${funcName}, ${JSON.stringify(options)}`
+      );
       err.code = ErrorCode.kNoFunction;
       throw err;
     }
 
     const { virtualMemoryUsed, virtualMemoryPoolSize } = capacityManager;
-    const { name, url, signature, resourceLimit: { memory = kMemoryLimit } = {} } = profile;
+    const {
+      name,
+      url,
+      signature,
+      resourceLimit: { memory = kMemoryLimit } = {},
+    } = profile;
     if (virtualMemoryUsed + memory > virtualMemoryPoolSize) {
       const err = new Error(
-        `No enough virtual memory (used: ${virtualMemoryUsed} + need: ${memory}) > total: ${virtualMemoryPoolSize}`);
+        `No enough virtual memory (used: ${virtualMemoryUsed} + need: ${memory}) > total: ${virtualMemoryPoolSize}`
+      );
       err.code = ErrorCode.kNoEnoughVirtualMemoryPoolSize;
       throw err;
     }
@@ -173,7 +232,8 @@ export class WorkerLauncher extends Base {
       throw e;
     }
 
-    const starter: WorkerStarter = this.starters[this.extractRuntimeType(profile)];
+    const starter: WorkerStarter =
+      this.starters[this.extractRuntimeType(profile)];
     if (!starter) {
       const err = new Error(`Invalid runtime ${profile.runtime}.`);
       err.code = ErrorCode.kInvalidRuntime;
@@ -183,13 +243,16 @@ export class WorkerLauncher extends Base {
     // inspect 模式只开启一个
     if (broker.workerCount && options.inspect) {
       const err = new Error(
-        `Replica count exceeded limit in inspect mode (${broker.workerCount} / ${replicaCountLimit})`);
+        `Replica count exceeded limit in inspect mode (${broker.workerCount} / ${replicaCountLimit})`
+      );
       err.code = ErrorCode.kReplicaLimitExceeded;
       throw err;
     }
 
     if (broker.workerCount >= replicaCountLimit) {
-      const err = new Error(`Replica count exceeded limit (${broker.workerCount} / ${replicaCountLimit})`);
+      const err = new Error(
+        `Replica count exceeded limit (${broker.workerCount} / ${replicaCountLimit})`
+      );
       err.code = ErrorCode.kReplicaLimitExceeded;
       throw err;
     }
@@ -205,16 +268,46 @@ export class WorkerLauncher extends Base {
       });
       const serverSockPath = (dataPlane as any).getServerSockPath();
 
-      const worker = this.snapshot.register(funcName, processName, credential, !!options.inspect, disposable);
-      await starter.start(serverSockPath, processName, credential, profile, bundlePath, options);
+      const worker = this.snapshot.register(
+        funcName,
+        processName,
+        credential,
+        !!options.inspect,
+        disposable
+      );
+      await starter.start(
+        serverSockPath,
+        processName,
+        credential,
+        profile,
+        bundlePath,
+        options
+      );
 
       const started = performance.now();
 
-      this.logger.info('worker(%s, %s, %s, inspect %s, disposable %s) started, cost: %s, related request(%s)', funcName, processName, credential, options.inspect, disposable, performance.now() - now, requestId);
+      this.logger.info(
+        'worker(%s, %s, %s, inspect %s, disposable %s) started, cost: %s, related request(%s)',
+        funcName,
+        processName,
+        credential,
+        options.inspect,
+        disposable,
+        performance.now() - now,
+        requestId
+      );
 
       await worker.ready();
 
-      this.logger.info('worker(%s, %s, inspect %s, disposable %s) ready, cost: %s, related request(%s)', funcName, credential, options.inspect, disposable, performance.now() - started, requestId);
+      this.logger.info(
+        'worker(%s, %s, inspect %s, disposable %s) ready, cost: %s, related request(%s)',
+        funcName,
+        credential,
+        options.inspect,
+        disposable,
+        performance.now() - started,
+        requestId
+      );
     } catch (e) {
       this.snapshot.unregister(funcName, processName, !!options.inspect);
       throw e;

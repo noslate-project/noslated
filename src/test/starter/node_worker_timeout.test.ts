@@ -36,7 +36,7 @@ describe(common.testName(__filename), () => {
 
   for (const item of cases) {
     it(item.name, async () => {
-      await env.agent.setFunctionProfile([ item.profile ]);
+      await env.agent.setFunctionProfile([item.profile]);
       await testWorker(env.agent, item);
     });
   }

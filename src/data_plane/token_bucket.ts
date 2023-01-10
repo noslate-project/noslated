@@ -6,11 +6,14 @@ export class TokenBucket {
 
   #refill = () => {
     if (this.#config.tokensPerFill) {
-      this.#tokenCount = Math.min(this.#tokenCount + this.#config.tokensPerFill, this.#maxTokenCount);
+      this.#tokenCount = Math.min(
+        this.#tokenCount + this.#config.tokensPerFill,
+        this.#maxTokenCount
+      );
     } else {
       this.#tokenCount = this.#maxTokenCount;
     }
-  }
+  };
 
   #refillInterval: NodeJS.Timer | undefined;
 
@@ -43,7 +46,10 @@ export class TokenBucket {
     this.#started = true;
 
     if (this.#config.fillInterval) {
-      this.#refillInterval = setInterval(this.#refill, this.#config.fillInterval);
+      this.#refillInterval = setInterval(
+        this.#refill,
+        this.#config.fillInterval
+      );
     }
   }
 

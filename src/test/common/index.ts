@@ -10,7 +10,10 @@ export function testName(filename: string) {
 
 export function assertApproxEquals(lhs: number, rhs: number, approx: number) {
   const delta = Math.abs(lhs - rhs);
-  assert.ok(delta < approx, `Expect lhs(${lhs}) and rhs(${rhs}) to be in an approximate delta(${approx})`);
+  assert.ok(
+    delta < approx,
+    `Expect lhs(${lhs}) and rhs(${rhs}) to be in an approximate delta(${approx})`
+  );
 }
 
 export const baselineDir = path.join(FIXTURES_DIR, 'baseline');

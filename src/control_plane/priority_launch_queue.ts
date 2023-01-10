@@ -29,9 +29,9 @@ export class PriorityLaunchQueue {
     await task.processer(task, this);
 
     if (!preview.disposable) {
-      this.#runningCount --;
+      this.#runningCount--;
     }
-  }
+  };
 
   constructor(concurrency: number, interval = 0) {
     this.#concurrency = concurrency;
@@ -95,4 +95,7 @@ export enum TaskPriority {
   LOW = 3,
 }
 
-export type TaskProcessor = (task: LaunchTask, queue: PriorityLaunchQueue) => Promise<void>;
+export type TaskProcessor = (
+  task: LaunchTask,
+  queue: PriorityLaunchQueue
+) => Promise<void>;

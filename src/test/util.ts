@@ -35,7 +35,12 @@ export const startResourceServer = async function startResourceServer() {
     });
   });
   resourceServer.listen(55331, () => {
-    console.log(`http://localhost:55331 => ${path.join(FIXTURES_DIR, 'resources')} listened`);
+    console.log(
+      `http://localhost:55331 => ${path.join(
+        FIXTURES_DIR,
+        'resources'
+      )} listened`
+    );
     resolve();
   });
   return promise;
@@ -47,7 +52,10 @@ export const stopResourceServer = () => {
   resourceServer = null;
 };
 
-export async function assertWorkerResponse(response: TriggerResponse, expected: any) {
+export async function assertWorkerResponse(
+  response: TriggerResponse,
+  expected: any
+) {
   if (expected.status !== undefined) {
     assert.strictEqual(response.status, expected.status);
   } else {
@@ -55,10 +63,12 @@ export async function assertWorkerResponse(response: TriggerResponse, expected: 
   }
   if (expected.metadata !== undefined) {
     if (expected.metadata.headers != null) {
-      for (const [ key, value ] of expected.metadata.headers) {
-        const foundHeaders = response.metadata.headers!.filter(it => it[0] === key);
+      for (const [key, value] of expected.metadata.headers) {
+        const foundHeaders = response.metadata.headers!.filter(
+          it => it[0] === key
+        );
         assert.strictEqual(foundHeaders.length, 1, `${key} should present`);
-        assert.deepStrictEqual(foundHeaders[0], [ key, value ]);
+        assert.deepStrictEqual(foundHeaders[0], [key, value]);
       }
     }
   }
@@ -67,7 +77,13 @@ export async function assertWorkerResponse(response: TriggerResponse, expected: 
     assert.strictEqual(data.toString(), expected.data);
   } else if (expected.data != null) {
     try {
-      assert.ok(data.equals(expected.data), `Expect: data equals (actual dump: ${path.join(process.cwd(), 'actual.out')})`);
+      assert.ok(
+        data.equals(expected.data),
+        `Expect: data equals (actual dump: ${path.join(
+          process.cwd(),
+          'actual.out'
+        )})`
+      );
     } catch (e) {
       fs.writeFileSync('expect.out', expected.data);
       fs.writeFileSync('actual.out', data);
@@ -78,7 +94,10 @@ export async function assertWorkerResponse(response: TriggerResponse, expected: 
   }
 }
 
-export async function assertWorkerInvoke(invokePromise: Promise<any>, expected: any) {
+export async function assertWorkerInvoke(
+  invokePromise: Promise<any>,
+  expected: any
+) {
   let error: Error;
   let response;
   try {
@@ -97,25 +116,57 @@ export async function assertWorkerInvoke(invokePromise: Promise<any>, expected: 
   await assertWorkerResponse(response, expected);
 }
 
-export async function assertInvoke(agent: NoslatedClient, name: string, testProfile: any) {
-  await assertWorkerInvoke(agent.invoke(name, testProfile.input.data, testProfile.input.metadata), testProfile.expect);
+export async function assertInvoke(
+  agent: NoslatedClient,
+  name: string,
+  testProfile: any
+) {
+  await assertWorkerInvoke(
+    agent.invoke(name, testProfile.input.data, testProfile.input.metadata),
+    testProfile.expect
+  );
 }
 
-export async function assertInvokeService(agent: NoslatedClient, name: string, testProfile: any) {
-  await assertWorkerInvoke(agent.invokeService(name, testProfile.input.data, testProfile.input.metadata), testProfile.expect);
+export async function assertInvokeService(
+  agent: NoslatedClient,
+  name: string,
+  testProfile: any
+) {
+  await assertWorkerInvoke(
+    agent.invokeService(
+      name,
+      testProfile.input.data,
+      testProfile.input.metadata
+    ),
+    testProfile.expect
+  );
 }
 
 export async function testWorker(agent: NoslatedClient, testProfile: any) {
-  await assertWorkerInvoke(agent.invoke(testProfile.profile.name, testProfile.input.data, testProfile.input.metadata), testProfile.expect);
+  await assertWorkerInvoke(
+    agent.invoke(
+      testProfile.profile.name,
+      testProfile.input.data,
+      testProfile.input.metadata
+    ),
+    testProfile.expect
+  );
 }
 
 export function mockClientCreatorForManager(ManagerClass: any) {
   class DummyClient extends EventEmitter {
-    async ready() { /* empty */ }
-    async close() { /* empty */ }
+    async ready() {
+      /* empty */
+    }
+    async close() {
+      /* empty */
+    }
   }
   mm(ManagerClass.prototype, '_createPlaneClient', () => new DummyClient());
   mm(ManagerClass.prototype, '_onClientReady', async () => {});
 }
 
-export const internetDescribe = process.env.NOSLATED_ENABLE_INTERNET_TEST === 'true' ? describe : describe.skip;
+export const internetDescribe =
+  process.env.NOSLATED_ENABLE_INTERNET_TEST === 'true'
+    ? describe
+    : describe.skip;

@@ -105,7 +105,11 @@ function parseInitializer(): Initializer | undefined {
 }
 
 export type OnInit = (ctx: Context) => Promise<void>;
-export type OnRequest = (ctx: Context, req: IncomingMessage, res: ServerResponse) => Promise<any>;
+export type OnRequest = (
+  ctx: Context,
+  req: IncomingMessage,
+  res: ServerResponse
+) => Promise<any>;
 export interface StartClientInit {
   serverPath: string;
   credential: string;

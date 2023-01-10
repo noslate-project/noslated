@@ -12,15 +12,31 @@ export class RequestLogger {
   }
 
   error(funcName: string, err: Error, requestId: string) {
-    this.errorLogger.write(`[${new Date().toISOString()}] "${requestId}" ${process.pid} "${funcName}" -`, err);
+    this.errorLogger.write(
+      `[${new Date().toISOString()}] "${requestId}" ${
+        process.pid
+      } "${funcName}" -`,
+      err
+    );
   }
 
-  access(funcName: string, metadata: Metadata, rt: number, status: string, bytesSent: number, requestId?: string) {
+  access(
+    funcName: string,
+    metadata: Metadata,
+    rt: number,
+    status: string,
+    bytesSent: number,
+    requestId?: string
+  ) {
     // "[${time}] ${requestId} ${pid} ${funcName}" ${method} "${url}" ${success} "${request_time}"
     // ${status} ${bytes_sent}
     const { method = '-', url = '-' } = metadata;
 
-    this.accessLogger.write(`[${new Date().toISOString()}] "${requestId}" ${process.pid} "${funcName}" ${method} ` +
-      `"${url}" ${`${status}` === '200'} "${rt}ms" ${status} ${bytesSent}`);
+    this.accessLogger.write(
+      `[${new Date().toISOString()}] "${requestId}" ${
+        process.pid
+      } "${funcName}" ${method} ` +
+        `"${url}" ${`${status}` === '200'} "${rt}ms" ${status} ${bytesSent}`
+    );
   }
 }

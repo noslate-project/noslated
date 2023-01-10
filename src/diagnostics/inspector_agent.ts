@@ -13,7 +13,11 @@ class InspectorSession {
   #targetId;
   #agent;
   #ws: WebSocket | null = null;
-  constructor(inspectorSessionId: number, targetId: string, agent: InspectorAgent) {
+  constructor(
+    inspectorSessionId: number,
+    targetId: string,
+    agent: InspectorAgent
+  ) {
     this.#inspectorSessionId = inspectorSessionId;
     this.#targetId = targetId;
     this.#agent = agent;
@@ -26,7 +30,11 @@ class InspectorSession {
   assignSocket(ws: WebSocket) {
     this.#ws = ws;
     this.#ws!.on('message', (message: string) => {
-      this.#agent.sendInspectorCommand(this.#targetId, this.#inspectorSessionId, message);
+      this.#agent.sendInspectorCommand(
+        this.#targetId,
+        this.#inspectorSessionId,
+        message
+      );
     });
     this.#ws!.on('close', () => {
       this.#agent.terminateSession(this.#inspectorSessionId);
@@ -101,7 +109,13 @@ class InspectorAgent {
       });
     }
   };
-  #inspectorEvent = (cred: string, { inspectorSessionId, message }: { inspectorSessionId: string, message: unknown }) => {
+  #inspectorEvent = (
+    cred: string,
+    {
+      inspectorSessionId,
+      message,
+    }: { inspectorSessionId: string; message: unknown }
+  ) => {
     const session = this.#sessions.get(inspectorSessionId);
     if (session == null) {
       return;
@@ -134,13 +148,18 @@ class InspectorAgent {
     return Array.from(this.#targets.values());
   }
 
-  sendInspectorCommand(targetId: string, inspectorSessionId: number, message: string) {
+  sendInspectorCommand(
+    targetId: string,
+    inspectorSessionId: number,
+    message: string
+  ) {
     const target = this.#targets.get(targetId);
     if (target == null) {
       return;
     }
     const credential = target[CredentialSymbol];
-    this.#delegate.SendInspectorCommand(credential, inspectorSessionId, message)
+    this.#delegate
+      .SendInspectorCommand(credential, inspectorSessionId, message)
       .catch((err: unknown) => {
         logger.error('unexpected error on send inspector command', err);
       });
@@ -154,7 +173,11 @@ class InspectorAgent {
     const credential = reg[CredentialSymbol];
     const inspectorSessionId = this.#sessionSec++;
     try {
-      await this.#delegate.InspectorStartSession(credential, inspectorSessionId, targetId);
+      await this.#delegate.InspectorStartSession(
+        credential,
+        inspectorSessionId,
+        targetId
+      );
     } catch (e) {
       logger.error('failed to open inspector', e);
       return false;
@@ -191,10 +214,9 @@ class InspectorAgent {
       },
       (err: unknown) => {
         logger.error('unexpected error on close inspector', err);
-      });
+      }
+    );
   }
 }
 
-export {
-  InspectorAgent,
-}
+export { InspectorAgent };
