@@ -217,16 +217,20 @@ describe(common.testName(__filename), () => {
         containerStatus: ContainerStatus.Created,
         data: { maxActivateRequests: 10, activeRequestCount: 1 }
       });
-      assert.deepStrictEqual(_.omit(capacityManager.workerStatsSnapshot.getBroker('func1', false)!.getWorker('worker2')!.toJSON(), 'pid', 'registerTime'), {
-        name: 'worker2',
-        credential: 'id2',
-        turfContainerStates: 'running',
-        containerStatus: ContainerStatus.Created,
-        data: { maxActivateRequests: 10, activeRequestCount: 6 }
-      });
+      {
+        const worker2 = capacityManager.workerStatsSnapshot.getBroker('func1', false)!.getWorker('worker2');
+        assert(worker2);
+        assert.deepStrictEqual(_.omit(worker2.toJSON(), 'pid', 'registerTime'), {
+          name: 'worker2',
+          credential: 'id2',
+          turfContainerStates: 'running',
+          containerStatus: ContainerStatus.Created,
+          data: { maxActivateRequests: 10, activeRequestCount: 6 }
+        });
 
-      await controlPlane.turf.stop('worker2');
-      await stateManager.syncWorkerData([brokerStat1]);
+        process.kill(worker2.pid!, 'SIGKILL');
+        await stateManager.syncWorkerData([brokerStat1]);
+      }
 
       assert.strictEqual(capacityManager.workerStatsSnapshot.brokers.size, 1);
       assert.strictEqual(capacityManager.workerStatsSnapshot.getBroker('func1', false)!.workers.size, 1);

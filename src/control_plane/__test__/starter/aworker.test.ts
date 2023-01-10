@@ -16,7 +16,9 @@ import { startTurfD, stopTurfD } from '#self/test/turf';
 
 const conditionalDescribe = (process.platform === 'darwin' ? describe.skip : describe);
 
-describe(common.testName(__filename), () => {
+describe(common.testName(__filename), function () {
+  this.timeout(10000);
+
   const dummyPlane: any = {
     platformEnvironmentVariables: {},
   };
@@ -59,37 +61,20 @@ describe(common.testName(__filename), () => {
   });
 
   conditionalDescribe('#keepSeedAliveTimer', () => {
-    it('seed should keep alive', async function() {
-      this.timeout(10000);
-
+    it('seed should keep alive', async () => {
       const aworker = new Aworker(dummyPlane as unknown as ControlPlane, config);
       await aworker.ready();
       await aworker.waitSeedReady();
 
-      // hold keep alive timer
-      const clock = FakeTimers.install({
-        toFake: ['setTimeout']
-      });
-
       let psData = await turf.ps();
-
-      assert(psData.some((it: TurfProcess) => it.name === Aworker.SEED_CONTAINER_NAME && it.status === TurfContainerStates.forkwait));
-
-      await turf.stop(Aworker.SEED_CONTAINER_NAME);
-
-      await turf.delete(Aworker.SEED_CONTAINER_NAME);
-
-      psData = await turf.ps();
-
-      assert(!(psData.some((it: TurfProcess) => it.name === Aworker.SEED_CONTAINER_NAME)));
-
-      // trigger keep alive
-      clock.tick(1000);
-
-      clock.uninstall();
+      {
+        const seed = psData.find((it: TurfProcess) => it.name === Aworker.SEED_CONTAINER_NAME && it.status === TurfContainerStates.forkwait);
+        assert(seed);
+        process.kill(seed.pid, 'SIGKILL');
+      }
 
       // wait seed ready
-      await sleep(1000);
+      await sleep(2000);
 
       psData = await turf.ps();
 
