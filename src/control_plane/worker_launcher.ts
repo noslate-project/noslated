@@ -1,5 +1,5 @@
 import { Base } from '#self/lib/sdk_base';
-import { castError, createDeferred } from '#self/lib/util';
+import { castError } from '#self/lib/util';
 import loggers from '#self/lib/logger';
 import * as naming from '#self/lib/naming';
 import * as starters from './starter';
@@ -13,13 +13,9 @@ import { FunctionProfileManager } from '#self/lib/function_profile';
 import { DataPlaneClientManager } from './data_plane_client/manager';
 import { WorkerStatsSnapshot } from './worker_stats';
 import { kMemoryLimit } from './constants';
-import {
-  LaunchTask,
-  PriorityLaunchQueue,
-  TaskPriority,
-} from './priority_launch_queue';
 import { performance } from 'perf_hooks';
 import { ControlPanelEvent } from '#self/lib/constants';
+import { Priority, TaskQueue } from '#self/lib/task_queue';
 
 export interface WorkerStarter {
   start(
@@ -42,7 +38,7 @@ export class WorkerLauncher extends Base {
   functionProfile!: FunctionProfileManager;
   dataPlaneClientManager!: DataPlaneClientManager;
   snapshot!: WorkerStatsSnapshot;
-  priorityLaunchQueue: PriorityLaunchQueue;
+  launchQueue: TaskQueue<LaunchTask>;
 
   /**
    * Constructor
@@ -62,10 +58,10 @@ export class WorkerLauncher extends Base {
       aworker: new starters.Aworker(plane, config),
     };
 
-    this.priorityLaunchQueue = new PriorityLaunchQueue(
-      config.controlPlane.expandConcurrency,
-      config.controlPlane.expandInterval
-    );
+    this.launchQueue = new TaskQueue(this.doTryLaunch, {
+      concurrency: config.controlPlane.expandConcurrency,
+      clock: plane.clock,
+    });
   }
 
   /**
@@ -75,7 +71,7 @@ export class WorkerLauncher extends Base {
     await Promise.all([
       this.starters.nodejs.close(),
       this.starters.aworker.close(),
-      this.priorityLaunchQueue.stop(),
+      this.launchQueue.close(),
     ]);
   }
 
@@ -91,7 +87,6 @@ export class WorkerLauncher extends Base {
     await Promise.all([
       this.starters.nodejs.ready(),
       this.starters.aworker.ready(),
-      this.priorityLaunchQueue.start(),
     ]);
   }
 
@@ -126,56 +121,39 @@ export class WorkerLauncher extends Base {
     toReserve = false,
     requestId?: string
   ) {
-    const { promise, resolve, reject } = createDeferred<void>();
-    this.priorityLaunchQueue.enqueue({
-      functionName: funcName,
-      timestamp: performance.now(),
-      priority: disposable
-        ? TaskPriority.HIGH
-        : toReserve
-        ? TaskPriority.LOW
-        : TaskPriority.NORMAL,
-      disposable,
-      options,
-      requestId,
-      processer: async (task: LaunchTask) => {
-        this.logger.info(
-          'process launch event(%s), request(%s) func(%s), disposable(%s), priority(%s).',
-          event,
-          task.requestId,
-          task.functionName,
-          task.disposable,
-          TaskPriority[task.priority]
-        );
-        try {
-          await this.doTryLaunch(
-            task.functionName,
-            task.options,
-            task.disposable,
-            task.requestId
-          );
-          resolve();
-        } catch (error) {
-          return reject(error);
-        }
+    return this.launchQueue.enqueue(
+      {
+        event,
+        funcName,
+        timestamp: Date.now(),
+        disposable,
+        options,
+        requestId,
       },
-    });
-
-    return promise;
+      {
+        priority: disposable
+          ? Priority.kHigh
+          : toReserve
+          ? Priority.kLow
+          : Priority.kNormal,
+      }
+    );
   }
 
   /**
    * Try launch worker process via turf
-   * @param {string} funcName The function name.
-   * @param {{ inspect?: boolean }} options The options object.
-   * @return {Promise<void>} The result.
    */
-  async doTryLaunch(
-    funcName: string,
-    options: BaseOptions,
-    disposable: boolean,
-    requestId?: string
-  ) {
+  doTryLaunch = async (task: LaunchTask) => {
+    const { event, requestId, funcName, disposable, options } = task;
+
+    this.logger.info(
+      'process launch event(%s), request(%s) func(%s), disposable(%s), priority(%s).',
+      event,
+      requestId,
+      funcName,
+      disposable
+    );
+
     const pprofile = this.functionProfile.get(funcName);
     if (!pprofile) {
       const err = new Error(`No function named ${funcName}.`);
@@ -312,10 +290,19 @@ export class WorkerLauncher extends Base {
       this.snapshot.unregister(funcName, processName, !!options.inspect);
       throw e;
     }
-  }
+  };
 }
 
 export interface WorkerLaunchItem {
   funcName: string;
   options: BaseOptions;
+}
+
+interface LaunchTask {
+  event: ControlPanelEvent;
+  timestamp: number;
+  funcName: string;
+  disposable: boolean;
+  options: BaseOptions;
+  requestId?: string;
 }

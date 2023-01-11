@@ -13,18 +13,22 @@ import * as root from '#self/proto/root';
 import { ContainerStatus } from '#self/lib/constants';
 import { StatLogger } from './stat_logger';
 import { Turf } from '#self/lib/turf';
+import { Clock, systemClock } from '#self/lib/clock';
+import { TaskQueue } from '#self/lib/task_queue';
 
 export class WorkerStatsSnapshot extends BaseOf(EventEmitter) {
   private logger: Logger;
   private profiles: FunctionProfileManager;
   public brokers: Map<string, Broker>;
-  private gcLogTimers: Set<NodeJS.Timeout>;
   private statLogger: StatLogger;
+
+  private gcQueue: TaskQueue<Worker>;
 
   constructor(
     profileManager: FunctionProfileManager,
     public config: Config,
-    private turf: Turf
+    private turf: Turf,
+    private clock: Clock = systemClock
   ) {
     super();
 
@@ -34,7 +38,10 @@ export class WorkerStatsSnapshot extends BaseOf(EventEmitter) {
     this.statLogger = new StatLogger();
 
     this.brokers = new Map();
-    this.gcLogTimers = new Set();
+
+    this.gcQueue = new TaskQueue<Worker>(this.#gcLog, {
+      clock: this.clock,
+    });
   }
 
   async _init() {
@@ -42,10 +49,9 @@ export class WorkerStatsSnapshot extends BaseOf(EventEmitter) {
   }
 
   async _close() {
-    for (const timer of this.gcLogTimers.values()) {
-      clearTimeout(timer);
-    }
-    this.gcLogTimers.clear();
+    /** ignore unfinished tasks */
+    this.gcQueue.clear();
+    this.gcQueue.close();
   }
 
   /**
@@ -256,32 +262,28 @@ export class WorkerStatsSnapshot extends BaseOf(EventEmitter) {
       }
 
       // 清理 log 文件
-      const gcLogTimer = setTimeout(() => {
-        this.gcLogTimers.delete(gcLogTimer);
-        const logDir = starters.logPath(this.config.logger.dir, worker.name);
-        fs.promises
-          .rmdir(logDir, { recursive: true })
-          .then(() => {
-            this.logger.debug(
-              "[%s]'s log directory removed: %s.",
-              worker.name,
-              logDir
-            );
-          })
-          .catch(e => {
-            this.logger.warn(
-              "Failed to rm [%s]'s log directory: %s.",
-              worker.name,
-              logDir,
-              e
-            );
-          });
-      }, this.config.worker.gcLogDelay);
-      this.gcLogTimers.add(gcLogTimer);
+      this.gcQueue.enqueue(worker, {
+        delay: this.config.worker.gcLogDelay,
+      });
 
       broker.workers.delete(worker.name);
     }
   }
+
+  #gcLog = async (worker: Worker) => {
+    const logDir = starters.logPath(this.config.logger.dir, worker.name);
+    try {
+      await fs.promises.rm(logDir, { recursive: true });
+      this.logger.debug('[%s] log directory removed: %s.', worker.name, logDir);
+    } catch (e) {
+      this.logger.warn(
+        'Failed to rm [%s] log directory: %s.',
+        worker.name,
+        logDir,
+        e
+      );
+    }
+  };
 
   /**
    * Correct synced data (remove GCed items)

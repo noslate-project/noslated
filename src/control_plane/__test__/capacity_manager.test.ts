@@ -4,7 +4,6 @@ import fs from 'fs';
 import path from 'path';
 
 import _ from 'lodash';
-import FakeTimers, { Clock } from '@sinonjs/fake-timers';
 import mm from 'mm';
 import * as common from '#self/test/common';
 import { config } from '#self/config';
@@ -66,32 +65,28 @@ describe(common.testName(__filename), function () {
     ],
   };
 
-  let clock: Clock;
+  let clock: common.TestClock;
   let control: ControlPlane;
   let turf: Turf;
 
   let capacityManager: CapacityManager;
 
-  /**
-   * clock mock 及还原顺序会导致 control_plane 无法关闭
-   */
   beforeEach(async () => {
     mockClientCreatorForManager(DataPlaneClientManager);
     startTurfD();
-    control = new ControlPlane(config);
+    clock = common.createTestClock({
+      shouldAdvanceTime: true,
+    });
+    control = new ControlPlane(config, clock);
     turf = control.turf;
     await control.ready();
     ({ capacityManager } = control);
-    clock = FakeTimers.install({
-      toFake: ['setTimeout'],
-      shouldAdvanceTime: true,
-    });
   });
 
   afterEach(async () => {
-    clock.uninstall();
     mm.restore();
     await control.close();
+    clock.uninstall();
     stopTurfD();
   });
 
@@ -250,8 +245,8 @@ describe(common.testName(__filename), function () {
       );
 
       // should delete directory after 5 minutes.
-      let rmdirCalled = false;
-      mm(fs.promises, 'rmdir', async (name: any, options: any) => {
+      let rmCalled = false;
+      mm(fs.promises, 'rm', async (name: any, options: any) => {
         assert.strictEqual(
           name,
           path.dirname(
@@ -263,11 +258,11 @@ describe(common.testName(__filename), function () {
           )
         );
         assert.deepStrictEqual(options, { recursive: true });
-        rmdirCalled = true;
+        rmCalled = true;
       });
 
       clock.tick(10 * 1000 * 60);
-      assert(rmdirCalled);
+      assert(rmCalled);
     });
   });
 
