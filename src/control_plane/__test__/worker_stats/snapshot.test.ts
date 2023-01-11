@@ -11,7 +11,6 @@ import { config } from '#self/config';
 import { FunctionProfileManager as ProfileManager } from '#self/lib/function_profile';
 import { Turf, TurfContainerStates } from '#self/lib/turf';
 import { ContainerStatus, ContainerStatusReport } from '#self/lib/constants';
-import FakeTimers, { Clock } from '@sinonjs/fake-timers';
 import sinon from 'sinon';
 import fs from 'fs';
 import pedding from 'pedding';
@@ -98,17 +97,23 @@ describe(common.testName(__filename), () => {
      * @type {WorkerStatsSnapshot}
      */
     let workerStatsSnapshot: WorkerStatsSnapshot;
+    let clock: common.TestClock;
 
     beforeEach(async () => {
+      clock = common.createTestClock({
+        shouldAdvanceTime: true,
+      });
       workerStatsSnapshot = new WorkerStatsSnapshot(
         profileManager,
         config,
-        turf
+        turf,
+        clock
       );
       await workerStatsSnapshot.ready();
     });
     afterEach(async () => {
       await workerStatsSnapshot.close();
+      clock.uninstall();
     });
 
     describe('.register()', () => {
@@ -734,14 +739,10 @@ describe(common.testName(__filename), () => {
 
     describe('.correct()', () => {
       it('should correct gc stopped and unknown container', async () => {
-        const clock: Clock = FakeTimers.install({
-          toFake: ['setTimeout'],
-          shouldAdvanceTime: true,
-        });
         const spyTurfStop = sinon.spy(turf, 'stop');
         const spyTurfState = sinon.spy(turf, 'state');
         const spyTurfDelete = sinon.spy(turf, 'delete');
-        const spyFs = sinon.spy(fs.promises, 'rmdir');
+        const spyFs = sinon.spy(fs.promises, 'rm');
 
         workerStatsSnapshot.register('func', 'hello', 'world', true);
         workerStatsSnapshot.register('func', 'foooo', 'bar', false);
@@ -787,7 +788,6 @@ describe(common.testName(__filename), () => {
         assert(spyTurfDelete.calledWith('foooo'));
 
         clock.tick(config.worker.gcLogDelay);
-
         assert(spyFs.calledWithMatch('/logs/workers/foooo'));
 
         workerStatsSnapshot.sync(brokerData, [
@@ -828,29 +828,13 @@ describe(common.testName(__filename), () => {
         spyTurfState.restore();
         spyTurfDelete.restore();
         spyFs.restore();
-        clock.uninstall();
       });
     });
 
     describe('.close()', () => {
-      it('should clear gcLogTimers after close', async () => {
-        const clock: Clock = FakeTimers.install({
-          toFake: ['setTimeout', 'clearTimeout'],
-        });
-        let data = 'before';
-        const timer = setTimeout(() => {
-          data = 'after';
-        }, 5000);
-
-        workerStatsSnapshot['gcLogTimers'].add(timer);
+      it('should close gcQueue after close', async () => {
         await workerStatsSnapshot.close();
-
-        assert.strictEqual(workerStatsSnapshot['gcLogTimers'].size, 0);
-
-        clock.tick(6000);
-
-        assert.strictEqual(data, 'before');
-        clock.uninstall();
+        assert(workerStatsSnapshot['gcQueue'].closed);
       });
     });
   });

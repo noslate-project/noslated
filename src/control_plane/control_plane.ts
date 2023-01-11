@@ -20,6 +20,7 @@ import {
   ReservationController,
 } from './controllers';
 import { Turf } from '#self/lib/turf';
+import { Clock, systemClock } from '#self/lib/clock';
 
 /**
  * ControlPlane
@@ -41,7 +42,7 @@ export class ControlPlane extends BaseOf(EventEmitter) {
   reservationController: ReservationController;
   disposableController: DisposableController;
 
-  constructor(private config: Config) {
+  constructor(private config: Config, public clock: Clock = systemClock) {
     super();
     dumpConfig('control', config);
 

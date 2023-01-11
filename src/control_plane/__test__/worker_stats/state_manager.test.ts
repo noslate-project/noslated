@@ -4,7 +4,6 @@ import assert from 'assert';
 
 import mm from 'mm';
 import _ from 'lodash';
-import FakeTimers, { Clock } from '@sinonjs/fake-timers';
 
 import { NoslatedClient } from '#self/sdk';
 import * as common from '#self/test/common';
@@ -21,9 +20,10 @@ const simpleSandbox = path.resolve(FIXTURES_DIR, 'sandbox_simple');
 describe(common.testName(__filename), () => {
   let stateManager: StateManager;
   let capacityManager: CapacityManager;
-  let clock: Clock;
 
-  const env = new DefaultEnvironment();
+  const env = new DefaultEnvironment({
+    createTestClock: true,
+  });
   let agent: NoslatedClient;
   let controlPlane: ControlPlane;
 
@@ -32,14 +32,6 @@ describe(common.testName(__filename), () => {
     controlPlane = env.control;
 
     ({ stateManager, capacityManager } = controlPlane);
-
-    clock = FakeTimers.install({
-      toFake: ['setTimeout'],
-    });
-  });
-
-  afterEach(async () => {
-    clock.uninstall();
   });
 
   describe('updateContainerStatusByReport()', () => {
@@ -320,8 +312,8 @@ describe(common.testName(__filename), () => {
       );
 
       // should delete directory after 5 minutes.
-      let rmdirCalled = false;
-      mm(fs.promises, 'rmdir', async (name: any, options: any) => {
+      let rmCalled = false;
+      mm(fs.promises, 'rm', async (name: any, options: any) => {
         assert.strictEqual(
           name,
           path.dirname(
@@ -333,11 +325,11 @@ describe(common.testName(__filename), () => {
           )
         );
         assert.deepStrictEqual(options, { recursive: true });
-        rmdirCalled = true;
+        rmCalled = true;
       });
 
-      clock.tick(10 * 1000 * 60);
-      assert(rmdirCalled);
+      env.testClock.tick(10 * 1000 * 60);
+      assert(rmCalled);
     });
 
     it('should not sync with empty psData', async () => {
