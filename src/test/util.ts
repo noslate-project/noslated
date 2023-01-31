@@ -170,3 +170,25 @@ export const internetDescribe =
   process.env.NOSLATED_ENABLE_INTERNET_TEST === 'true'
     ? describe
     : describe.skip;
+
+export function findResponseHeader(
+  response: TriggerResponse,
+  key: string
+): [string, string] | null {
+  const headers = response.metadata.headers || [];
+
+  const header = headers.find(tuple => {
+    return tuple[0] === key;
+  });
+
+  return header || null;
+}
+
+export function findResponseHeaderValue(
+  response: TriggerResponse,
+  key: string
+): string | null {
+  const header = findResponseHeader(response, key);
+
+  return header ? header[1] : null;
+}

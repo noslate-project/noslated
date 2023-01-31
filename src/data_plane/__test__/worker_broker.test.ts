@@ -1,6 +1,7 @@
 import assert from 'assert';
 
 import * as common from '#self/test/common';
+import { findResponseHeaderValue } from '#self/test/util';
 import { FunctionProfileManager } from '#self/lib/function_profile';
 import { PendingRequest, WorkerBroker } from '../worker_broker';
 import { kMegaBytes } from '#self/control_plane/constants';
@@ -10,7 +11,6 @@ import {
   createDeferred,
   sleep,
   bufferFromStream,
-  findResponseHeaderValue,
 } from '#self/lib/util';
 import { DefaultEnvironment } from '#self/test/env/environment';
 import { Worker } from '#self/data_plane/worker_broker';
@@ -504,9 +504,7 @@ describe(common.testName(__filename), () => {
         await env.agent.invoke('aworker_echo', Buffer.from('ok'), {
           method: 'POST',
         });
-      } catch (error) {
-        console.log('invoke error: ', error);
-      }
+      } catch (error) {}
 
       const dpBroker = env.data.dataFlowController.getBroker('aworker_echo')!;
       const dpWorker = dpBroker.workers[0];
