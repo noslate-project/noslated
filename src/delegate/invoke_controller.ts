@@ -16,7 +16,7 @@ import { DelegateSharedState } from './delegate_shared_state';
 import { CredentialRegistration, WorkerState } from './registration';
 import { NoslatedDelegateService } from '.';
 import { MetadataInit } from '#self/delegate/request_response';
-import { kDefaultRequestId, NoslatedResponseEvent } from '#self/lib/constants';
+import { kDefaultRequestId } from '#self/lib/constants';
 
 const logger = require('../lib/logger').get('invoke-controller');
 
@@ -123,7 +123,6 @@ export class InvokeController {
     }
     if (isEos) {
       readable.push(null);
-      readable.emit(NoslatedResponseEvent.StreamEnd);
       this.#state.removeReadable(sid);
       return;
     }

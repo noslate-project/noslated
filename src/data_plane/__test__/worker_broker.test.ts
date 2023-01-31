@@ -7,11 +7,7 @@ import { PendingRequest, WorkerBroker } from '../worker_broker';
 import { kMegaBytes } from '#self/control_plane/constants';
 import { DataFlowController } from '../data_flow_controller';
 import { Metadata } from '#self/delegate/request_response';
-import {
-  createDeferred,
-  sleep,
-  bufferFromStream,
-} from '#self/lib/util';
+import { createDeferred, sleep, bufferFromStream } from '#self/lib/util';
 import { DefaultEnvironment } from '#self/test/env/environment';
 import { Worker } from '#self/data_plane/worker_broker';
 import * as sinon from 'sinon';
@@ -504,7 +500,9 @@ describe(common.testName(__filename), () => {
         await env.agent.invoke('aworker_echo', Buffer.from('ok'), {
           method: 'POST',
         });
-      } catch (error) {}
+      } catch (error) {
+        // ignore
+      }
 
       const dpBroker = env.data.dataFlowController.getBroker('aworker_echo')!;
       const dpWorker = dpBroker.workers[0];

@@ -1,5 +1,5 @@
 import { Readable, ReadableOptions } from 'stream';
-import { kDefaultRequestId, NoslatedResponseEvent } from '#self/lib/constants';
+import { kDefaultRequestId } from '#self/lib/constants';
 import { createDeferred } from '#self/lib/util';
 
 interface MetadataInit {
@@ -89,11 +89,8 @@ class TriggerResponse extends Readable {
     this.#metadata = metadata;
     this.#finishDeferred = createDeferred<boolean>();
 
-    this.once(NoslatedResponseEvent.StreamEnd, () => {
-      this.#finishDeferred.resolve(true);
-    });
-
     this.once('close', () => {
+      // emit after readable stream be consumed
       this.#finishDeferred.resolve(true);
     });
   }

@@ -2,7 +2,6 @@ import assert from 'assert';
 import { testName } from '#self/test/common';
 import { bufferFromStream } from '#self/lib/util';
 import { TriggerResponse, Metadata } from '#self/delegate/request_response';
-import { NoslatedResponseEvent } from '#self/lib/constants';
 
 describe(testName(__filename), () => {
   describe('TriggerResponse', () => {
@@ -46,7 +45,7 @@ describe(testName(__filename), () => {
       trInit.destroy();
     });
 
-    it('should wasSent work after destroy', async () => {
+    it('should finish work after destroy', async () => {
       const tr = new TriggerResponse({
         read() {},
         status: 302,
@@ -64,12 +63,12 @@ describe(testName(__filename), () => {
         tr.destroy();
       }, 500);
 
-      const wasSent = await tr.finish();
+      const finish = await tr.finish();
 
-      assert.ok(wasSent);
+      assert.ok(finish);
     });
 
-    it('should wasSent work data finished', async () => {
+    it('should finish work data finished', async () => {
       const tr = new TriggerResponse({
         read() {},
         status: 302,
@@ -87,16 +86,14 @@ describe(testName(__filename), () => {
 
       setTimeout(() => {
         tr.push(null);
-        tr.emit(NoslatedResponseEvent.StreamEnd);
       }, 500);
 
-      const wasSent = await tr.finish();
-
-      assert.ok(wasSent);
-
-      const data = await bufferFromStream(tr);
-
-      assert.strictEqual(data.toString(), 'ok');
+      await Promise.all([tr.finish(), await bufferFromStream(tr)]).then(
+        ([finish, data]) => {
+          assert.ok(finish);
+          assert.strictEqual(data.toString(), 'ok');
+        }
+      );
     });
   });
 });
