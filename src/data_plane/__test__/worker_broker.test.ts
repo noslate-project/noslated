@@ -496,13 +496,11 @@ describe(common.testName(__filename), () => {
         throw new Error('MockWorkerPipeError');
       });
 
-      try {
+      await assert.rejects(async () => {
         await env.agent.invoke('aworker_echo', Buffer.from('ok'), {
           method: 'POST',
         });
-      } catch (error) {
-        // ignore
-      }
+      }, /MockWorkerPipeError/);
 
       const dpBroker = env.data.dataFlowController.getBroker('aworker_echo')!;
       const dpWorker = dpBroker.workers[0];

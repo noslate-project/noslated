@@ -7,7 +7,6 @@ import { DefaultSerializer, DefaultDeserializer } from 'v8';
 import download from 'download';
 import crypto from 'crypto';
 import loggers from './logger';
-import { TriggerResponse } from '#self/delegate/request_response';
 
 export {
   tryQ,
