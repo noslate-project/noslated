@@ -7,6 +7,7 @@ import { DefaultSerializer, DefaultDeserializer } from 'v8';
 import download from 'download';
 import crypto from 'crypto';
 import loggers from './logger';
+import { TriggerResponse } from '#self/delegate/request_response';
 
 export {
   tryQ,
@@ -245,4 +246,26 @@ export class BackoffCounter {
   reset() {
     this.count = 0;
   }
+}
+
+export function findResponseHeader(
+  response: TriggerResponse,
+  key: string
+): [string, string] | null {
+  const headers = response.metadata.headers || [];
+
+  const header = headers.find(tuple => {
+    return tuple[0] === key;
+  });
+
+  return header || null;
+}
+
+export function findResponseHeaderValue(
+  response: TriggerResponse,
+  key: string
+): string | null {
+  const header = findResponseHeader(response, key);
+
+  return header ? header[1] : null;
 }

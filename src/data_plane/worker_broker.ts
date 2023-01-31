@@ -368,9 +368,12 @@ export class WorkerBroker extends Base {
 
       request.stopTimer();
 
+      let response: TriggerResponse;
+
       notThatBusyWorker
         .pipe(request, undefined)
         .then(ret => {
+          response = ret;
           request.resolve(ret);
         })
         .catch(err => {
@@ -380,6 +383,7 @@ export class WorkerBroker extends Base {
           if (this.disposable) {
             this.afterDisposableInvoke(
               notThatBusyWorker,
+              response,
               request.metadata.requestId
             );
           }
@@ -401,8 +405,18 @@ export class WorkerBroker extends Base {
     }
   }
 
-  async afterDisposableInvoke(worker: Worker, requestId?: string) {
+  async afterDisposableInvoke(
+    worker: Worker,
+    response: TriggerResponse | undefined,
+    requestId?: string
+  ) {
     await worker.closeTraffic();
+
+    if (response) {
+      // wait response data sent
+      await response.finish();
+    }
+
     // 同步 RequestDrained
     await this.host.broadcastContainerStatusReport({
       functionName: this.name,
@@ -751,17 +765,17 @@ export class WorkerBroker extends Base {
           return request.promise;
         }
 
-        let output;
+        let response;
 
         try {
-          output = await worker.pipe(inputStream, metadata);
+          response = await worker.pipe(inputStream, metadata);
         } finally {
           if (this.disposable) {
-            this.afterDisposableInvoke(worker, metadata.requestId);
+            this.afterDisposableInvoke(worker, response, metadata.requestId);
           }
         }
 
-        return output;
+        return response;
       }
 
       default: {

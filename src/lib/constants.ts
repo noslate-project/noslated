@@ -26,3 +26,7 @@ export enum TurfStatusEvent {
 }
 
 export const kDefaultRequestId = 'unknown';
+
+export enum NoslatedResponseEvent {
+  StreamEnd = 'noslate_response_stream_end',
+}
