@@ -24,6 +24,7 @@ const TurfStopRetryableCodes = [TurfCode.EAGAIN];
 
 export class Turf {
   session: TurfSession;
+  sessionConnectedDeferred = createDeferred<void>();
   constructor(public turfPath: string, public sockPath: string) {
     this.session = new TurfSession(sockPath);
     this.session.on('error', err => this._onSessionError(err));
@@ -36,6 +37,7 @@ export class Turf {
     this.session.connect().then(
       () => {
         logger.info('turf session re-connected');
+        this.sessionConnectedDeferred.resolve();
       },
       () => {
         /** identical to error event */
@@ -44,8 +46,16 @@ export class Turf {
   }
 
   async connect() {
-    await this.session.connect();
-    logger.info('turf session connected');
+    this.session.connect().then(
+      () => {
+        logger.info('turf session connected');
+        this.sessionConnectedDeferred.resolve();
+      },
+      () => {
+        /** identical to error event */
+      }
+    );
+    return this.sessionConnectedDeferred.promise;
   }
 
   async close() {

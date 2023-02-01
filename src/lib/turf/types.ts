@@ -20,12 +20,29 @@ export enum TurfContainerStates {
   unknown = 'unknown',
 }
 
-export enum TurfCode {
-  ENOENT = -2,
-  ECHILD = -10,
-  EAGAIN = -11,
-  EINVAL = -22,
+interface TurfCode {
+  ENOENT: number;
+  ECHILD: number;
+  EAGAIN: number;
+  EINVAL: number;
 }
+let TurfCode: TurfCode;
+if (process.platform === 'darwin') {
+  TurfCode = {
+    ENOENT: -2,
+    ECHILD: -10,
+    EAGAIN: -35,
+    EINVAL: -22,
+  };
+} else {
+  TurfCode = {
+    ENOENT: -2,
+    ECHILD: -10,
+    EAGAIN: -11,
+    EINVAL: -22,
+  };
+}
+export { TurfCode };
 
 export interface TurfProcess {
   status: TurfContainerStates;
