@@ -1,5 +1,6 @@
 import { Readable, ReadableOptions } from 'stream';
 import { kDefaultRequestId } from '#self/lib/constants';
+import { createDeferred } from '#self/lib/util';
 
 interface MetadataInit {
   url?: string;
@@ -73,6 +74,8 @@ interface TriggerResponseInit {
 class TriggerResponse extends Readable {
   #status;
   #metadata;
+  #finishDeferred;
+
   constructor(init?: TriggerResponseInit) {
     super({
       read: init?.read,
@@ -84,6 +87,12 @@ class TriggerResponse extends Readable {
       metadata = new Metadata(metadata);
     }
     this.#metadata = metadata;
+    this.#finishDeferred = createDeferred<boolean>();
+
+    this.once('close', () => {
+      // emit after readable stream be consumed
+      this.#finishDeferred.resolve(true);
+    });
   }
 
   get status() {
@@ -103,6 +112,10 @@ class TriggerResponse extends Readable {
       throw new TypeError('expect a Metadata');
     }
     this.#metadata = val;
+  }
+
+  async finish(): Promise<boolean> {
+    return this.#finishDeferred.promise;
   }
 }
 
