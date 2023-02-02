@@ -519,6 +519,10 @@ export class InvokeController {
       response.push(null);
     }
 
+    // Swallow the error if the response has not yet been hand over to the caller yet.
+    const dumbError = () => {};
+    response.on('error', dumbError);
+
     let resHead;
     try {
       resHead = await ret.future;
@@ -527,6 +531,7 @@ export class InvokeController {
       response.destroy();
       throw e;
     }
+    response.off('error', dumbError);
     const endTime = Date.now();
 
     this.#sharedState.triggerCounter!.add(1, {

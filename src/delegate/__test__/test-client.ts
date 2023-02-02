@@ -1,7 +1,7 @@
 import childProcess from 'child_process';
 import { EventEmitter, once } from 'events';
 import { aworker } from '../../proto/aworker';
-import { NoslatedClient } from '../noslated_ipc';
+import { CanonicalCode, NoslatedClient } from '../noslated_ipc';
 
 const logger = require('#self/lib/logger').get('test-client');
 
@@ -46,12 +46,27 @@ function child() {
         ],
       };
     };
+    client.onRequest = (
+      method,
+      streamId,
+      metadata,
+      hasInputData,
+      hasOutputData,
+      callback
+    ) => {
+      process.send?.({ type: 'request', args: [method] });
+      if (method === 'hang-body') {
+        return callback(CanonicalCode.OK, null, {
+          status: 200,
+          metadata: {},
+        } as aworker.ipc.ITriggerResponseMessage);
+      }
+    };
 
     const onEvent =
       (type: string) =>
       (...args: any[]) =>
         process.send?.({ type, args });
-    client.onRequest = onEvent('request');
     client.onStreamPush = onEvent('streamPush');
     client.onResourceNotification = onEvent('resourceNotification');
     client.onDisconnect = onEvent('disconnect');

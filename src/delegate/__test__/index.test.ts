@@ -3,6 +3,7 @@ import * as common from '#self/test/common';
 import { TestClient } from './test-client';
 import { NoslatedDelegateService } from '#self/delegate/index';
 import path from 'path';
+import { once } from 'events';
 
 describe(common.testName(__filename), () => {
   let client: TestClient | null;
@@ -175,7 +176,7 @@ describe(common.testName(__filename), () => {
     }, /CanonicalCode::CONNECTION_RESET/);
   });
 
-  it('should reset requests on client disconnected for client closed', async () => {
+  it('should reset response on client disconnected for peer disconnected', async () => {
     delegate = new NoslatedDelegateService();
     delegate.register('foobar');
     delegate.start();
@@ -187,22 +188,15 @@ describe(common.testName(__filename), () => {
       client?.connect();
     });
 
-    let err: Error;
-    try {
-      await Promise.all([
-        delegate.trigger('foobar', 'foobar', null as any, { timeout: 60_1000 }),
-        Promise.resolve().then(async () => {
-          await new Promise(resolve => setTimeout(resolve, 100));
-          client?.close();
-        }),
-      ]);
-    } catch (e) {
-      err = e as Error;
-    }
-    assert.ok(err! != null);
+    const resp = await delegate.trigger('foobar', 'hang-body', null as any, {
+      timeout: 60_1000,
+    });
+    const errorFuture = once(resp, 'error');
+    await client?.close();
+    const [err] = await errorFuture;
     assert.throws(() => {
       throw err;
-    }, /CanonicalCode::CONNECTION_RESET/);
+    }, /PEER_CONNECTION_CLOSED/);
   });
 
   describe('setDaprAdaptor', () => {
