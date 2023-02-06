@@ -129,14 +129,14 @@ export class WorkerLauncher extends Base {
         disposable,
         options,
         requestId,
-        toReserve
+        toReserve,
       },
       {
         priority: disposable
           ? Priority.kHigh
           : toReserve
-            ? Priority.kLow
-            : Priority.kNormal,
+          ? Priority.kLow
+          : Priority.kNormal,
       }
     );
   }
@@ -153,11 +153,7 @@ export class WorkerLauncher extends Base {
       requestId,
       funcName,
       disposable,
-      disposable
-        ? Priority.kHigh
-        : toReserve
-          ? Priority.kLow
-          : Priority.kNormal
+      disposable ? Priority.kHigh : toReserve ? Priority.kLow : Priority.kNormal
     );
 
     const pprofile = this.functionProfile.get(funcName);
