@@ -129,6 +129,7 @@ export class WorkerLauncher extends Base {
         disposable,
         options,
         requestId,
+        toReserve,
       },
       {
         priority: disposable
@@ -144,14 +145,15 @@ export class WorkerLauncher extends Base {
    * Try launch worker process via turf
    */
   doTryLaunch = async (task: LaunchTask) => {
-    const { event, requestId, funcName, disposable, options } = task;
+    const { event, requestId, funcName, disposable, options, toReserve } = task;
 
     this.logger.info(
       'process launch event(%s), request(%s) func(%s), disposable(%s), priority(%s).',
       event,
       requestId,
       funcName,
-      disposable
+      disposable,
+      disposable ? Priority.kHigh : toReserve ? Priority.kLow : Priority.kNormal
     );
 
     const pprofile = this.functionProfile.get(funcName);
@@ -305,4 +307,5 @@ interface LaunchTask {
   disposable: boolean;
   options: BaseOptions;
   requestId?: string;
+  toReserve?: boolean;
 }
