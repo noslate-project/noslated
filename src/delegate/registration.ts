@@ -75,7 +75,12 @@ class WorkerState {
     this.fetchRequests = new Map();
 
     for (const item of readables) {
-      item.destroy();
+      item.destroy(
+        new NoslatedStreamError(
+          'Peer connection closed',
+          'PEER_CONNECTION_CLOSED'
+        )
+      );
     }
     for (const item of writables) {
       item.destroy(
