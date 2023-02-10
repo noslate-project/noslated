@@ -53,6 +53,7 @@ export default {
     bin: path.join(projectRoot, 'bin/turf'),
     socketPath: path.join(projectRoot, '.turf/turf.sock'),
     socketSession: true,
+    gracefulExitPeriodMs: 3000,
   },
 
   delegate: {

@@ -55,25 +55,25 @@ export interface TurfState {
   pid: number;
   state: TurfContainerStates;
   status: number;
-  'status.cpu_overload': string;
-  'status.mem_overload': string;
-  'status.killed': number;
-  'killed.signal': number;
-  exitcode: number;
-  'stat.utime': number;
-  'stat.stime': number;
-  'stat.cutime': number;
-  'stat.cstime': number;
-  'stat.vsize': number;
-  'stat.rss': number;
-  'stat.minflt': number;
-  'stat.majflt': number;
-  'stat.cminflt': number;
-  'stat.cmajflt': number;
-  'stat.num_threads': number;
-  'rusage.utime': number;
-  'rusage.stime': number;
-  'rusage.maxrss': number;
+  'status.cpu_overload'?: string;
+  'status.mem_overload'?: string;
+  'status.killed'?: number;
+  'killed.signal'?: number;
+  exitcode?: number;
+  'stat.utime'?: number;
+  'stat.stime'?: number;
+  'stat.cutime'?: number;
+  'stat.cstime'?: number;
+  'stat.vsize'?: number;
+  'stat.rss'?: number;
+  'stat.minflt'?: number;
+  'stat.majflt'?: number;
+  'stat.cminflt'?: number;
+  'stat.cmajflt'?: number;
+  'stat.num_threads'?: number;
+  'rusage.utime'?: number;
+  'rusage.stime'?: number;
+  'rusage.maxrss'?: number;
 }
 
 export interface TurfException extends Error {
@@ -87,4 +87,42 @@ export interface TurfStartOptions {
   seed?: string;
   stdout?: string;
   stderr?: string;
+}
+
+export interface TurfSpecSyscall {
+  names: string[];
+  action: string;
+}
+
+export interface TurfSpec {
+  ociVersion: string;
+  process: {
+    terminal: boolean;
+    user: {
+      uid: number;
+      gid: number;
+    };
+    args: string[];
+    env: string[];
+    noNewPrivileges: boolean;
+  };
+  root: {
+    path: string;
+    readonly: boolean;
+  };
+  linux: {
+    resources: {
+      memory: {
+        limit: number;
+      };
+    };
+    seccomp: {
+      defaultAction: string;
+      syscalls: TurfSpecSyscall[];
+    };
+  };
+  turf: {
+    runtime: string;
+    code: string;
+  };
 }

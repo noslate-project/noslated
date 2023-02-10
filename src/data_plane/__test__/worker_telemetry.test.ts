@@ -58,7 +58,7 @@ describe(common.testName(__filename), function () {
       // TODO(chengzhong.wcz): get pid from worker stats.
       // const pid = worker.pid;
       // assert.ok(pid != null);
-      const items = await env.control.turf.ps();
+      const items = await env.turf.ps();
       const state = items.filter(
         (it: { status: TurfContainerStates; name: string }) => {
           return (

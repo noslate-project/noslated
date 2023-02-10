@@ -40,7 +40,7 @@ const cases: any = [
     expect: {},
     after: async (env: TestEnvironment, item: any) => {
       assert.strictEqual(env.resourceServer.zombieRequestCount, 1);
-      await killWorker(env.control, item.name);
+      await killWorker(env, item.name);
       await once(env.resourceServer, 'req-close');
       assert.strictEqual(env.resourceServer.zombieRequestCount, 0);
     },

@@ -6,11 +6,11 @@ import { bufferFromStream } from '#self/lib/util';
 import { sleep } from '#self/lib/util';
 import { config } from '#self/config';
 import fs from 'fs';
-import { BaseStarter } from '#self/control_plane/starter/base';
 import { getInspectorTargets } from '#self/test/diagnostics/util';
 import { once } from 'events';
 import { Events } from '#self/delegate/index';
 import { DefaultEnvironment } from '#self/test/env/environment';
+import { workerLogPath } from '#self/control_plane/container/container_manager';
 
 const { baselineDir } = common;
 
@@ -121,7 +121,7 @@ describe(common.testName(__filename), () => {
       await sleep(2000);
       const containerName =
         env.data.dataFlowController.getBroker('foobar')!.workers[0].name;
-      const logDir = BaseStarter.logPath(config.logger.dir, containerName);
+      const logDir = workerLogPath(config.logger.dir, containerName);
       const files = fs.readdirSync(logDir);
 
       assert(files.find(it => it.startsWith('aworker_trace')));

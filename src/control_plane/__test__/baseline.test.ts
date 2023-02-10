@@ -34,7 +34,7 @@ const cases = [
       assert(ps.length > 0);
       for (const item of ps) {
         if (item.status === 'running') {
-          await turf.stop(item.name);
+          await turf.stop(item.name, true);
         }
       }
 

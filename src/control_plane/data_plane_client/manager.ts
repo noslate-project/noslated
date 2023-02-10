@@ -37,7 +37,7 @@ export class DataPlaneClientManager extends BasePlaneClientManager {
 
     (client as any)
       .setFunctionProfile({
-        profiles: this.plane.get('functionProfile').profile,
+        profiles: this.plane.functionProfile.profile,
         mode: 'IMMEDIATELY',
       })
       .catch(() => {
@@ -65,13 +65,15 @@ export class DataPlaneClientManager extends BasePlaneClientManager {
    * @param {object} data The data to be reduced.
    * @return {object} Containers that can be reduced.
    */
-  async reduceCapacity(data: any): Promise<any[]> {
+  async reduceCapacity(
+    data: any
+  ): Promise<root.noslated.data.ICapacityReductionBroker[]> {
     const ret: root.noslated.data.ICapacityReductionResponse[] =
       await this.callToAllAvailableClients('reduceCapacity', [data], 'all');
     return _.flatten(
       ret
         .filter(data => data.brokers && data.brokers.length)
-        .map(data => data.brokers)
+        .map(data => data.brokers!)
     );
   }
 

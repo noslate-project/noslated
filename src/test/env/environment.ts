@@ -1,4 +1,5 @@
 import { config } from '#self/config';
+import { TurfContainerManager } from '#self/control_plane/container/turf_container_manager';
 import { ControlPlane } from '#self/control_plane/index';
 import { DataPlane } from '#self/data_plane/index';
 import { Clock, systemClock } from '#self/lib/clock';
@@ -76,9 +77,14 @@ export class DefaultEnvironment extends MochaEnvironment {
     }
 
     this.data = new DataPlane(config);
-    this.control = new ControlPlane(config, this.clock);
+
+    const containerManager = new TurfContainerManager(config);
+    this.control = new ControlPlane(config, {
+      clock: this.clock,
+      containerManager: containerManager,
+    });
     this.agent = new NoslatedClient();
-    this.turf = this.control.turf;
+    this.turf = containerManager.client;
 
     await Promise.all([
       this.data.ready(),

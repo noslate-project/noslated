@@ -5,7 +5,7 @@ import { Broker } from '#self/control_plane/worker_stats/index';
 import * as common from '#self/test/common';
 import { config } from '#self/config';
 import { FunctionProfileManager as ProfileManager } from '#self/lib/function_profile';
-import { Turf, TurfContainerStates } from '#self/lib/turf';
+import { TurfContainerStates } from '#self/lib/turf';
 import {
   AworkerFunctionProfile,
   ShrinkStrategy,
@@ -19,6 +19,13 @@ import {
 import sinon from 'sinon';
 import pedding from 'pedding';
 import { sleep } from '#self/lib/util';
+import {
+  NoopContainer,
+  registerBrokerContainers,
+  registerContainers,
+  TestContainerManager,
+} from '../test_container_manager';
+import { systemClock } from '#self/lib/clock';
 
 describe(common.testName(__filename), () => {
   const funcData: AworkerFunctionProfile[] = [
@@ -50,8 +57,6 @@ describe(common.testName(__filename), () => {
   };
 
   let profileManager: ProfileManager | null;
-  // Not connected turf client.
-  const turf = new Turf(config.turf.bin, config.turf.socketPath);
   beforeEach(async () => {
     profileManager = new ProfileManager(config);
     await profileManager.set(funcData, 'WAIT');
@@ -64,14 +69,7 @@ describe(common.testName(__filename), () => {
   describe('Broker', () => {
     describe('constructor', () => {
       it('should constructor', () => {
-        const broker = new Broker(
-          profileManager!,
-          config,
-          'foo',
-          true,
-          false,
-          turf
-        );
+        const broker = new Broker(profileManager!, config, 'foo', true, false);
         assert.strictEqual(broker.redundantTimes, 0);
         assert.strictEqual(broker.config, config);
         assert.strictEqual(broker.profiles, profileManager);
@@ -83,14 +81,7 @@ describe(common.testName(__filename), () => {
       });
 
       it('should constructor with function profile', () => {
-        const broker = new Broker(
-          profileManager!,
-          config,
-          'func',
-          true,
-          false,
-          turf
-        );
+        const broker = new Broker(profileManager!, config, 'func', true, false);
         assert.strictEqual(broker.redundantTimes, 0);
         assert.strictEqual(broker.config, config);
         assert.strictEqual(broker.profiles, profileManager);
@@ -104,14 +95,7 @@ describe(common.testName(__filename), () => {
 
     describe('.getWorker()', () => {
       it('should get worker', () => {
-        const broker = new Broker(
-          profileManager!,
-          config,
-          'func',
-          true,
-          false,
-          turf
-        );
+        const broker = new Broker(profileManager!, config, 'func', true, false);
         broker.register('hello', 'world');
 
         assert.strictEqual(broker.getWorker('hello')!.credential, 'world');
@@ -121,14 +105,7 @@ describe(common.testName(__filename), () => {
 
     describe('.register()', () => {
       it('should register', () => {
-        const broker = new Broker(
-          profileManager!,
-          config,
-          'func',
-          true,
-          false,
-          turf
-        );
+        const broker = new Broker(profileManager!, config, 'func', true, false);
         broker.register('foo', 'bar');
 
         assert.strictEqual(broker.workers.size, 1);
@@ -152,14 +129,7 @@ describe(common.testName(__filename), () => {
       });
 
       it('should not register', () => {
-        const broker = new Broker(
-          profileManager!,
-          config,
-          'foo',
-          true,
-          false,
-          turf
-        );
+        const broker = new Broker(profileManager!, config, 'foo', true, false);
 
         assert.throws(
           () => {
@@ -173,134 +143,71 @@ describe(common.testName(__filename), () => {
     });
 
     describe('.unregister()', () => {
-      it('should unregister without destroy', () => {
-        const spy = sinon.spy(turf, 'destroy');
-
-        const broker = new Broker(
-          profileManager!,
-          config,
-          'func',
-          true,
-          false,
-          turf
-        );
+      it('should unregister without container set', async () => {
+        const broker = new Broker(profileManager!, config, 'func', true, false);
         broker.register('foo', 'bar');
-        broker.unregister('foo');
+        await broker.unregister('foo');
+
+        assert.strictEqual(broker.workers.size, 0);
+        assert.strictEqual(broker.startingPool.size, 0);
+      });
+
+      it('should unregister with destroy', async () => {
+        const testContainerManager = new TestContainerManager();
+        const broker = new Broker(profileManager!, config, 'func', true, false);
+        broker.register('foo', 'bar');
+        registerBrokerContainers(testContainerManager, broker, [
+          { name: 'foo', pid: 1, status: TurfContainerStates.running },
+        ]);
+        await broker.unregister('foo');
+
+        assert.strictEqual(broker.workers.size, 0);
+        assert.strictEqual(broker.startingPool.size, 0);
+        assert.ok(testContainerManager.getContainer('foo') == null);
+      });
+
+      it('should unregister with destroy error catched', async() => {
+        const testContainerManager = new TestContainerManager();
+        const broker = new Broker(profileManager!, config, 'func', true, false);
+        broker.register('foo', 'bar');
+        registerBrokerContainers(testContainerManager, broker, [
+          { name: 'foo', pid: 1, status: TurfContainerStates.running },
+        ]);
+
+        const stub = sinon.stub(testContainerManager.getContainer('foo')!, 'destroy').callsFake(async () => {
+          throw new Error('should be catched.');
+        });
+        const spy = sinon.spy(broker.logger, 'warn');
+
+        await broker.unregister('foo');
 
         assert.strictEqual(broker.workers.size, 0);
         assert.strictEqual(broker.startingPool.size, 0);
 
-        assert(!spy.called);
-
+        stub.restore();
+        assert(spy.calledWithMatch(/Failed to destroy/));
         spy.restore();
       });
 
-      it('should unregister with destroy', done => {
-        done = pedding(2, done);
+      it('should not unregister', async () => {
+        const container = new NoopContainer();
+        const stub = sinon.stub(container, 'destroy').throws();
 
-        const stub = sinon
-          .stub(turf, 'destroy')
-          .callsFake(async (name: string) => {
-            assert.strictEqual(name, 'foo');
-            done();
-          });
-
-        const broker = new Broker(
-          profileManager!,
-          config,
-          'func',
-          true,
-          false,
-          turf
-        );
-        broker.register('foo', 'bar');
-        broker.unregister('foo', true);
-
-        assert.strictEqual(broker.workers.size, 0);
-        assert.strictEqual(broker.startingPool.size, 0);
-
-        stub.restore();
-        done();
-      });
-
-      it('should unregister with destroy error catched', done => {
-        done = pedding(3, done);
-
-        const stub = sinon
-          .stub(turf, 'destroy')
-          .callsFake(async (name: string) => {
-            assert.strictEqual(name, 'foo');
-            done();
-            throw new Error('should be catched.');
-          });
-
-        const broker = new Broker(
-          profileManager!,
-          config,
-          'func',
-          true,
-          false,
-          turf
-        );
-
-        const spy = sinon.spy(broker.logger, 'warn');
-
-        broker.register('foo', 'bar');
-        broker.unregister('foo', true);
-
-        assert.strictEqual(broker.workers.size, 0);
-        assert.strictEqual(broker.startingPool.size, 0);
-
-        setTimeout(() => {
-          // wait turf.destory catch
-          assert(spy.calledWithMatch(/Failed to destroy/));
-          spy.restore();
-          done();
-        }, 100);
-
-        stub.restore();
-        done();
-      });
-
-      it('should not unregister', done => {
-        done = pedding(2, done);
-
-        const stub = sinon
-          .stub(turf, 'destroy')
-          .callsFake(async (name: string) => {
-            assert.strictEqual(name, 'fooo');
-            done();
-          });
-
-        const broker = new Broker(
-          profileManager!,
-          config,
-          'func',
-          true,
-          false,
-          turf
-        );
-        broker.register('foo', 'bar');
-        broker.unregister('fooo', true);
+        const broker = new Broker(profileManager!, config, 'func', true, false);
+        const worker = broker.register('foo', 'bar');
+        worker.setContainer(container);
+        await broker.unregister('bar');
 
         assert.strictEqual(broker.workers.size, 1);
         assert.strictEqual(broker.startingPool.size, 1);
 
         stub.restore();
-        done();
       });
     });
 
     describe('.removeItemFromStartingPool()', () => {
       it('should removeItemFromStartingPool', () => {
-        const broker = new Broker(
-          profileManager!,
-          config,
-          'func',
-          true,
-          false,
-          turf
-        );
+        const broker = new Broker(profileManager!, config, 'func', true, false);
         broker.register('foo', 'bar');
         broker.removeItemFromStartingPool('foo');
 
@@ -311,26 +218,12 @@ describe(common.testName(__filename), () => {
 
     describe('.prerequestStartingPool()', () => {
       it('should return false when startingPool is empty', () => {
-        const broker = new Broker(
-          profileManager!,
-          config,
-          'func',
-          true,
-          false,
-          turf
-        );
+        const broker = new Broker(profileManager!, config, 'func', true, false);
         assert.strictEqual(broker.prerequestStartingPool(), false);
       });
 
       it('should return true when idle and false when busy', () => {
-        const broker = new Broker(
-          profileManager!,
-          config,
-          'func',
-          true,
-          false,
-          turf
-        );
+        const broker = new Broker(profileManager!, config, 'func', true, false);
         broker.register('coco', 'nut');
         for (let i = 0; i < 20; i++) {
           assert.strictEqual(broker.prerequestStartingPool(), i < 10);
@@ -338,14 +231,7 @@ describe(common.testName(__filename), () => {
       });
 
       it('should return true when idle and false when busy with two items', () => {
-        const broker = new Broker(
-          profileManager!,
-          config,
-          'func',
-          true,
-          false,
-          turf
-        );
+        const broker = new Broker(profileManager!, config, 'func', true, false);
 
         broker.register('coco', 'nut');
         broker.register('alibaba', 'seed of hope');
@@ -357,35 +243,22 @@ describe(common.testName(__filename), () => {
 
     describe('.mostIdleNWorkers()', () => {
       it('should get', () => {
-        const broker = new Broker(
-          profileManager!,
-          config,
-          'func',
-          true,
-          false,
-          turf
-        );
+        const broker = new Broker(profileManager!, config, 'func', true, false);
         broker.register('hello', 'world');
         broker.register('foo', 'bar');
 
-        broker.sync(
-          [
-            {
-              name: 'hello',
-              maxActivateRequests: 10,
-              activeRequestCount: 7,
-            },
-            {
-              name: 'foo',
-              maxActivateRequests: 10,
-              activeRequestCount: 4,
-            },
-          ],
-          [
-            { pid: 1, name: 'foo', status: TurfContainerStates.running },
-            { pid: 2, name: 'hello', status: TurfContainerStates.running },
-          ]
-        );
+        broker.sync([
+          {
+            name: 'hello',
+            maxActivateRequests: 10,
+            activeRequestCount: 7,
+          },
+          {
+            name: 'foo',
+            maxActivateRequests: 10,
+            activeRequestCount: 4,
+          },
+        ]);
 
         // 更新到运行状态
         broker.workers.forEach(worker => {
@@ -421,14 +294,7 @@ describe(common.testName(__filename), () => {
       });
 
       it('should run with activeRequestCount order', () => {
-        const broker = new Broker(
-          profileManager!,
-          config,
-          'func',
-          true,
-          false,
-          turf
-        );
+        const broker = new Broker(profileManager!, config, 'func', true, false);
         broker.register('hello', 'world');
         broker.register('foo', 'bar');
 
@@ -440,24 +306,18 @@ describe(common.testName(__filename), () => {
           );
         });
 
-        broker.sync(
-          [
-            {
-              name: 'hello',
-              maxActivateRequests: 10,
-              activeRequestCount: 4,
-            },
-            {
-              name: 'foo',
-              maxActivateRequests: 10,
-              activeRequestCount: 7,
-            },
-          ],
-          [
-            { pid: 1, name: 'foo', status: TurfContainerStates.running },
-            { pid: 2, name: 'hello', status: TurfContainerStates.running },
-          ]
-        );
+        broker.sync([
+          {
+            name: 'hello',
+            maxActivateRequests: 10,
+            activeRequestCount: 4,
+          },
+          {
+            name: 'foo',
+            maxActivateRequests: 10,
+            activeRequestCount: 7,
+          },
+        ]);
 
         assert.deepStrictEqual(broker.mostIdleNWorkers(1), [
           { name: 'hello', credential: 'world' },
@@ -485,14 +345,7 @@ describe(common.testName(__filename), () => {
       });
 
       it('should run with credential order when activeRequestCount is equal (1)', () => {
-        const broker = new Broker(
-          profileManager!,
-          config,
-          'func',
-          true,
-          false,
-          turf
-        );
+        const broker = new Broker(profileManager!, config, 'func', true, false);
         broker.register('hello', 'world');
         broker.register('foo', 'bar');
 
@@ -504,24 +357,18 @@ describe(common.testName(__filename), () => {
           );
         });
 
-        broker.sync(
-          [
-            {
-              name: 'hello',
-              maxActivateRequests: 10,
-              activeRequestCount: 4,
-            },
-            {
-              name: 'foo',
-              maxActivateRequests: 10,
-              activeRequestCount: 4,
-            },
-          ],
-          [
-            { pid: 1, name: 'foo', status: TurfContainerStates.running },
-            { pid: 2, name: 'hello', status: TurfContainerStates.running },
-          ]
-        );
+        broker.sync([
+          {
+            name: 'hello',
+            maxActivateRequests: 10,
+            activeRequestCount: 4,
+          },
+          {
+            name: 'foo',
+            maxActivateRequests: 10,
+            activeRequestCount: 4,
+          },
+        ]);
 
         assert.deepStrictEqual(broker.mostIdleNWorkers(1), [
           { name: 'foo', credential: 'bar' },
@@ -549,14 +396,7 @@ describe(common.testName(__filename), () => {
       });
 
       it('should run with credential order when activeRequestCount is equal (2)', () => {
-        const broker = new Broker(
-          profileManager!,
-          config,
-          'func',
-          true,
-          false,
-          turf
-        );
+        const broker = new Broker(profileManager!, config, 'func', true, false);
         broker.register('hello', 'world');
         broker.register('foo', 'bar');
 
@@ -568,24 +408,18 @@ describe(common.testName(__filename), () => {
           );
         });
 
-        broker.sync(
-          [
-            {
-              name: 'foo',
-              maxActivateRequests: 10,
-              activeRequestCount: 4,
-            },
-            {
-              name: 'hello',
-              maxActivateRequests: 10,
-              activeRequestCount: 4,
-            },
-          ],
-          [
-            { pid: 1, name: 'foo', status: TurfContainerStates.running },
-            { pid: 2, name: 'hello', status: TurfContainerStates.running },
-          ]
-        );
+        broker.sync([
+          {
+            name: 'foo',
+            maxActivateRequests: 10,
+            activeRequestCount: 4,
+          },
+          {
+            name: 'hello',
+            maxActivateRequests: 10,
+            activeRequestCount: 4,
+          },
+        ]);
 
         assert.deepStrictEqual(broker.mostIdleNWorkers(1), [
           { name: 'foo', credential: 'bar' },
@@ -613,39 +447,26 @@ describe(common.testName(__filename), () => {
       });
 
       it('should get when has non-valid', () => {
-        const broker = new Broker(
-          profileManager!,
-          config,
-          'func',
-          true,
-          false,
-          turf
-        );
+        const broker = new Broker(profileManager!, config, 'func', true, false);
         broker.register('hello', 'world');
         broker.register('foo', 'bar');
 
-        broker.sync(
-          [
-            {
-              name: 'hello',
-              maxActivateRequests: 10,
-              activeRequestCount: 7,
-            },
-            {
-              name: 'foo',
-              maxActivateRequests: 10,
-              activeRequestCount: 4,
-            },
-          ],
-          [
-            { pid: 1, name: 'foo', status: TurfContainerStates.stopped },
-            { pid: 2, name: 'hello', status: TurfContainerStates.running },
-          ]
-        );
+        broker.sync([
+          {
+            name: 'hello',
+            maxActivateRequests: 10,
+            activeRequestCount: 7,
+          },
+          {
+            name: 'foo',
+            maxActivateRequests: 10,
+            activeRequestCount: 4,
+          },
+        ]);
 
         // 更新到运行状态
         broker.workers.forEach(worker => {
-          if (worker.turfContainerStates === TurfContainerStates.stopped) {
+          if (worker.name === 'foo') {
             worker.updateContainerStatus(
               ContainerStatus.Stopped,
               TurfStatusEvent.StatusStopped
@@ -672,36 +493,23 @@ describe(common.testName(__filename), () => {
 
     describe('.newestNWorkers()', () => {
       it('should get', async () => {
-        const broker = new Broker(
-          profileManager!,
-          config,
-          'func',
-          true,
-          false,
-          turf
-        );
+        const broker = new Broker(profileManager!, config, 'func', true, false);
         broker.register('hello', 'world');
         await sleep(100);
         broker.register('foo', 'bar');
 
-        broker.sync(
-          [
-            {
-              name: 'hello',
-              maxActivateRequests: 10,
-              activeRequestCount: 7,
-            },
-            {
-              name: 'foo',
-              maxActivateRequests: 10,
-              activeRequestCount: 4,
-            },
-          ],
-          [
-            { pid: 1, name: 'foo', status: TurfContainerStates.running },
-            { pid: 2, name: 'hello', status: TurfContainerStates.running },
-          ]
-        );
+        broker.sync([
+          {
+            name: 'hello',
+            maxActivateRequests: 10,
+            activeRequestCount: 7,
+          },
+          {
+            name: 'foo',
+            maxActivateRequests: 10,
+            activeRequestCount: 4,
+          },
+        ]);
 
         // 更新到运行状态
         broker.workers.forEach(worker => {
@@ -737,14 +545,7 @@ describe(common.testName(__filename), () => {
       });
 
       it('should run with registerTime order', async () => {
-        const broker = new Broker(
-          profileManager!,
-          config,
-          'func',
-          true,
-          false,
-          turf
-        );
+        const broker = new Broker(profileManager!, config, 'func', true, false);
         broker.register('hello', 'world');
         await sleep(100);
         broker.register('foo', 'bar');
@@ -757,24 +558,18 @@ describe(common.testName(__filename), () => {
           );
         });
 
-        broker.sync(
-          [
-            {
-              name: 'foo',
-              maxActivateRequests: 10,
-              activeRequestCount: 7,
-            },
-            {
-              name: 'hello',
-              maxActivateRequests: 10,
-              activeRequestCount: 4,
-            },
-          ],
-          [
-            { pid: 1, name: 'foo', status: TurfContainerStates.running },
-            { pid: 2, name: 'hello', status: TurfContainerStates.running },
-          ]
-        );
+        broker.sync([
+          {
+            name: 'foo',
+            maxActivateRequests: 10,
+            activeRequestCount: 7,
+          },
+          {
+            name: 'hello',
+            maxActivateRequests: 10,
+            activeRequestCount: 4,
+          },
+        ]);
 
         assert.deepStrictEqual(broker.newestNWorkers(1), [
           { name: 'foo', credential: 'bar' },
@@ -802,40 +597,27 @@ describe(common.testName(__filename), () => {
       });
 
       it('should get when has non-valid', async () => {
-        const broker = new Broker(
-          profileManager!,
-          config,
-          'func',
-          true,
-          false,
-          turf
-        );
+        const broker = new Broker(profileManager!, config, 'func', true, false);
         broker.register('hello', 'world');
         await sleep(100);
         broker.register('foo', 'bar');
 
-        broker.sync(
-          [
-            {
-              name: 'hello',
-              maxActivateRequests: 10,
-              activeRequestCount: 7,
-            },
-            {
-              name: 'foo',
-              maxActivateRequests: 10,
-              activeRequestCount: 4,
-            },
-          ],
-          [
-            { pid: 1, name: 'foo', status: TurfContainerStates.stopped },
-            { pid: 2, name: 'hello', status: TurfContainerStates.running },
-          ]
-        );
+        broker.sync([
+          {
+            name: 'hello',
+            maxActivateRequests: 10,
+            activeRequestCount: 7,
+          },
+          {
+            name: 'foo',
+            maxActivateRequests: 10,
+            activeRequestCount: 4,
+          },
+        ]);
 
         // 更新到运行状态
         broker.workers.forEach(worker => {
-          if (worker.turfContainerStates === TurfContainerStates.stopped) {
+          if (worker.name === 'foo') {
             worker.updateContainerStatus(
               ContainerStatus.Stopped,
               TurfStatusEvent.StatusStopped
@@ -862,36 +644,23 @@ describe(common.testName(__filename), () => {
 
     describe('.oldestNWorkers()', () => {
       it('should get', async () => {
-        const broker = new Broker(
-          profileManager!,
-          config,
-          'func',
-          true,
-          false,
-          turf
-        );
+        const broker = new Broker(profileManager!, config, 'func', true, false);
         broker.register('hello', 'world');
         await sleep(100);
         broker.register('foo', 'bar');
 
-        broker.sync(
-          [
-            {
-              name: 'hello',
-              maxActivateRequests: 10,
-              activeRequestCount: 7,
-            },
-            {
-              name: 'foo',
-              maxActivateRequests: 10,
-              activeRequestCount: 4,
-            },
-          ],
-          [
-            { pid: 1, name: 'foo', status: TurfContainerStates.running },
-            { pid: 2, name: 'hello', status: TurfContainerStates.running },
-          ]
-        );
+        broker.sync([
+          {
+            name: 'hello',
+            maxActivateRequests: 10,
+            activeRequestCount: 7,
+          },
+          {
+            name: 'foo',
+            maxActivateRequests: 10,
+            activeRequestCount: 4,
+          },
+        ]);
 
         // 更新到运行状态
         broker.workers.forEach(worker => {
@@ -927,14 +696,7 @@ describe(common.testName(__filename), () => {
       });
 
       it('should run with registerTime order', async () => {
-        const broker = new Broker(
-          profileManager!,
-          config,
-          'func',
-          true,
-          false,
-          turf
-        );
+        const broker = new Broker(profileManager!, config, 'func', true, false);
         broker.register('hello', 'world');
         await sleep(100);
         broker.register('foo', 'bar');
@@ -947,24 +709,18 @@ describe(common.testName(__filename), () => {
           );
         });
 
-        broker.sync(
-          [
-            {
-              name: 'foo',
-              maxActivateRequests: 10,
-              activeRequestCount: 7,
-            },
-            {
-              name: 'hello',
-              maxActivateRequests: 10,
-              activeRequestCount: 4,
-            },
-          ],
-          [
-            { pid: 1, name: 'foo', status: TurfContainerStates.running },
-            { pid: 2, name: 'hello', status: TurfContainerStates.running },
-          ]
-        );
+        broker.sync([
+          {
+            name: 'foo',
+            maxActivateRequests: 10,
+            activeRequestCount: 7,
+          },
+          {
+            name: 'hello',
+            maxActivateRequests: 10,
+            activeRequestCount: 4,
+          },
+        ]);
 
         assert.deepStrictEqual(broker.oldestNWorkers(1), [
           { name: 'hello', credential: 'world' },
@@ -992,40 +748,27 @@ describe(common.testName(__filename), () => {
       });
 
       it('should get when has non-valid', async () => {
-        const broker = new Broker(
-          profileManager!,
-          config,
-          'func',
-          true,
-          false,
-          turf
-        );
+        const broker = new Broker(profileManager!, config, 'func', true, false);
         broker.register('hello', 'world');
         await sleep(100);
         broker.register('foo', 'bar');
 
-        broker.sync(
-          [
-            {
-              name: 'hello',
-              maxActivateRequests: 10,
-              activeRequestCount: 7,
-            },
-            {
-              name: 'foo',
-              maxActivateRequests: 10,
-              activeRequestCount: 4,
-            },
-          ],
-          [
-            { pid: 1, name: 'foo', status: TurfContainerStates.stopped },
-            { pid: 2, name: 'hello', status: TurfContainerStates.running },
-          ]
-        );
+        broker.sync([
+          {
+            name: 'hello',
+            maxActivateRequests: 10,
+            activeRequestCount: 7,
+          },
+          {
+            name: 'foo',
+            maxActivateRequests: 10,
+            activeRequestCount: 4,
+          },
+        ]);
 
         // 更新到运行状态
         broker.workers.forEach(worker => {
-          if (worker.turfContainerStates === TurfContainerStates.stopped) {
+          if (worker.name === 'foo') {
             worker.updateContainerStatus(
               ContainerStatus.Stopped,
               TurfStatusEvent.StatusStopped
@@ -1057,8 +800,7 @@ describe(common.testName(__filename), () => {
           config,
           'func',
           false,
-          false,
-          turf
+          false
         );
         broker.register('hello', 'world');
         broker.register('foo', 'bar');
@@ -1075,24 +817,27 @@ describe(common.testName(__filename), () => {
           ControlPanelEvent.RequestQueueExpand
         );
 
-        broker.sync(
-          [
-            {
-              name: 'hello',
-              maxActivateRequests: 50,
-              activeRequestCount: 50,
-            },
-            {
-              name: 'foo',
-              maxActivateRequests: 10,
-              activeRequestCount: 0,
-            },
-          ],
-          [
-            { pid: 1, name: 'foo', status: TurfContainerStates.running },
-            { pid: 2, name: 'hello', status: TurfContainerStates.stopped },
-          ]
-        );
+        broker.sync([
+          {
+            name: 'hello',
+            maxActivateRequests: 50,
+            activeRequestCount: 50,
+          },
+          {
+            name: 'foo',
+            maxActivateRequests: 10,
+            activeRequestCount: 0,
+          },
+        ]);
+        // 更新运行状态
+        broker.workers.forEach(worker => {
+          if (worker.name === 'hello') {
+            worker.updateContainerStatus(
+              ContainerStatus.Stopped,
+              TurfStatusEvent.StatusStopped
+            );
+          }
+        });
         broker.redundantTimes = 60;
         assert.strictEqual(broker.evaluateWaterLevel(), -1);
       });
@@ -1103,8 +848,7 @@ describe(common.testName(__filename), () => {
           config,
           'func',
           false,
-          false,
-          turf
+          false
         );
         broker.register('hello', 'world');
         broker.register('foo', 'bar');
@@ -1120,24 +864,26 @@ describe(common.testName(__filename), () => {
           ControlPanelEvent.RequestQueueExpand
         );
 
-        broker.sync(
-          [
-            {
-              name: 'hello',
-              maxActivateRequests: 50,
-              activeRequestCount: 50,
-            },
-            {
-              name: 'foo',
-              maxActivateRequests: 100,
-              activeRequestCount: 0,
-            },
-          ],
-          [
-            { pid: 1, name: 'foo', status: TurfContainerStates.stopped },
-            { pid: 2, name: 'hello', status: TurfContainerStates.running },
-          ]
-        );
+        broker.sync([
+          {
+            name: 'hello',
+            maxActivateRequests: 50,
+            activeRequestCount: 50,
+          },
+          {
+            name: 'foo',
+            maxActivateRequests: 100,
+            activeRequestCount: 0,
+          },
+        ]);
+        broker.workers.forEach(worker => {
+          if (worker.name === 'foo') {
+            worker.updateContainerStatus(
+              ContainerStatus.Stopped,
+              TurfStatusEvent.StatusStopped
+            );
+          }
+        });
         assert.strictEqual(broker.evaluateWaterLevel(), 3);
       });
 
@@ -1147,8 +893,7 @@ describe(common.testName(__filename), () => {
           config,
           'func',
           false,
-          false,
-          turf
+          false
         );
         broker.register('hello', 'world');
         broker.register('foo', 'bar');
@@ -1160,19 +905,13 @@ describe(common.testName(__filename), () => {
           ControlPanelEvent.RequestQueueExpand
         );
 
-        broker.sync(
-          [
-            {
-              name: 'hello',
-              maxActivateRequests: 10,
-              activeRequestCount: 5,
-            },
-          ],
-          [
-            { pid: 1, name: 'foo', status: TurfContainerStates.running },
-            { pid: 2, name: 'hello', status: TurfContainerStates.running },
-          ]
-        );
+        broker.sync([
+          {
+            name: 'hello',
+            maxActivateRequests: 10,
+            activeRequestCount: 5,
+          },
+        ]);
         assert.strictEqual(broker.evaluateWaterLevel(), 0);
       });
 
@@ -1182,8 +921,7 @@ describe(common.testName(__filename), () => {
           config,
           'func',
           false,
-          false,
-          turf
+          false
         );
         broker.register('hello', 'world');
         broker.register('foo', 'bar');
@@ -1194,19 +932,13 @@ describe(common.testName(__filename), () => {
           ControlPanelEvent.RequestQueueExpand
         );
 
-        broker.sync(
-          [
-            {
-              name: 'hello',
-              maxActivateRequests: 10,
-              activeRequestCount: 10,
-            },
-          ],
-          [
-            { pid: 1, name: 'foo', status: TurfContainerStates.running },
-            { pid: 2, name: 'hello', status: TurfContainerStates.running },
-          ]
-        );
+        broker.sync([
+          {
+            name: 'hello',
+            maxActivateRequests: 10,
+            activeRequestCount: 10,
+          },
+        ]);
 
         // for (let i = 0; i < 10; i++) assert(broker.prerequestStartingPool());
 
@@ -1219,8 +951,7 @@ describe(common.testName(__filename), () => {
           config,
           'func',
           false,
-          false,
-          turf
+          false
         );
         assert.strictEqual(broker.evaluateWaterLevel(), 0);
       });
@@ -1231,8 +962,7 @@ describe(common.testName(__filename), () => {
           config,
           'func',
           false,
-          false,
-          turf
+          false
         );
         broker.register('hello', 'world');
         broker.data = null;
@@ -1245,8 +975,7 @@ describe(common.testName(__filename), () => {
           config,
           'func',
           false,
-          false,
-          turf
+          false
         );
         broker.register('hello', 'world');
         broker.data = null;
@@ -1259,8 +988,7 @@ describe(common.testName(__filename), () => {
           config,
           'func',
           false,
-          false,
-          turf
+          false
         );
         broker.register('hello', 'world');
 
@@ -1270,16 +998,13 @@ describe(common.testName(__filename), () => {
           ControlPanelEvent.RequestQueueExpand
         );
 
-        broker.sync(
-          [
-            {
-              name: 'hello',
-              maxActivateRequests: 10,
-              activeRequestCount: 4,
-            },
-          ],
-          [{ pid: 2, name: 'hello', status: TurfContainerStates.running }]
-        );
+        broker.sync([
+          {
+            name: 'hello',
+            maxActivateRequests: 10,
+            activeRequestCount: 4,
+          },
+        ]);
 
         assert.strictEqual(broker.evaluateWaterLevel(), 0);
       });
@@ -1290,8 +1015,7 @@ describe(common.testName(__filename), () => {
           config,
           'func',
           false,
-          false,
-          turf
+          false
         );
         broker.register('hello', 'world');
         broker.register('foo', 'bar');
@@ -1307,24 +1031,18 @@ describe(common.testName(__filename), () => {
           ControlPanelEvent.RequestQueueExpand
         );
 
-        broker.sync(
-          [
-            {
-              name: 'hello',
-              maxActivateRequests: 10,
-              activeRequestCount: 8,
-            },
-            {
-              name: 'foo',
-              maxActivateRequests: 10,
-              activeRequestCount: 8,
-            },
-          ],
-          [
-            { pid: 1, name: 'foo', status: TurfContainerStates.running },
-            { pid: 2, name: 'hello', status: TurfContainerStates.running },
-          ]
-        );
+        broker.sync([
+          {
+            name: 'hello',
+            maxActivateRequests: 10,
+            activeRequestCount: 8,
+          },
+          {
+            name: 'foo',
+            maxActivateRequests: 10,
+            activeRequestCount: 8,
+          },
+        ]);
         assert.strictEqual(broker.evaluateWaterLevel(), 1);
       });
 
@@ -1334,8 +1052,7 @@ describe(common.testName(__filename), () => {
           config,
           'func',
           false,
-          false,
-          turf
+          false
         );
         broker.register('hello', 'world');
         broker.register('foo', 'bar');
@@ -1351,24 +1068,18 @@ describe(common.testName(__filename), () => {
           ControlPanelEvent.RequestQueueExpand
         );
 
-        broker.sync(
-          [
-            {
-              name: 'hello',
-              maxActivateRequests: 10,
-              activeRequestCount: 0,
-            },
-            {
-              name: 'foo',
-              maxActivateRequests: 10,
-              activeRequestCount: 0,
-            },
-          ],
-          [
-            { pid: 1, name: 'foo', status: TurfContainerStates.running },
-            { pid: 2, name: 'hello', status: TurfContainerStates.running },
-          ]
-        );
+        broker.sync([
+          {
+            name: 'hello',
+            maxActivateRequests: 10,
+            activeRequestCount: 0,
+          },
+          {
+            name: 'foo',
+            maxActivateRequests: 10,
+            activeRequestCount: 0,
+          },
+        ]);
         assert.strictEqual(broker.evaluateWaterLevel(), 0);
       });
 
@@ -1382,8 +1093,7 @@ describe(common.testName(__filename), () => {
           config,
           'func',
           false,
-          false,
-          turf
+          false
         );
         broker.register('hello', 'world');
         broker.register('foo', 'bar');
@@ -1399,24 +1109,18 @@ describe(common.testName(__filename), () => {
           ControlPanelEvent.RequestQueueExpand
         );
 
-        broker.sync(
-          [
-            {
-              name: 'hello',
-              maxActivateRequests: 10,
-              activeRequestCount: 0,
-            },
-            {
-              name: 'foo',
-              maxActivateRequests: 10,
-              activeRequestCount: 0,
-            },
-          ],
-          [
-            { pid: 1, name: 'foo', status: TurfContainerStates.running },
-            { pid: 2, name: 'hello', status: TurfContainerStates.running },
-          ]
-        );
+        broker.sync([
+          {
+            name: 'hello',
+            maxActivateRequests: 10,
+            activeRequestCount: 0,
+          },
+          {
+            name: 'foo',
+            maxActivateRequests: 10,
+            activeRequestCount: 0,
+          },
+        ]);
         broker.redundantTimes = 60;
         assert.strictEqual(broker.evaluateWaterLevel(), -1);
       });
@@ -1431,8 +1135,7 @@ describe(common.testName(__filename), () => {
           config,
           'func',
           false,
-          false,
-          turf
+          false
         );
         broker.register('hello', 'world');
         broker.register('foo', 'bar');
@@ -1448,25 +1151,19 @@ describe(common.testName(__filename), () => {
           ControlPanelEvent.RequestQueueExpand
         );
 
-        broker.sync(
-          [
-            {
-              name: 'hello',
-              maxActivateRequests: 10,
-              activeRequestCount: 3,
-              trafficOff: false,
-            } as any,
-            {
-              name: 'foo',
-              maxActivateRequests: 10,
-              activeRequestCount: 3,
-            },
-          ],
-          [
-            { pid: 1, name: 'foo', status: TurfContainerStates.running },
-            { pid: 2, name: 'hello', status: TurfContainerStates.running },
-          ]
-        );
+        broker.sync([
+          {
+            name: 'hello',
+            maxActivateRequests: 10,
+            activeRequestCount: 3,
+            trafficOff: false,
+          } as any,
+          {
+            name: 'foo',
+            maxActivateRequests: 10,
+            activeRequestCount: 3,
+          },
+        ]);
         broker.redundantTimes = 60;
         assert.strictEqual(broker.evaluateWaterLevel(), -1);
       });
@@ -1477,8 +1174,7 @@ describe(common.testName(__filename), () => {
           config,
           'func',
           false,
-          false,
-          turf
+          false
         );
         broker.register('hello', 'world');
         broker.register('foo', 'bar');
@@ -1494,24 +1190,18 @@ describe(common.testName(__filename), () => {
           ControlPanelEvent.RequestQueueExpand
         );
 
-        broker.sync(
-          [
-            {
-              name: 'hello',
-              maxActivateRequests: 10,
-              activeRequestCount: 0,
-            } as any,
-            {
-              name: 'foo',
-              maxActivateRequests: 10,
-              activeRequestCount: 0,
-            },
-          ],
-          [
-            { pid: 1, name: 'foo', status: TurfContainerStates.running },
-            { pid: 2, name: 'hello', status: TurfContainerStates.running },
-          ]
-        );
+        broker.sync([
+          {
+            name: 'hello',
+            maxActivateRequests: 10,
+            activeRequestCount: 0,
+          } as any,
+          {
+            name: 'foo',
+            maxActivateRequests: 10,
+            activeRequestCount: 0,
+          },
+        ]);
         broker.redundantTimes = 60;
         assert.strictEqual(broker.evaluateWaterLevel(), -2);
       });
@@ -1522,8 +1212,7 @@ describe(common.testName(__filename), () => {
           config,
           'func',
           false,
-          false,
-          turf
+          false
         );
         broker.register('hello', 'world');
         broker.register('foo', 'bar');
@@ -1539,24 +1228,18 @@ describe(common.testName(__filename), () => {
           ControlPanelEvent.RequestQueueExpand
         );
 
-        broker.sync(
-          [
-            {
-              name: 'hello',
-              maxActivateRequests: 10,
-              activeRequestCount: 3,
-            } as any,
-            {
-              name: 'foo',
-              maxActivateRequests: 10,
-              activeRequestCount: 3,
-            },
-          ],
-          [
-            { pid: 1, name: 'foo', status: TurfContainerStates.running },
-            { pid: 2, name: 'hello', status: TurfContainerStates.running },
-          ]
-        );
+        broker.sync([
+          {
+            name: 'hello',
+            maxActivateRequests: 10,
+            activeRequestCount: 3,
+          } as any,
+          {
+            name: 'foo',
+            maxActivateRequests: 10,
+            activeRequestCount: 3,
+          },
+        ]);
         broker.redundantTimes = 60;
         assert.strictEqual(broker.evaluateWaterLevel(), -1);
       });
@@ -1567,8 +1250,7 @@ describe(common.testName(__filename), () => {
           config,
           'func',
           false,
-          false,
-          turf
+          false
         );
         broker.register('hello', 'world');
         broker.register('foo', 'bar');
@@ -1584,24 +1266,18 @@ describe(common.testName(__filename), () => {
           ControlPanelEvent.RequestQueueExpand
         );
 
-        broker.sync(
-          [
-            {
-              name: 'hello',
-              maxActivateRequests: 3,
-              activeRequestCount: 0,
-            } as any,
-            {
-              name: 'foo',
-              maxActivateRequests: 3,
-              activeRequestCount: 0,
-            },
-          ],
-          [
-            { pid: 1, name: 'foo', status: TurfContainerStates.running },
-            { pid: 2, name: 'hello', status: TurfContainerStates.running },
-          ]
-        );
+        broker.sync([
+          {
+            name: 'hello',
+            maxActivateRequests: 3,
+            activeRequestCount: 0,
+          } as any,
+          {
+            name: 'foo',
+            maxActivateRequests: 3,
+            activeRequestCount: 0,
+          },
+        ]);
         broker.redundantTimes = 60;
         assert.strictEqual(broker.evaluateWaterLevel(true), 0);
       });
@@ -1612,8 +1288,7 @@ describe(common.testName(__filename), () => {
           config,
           'func',
           false,
-          false,
-          turf
+          false
         );
         broker.register('hello', 'world');
         broker.register('foo', 'bar');
@@ -1629,24 +1304,18 @@ describe(common.testName(__filename), () => {
           ControlPanelEvent.RequestQueueExpand
         );
 
-        broker.sync(
-          [
-            {
-              name: 'hello',
-              maxActivateRequests: 10,
-              activeRequestCount: 7,
-            } as any,
-            {
-              name: 'foo',
-              maxActivateRequests: 10,
-              activeRequestCount: 7,
-            },
-          ],
-          [
-            { pid: 1, name: 'foo', status: TurfContainerStates.running },
-            { pid: 2, name: 'hello', status: TurfContainerStates.running },
-          ]
-        );
+        broker.sync([
+          {
+            name: 'hello',
+            maxActivateRequests: 10,
+            activeRequestCount: 7,
+          } as any,
+          {
+            name: 'foo',
+            maxActivateRequests: 10,
+            activeRequestCount: 7,
+          },
+        ]);
 
         broker.redundantTimes = 60;
         assert.strictEqual(broker.evaluateWaterLevel(), 0);
@@ -1663,11 +1332,9 @@ describe(common.testName(__filename), () => {
           config,
           'func',
           false,
-          false,
-          turf
+          false
         );
         const mocked = [];
-        const turfItems = [];
         for (let i = 0; i < 20; i++) {
           mocked.push({
             name: String(i),
@@ -1681,13 +1348,8 @@ describe(common.testName(__filename), () => {
             ContainerStatus.Ready,
             ControlPanelEvent.RequestQueueExpand
           );
-          turfItems.push({
-            pid: i,
-            name: String(i),
-            status: TurfContainerStates.running,
-          });
         }
-        broker.sync(mocked, turfItems);
+        broker.sync(mocked);
         assert.strictEqual(broker.evaluateWaterLevel(), 9);
       });
 
@@ -1701,11 +1363,9 @@ describe(common.testName(__filename), () => {
           config,
           'func',
           false,
-          false,
-          turf
+          false
         );
         const mocked = [];
-        const turfItems = [];
         for (let i = 0; i < 20; i++) {
           mocked.push({
             name: String(i),
@@ -1718,13 +1378,8 @@ describe(common.testName(__filename), () => {
             ContainerStatus.Ready,
             ControlPanelEvent.RequestQueueExpand
           );
-          turfItems.push({
-            pid: i,
-            name: String(i),
-            status: TurfContainerStates.running,
-          });
         }
-        broker.sync(mocked, turfItems);
+        broker.sync(mocked);
         assert.strictEqual(broker.evaluateWaterLevel(), 5);
       });
     });
@@ -1732,14 +1387,7 @@ describe(common.testName(__filename), () => {
     describe('getters', () => {
       let broker: Broker;
       beforeEach(() => {
-        broker = new Broker(
-          profileManager!,
-          config,
-          'func',
-          false,
-          false,
-          turf
-        );
+        broker = new Broker(profileManager!, config, 'func', false, false);
         broker.register('hello', 'world');
         broker.register('foo', 'bar');
 
@@ -1754,31 +1402,25 @@ describe(common.testName(__filename), () => {
           ControlPanelEvent.RequestQueueExpand
         );
 
-        broker.sync(
-          [
-            {
-              name: 'hello',
-              maxActivateRequests: 10,
-              activeRequestCount: 7,
-            },
-            {
-              name: 'foo',
-              maxActivateRequests: 10,
-              activeRequestCount: 4,
-            },
-          ],
-          [
-            { pid: 1, name: 'foo', status: TurfContainerStates.running },
-            { pid: 2, name: 'hello', status: TurfContainerStates.running },
-          ]
-        );
+        broker.sync([
+          {
+            name: 'hello',
+            maxActivateRequests: 10,
+            activeRequestCount: 7,
+          },
+          {
+            name: 'foo',
+            maxActivateRequests: 10,
+            activeRequestCount: 4,
+          },
+        ]);
       });
 
       describe('.belongsToFunctionProfile()', () => {
         it('should belong', async () => {
           assert.strictEqual(broker.belongsToFunctionProfile(), true);
           await profileManager!.set([], 'WAIT');
-          broker.sync([], []);
+          broker.sync([]);
           assert.strictEqual(broker.belongsToFunctionProfile(), false);
         });
       });
@@ -1795,24 +1437,26 @@ describe(common.testName(__filename), () => {
 
         it('should get when having stopped', () => {
           broker.register('coco', 'nut');
-          broker.sync(
-            [
-              {
-                name: 'hello',
-                maxActivateRequests: 10,
-                activeRequestCount: 7,
-              },
-              {
-                name: 'foo',
-                maxActivateRequests: 10,
-                activeRequestCount: 4,
-              },
-            ],
-            [
-              { pid: 1, name: 'foo', status: TurfContainerStates.running },
-              { pid: 2, name: 'hello', status: TurfContainerStates.stopped },
-            ]
-          );
+          broker.sync([
+            {
+              name: 'hello',
+              maxActivateRequests: 10,
+              activeRequestCount: 7,
+            },
+            {
+              name: 'foo',
+              maxActivateRequests: 10,
+              activeRequestCount: 4,
+            },
+          ]);
+          broker.workers.forEach(worker => {
+            if (worker.name === 'hello') {
+              worker.updateContainerStatus(
+                ContainerStatus.Stopped,
+                TurfStatusEvent.StatusStopped
+              );
+            }
+          });
 
           assert.strictEqual(broker.workerCount, 1);
         });
@@ -1830,30 +1474,31 @@ describe(common.testName(__filename), () => {
 
           broker.register('coco', 'nut');
 
-          broker.sync(
-            [
-              {
-                name: 'hello',
-                maxActivateRequests: 10,
-                activeRequestCount: 7,
-              },
-              {
-                name: 'foo',
-                maxActivateRequests: 10,
-                activeRequestCount: 4,
-              },
-              {
-                name: 'coco',
-                maxActivateRequests: 10,
-                activeRequestCount: 0,
-              },
-            ],
-            [
-              { pid: 1, name: 'foo', status: TurfContainerStates.running },
-              { pid: 2, name: 'hello', status: TurfContainerStates.stopped },
-              { pid: 3, name: 'coco', status: TurfContainerStates.running },
-            ]
-          );
+          broker.sync([
+            {
+              name: 'hello',
+              maxActivateRequests: 10,
+              activeRequestCount: 7,
+            },
+            {
+              name: 'foo',
+              maxActivateRequests: 10,
+              activeRequestCount: 4,
+            },
+            {
+              name: 'coco',
+              maxActivateRequests: 10,
+              activeRequestCount: 0,
+            },
+          ]);
+          broker.workers.forEach(worker => {
+            if (worker.name === 'hello') {
+              worker.updateContainerStatus(
+                ContainerStatus.Stopped,
+                TurfStatusEvent.StatusStopped
+              );
+            }
+          });
           assert.strictEqual(broker.virtualMemory, 512000000);
         });
       });
@@ -1870,30 +1515,31 @@ describe(common.testName(__filename), () => {
             ControlPanelEvent.RequestQueueExpand
           );
 
-          broker.sync(
-            [
-              {
-                name: 'hello',
-                maxActivateRequests: 10,
-                activeRequestCount: 7,
-              },
-              {
-                name: 'foo',
-                maxActivateRequests: 10,
-                activeRequestCount: 4,
-              },
-              {
-                name: 'coco',
-                maxActivateRequests: 10,
-                activeRequestCount: 0,
-              },
-            ],
-            [
-              { pid: 1, name: 'foo', status: TurfContainerStates.running },
-              { pid: 2, name: 'hello', status: TurfContainerStates.stopped },
-              { pid: 3, name: 'coco', status: TurfContainerStates.running },
-            ]
-          );
+          broker.sync([
+            {
+              name: 'hello',
+              maxActivateRequests: 10,
+              activeRequestCount: 7,
+            },
+            {
+              name: 'foo',
+              maxActivateRequests: 10,
+              activeRequestCount: 4,
+            },
+            {
+              name: 'coco',
+              maxActivateRequests: 10,
+              activeRequestCount: 0,
+            },
+          ]);
+          broker.workers.forEach(worker => {
+            if (worker.name === 'hello') {
+              worker.updateContainerStatus(
+                ContainerStatus.Stopped,
+                TurfStatusEvent.StatusStopped
+              );
+            }
+          });
           assert.strictEqual(broker.totalMaxActivateRequests, 20);
         });
       });
@@ -1910,30 +1556,31 @@ describe(common.testName(__filename), () => {
             ControlPanelEvent.RequestQueueExpand
           );
 
-          broker.sync(
-            [
-              {
-                name: 'hello',
-                maxActivateRequests: 10,
-                activeRequestCount: 7,
-              },
-              {
-                name: 'foo',
-                maxActivateRequests: 10,
-                activeRequestCount: 4,
-              },
-              {
-                name: 'coco',
-                maxActivateRequests: 10,
-                activeRequestCount: 2,
-              },
-            ],
-            [
-              { pid: 1, name: 'foo', status: TurfContainerStates.running },
-              { pid: 2, name: 'hello', status: TurfContainerStates.stopped },
-              { pid: 3, name: 'coco', status: TurfContainerStates.running },
-            ]
-          );
+          broker.sync([
+            {
+              name: 'hello',
+              maxActivateRequests: 10,
+              activeRequestCount: 7,
+            },
+            {
+              name: 'foo',
+              maxActivateRequests: 10,
+              activeRequestCount: 4,
+            },
+            {
+              name: 'coco',
+              maxActivateRequests: 10,
+              activeRequestCount: 2,
+            },
+          ]);
+          broker.workers.forEach(worker => {
+            if (worker.name === 'hello') {
+              worker.updateContainerStatus(
+                ContainerStatus.Stopped,
+                TurfStatusEvent.StatusStopped
+              );
+            }
+          });
           assert.strictEqual(broker.activeRequestCount, 6);
         });
       });
@@ -1950,30 +1597,31 @@ describe(common.testName(__filename), () => {
             ControlPanelEvent.RequestQueueExpand
           );
 
-          broker.sync(
-            [
-              {
-                name: 'hello',
-                maxActivateRequests: 10,
-                activeRequestCount: 7,
-              },
-              {
-                name: 'foo',
-                maxActivateRequests: 10,
-                activeRequestCount: 4,
-              },
-              {
-                name: 'coco',
-                maxActivateRequests: 10,
-                activeRequestCount: 2,
-              },
-            ],
-            [
-              { pid: 1, name: 'foo', status: TurfContainerStates.running },
-              { pid: 2, name: 'hello', status: TurfContainerStates.stopped },
-              { pid: 3, name: 'coco', status: TurfContainerStates.running },
-            ]
-          );
+          broker.sync([
+            {
+              name: 'hello',
+              maxActivateRequests: 10,
+              activeRequestCount: 7,
+            },
+            {
+              name: 'foo',
+              maxActivateRequests: 10,
+              activeRequestCount: 4,
+            },
+            {
+              name: 'coco',
+              maxActivateRequests: 10,
+              activeRequestCount: 2,
+            },
+          ]);
+          broker.workers.forEach(worker => {
+            if (worker.name === 'hello') {
+              worker.updateContainerStatus(
+                ContainerStatus.Stopped,
+                TurfStatusEvent.StatusStopped
+              );
+            }
+          });
 
           assert.strictEqual(broker.waterLevel, 0.3);
         });
@@ -1981,27 +1629,13 @@ describe(common.testName(__filename), () => {
 
       describe('get reservationCount', () => {
         it('should get 1 when isInspector is true', () => {
-          broker = new Broker(
-            profileManager!,
-            config,
-            'func',
-            true,
-            false,
-            turf
-          );
+          broker = new Broker(profileManager!, config, 'func', true, false);
 
           assert.strictEqual(broker.reservationCount, 1);
         });
 
         it('should get from worker config', () => {
-          broker = new Broker(
-            profileManager!,
-            config,
-            'func',
-            false,
-            false,
-            turf
-          );
+          broker = new Broker(profileManager!, config, 'func', false, false);
 
           broker.data = {
             ...funcData[0],
@@ -2021,14 +1655,7 @@ describe(common.testName(__filename), () => {
         });
 
         it('should get 0 when worker not config', () => {
-          broker = new Broker(
-            profileManager!,
-            config,
-            'func',
-            false,
-            false,
-            turf
-          );
+          broker = new Broker(profileManager!, config, 'func', false, false);
 
           broker.data = {
             ...funcData[0],
@@ -2057,14 +1684,7 @@ describe(common.testName(__filename), () => {
 
       describe('get memoryLimit', () => {
         it('should get from worker config', () => {
-          broker = new Broker(
-            profileManager!,
-            config,
-            'func',
-            false,
-            false,
-            turf
-          );
+          broker = new Broker(profileManager!, config, 'func', false, false);
 
           broker.data = {
             ...funcData[0],
@@ -2087,14 +1707,7 @@ describe(common.testName(__filename), () => {
         });
 
         it('should get 0 when worker not config', () => {
-          broker = new Broker(
-            profileManager!,
-            config,
-            'func',
-            false,
-            false,
-            turf
-          );
+          broker = new Broker(profileManager!, config, 'func', false, false);
 
           broker.data = {
             ...funcData[0],
@@ -2125,14 +1738,8 @@ describe(common.testName(__filename), () => {
 
     describe('.sync()', () => {
       it('should sync', () => {
-        const broker = new Broker(
-          profileManager!,
-          config,
-          'func',
-          true,
-          false,
-          turf
-        );
+        const testContainerManager = new TestContainerManager();
+        const broker = new Broker(profileManager!, config, 'func', true, false);
         broker.register('hello', 'world');
         broker.register('foo', 'bar');
 
@@ -2142,24 +1749,23 @@ describe(common.testName(__filename), () => {
           ControlPanelEvent.RequestQueueExpand
         );
 
-        broker.sync(
-          [
-            {
-              name: 'hello',
-              maxActivateRequests: 10,
-              activeRequestCount: 7,
-            },
-            {
-              name: 'non-exists',
-              maxActivateRequests: 10,
-              activeRequestCount: 1,
-            },
-          ],
-          [
-            { pid: 1, name: 'foo', status: TurfContainerStates.running },
-            { pid: 2, name: 'hello', status: TurfContainerStates.running },
-          ]
-        );
+        registerBrokerContainers(testContainerManager, broker, [
+          { pid: 1, name: 'foo', status: TurfContainerStates.running },
+          { pid: 2, name: 'hello', status: TurfContainerStates.running },
+        ]);
+        testContainerManager.reconcileContainers();
+        broker.sync([
+          {
+            name: 'hello',
+            maxActivateRequests: 10,
+            activeRequestCount: 7,
+          },
+          {
+            name: 'non-exists',
+            maxActivateRequests: 10,
+            activeRequestCount: 1,
+          },
+        ]);
 
         assert.strictEqual(broker.startingPool.size, 1);
         assert.deepStrictEqual(broker.startingPool.get('foo'), {
@@ -2206,14 +1812,8 @@ describe(common.testName(__filename), () => {
       });
 
       it('should sync with no function profile', async () => {
-        const broker = new Broker(
-          profileManager!,
-          config,
-          'func',
-          true,
-          false,
-          turf
-        );
+        const testContainerManager = new TestContainerManager();
+        const broker = new Broker(profileManager!, config, 'func', true, false);
         broker.register('hello', 'world');
         broker.register('foo', 'bar');
 
@@ -2225,24 +1825,23 @@ describe(common.testName(__filename), () => {
 
         await profileManager!.set([], 'WAIT');
 
-        broker.sync(
-          [
-            {
-              name: 'hello',
-              maxActivateRequests: 10,
-              activeRequestCount: 7,
-            },
-            {
-              name: 'non-exists',
-              maxActivateRequests: 10,
-              activeRequestCount: 1,
-            },
-          ],
-          [
-            { pid: 1, name: 'foo', status: TurfContainerStates.running },
-            { pid: 2, name: 'hello', status: TurfContainerStates.running },
-          ]
-        );
+        registerBrokerContainers(testContainerManager, broker, [
+          { pid: 1, name: 'foo', status: TurfContainerStates.running },
+          { pid: 2, name: 'hello', status: TurfContainerStates.running },
+        ]);
+        testContainerManager.reconcileContainers();
+        broker.sync([
+          {
+            name: 'hello',
+            maxActivateRequests: 10,
+            activeRequestCount: 7,
+          },
+          {
+            name: 'non-exists',
+            maxActivateRequests: 10,
+            activeRequestCount: 1,
+          },
+        ]);
 
         assert.strictEqual(broker.startingPool.size, 1);
         assert.deepStrictEqual(broker.startingPool.get('foo'), {
@@ -2289,14 +1888,7 @@ describe(common.testName(__filename), () => {
 
     describe('.shrinkDraw()', () => {
       it('should use default strategy LCC', () => {
-        const broker = new Broker(
-          profileManager!,
-          config,
-          'func',
-          true,
-          false,
-          turf
-        );
+        const broker = new Broker(profileManager!, config, 'func', true, false);
         broker.register('hello', 'world');
         broker.register('foo', 'bar');
         broker.data = null;
@@ -2312,24 +1904,18 @@ describe(common.testName(__filename), () => {
           ControlPanelEvent.RequestQueueExpand
         );
 
-        broker.sync(
-          [
-            {
-              name: 'hello',
-              maxActivateRequests: 10,
-              activeRequestCount: 7,
-            },
-            {
-              name: 'foo',
-              maxActivateRequests: 10,
-              activeRequestCount: 1,
-            },
-          ],
-          [
-            { pid: 1, name: 'foo', status: TurfContainerStates.running },
-            { pid: 2, name: 'hello', status: TurfContainerStates.running },
-          ]
-        );
+        broker.sync([
+          {
+            name: 'hello',
+            maxActivateRequests: 10,
+            activeRequestCount: 7,
+          },
+          {
+            name: 'foo',
+            maxActivateRequests: 10,
+            activeRequestCount: 1,
+          },
+        ]);
 
         const workers = broker.shrinkDraw(1);
 
@@ -2338,14 +1924,7 @@ describe(common.testName(__filename), () => {
       });
 
       it('should use default strategy LCC when worker strategy not supported', () => {
-        const broker = new Broker(
-          profileManager!,
-          config,
-          'func',
-          true,
-          false,
-          turf
-        );
+        const broker = new Broker(profileManager!, config, 'func', true, false);
         broker.register('hello', 'world');
         broker.register('foo', 'bar');
 
@@ -2360,24 +1939,18 @@ describe(common.testName(__filename), () => {
           ControlPanelEvent.RequestQueueExpand
         );
 
-        broker.sync(
-          [
-            {
-              name: 'hello',
-              maxActivateRequests: 10,
-              activeRequestCount: 1,
-            },
-            {
-              name: 'foo',
-              maxActivateRequests: 10,
-              activeRequestCount: 7,
-            },
-          ],
-          [
-            { pid: 1, name: 'foo', status: TurfContainerStates.running },
-            { pid: 2, name: 'hello', status: TurfContainerStates.running },
-          ]
-        );
+        broker.sync([
+          {
+            name: 'hello',
+            maxActivateRequests: 10,
+            activeRequestCount: 1,
+          },
+          {
+            name: 'foo',
+            maxActivateRequests: 10,
+            activeRequestCount: 7,
+          },
+        ]);
 
         broker.data = {
           ...funcData[0],
@@ -2400,14 +1973,7 @@ describe(common.testName(__filename), () => {
       });
 
       it('should use default strategy LCC when worker strategy is empty', () => {
-        const broker = new Broker(
-          profileManager!,
-          config,
-          'func',
-          true,
-          false,
-          turf
-        );
+        const broker = new Broker(profileManager!, config, 'func', true, false);
         broker.register('hello', 'world');
         broker.register('foo', 'bar');
 
@@ -2422,24 +1988,18 @@ describe(common.testName(__filename), () => {
           ControlPanelEvent.RequestQueueExpand
         );
 
-        broker.sync(
-          [
-            {
-              name: 'hello',
-              maxActivateRequests: 10,
-              activeRequestCount: 1,
-            },
-            {
-              name: 'foo',
-              maxActivateRequests: 10,
-              activeRequestCount: 7,
-            },
-          ],
-          [
-            { pid: 1, name: 'foo', status: TurfContainerStates.running },
-            { pid: 2, name: 'hello', status: TurfContainerStates.running },
-          ]
-        );
+        broker.sync([
+          {
+            name: 'hello',
+            maxActivateRequests: 10,
+            activeRequestCount: 1,
+          },
+          {
+            name: 'foo',
+            maxActivateRequests: 10,
+            activeRequestCount: 7,
+          },
+        ]);
 
         broker.data = {
           ...funcData[0],
@@ -2462,14 +2022,7 @@ describe(common.testName(__filename), () => {
       });
 
       it('should use worker strategy FIFO', async () => {
-        const broker = new Broker(
-          profileManager!,
-          config,
-          'func',
-          true,
-          false,
-          turf
-        );
+        const broker = new Broker(profileManager!, config, 'func', true, false);
         broker.register('hello', 'world');
         await sleep(100);
         broker.register('foo', 'bar');
@@ -2485,24 +2038,18 @@ describe(common.testName(__filename), () => {
           ControlPanelEvent.RequestQueueExpand
         );
 
-        broker.sync(
-          [
-            {
-              name: 'hello',
-              maxActivateRequests: 10,
-              activeRequestCount: 7,
-            },
-            {
-              name: 'foo',
-              maxActivateRequests: 10,
-              activeRequestCount: 1,
-            },
-          ],
-          [
-            { pid: 1, name: 'foo', status: TurfContainerStates.running },
-            { pid: 2, name: 'hello', status: TurfContainerStates.running },
-          ]
-        );
+        broker.sync([
+          {
+            name: 'hello',
+            maxActivateRequests: 10,
+            activeRequestCount: 7,
+          },
+          {
+            name: 'foo',
+            maxActivateRequests: 10,
+            activeRequestCount: 1,
+          },
+        ]);
 
         broker.data = {
           ...funcData[0],
@@ -2525,14 +2072,7 @@ describe(common.testName(__filename), () => {
       });
 
       it('should use worker strategy FILO', async () => {
-        const broker = new Broker(
-          profileManager!,
-          config,
-          'func',
-          true,
-          false,
-          turf
-        );
+        const broker = new Broker(profileManager!, config, 'func', true, false);
         broker.register('hello', 'world');
         await sleep(100);
         broker.register('foo', 'bar');
@@ -2548,24 +2088,18 @@ describe(common.testName(__filename), () => {
           ControlPanelEvent.RequestQueueExpand
         );
 
-        broker.sync(
-          [
-            {
-              name: 'hello',
-              maxActivateRequests: 10,
-              activeRequestCount: 7,
-            },
-            {
-              name: 'foo',
-              maxActivateRequests: 10,
-              activeRequestCount: 8,
-            },
-          ],
-          [
-            { pid: 1, name: 'foo', status: TurfContainerStates.running },
-            { pid: 2, name: 'hello', status: TurfContainerStates.running },
-          ]
-        );
+        broker.sync([
+          {
+            name: 'hello',
+            maxActivateRequests: 10,
+            activeRequestCount: 7,
+          },
+          {
+            name: 'foo',
+            maxActivateRequests: 10,
+            activeRequestCount: 8,
+          },
+        ]);
 
         broker.data = {
           ...funcData[0],

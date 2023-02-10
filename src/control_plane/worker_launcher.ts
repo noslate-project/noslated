@@ -16,6 +16,7 @@ import { kMemoryLimit } from './constants';
 import { performance } from 'perf_hooks';
 import { ControlPanelEvent } from '#self/lib/constants';
 import { Priority, TaskQueue } from '#self/lib/task_queue';
+import { Container } from './container/container_manager';
 
 export interface WorkerStarter {
   start(
@@ -25,12 +26,11 @@ export interface WorkerStarter {
     profile: RawFunctionProfile,
     bundlePath: string,
     options: BaseOptions
-  ): Promise<void>;
+  ): Promise<Container>;
 }
 
 export class WorkerLauncher extends Base {
   plane;
-  turf;
   logger;
   config;
   starters;
@@ -48,7 +48,6 @@ export class WorkerLauncher extends Base {
   constructor(plane: ControlPlane, config: Config) {
     super();
     this.plane = plane;
-    this.turf = plane.turf;
 
     this.logger = loggers.get('worker launcher');
     this.config = config;
@@ -255,7 +254,7 @@ export class WorkerLauncher extends Base {
         !!options.inspect,
         disposable
       );
-      await starter.start(
+      const container = await starter.start(
         serverSockPath,
         processName,
         credential,
@@ -263,6 +262,7 @@ export class WorkerLauncher extends Base {
         bundlePath,
         options
       );
+      worker.setContainer(container);
 
       const started = performance.now();
 
@@ -289,7 +289,7 @@ export class WorkerLauncher extends Base {
         requestId
       );
     } catch (e) {
-      this.snapshot.unregister(funcName, processName, !!options.inspect);
+      await this.snapshot.unregister(funcName, processName, !!options.inspect);
       throw e;
     }
   };

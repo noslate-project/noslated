@@ -70,7 +70,7 @@ describe(common.testName(__filename), function () {
     const buffer = await bufferFromStream(response);
     assert.strictEqual(buffer.toString('utf8'), 'foobar');
 
-    const items = await env.control.turf.ps();
+    const items = await env.turf.ps();
     items
       .filter((it: { status: TurfContainerStates }) => {
         return it.status === TurfContainerStates.running;
@@ -122,7 +122,7 @@ describe(common.testName(__filename), function () {
       // TODO(chengzhong.wcz): get pid from worker stats.
       // const pid = worker.pid;
       // assert.ok(pid != null);
-      const items = await env.control.turf.ps();
+      const items = await env.turf.ps();
       const state = items.filter(
         (it: { status: TurfContainerStates; name: any }) => {
           return (

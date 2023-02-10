@@ -19,15 +19,22 @@ import {
   DisposableController,
   ReservationController,
 } from './controllers';
-import { Turf } from '#self/lib/turf';
 import { Clock, systemClock } from '#self/lib/clock';
+import { ContainerManager } from './container/container_manager';
+import { TurfContainerManager } from './container/turf_container_manager';
+
+export interface ControlPlaneOptions {
+  clock?: Clock;
+  containerManager?: ContainerManager;
+}
 
 /**
  * ControlPlane
  */
 export class ControlPlane extends BaseOf(EventEmitter) {
+  clock: Clock;
+  containerManager: ContainerManager;
   meter: Meter;
-  turf: Turf;
   dataPlaneClientManager: DataPlaneClientManager;
   herald: Herald;
   codeManager: CodeManager;
@@ -42,12 +49,15 @@ export class ControlPlane extends BaseOf(EventEmitter) {
   reservationController: ReservationController;
   disposableController: DisposableController;
 
-  constructor(private config: Config, public clock: Clock = systemClock) {
+  constructor(private config: Config, options?: ControlPlaneOptions) {
     super();
     dumpConfig('control', config);
 
+    this.clock = options?.clock ?? systemClock;
+    this.containerManager =
+      options?.containerManager ?? new TurfContainerManager(config);
+
     this.meter = getMeter();
-    this.turf = new Turf(config.turf.bin, config.turf.socketPath);
     this.dataPlaneClientManager = new DataPlaneClientManager(this, config);
     this.herald = new Herald(this, config);
     this.codeManager = new CodeManager(this.config.dirs.noslatedWork);
@@ -59,8 +69,7 @@ export class ControlPlane extends BaseOf(EventEmitter) {
     this.capacityManager = new CapacityManager(this, config);
     this.workerTelemetry = new WorkerTelemetry(
       this.meter,
-      this.capacityManager.workerStatsSnapshot,
-      this.turf
+      this.capacityManager.workerStatsSnapshot
     );
     this.stateManager = new StateManager(this);
     this.controller = new BaseController(this);
@@ -81,7 +90,7 @@ export class ControlPlane extends BaseOf(EventEmitter) {
     });
 
     return Promise.all([
-      this.turf.connect(),
+      this.containerManager.ready(),
       this.dataPlaneClientManager.ready(),
       this.herald.ready(),
       this.workerLauncher.ready(),
@@ -102,18 +111,8 @@ export class ControlPlane extends BaseOf(EventEmitter) {
       this.workerLauncher.close(),
       this.capacityManager.close(),
     ]);
-    await this.turf.close();
+    await this.containerManager.close();
     return;
-  }
-
-  /**
-   * @deprecated should not expose internal component with dynamic getter.
-   * Get a component of control plane.
-   * @param {string} componentName The component name.
-   * @return {any} The component.
-   */
-  get(componentName: string) {
-    return this[componentName] || null;
   }
 
   /**

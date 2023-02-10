@@ -6,10 +6,10 @@ import { Logger, loggers } from '#self/lib/loggers';
 
 export class StateManager {
   logger: Logger;
-  turf;
+  containerManager;
   constructor(public plane: ControlPlane) {
     this.logger = loggers.get('state manager');
-    this.turf = plane.turf;
+    this.containerManager = plane.containerManager;
   }
 
   updateContainerStatusByReport(
@@ -73,16 +73,8 @@ export class StateManager {
   }
 
   async syncWorkerData(data: root.noslated.data.IBrokerStats[]) {
-    const psData = await this.turf.ps();
-
-    if (!psData || psData.length === 0) {
-      this.logger.debug(
-        'got turf ps data empty, skip current syncWorkerData operation.'
-      );
-      return;
-    }
-
-    this.plane.capacityManager.workerStatsSnapshot.sync(data, psData);
+    await this.containerManager.reconcileContainers();
+    this.plane.capacityManager.workerStatsSnapshot.sync(data);
     await this.plane.capacityManager.workerStatsSnapshot.correct();
   }
 }

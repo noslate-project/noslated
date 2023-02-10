@@ -4,15 +4,17 @@ import { Turf } from '#self/lib/turf/wrapper';
 import { ControlPlane } from '../control_plane';
 import { Delta } from '../capacity_manager';
 import { ControlPanelEvent } from '#self/lib/constants';
+import { ContainerManager } from '../container/container_manager';
 
 export class BaseController {
   logger: Logger;
   shrinking: boolean;
-  turf: Turf;
+  containerManager: ContainerManager;
+
   constructor(public plane: ControlPlane) {
     this.logger = loggers.get('base controller');
     this.shrinking = false;
-    this.turf = plane.turf;
+    this.containerManager = plane.containerManager;
   }
   /**
    * Expand.
@@ -136,13 +138,13 @@ export class BaseController {
       for (const worker of broker?.workers || []) {
         const realWorker =
           this.plane.capacityManager.workerStatsSnapshot.getWorker(
-            broker.functionName,
-            broker.inspector,
-            worker.name
+            broker.functionName!,
+            broker.inspector!,
+            worker.name!
           );
         if (realWorker?.credential !== worker.credential) continue;
         up.push(worker.name);
-        kill.push(this.stopWorker(worker.name));
+        kill.push(this.stopWorker(worker.name!));
       }
     }
     this.logger.info(
@@ -157,7 +159,11 @@ export class BaseController {
    * @return {Promise<void>} The result.
    */
   async stopWorker(workerName: string, requestId?: string) {
-    await this.turf.stop(workerName);
+    const container = this.containerManager.getContainer(workerName);
+    if (container == null) {
+      return;
+    }
+    await container.stop();
     this.logger.info(
       'worker(%s) with request(%s) stopped.',
       workerName,

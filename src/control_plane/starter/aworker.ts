@@ -9,7 +9,7 @@ import * as naming from '#self/lib/naming';
 import { ControlPlane } from '../control_plane';
 import { Config } from '#self/config';
 import { AworkerFunctionProfile } from '#self/lib/json/function_profile';
-import { TurfState } from '#self/lib/turf/types';
+import { Container, workerLogPath } from '../container/container_manager';
 
 const SEED_CONTAINER_NAME = '___seed___';
 const SameOriginSharedDataRoot = '/tmp/noslated-sosd';
@@ -19,7 +19,7 @@ export class AworkerStarter extends BaseStarter {
   keepSeedAliveTimer: ReturnType<typeof setTimeout> | null;
   closed;
   binPath;
-  lastSeedState?: TurfContainerStates;
+  seedContainer?: Container;
 
   constructor(plane: ControlPlane, config: Config) {
     super('aworker', 'aworker', 'aworker starter', plane, config);
@@ -36,22 +36,23 @@ export class AworkerStarter extends BaseStarter {
   }
 
   async seedStatus() {
-    if (this.lastSeedState === TurfContainerStates.forkwait) {
-      return this.lastSeedState;
+    if (this.seedContainer == null) {
+      return null;
     }
-    let state: TurfState | null;
+    if (this.seedContainer.status === TurfContainerStates.forkwait) {
+      return this.seedContainer.status;
+    }
     try {
-      state = await this.turf.state(SEED_CONTAINER_NAME);
+      await this.seedContainer.state();
     } catch (exp: any) {
       this.logger.warn(`Cannot state ${SEED_CONTAINER_NAME}.`, exp.message);
       return null;
     }
-    this.lastSeedState = state?.state;
-    return this.lastSeedState;
+    return this.seedContainer.status;
   }
 
   async startSeed() {
-    this.lastSeedState = undefined;
+    this.seedContainer = undefined;
     const commands = [this.bin];
     if (this.config.starter.aworker.defaultSeedScript != null) {
       commands.push(
@@ -71,16 +72,14 @@ export class AworkerStarter extends BaseStarter {
     );
     fs.mkdirSync(path.join(bundlePath, 'code'), { recursive: true });
 
-    await this.doStart(
+    this.seedContainer = await this.doStart(
       SEED_CONTAINER_NAME, // container name
       bundlePath, // bundle path
       commands, // run command
       { runtime: 'aworker' }, // dummy profile: runtime
       this.config.starter.aworker.defaultEnvirons, // environment
       { additionalSpec: { turf: { seed: true } } }
-    ); // additional spec
-
-    await this.seedStatus();
+    );
   }
 
   async waitSeedReady() {
@@ -100,15 +99,13 @@ export class AworkerStarter extends BaseStarter {
   async keepSeedAlive() {
     this.keepSeedAliveTimer = null;
     try {
-      const status = await this.turf
-        .state(SEED_CONTAINER_NAME)
-        .catch((exp: unknown) => {
-          const e = castError(exp);
-          if (!e.message.includes('not found')) {
-            this.logger.warn(`Cannot state ${SEED_CONTAINER_NAME}.`, e.message);
-          }
-          return null;
-        });
+      const status = await this.seedContainer?.state().catch((exp: unknown) => {
+        const e = castError(exp);
+        if (!e.message.includes('not found')) {
+          this.logger.warn(`Cannot state ${SEED_CONTAINER_NAME}.`, e.message);
+        }
+        return null;
+      });
       if (this.closed) return;
       let needStart = false;
       if (status == null) {
@@ -122,7 +119,7 @@ export class AworkerStarter extends BaseStarter {
         ].includes(status.state)
       ) {
         needStart = true;
-        await this.turf.destroy(SEED_CONTAINER_NAME);
+        await this.seedContainer?.destroy();
         if (this.closed) return;
       }
 
@@ -168,7 +165,7 @@ export class AworkerStarter extends BaseStarter {
     }
 
     try {
-      await this.turf.destroy(SEED_CONTAINER_NAME);
+      await this.seedContainer?.destroy();
     } catch (e) {
       this.logger.warn(e);
     }
@@ -201,7 +198,7 @@ export class AworkerStarter extends BaseStarter {
     };
 
     const runLogDir = this.config.logger.dir;
-    const logDirectory = BaseStarter.logPath(runLogDir, name);
+    const logDirectory = workerLogPath(runLogDir, name);
 
     // TODO(kaidi.zkd): different commands between seed and non-seed mode
     const commonExecArgv = this.getCommonExecArgv(profile, options);
@@ -230,7 +227,7 @@ export class AworkerStarter extends BaseStarter {
         useSeed ? '' : 'non-'
       }seed mode.`
     );
-    await this.doStart(
+    return this.doStart(
       name,
       bundlePath,
       commands,

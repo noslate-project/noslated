@@ -7,8 +7,6 @@ import {
 import { FunctionProfileManager } from '#self/lib/function_profile';
 import { RawFunctionProfile } from '#self/lib/json/function_profile';
 import { PrefixedLogger } from '#self/lib/loggers';
-import { Turf } from '#self/lib/turf';
-import { TurfProcess } from '#self/lib/turf/types';
 import { Worker, WorkerStats } from './worker';
 
 enum WaterLevelAction {
@@ -57,8 +55,7 @@ class Broker {
     config: Config,
     funcName: string,
     isInspector: boolean,
-    public disposable: boolean = false,
-    private turf: Turf
+    public disposable: boolean = false
   ) {
     this.config = config;
     this.logger = new PrefixedLogger(
@@ -130,20 +127,18 @@ class Broker {
 
   /**
    * Unregister worker.
-   * @param processName The process name (worker name).
+   * @param name The process name (worker name).
    * @param destroy Whether it should be destroyed by turf.
    */
-  unregister(processName: string, destroy = false) {
-    this.workers.delete(processName);
-    this.removeItemFromStartingPool(processName);
-    if (destroy) {
-      this.turf.destroy(processName).catch((e: unknown) => {
-        this.logger.warn(
-          `Failed to destroy worker ${processName} in unregistering.`,
-          e
-        );
-      });
-    }
+  async unregister(name: string) {
+    const worker = this.workers.get(name);
+    this.workers.delete(name);
+    this.removeItemFromStartingPool(name);
+
+    // TODO: resource manager cleanup
+    await worker?.container?.destroy().catch((e: unknown) => {
+      this.logger.warn(`Failed to destroy worker ${name} in unregistering.`, e);
+    });
   }
 
   /**
@@ -280,9 +275,8 @@ class Broker {
   /**
    * Sync from data plane and turf ps.
    * @param workers The workers.
-   * @param psData The turf ps data.
    */
-  sync(workers: WorkerStats[], psData: TurfProcess[]) {
+  sync(workers: WorkerStats[]) {
     this.data = this.profiles?.get(this.name)?.toJSON(true) || null;
 
     /**
@@ -296,13 +290,13 @@ class Broker {
         continue;
       }
 
-      worker.sync(item, psData);
+      worker.sync(item);
       newMap.set(item.name, worker);
       this.workers.delete(item.name!);
     }
 
     for (const item of this.workers.values()) {
-      item.sync(null, psData);
+      item.sync(null);
       newMap.set(item.name, item);
     }
 

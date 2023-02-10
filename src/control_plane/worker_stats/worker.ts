@@ -9,6 +9,8 @@ import {
   ControlPanelEvent,
 } from '#self/lib/constants';
 import { createDeferred, Deferred } from '#self/lib/util';
+import { Container } from '../container/container_manager';
+import assert from 'assert';
 
 export type WorkerStats = noslated.data.IWorkerStats;
 
@@ -35,6 +37,11 @@ class Worker {
     }
     return null;
   }
+
+  /**
+   * Underlying turf container.
+   */
+  container?: Container;
 
   #containerStatus: ContainerStatus;
 
@@ -199,6 +206,20 @@ class Worker {
     });
   }
 
+  setContainer(container: Container) {
+    this.container = container;
+    container.onstatuschanged = () => {
+      if (container.pid) {
+        this.#pid = container.pid;
+      }
+      this.switchTo(container.status);
+    };
+    if (container.pid) {
+      this.#pid = container.pid;
+    }
+    this.switchTo(container.status);
+  }
+
   setReady() {
     this.#readyDeferred.resolve();
   }
@@ -226,21 +247,22 @@ class Worker {
     };
   }
 
+  async stop() {
+    assert.ok(this.container != null, 'Worker has not bound to a container');
+    return this.container?.stop();
+  }
+
   /**
-   * Sync data from data plane and turf.
+   * Sync data from data plane.
    * @param data The data object.
    * @param psData The turf ps data.
    */
-  sync(data: WorkerStats | null, psData: TurfProcess[]) {
+  sync(data: WorkerStats | null) {
     if (data === null) {
       this.logger.debug('Sync with null.');
     }
 
     this.#data = data ? new WorkerAdditionalData(data) : null;
-    const found = Worker.findPsData(psData, this.name);
-    this.switchTo(found);
-    this.#pid = found?.pid || null;
-    this.#turfContainerStates = found?.status || null;
   }
 
   /**
@@ -248,9 +270,8 @@ class Worker {
    * Switch worker's status to another via a state machine.
    * @param found The found ps data.
    */
-  switchTo(found: TurfProcess | null) {
-    const turfState = found?.status || null;
-
+  switchTo(turfState: TurfContainerStates | null) {
+    this.#turfContainerStates = turfState;
     switch (turfState) {
       case TurfContainerStates.init:
       case TurfContainerStates.starting:

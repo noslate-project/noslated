@@ -215,7 +215,7 @@ describe(common.testName(__filename), () => {
           throw e;
         }
       });
-      mm(env.control.turf, 'ps', async () => {
+      mm(env.turf, 'ps', async () => {
         return [
           { name: 'foo', pid: 10000, status: TurfContainerStates.running },
         ];

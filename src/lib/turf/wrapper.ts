@@ -20,7 +20,6 @@ const TurfStateLineMatcher = /(\S+):\s+(\S+)/;
 export { TurfContainerStates } from './types';
 
 const TurfStopIgnorableCodes = [TurfCode.ECHILD, TurfCode.ENOENT];
-const TurfStopRetryableCodes = [TurfCode.EAGAIN];
 
 export class Turf {
   session: TurfSession;
@@ -160,7 +159,7 @@ export class Turf {
     return this.#sendOrExec(args);
   }
 
-  async #stop(containerName: string, force: boolean) {
+  async stop(containerName: string, force: boolean) {
     const args = ['stop'];
     if (force) {
       args.push('--force');
@@ -172,49 +171,15 @@ export class Turf {
       if (TurfStopIgnorableCodes.includes(e.code)) {
         return;
       }
+      if (force && e.code === TurfCode.EAGAIN) {
+        return;
+      }
       throw e;
-    }
-  }
-
-  async stop(containerName: string) {
-    try {
-      await this.#stop(containerName, false);
-    } catch (e: any) {
-      if (!TurfStopRetryableCodes.includes(e.code)) {
-        logger.info('%s stop failed', containerName, e.message);
-        throw e;
-      }
-      // TODO(chengzhong.wcz): yield retrying to callers.
-      logger.info('%s stop failed, retrying', containerName);
-      let retry = 3;
-      while (retry >= 1) {
-        retry--;
-        try {
-          await sleep(1000);
-          await this.#stop(containerName, true);
-        } catch (e: any) {
-          if (retry === 0 || !TurfStopRetryableCodes.includes(e.code)) {
-            logger.info(
-              '%s force stop failed, ignore error',
-              containerName,
-              e.message
-            );
-            return;
-          }
-          logger.info('%s force stop, retrying', containerName, retry);
-        }
-      }
     }
   }
 
   async delete(containerName: string) {
     return this.#exec(['delete', containerName]);
-  }
-
-  async destroy(containerName: string) {
-    await this.stop(containerName);
-    // TODO: stop 之后可能要等一下才能 delete
-    await this.delete(containerName);
   }
 
   /**
@@ -242,10 +207,12 @@ export class Turf {
     return arr;
   }
 
-  async state(name: string): Promise<TurfState | null> {
+  async state(name: string): Promise<TurfState> {
     const ret = await this.#exec(['state', name]);
     const lines = ret.split('\n').filter(l => l);
-    if (!lines.length) return null;
+    if (!lines.length) {
+      throw new Error(`Unable to state turf '${name}'`);
+    }
     const obj = lines.reduce((obj, line) => {
       // Output format and semantics
       const match = TurfStateLineMatcher.exec(line);

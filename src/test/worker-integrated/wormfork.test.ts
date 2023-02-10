@@ -98,7 +98,7 @@ describe(common.testName(__filename), function () {
           first = await bufferFromStream(response);
         }
 
-        await killWorker(env.control, item.name);
+        await killWorker(env, item.name);
 
         await once(
           env.control.capacityManager.workerStatsSnapshot,
