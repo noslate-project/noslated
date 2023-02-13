@@ -15,12 +15,9 @@ import {
   ContainerStatus,
   ContainerStatusReport,
   ControlPanelEvent,
-  TurfStatusEvent,
 } from '#self/lib/constants';
 import { AworkerFunctionProfile } from '#self/lib/json/function_profile';
 import { StateManager } from '#self/control_plane/worker_stats/state_manager';
-import { ControlPlane } from '#self/control_plane/control_plane';
-import { DataPlane } from '#self/data_plane';
 import { NoslatedClient } from '#self/sdk';
 import { CapacityManager } from '#self/control_plane/capacity_manager';
 import { DefaultEnvironment } from '#self/test/env/environment';

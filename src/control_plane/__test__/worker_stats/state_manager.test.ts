@@ -8,7 +8,6 @@ import _ from 'lodash';
 import { NoslatedClient } from '#self/sdk';
 import * as common from '#self/test/common';
 import { ControlPlane } from '#self/control_plane/index';
-import * as starters from '#self/control_plane/starter/index';
 import { FIXTURES_DIR } from '#self/test/util';
 import { CapacityManager } from '#self/control_plane/capacity_manager';
 import { ContainerStatus, ContainerStatusReport } from '#self/lib/constants';
@@ -18,7 +17,7 @@ import { workerLogPath } from '#self/control_plane/container/container_manager';
 
 const simpleSandbox = path.resolve(FIXTURES_DIR, 'sandbox_simple');
 
-// TODO:
+// TODO: refactor test.
 describe.skip(common.testName(__filename), () => {
   let stateManager: StateManager;
   let capacityManager: CapacityManager;
@@ -249,11 +248,10 @@ describe.skip(common.testName(__filename), () => {
         false
       );
 
-      // TODO:
-      // await controlPlane.turf.create('worker1', simpleSandbox);
-      // await controlPlane.turf.create('worker2', simpleSandbox);
-      // await controlPlane.turf.start('worker1');
-      // await controlPlane.turf.start('worker2');
+      await env.turf.create('worker1', simpleSandbox);
+      await env.turf.create('worker2', simpleSandbox);
+      await env.turf.start('worker1');
+      await env.turf.start('worker2');
 
       await stateManager.syncWorkerData([brokerStat1]);
 

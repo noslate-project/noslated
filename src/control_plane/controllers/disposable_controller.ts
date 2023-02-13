@@ -1,5 +1,4 @@
 import { performance } from 'perf_hooks';
-import { Worker } from '../worker_stats';
 import { BaseController } from './controller';
 import { ControlPlane } from '../control_plane';
 import { Logger, loggers } from '#self/lib/loggers';

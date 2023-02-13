@@ -17,15 +17,12 @@ import {
   TurfStatusEvent,
 } from '#self/lib/constants';
 import sinon from 'sinon';
-import pedding from 'pedding';
 import { sleep } from '#self/lib/util';
 import {
   NoopContainer,
   registerBrokerContainers,
-  registerContainers,
   TestContainerManager,
 } from '../test_container_manager';
-import { systemClock } from '#self/lib/clock';
 
 describe(common.testName(__filename), () => {
   const funcData: AworkerFunctionProfile[] = [

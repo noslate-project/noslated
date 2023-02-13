@@ -1,6 +1,5 @@
 import loggers from '#self/lib/logger';
 import { Logger } from '#self/lib/loggers';
-import { Turf } from '#self/lib/turf/wrapper';
 import { ControlPlane } from '../control_plane';
 import { Delta } from '../capacity_manager';
 import { ControlPanelEvent } from '#self/lib/constants';

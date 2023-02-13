@@ -15,7 +15,6 @@ import { NoslatedDelegateService } from '#self/delegate';
 import { PrefixedLogger } from '#self/lib/loggers';
 import { DataFlowController } from './data_flow_controller';
 import { FunctionProfileManager } from '#self/lib/function_profile';
-import { Host } from '#self/lib/rpc/host';
 import { Config } from '#self/config';
 import * as root from '#self/proto/root';
 import { kMemoryLimit } from '#self/control_plane/constants';

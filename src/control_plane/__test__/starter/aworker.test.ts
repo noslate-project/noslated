@@ -10,7 +10,6 @@ import { Turf } from '#self/lib/turf';
 import * as testUtil from '#self/test/util';
 import { ControlPlane } from '#self/control_plane/control_plane';
 import { TurfContainerStates, TurfProcess } from '#self/lib/turf/types';
-import FakeTimers from '@sinonjs/fake-timers';
 import { sleep } from '#self/lib/util';
 import { startTurfD, stopTurfD } from '#self/test/turf';
 import { TurfContainerManager } from '#self/control_plane/container/turf_container_manager';

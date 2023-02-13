@@ -16,7 +16,7 @@ import {
   kDefaultChannelOptions,
 } from './util';
 import { Any } from './any';
-import { BackoffCounter, createDeferred, Deferred, raceEvent } from '../util';
+import { BackoffCounter, createDeferred, raceEvent } from '../util';
 import { ServiceClient } from '@grpc/grpc-js/build/src/make-client';
 import * as root from '#self/proto/root';
 import { IHostClient } from '#self/lib/interfaces/guest';

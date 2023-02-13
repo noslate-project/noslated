@@ -1,5 +1,4 @@
 import fs from 'fs';
-import nodeUtil from 'util';
 import os from 'os';
 import path from 'path';
 import extend from 'extend';
@@ -7,7 +6,6 @@ import extend from 'extend';
 import { Base } from '#self/lib/sdk_base';
 import loggers from '#self/lib/logger';
 import { pairsToMap } from '#self/lib/rpc/key_value_pair';
-import * as utils from '#self/lib/util';
 import { ErrorCode } from '../worker_launcher_error_code';
 import { ControlPlane } from '../control_plane';
 import { Config } from '#self/config';

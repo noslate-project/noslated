@@ -2,7 +2,7 @@ import { config } from '#self/config';
 import cp from 'child_process';
 
 import Logger from '../logger';
-import { createDeferred, isNotNullish, sleep } from '../util';
+import { createDeferred, isNotNullish } from '../util';
 import { TurfSession } from './session';
 import {
   TurfStartOptions,
