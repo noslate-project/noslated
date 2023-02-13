@@ -266,7 +266,10 @@ export abstract class BaseStarter extends Base {
     const container = await this.containerManager.create(
       name,
       bundlePath,
-      spec
+      spec,
+      {
+        mkdirs: options.mkdirs,
+      }
     );
     await container.start(options);
     return container;
