@@ -266,30 +266,44 @@ describe(common.testName(__filename), function () {
       });
       await promise;
 
-      testContainerManager.setTestContainers([
-        { pid: 1, name: 'hello', status: TurfContainerStates.running },
-        { pid: 2, name: 'foo', status: TurfContainerStates.running },
-        { pid: 3, name: 'coco', status: TurfContainerStates.running },
-        { pid: 4, name: 'cocos', status: TurfContainerStates.running },
-        { pid: 5, name: 'alibaba', status: TurfContainerStates.running },
-      ]);
-
-      capacityManager.workerStatsSnapshot
-        .register('func', 'hello', 'world', false)
-        .setContainer(testContainerManager.getContainer('hello')!);
-      capacityManager.workerStatsSnapshot
-        .register('func', 'foo', 'bar', false)
-        .setContainer(testContainerManager.getContainer('foo')!);
-      capacityManager.workerStatsSnapshot
-        .register('lambda', 'coco', 'nut', false)
-        .setContainer(testContainerManager.getContainer('coco')!);
+      capacityManager.workerStatsSnapshot.register(
+        'func',
+        'hello',
+        'world',
+        false
+      );
+      capacityManager.workerStatsSnapshot.register('func', 'foo', 'bar', false);
+      capacityManager.workerStatsSnapshot.register(
+        'lambda',
+        'coco',
+        'nut',
+        false
+      );
       // 未 ready 不计入 virtual memory size
-      capacityManager.workerStatsSnapshot
-        .register('lambda', 'cocos', '2d', false)
-        .setContainer(testContainerManager.getContainer('cocos')!);
-      capacityManager.workerStatsSnapshot
-        .register('lambda', 'alibaba', 'seed of hope', false)
-        .setContainer(testContainerManager.getContainer('alibaba')!);
+      capacityManager.workerStatsSnapshot.register(
+        'lambda',
+        'cocos',
+        '2d',
+        false
+      );
+      capacityManager.workerStatsSnapshot.register(
+        'lambda',
+        'alibaba',
+        'seed of hope',
+        false
+      );
+
+      registerContainers(
+        testContainerManager,
+        capacityManager.workerStatsSnapshot,
+        [
+          { pid: 1, name: 'hello', status: TurfContainerStates.running },
+          { pid: 2, name: 'foo', status: TurfContainerStates.running },
+          { pid: 3, name: 'coco', status: TurfContainerStates.running },
+          { pid: 4, name: 'cocos', status: TurfContainerStates.running },
+          { pid: 5, name: 'alibaba', status: TurfContainerStates.running },
+        ]
+      );
 
       await control.stateManager.syncWorkerData([brokerData1, brokerData2]);
 
