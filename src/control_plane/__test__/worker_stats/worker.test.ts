@@ -92,9 +92,11 @@ describe(common.testName(__filename), () => {
       const container = new SimpleContainer('hello');
       worker.setContainer(container);
       container.updateStatus(TurfContainerStates.stopped);
-      worker.sync(
-        { name: 'hello', maxActivateRequests: 10, activeRequestCount: 5 },
-      );
+      worker.sync({
+        name: 'hello',
+        maxActivateRequests: 10,
+        activeRequestCount: 5,
+      });
       assert.deepStrictEqual(_.omit(worker.toJSON(), ['registerTime']), {
         name: 'hello',
         credential: 'world',
@@ -260,12 +262,10 @@ describe(common.testName(__filename), () => {
       worker.sync(data);
       assert.strictEqual(worker.containerStatus, ContainerStatus.Created);
 
-
       const container = new SimpleContainer('hello');
       worker.setContainer(container);
       container.updateStatus(TurfContainerStates.forkwait);
       assert.strictEqual(worker.containerStatus, ContainerStatus.Created);
-
 
       container.updateStatus(TurfContainerStates.running);
       assert.strictEqual(worker.containerStatus, ContainerStatus.Created);
@@ -299,7 +299,6 @@ describe(common.testName(__filename), () => {
       );
 
       assert.strictEqual(worker.containerStatus, ContainerStatus.Ready);
-
 
       const container = new SimpleContainer('hello');
       worker.setContainer(container);
@@ -376,8 +375,7 @@ describe(common.testName(__filename), () => {
       clock.tick(config.worker.defaultInitializerTimeout + 1000);
       const spy = sinon.spy(worker.logger, 'info');
 
-
-container.updateStatus(TurfContainerStates.running);
+      container.updateStatus(TurfContainerStates.running);
       assert.strictEqual(
         worker.turfContainerStates,
         TurfContainerStates.running
@@ -500,8 +498,12 @@ container.updateStatus(TurfContainerStates.running);
       )!;
     });
 
-    afterEach(async() => {
-      await capacityManager.workerStatsSnapshot.unregister('func1', 'worker1', false);
+    afterEach(async () => {
+      await capacityManager.workerStatsSnapshot.unregister(
+        'func1',
+        'worker1',
+        false
+      );
     });
 
     it('should worker ready after initializer handler success', async () => {

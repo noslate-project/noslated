@@ -16,7 +16,10 @@ import fs from 'fs';
 import { AworkerFunctionProfile } from '#self/lib/json/function_profile';
 import { NotNullableInterface } from '#self/lib/interfaces';
 import * as root from '#self/proto/root';
-import { registerContainers, TestContainerManager } from '../test_container_manager';
+import {
+  registerContainers,
+  TestContainerManager,
+} from '../test_container_manager';
 
 describe(common.testName(__filename), () => {
   const funcData: AworkerFunctionProfile[] = [
@@ -496,26 +499,26 @@ describe(common.testName(__filename), () => {
         workerStatsSnapshot.register('func', 'hello', 'world', true);
         workerStatsSnapshot.register('func', 'foooo', 'bar', false);
 
-        registerContainers(testContainerManager, workerStatsSnapshot, [{ pid: 1, name: 'foooo', status: TurfContainerStates.running }]);
+        registerContainers(testContainerManager, workerStatsSnapshot, [
+          { pid: 1, name: 'foooo', status: TurfContainerStates.running },
+        ]);
         await testContainerManager.reconcileContainers();
 
-        workerStatsSnapshot.sync(
-          [
-            ...brokerData,
-            {
-              functionName: 'hoho',
-              inspector: false,
-              workers: [
-                {
-                  name: 'aho',
-                  credential: 'aha',
-                  maxActivateRequests: 10,
-                  activeRequestCount: 6,
-                },
-              ],
-            },
-          ]
-        );
+        workerStatsSnapshot.sync([
+          ...brokerData,
+          {
+            functionName: 'hoho',
+            inspector: false,
+            workers: [
+              {
+                name: 'aho',
+                credential: 'aha',
+                maxActivateRequests: 10,
+                activeRequestCount: 6,
+              },
+            ],
+          },
+        ]);
 
         // hoho should be ignored
         assert.strictEqual(workerStatsSnapshot.brokers.size, 2);
@@ -578,7 +581,10 @@ describe(common.testName(__filename), () => {
         await testContainerManager.reconcileContainers();
         workerStatsSnapshot.sync(brokerData);
 
-        const _turfContainerStateses = [TurfContainerStates.running, TurfContainerStates.unknown];
+        const _turfContainerStateses = [
+          TurfContainerStates.running,
+          TurfContainerStates.unknown,
+        ];
         const _containerStatus: ContainerStatus[] = [
           ContainerStatus.Ready,
           ContainerStatus.Unknown,
@@ -619,16 +625,13 @@ describe(common.testName(__filename), () => {
 
         await profileManager.set([], 'WAIT');
 
-        registerContainers(testContainerManager, workerStatsSnapshot,
-          [
-            { pid: 1, name: 'foooo', status: TurfContainerStates.running },
-            { pid: 2, name: 'hello', status: TurfContainerStates.starting },
-          ]);
+        registerContainers(testContainerManager, workerStatsSnapshot, [
+          { pid: 1, name: 'foooo', status: TurfContainerStates.running },
+          { pid: 2, name: 'hello', status: TurfContainerStates.starting },
+        ]);
         await testContainerManager.reconcileContainers();
 
-        workerStatsSnapshot.sync(
-          [brokerData[1]]
-        );
+        workerStatsSnapshot.sync([brokerData[1]]);
 
         const brokers = [
           workerStatsSnapshot.getBroker('func', true)!,
@@ -670,15 +673,12 @@ describe(common.testName(__filename), () => {
           });
         });
 
-        registerContainers(testContainerManager, workerStatsSnapshot,
-          [
-            { pid: 1, name: 'foooo', status: TurfContainerStates.stopped },
-            { pid: 2, name: 'hello', status: TurfContainerStates.stopping },
-          ]);
+        registerContainers(testContainerManager, workerStatsSnapshot, [
+          { pid: 1, name: 'foooo', status: TurfContainerStates.stopped },
+          { pid: 2, name: 'hello', status: TurfContainerStates.stopping },
+        ]);
         await testContainerManager.reconcileContainers();
-        workerStatsSnapshot.sync(
-          [brokerData[1]]
-        );
+        workerStatsSnapshot.sync([brokerData[1]]);
 
         const _turfContainerStates = [
           TurfContainerStates.stopping,

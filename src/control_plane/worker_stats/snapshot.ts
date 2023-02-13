@@ -148,7 +148,11 @@ export class WorkerStatsSnapshot extends BaseOf(EventEmitter) {
    * @param {string} processName The process name (worker name).
    * @param {boolean} isInspector Whether it's using inspector or not.
    */
-  async unregister(funcName: string, processName: string, isInspector: boolean) {
+  async unregister(
+    funcName: string,
+    processName: string,
+    isInspector: boolean
+  ) {
     const brokerKey = Broker.getKey(funcName, isInspector);
     const broker = this.brokers.get(brokerKey);
     if (!broker) return;

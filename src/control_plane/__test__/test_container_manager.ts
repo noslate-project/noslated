@@ -87,7 +87,7 @@ export class SimpleContainer implements Container {
     readonly bundlePath?: string,
     readonly spec?: TurfSpec,
     readonly options?: ContainerCreateOptions,
-    private clock: Clock = systemClock,
+    private clock: Clock = systemClock
   ) {
     this.terminatedDeferred = createDeferred();
     this.terminated = this.terminatedDeferred.promise;
@@ -143,7 +143,10 @@ export class SimpleContainer implements Container {
   }
 
   async delete(): Promise<void> {
-    if (this.status !== TurfContainerStates.stopped && this.pendingStatus !== TurfContainerStates.stopped) {
+    if (
+      this.status !== TurfContainerStates.stopped &&
+      this.pendingStatus !== TurfContainerStates.stopped
+    ) {
       throw new Error('Container still running');
     }
     logger.debug('delete container %s', this.name);
@@ -176,8 +179,9 @@ export class TestContainer extends SimpleContainer {
     bundlePath: string,
     spec: TurfSpec,
     options: ContainerCreateOptions,
-    private manager: TestContainerManager) {
-      super(name, bundlePath, spec, options, manager.clock);
+    private manager: TestContainerManager
+  ) {
+    super(name, bundlePath, spec, options, manager.clock);
   }
 
   async delete() {

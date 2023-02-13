@@ -166,7 +166,7 @@ describe(common.testName(__filename), () => {
         assert.ok(testContainerManager.getContainer('foo') == null);
       });
 
-      it('should unregister with destroy error catched', async() => {
+      it('should unregister with destroy error catched', async () => {
         const testContainerManager = new TestContainerManager();
         const broker = new Broker(profileManager!, config, 'func', true, false);
         broker.register('foo', 'bar');
@@ -174,9 +174,11 @@ describe(common.testName(__filename), () => {
           { name: 'foo', pid: 1, status: TurfContainerStates.running },
         ]);
 
-        const stub = sinon.stub(testContainerManager.getContainer('foo')!, 'destroy').callsFake(async () => {
-          throw new Error('should be catched.');
-        });
+        const stub = sinon
+          .stub(testContainerManager.getContainer('foo')!, 'destroy')
+          .callsFake(async () => {
+            throw new Error('should be catched.');
+          });
         const spy = sinon.spy(broker.logger, 'warn');
 
         await broker.unregister('foo');
