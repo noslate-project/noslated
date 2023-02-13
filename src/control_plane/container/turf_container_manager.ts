@@ -91,12 +91,10 @@ export class TurfContainerManager implements ContainerManager {
     }
 
     const newMemo = new Map<string, TurfContainer>();
-    const defectList: TurfContainer[] = [];
     for (const item of this.containers.values()) {
       const pi = psMap.get(item.name);
       if (pi == null) {
         item.updateStatus(TurfContainerStates.unknown);
-        defectList.push(item);
         continue;
       }
       item.pid = pi.pid;
