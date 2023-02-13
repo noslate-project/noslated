@@ -9,16 +9,13 @@ import {
 import * as common from '#self/test/common';
 import { config } from '#self/config';
 import { FunctionProfileManager as ProfileManager } from '#self/lib/function_profile';
-import { Turf, TurfContainerStates } from '#self/lib/turf';
+import { TurfContainerStates } from '#self/lib/turf';
 import { ContainerStatus, ContainerStatusReport } from '#self/lib/constants';
 import sinon from 'sinon';
 import fs from 'fs';
-import pedding from 'pedding';
-import { Done } from 'mocha';
 import { AworkerFunctionProfile } from '#self/lib/json/function_profile';
 import { NotNullableInterface } from '#self/lib/interfaces';
 import * as root from '#self/proto/root';
-import { startTurfD, stopTurfD } from '#self/test/turf';
 import { registerContainers, TestContainerManager } from '../test_container_manager';
 
 describe(common.testName(__filename), () => {
@@ -80,7 +77,6 @@ describe(common.testName(__filename), () => {
 
   let profileManager: ProfileManager;
   beforeEach(async () => {
-    startTurfD();
     profileManager = new ProfileManager(config);
     await profileManager.set(funcData, 'WAIT');
   });
@@ -496,10 +492,12 @@ describe(common.testName(__filename), () => {
     });
 
     describe('.sync()', () => {
-      it('should sync', () => {
+      it('should sync', async () => {
         workerStatsSnapshot.register('func', 'hello', 'world', true);
         workerStatsSnapshot.register('func', 'foooo', 'bar', false);
+
         registerContainers(testContainerManager, workerStatsSnapshot, [{ pid: 1, name: 'foooo', status: TurfContainerStates.running }]);
+        await testContainerManager.reconcileContainers();
 
         workerStatsSnapshot.sync(
           [
@@ -574,17 +572,18 @@ describe(common.testName(__filename), () => {
         });
 
         registerContainers(testContainerManager, workerStatsSnapshot, [
+          /** foooo has been disappeared */
           { pid: 2, name: 'hello', status: TurfContainerStates.running },
         ]);
-        workerStatsSnapshot.sync(brokerData, );
+        await testContainerManager.reconcileContainers();
         workerStatsSnapshot.sync(brokerData);
 
-        const _turfContainerStateses = [TurfContainerStates.running, null];
+        const _turfContainerStateses = [TurfContainerStates.running, TurfContainerStates.unknown];
         const _containerStatus: ContainerStatus[] = [
           ContainerStatus.Ready,
-          ContainerStatus.Created,
+          ContainerStatus.Unknown,
         ];
-        const _pids = [2, null];
+        const _pids = [2, 1];
 
         brokers.forEach((broker, i) => {
           assert.strictEqual(broker.name, 'func');
@@ -594,12 +593,7 @@ describe(common.testName(__filename), () => {
             broker.profiles.get('func')!.toJSON(true)
           );
           assert.strictEqual(broker.workers.size, 1);
-
-          if (broker.workers.get('hello')) {
-            assert.strictEqual(broker.startingPool.size, 0);
-          } else {
-            assert.strictEqual(broker.startingPool.size, 1);
-          }
+          assert.strictEqual(broker.startingPool.size, 0);
 
           const worker: Partial<Worker> = JSON.parse(
             JSON.stringify(broker.workers.get(workerNames[i]))
@@ -630,6 +624,8 @@ describe(common.testName(__filename), () => {
             { pid: 1, name: 'foooo', status: TurfContainerStates.running },
             { pid: 2, name: 'hello', status: TurfContainerStates.starting },
           ]);
+        await testContainerManager.reconcileContainers();
+
         workerStatsSnapshot.sync(
           [brokerData[1]]
         );
@@ -675,11 +671,11 @@ describe(common.testName(__filename), () => {
         });
 
         registerContainers(testContainerManager, workerStatsSnapshot,
-
           [
             { pid: 1, name: 'foooo', status: TurfContainerStates.stopped },
             { pid: 2, name: 'hello', status: TurfContainerStates.stopping },
           ]);
+        await testContainerManager.reconcileContainers();
         workerStatsSnapshot.sync(
           [brokerData[1]]
         );
@@ -773,7 +769,7 @@ describe(common.testName(__filename), () => {
         registerContainers(testContainerManager, workerStatsSnapshot, [
           { pid: 2, name: 'hello', status: TurfContainerStates.unknown },
         ]);
-        workerStatsSnapshot.sync(brokerData, );
+        await testContainerManager.reconcileContainers();
         workerStatsSnapshot.sync(brokerData);
 
         // 回收 Unknown

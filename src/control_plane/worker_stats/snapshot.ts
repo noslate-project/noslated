@@ -53,7 +53,7 @@ export class WorkerStatsSnapshot extends BaseOf(EventEmitter) {
   }
 
   /**
-   * Sync data from data plane and turf ps.
+   * Sync data from data plane.
    */
   sync(syncData: root.noslated.data.IBrokerStats[]) {
     const newMap: Map<string, Broker> = new Map();

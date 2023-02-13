@@ -144,10 +144,7 @@ describe(common.testName(__filename), () => {
           containerStatus: ContainerStatus.Stopped,
           turfContainerStates: TurfContainerStates.stopped,
           pid: container.pid,
-          data: {
-            maxActivateRequests: 10,
-            activeRequestCount: 5,
-          },
+          data: null,
         }
       );
       assert(typeof worker.registerTime, 'number');
@@ -162,13 +159,10 @@ describe(common.testName(__filename), () => {
         {
           name: 'hello',
           credential: 'world',
-          containerStatus: ContainerStatus.Stopped,
+          containerStatus: ContainerStatus.Unknown,
           turfContainerStates: TurfContainerStates.unknown,
-          pid: null,
-          data: {
-            maxActivateRequests: 10,
-            activeRequestCount: 5,
-          },
+          pid: 1,
+          data: null,
         }
       );
       assert(typeof worker.registerTime, 'number');
@@ -213,24 +207,6 @@ describe(common.testName(__filename), () => {
 
       worker.sync(data);
       // 已经 Stopped，状态不会变化，不会回退到旧的值，只能进入 Unknown 状态
-      assert.strictEqual(worker.containerStatus, ContainerStatus.Stopped);
-    });
-
-    it('should state to stop when ready sync missing', () => {
-      const data = {
-        name: 'hello',
-        maxActivateRequests: 10,
-        activeRequestCount: 5,
-      };
-      const worker = new Worker(config, 'hello', 'world');
-
-      worker.updateContainerStatus(
-        ContainerStatus.Ready,
-        ContainerStatusReport.ContainerInstalled
-      );
-
-      worker.sync(data);
-
       assert.strictEqual(worker.containerStatus, ContainerStatus.Stopped);
     });
   });

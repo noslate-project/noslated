@@ -69,7 +69,10 @@ export class TestContainerManager implements ContainerManager {
   }
 }
 
-let id = 0;
+let id = 1;
+beforeEach(() => {
+  id = 1;
+});
 export class SimpleContainer implements Container {
   pid = id++;
   status = TurfContainerStates.init;
@@ -204,6 +207,9 @@ export function registerContainers(
   workerStatsSnapshot: WorkerStatsSnapshot,
   list: TurfProcess[]
 ) {
+  testContainerManager.list().forEach(it => {
+    (it as TestContainer).pendingStatus = TurfContainerStates.unknown;
+  });
   testContainerManager.setTestContainers(list);
   for (const broker of workerStatsSnapshot.brokers.values()) {
     for (const worker of broker.workers.values()) {
