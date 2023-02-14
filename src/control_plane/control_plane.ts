@@ -15,13 +15,15 @@ import { Meter } from '@opentelemetry/api';
 import { RawFunctionProfile } from '#self/lib/json/function_profile';
 import { StateManager } from './worker_stats/state_manager';
 import {
-  BaseController,
+  DefaultController,
   DisposableController,
   ReservationController,
 } from './controllers';
 import { Clock, systemClock } from '#self/lib/clock';
 import { ContainerManager } from './container/container_manager';
 import { TurfContainerManager } from './container/turf_container_manager';
+import { EventBus } from '#self/lib/event-bus';
+import { events } from './events';
 
 export interface ControlPlaneOptions {
   clock?: Clock;
@@ -33,6 +35,7 @@ export interface ControlPlaneOptions {
  */
 export class ControlPlane extends BaseOf(EventEmitter) {
   clock: Clock;
+  eventBus: EventBus;
   containerManager: ContainerManager;
   meter: Meter;
   dataPlaneClientManager: DataPlaneClientManager;
@@ -45,7 +48,8 @@ export class ControlPlane extends BaseOf(EventEmitter) {
   logger: Logger;
   platformEnvironmentVariables: Record<string, string>;
   stateManager: StateManager;
-  controller: BaseController;
+
+  defaultController: DefaultController;
   reservationController: ReservationController;
   disposableController: DisposableController;
 
@@ -54,6 +58,7 @@ export class ControlPlane extends BaseOf(EventEmitter) {
     dumpConfig('control', config);
 
     this.clock = options?.clock ?? systemClock;
+    this.eventBus = new EventBus(events);
     this.containerManager =
       options?.containerManager ?? new TurfContainerManager(config);
 
@@ -67,12 +72,13 @@ export class ControlPlane extends BaseOf(EventEmitter) {
     );
     this.workerLauncher = new WorkerLauncher(this, config);
     this.capacityManager = new CapacityManager(this, config);
+    this.stateManager = new StateManager(this, config);
     this.workerTelemetry = new WorkerTelemetry(
       this.meter,
-      this.capacityManager.workerStatsSnapshot
+      this.stateManager,
+      this.eventBus
     );
-    this.stateManager = new StateManager(this);
-    this.controller = new BaseController(this);
+    this.defaultController = new DefaultController(this, config);
     this.reservationController = new ReservationController(this);
     this.disposableController = new DisposableController(this);
 
@@ -91,6 +97,7 @@ export class ControlPlane extends BaseOf(EventEmitter) {
 
     return Promise.all([
       this.containerManager.ready(),
+      this.stateManager.ready(),
       this.dataPlaneClientManager.ready(),
       this.herald.ready(),
       this.workerLauncher.ready(),
@@ -109,6 +116,7 @@ export class ControlPlane extends BaseOf(EventEmitter) {
       this.dataPlaneClientManager.close(),
       this.herald.close(),
       this.workerLauncher.close(),
+      this.stateManager.close(),
       this.capacityManager.close(),
     ]);
     await this.containerManager.close();
@@ -125,6 +133,8 @@ export class ControlPlane extends BaseOf(EventEmitter) {
     profile: RawFunctionProfile[] = [],
     mode: Mode
   ) {
+    this.stateManager.updateFunctionProfile();
+
     const promises = profile.map(({ name, url, signature }) => {
       return this.codeManager.ensure(name, url, signature);
     });

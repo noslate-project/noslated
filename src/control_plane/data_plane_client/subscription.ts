@@ -1,10 +1,15 @@
 import loggers from '#self/lib/logger';
 import { DataPlaneClientManager } from './manager';
 import { DataPlaneClient } from './client';
-import { ControlPlane } from '../control_plane';
 import { Logger } from '#self/lib/loggers';
 import * as root from '#self/proto/root';
 import { NotNullableInterface } from '#self/lib/interfaces';
+import { EventBus } from '#self/lib/event-bus';
+import {
+  RequestQueueingEvent,
+  WorkerStatusReportEvent,
+  WorkerTrafficStatsEvent,
+} from '../events';
 
 export class DataPlaneSubscription {
   static SubscriptionNames = [
@@ -13,7 +18,7 @@ export class DataPlaneSubscription {
     'containerStatusReport',
   ];
 
-  plane: ControlPlane;
+  eventBus: EventBus;
   logger: Logger;
 
   constructor(
@@ -21,15 +26,13 @@ export class DataPlaneSubscription {
     private client: DataPlaneClient
   ) {
     this.client = client;
-    this.plane = manager.plane;
+    this.eventBus = manager.plane.eventBus;
     this.logger = loggers.get('data plane subscription');
   }
 
   async requestQueueing(
     requestQueueingRequest: NotNullableInterface<root.noslated.data.IRequestQueueingBroadcast>
   ) {
-    const plane = this.plane;
-    const { capacityManager } = plane;
     this.logger.info(
       'received request queueing event (requestId: %s) for func(%s, inspect %s) with request count %d',
       requestQueueingRequest.requestId,
@@ -38,11 +41,9 @@ export class DataPlaneSubscription {
       requestQueueingRequest.queuedRequestCount
     );
 
+    const event = new RequestQueueingEvent(requestQueueingRequest, this.client);
     try {
-      await capacityManager.expandDueToQueueingRequest(
-        this.client,
-        requestQueueingRequest
-      );
+      await this.eventBus.publish(event);
     } catch (e) {
       this.logger.error(
         `Failed to deal with queueing request. name: ${requestQueueingRequest.name}, requestId: ${requestQueueingRequest.requestId}`,
@@ -54,28 +55,17 @@ export class DataPlaneSubscription {
   async workerTrafficStats(
     snapshot: root.noslated.data.WorkerTrafficStatsSnapshot
   ) {
-    const {
-      plane: { capacityManager },
-    } = this;
-
+    const event = new WorkerTrafficStatsEvent(snapshot);
     try {
-      await this.plane.stateManager.syncWorkerData(snapshot.brokers);
-      await capacityManager.autoScale();
+      await this.eventBus.publish(event);
     } catch (e) {
-      this.logger.error(
-        'Failed to process capacityManager.syncWorkerData / capacityManager.autoScale',
-        e
-      );
+      this.logger.error('Failed to process WorkerTrafficStats event', e);
     }
   }
 
   async containerStatusReport(
     report: NotNullableInterface<root.noslated.data.IContainerStatusReport>
   ) {
-    const plane = this.plane;
-
-    plane.stateManager.updateContainerStatusByReport(report);
-
     this.logger.info(
       'receive container status report: requestId(%s), functionName(%s), workerName(%s), isInspector(%s), event(%s)',
       report.requestId,
@@ -85,13 +75,11 @@ export class DataPlaneSubscription {
       report.event
     );
 
+    const event = new WorkerStatusReportEvent(report);
     try {
-      await plane.disposableController.tryStopDisposableWorkerByReport(report);
-    } catch (error) {
-      this.logger.error(
-        `Failed to process containerStatusReport [${JSON.stringify(report)}].`,
-        error
-      );
+      await this.eventBus.publish(event);
+    } catch (e) {
+      this.logger.error('Failed to process containerStatusReport', e);
     }
   }
 

@@ -4,9 +4,7 @@ import assert from 'assert';
 import { DefaultEnvironment } from '../env/environment';
 
 export async function killWorker(env: DefaultEnvironment, name: string) {
-  const broker = Array.from(
-    env.control.capacityManager.workerStatsSnapshot.brokers.values()
-  )[0];
+  const broker = Array.from(env.control.stateManager.brokers())[0];
   assert.ok(broker != null);
   assert.strictEqual(broker.name, name);
   const worker = Array.from(broker.workers.values())[0];
