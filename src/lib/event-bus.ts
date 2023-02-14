@@ -33,11 +33,15 @@ export class EventBus {
     return channel;
   }
 
+  get events() {
+    return Array.from(this._map.keys());
+  }
+
   getChannel(name: string): EventChannel {
     return this._getChannel(name);
   }
 
-  publish(event: Event) {
+  async publish(event: Event) {
     const channel = this._getChannel(event.type);
     return channel.publish(event);
   }
