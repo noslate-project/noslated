@@ -7,6 +7,7 @@ import { ResourceServer } from '#self/test/baseline/resource-server';
 import { testWorker } from '#self/test/util';
 import { config } from '#self/config';
 import { DefaultEnvironment } from '#self/test/env/environment';
+import { WorkerInitData } from '../worker_stats';
 
 const sleep = require('#self/lib/util').sleep;
 
@@ -336,9 +337,10 @@ const cases = [
       },
     },
     after: async ({ control }: DefaultEnvironment) => {
-      await control.controller.tryBatchLaunch('aworker_echo', 1, {
+      const workerInitData = new WorkerInitData('aworker_echo', {
         inspect: false,
       });
+      await control.controller.tryBatchLaunch(workerInitData, 1);
       const broker = control.capacityManager.workerStatsSnapshot.getBroker(
         'aworker_echo',
         false
@@ -394,9 +396,10 @@ const cases = [
       },
     },
     after: async ({ control }: DefaultEnvironment) => {
-      await control.controller.tryBatchLaunch('aworker_echo', 1, {
+      const workerInitData = new WorkerInitData('aworker_echo', {
         inspect: false,
       });
+      await control.controller.tryBatchLaunch(workerInitData, 1);
       const broker = control.capacityManager.workerStatsSnapshot.getBroker(
         'aworker_echo',
         false
@@ -458,9 +461,10 @@ const cases = [
       },
     },
     after: async ({ control }: DefaultEnvironment) => {
-      await control.controller.tryBatchLaunch('aworker_echo', 1, {
+      const workerInitData = new WorkerInitData('aworker_echo', {
         inspect: false,
       });
+      await control.controller.tryBatchLaunch(workerInitData, 1);
       const broker = control.capacityManager.workerStatsSnapshot.getBroker(
         'aworker_echo',
         false

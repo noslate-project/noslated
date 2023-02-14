@@ -2,8 +2,8 @@ import bytes from 'bytes';
 import { Base } from '#self/lib/sdk_base';
 import loggers from '#self/lib/logger';
 import { Logger } from '#self/lib/loggers';
-import { Broker, WorkerStatsSnapshot } from './worker_stats';
-import { wrapLaunchErrorObject } from './worker_launcher_error_code';
+import { Broker, WorkerInitData, WorkerStatsSnapshot } from './worker_stats';
+import { ErrorCode, wrapLaunchErrorObject } from './worker_launcher_error_code';
 import { ControlPlane } from './control_plane';
 import { Config } from '#self/config';
 import { FunctionProfileManager } from '#self/lib/function_profile';
@@ -307,19 +307,25 @@ export class CapacityManager extends Base {
     }
 
     const profile = this.plane.functionProfile.get(name);
+    if (!profile) {
+      const err = new Error(`No function named ${name}.`);
+      err.code = ErrorCode.kNoFunction;
+      throw err;
+    }
+
+    const workerInitData = new WorkerInitData(
+      profile.name,
+      { inspect: false },
+      !!profile.worker?.disposable,
+      false
+    );
 
     try {
       const now = performance.now();
 
       await this.plane.workerLauncher.tryLaunch(
         ControlPanelEvent.RequestQueueExpand,
-        name,
-        {
-          inspect: isInspect,
-        },
-        profile?.worker?.disposable || false,
-        false,
-        requestId
+        workerInitData
       );
       this.logger.info(
         'Request(%s) queueing for func(%s, inspect %s) expanded, cost: %sms.',

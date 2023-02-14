@@ -4,7 +4,7 @@ import { BaseOf } from '#self/lib/sdk_base';
 import { Broker } from './broker';
 import loggers from '#self/lib/logger';
 import { Logger } from '#self/lib/loggers';
-import { Worker } from './worker';
+import { Worker, WorkerInitData } from './worker';
 import { FunctionProfileManager } from '#self/lib/function_profile';
 import { Config } from '#self/config';
 import { TurfState } from '#self/lib/turf/types';
@@ -127,18 +127,18 @@ export class WorkerStatsSnapshot extends BaseOf(EventEmitter) {
    * @param {string} credential The credential.
    * @param {boolean} isInspector Whether it's using inspector or not.
    */
-  register(
-    funcName: string,
-    processName: string,
-    credential: string,
-    isInspector: boolean,
-    disposable = false
-  ): Worker {
-    const broker = this.getOrCreateBroker(funcName, isInspector, disposable);
+  register(workerInitData: WorkerInitData): Worker {
+    const broker = this.getOrCreateBroker(
+      workerInitData.funcName,
+      workerInitData.options.inspect,
+      workerInitData.disposable
+    );
     if (!broker) {
-      throw new Error(`No function named ${funcName} in function profile.`);
+      throw new Error(
+        `No function named ${workerInitData.funcName} in function profile.`
+      );
     }
-    return broker.register(processName, credential);
+    return broker.register(workerInitData);
   }
 
   /**

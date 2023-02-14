@@ -11,12 +11,13 @@ import { BaseOptions } from './starter/base';
 import { CodeManager } from './code_manager';
 import { FunctionProfileManager } from '#self/lib/function_profile';
 import { DataPlaneClientManager } from './data_plane_client/manager';
-import { WorkerStatsSnapshot } from './worker_stats';
+import { WorkerInitData, WorkerStatsSnapshot } from './worker_stats';
 import { kMemoryLimit } from './constants';
 import { performance } from 'perf_hooks';
 import { ControlPanelEvent } from '#self/lib/constants';
 import { Priority, TaskQueue } from '#self/lib/task_queue';
 import { Container } from './container/container_manager';
+import { WorkerLogger } from './worker_stats/worker_logger';
 
 export interface WorkerStarter {
   start(
@@ -57,7 +58,7 @@ export class WorkerLauncher extends Base {
       aworker: new starters.Aworker(plane, config),
     };
 
-    this.launchQueue = new TaskQueue(this.doTryLaunch, {
+    this.launchQueue = new TaskQueue(this.doLauchTask, {
       concurrency: config.controlPlane.expandConcurrency,
       clock: plane.clock,
     });
@@ -108,18 +109,14 @@ export class WorkerLauncher extends Base {
 
   /**
    * Try launch worker process via turf
-   * @param {string} funcName The function name.
-   * @param {{ inspect?: boolean }} options The options object.
+   * @param {ControlPanelEvent} event The event.
+   * @param {WorkerInitData} workerInitData The worker init data.
    * @return {Promise<void>} The result.
    */
-  async tryLaunch(
-    event: ControlPanelEvent,
-    funcName: string,
-    options: BaseOptions,
-    disposable = false,
-    toReserve = false,
-    requestId?: string
-  ) {
+  async tryLaunch(event: ControlPanelEvent, workerInitData: WorkerInitData) {
+    const { funcName, disposable, options, requestId, toReserve } =
+      workerInitData;
+
     return this.launchQueue.enqueue(
       {
         event,
@@ -127,8 +124,8 @@ export class WorkerLauncher extends Base {
         timestamp: Date.now(),
         disposable,
         options,
-        requestId,
         toReserve,
+        requestId,
       },
       {
         priority: disposable
@@ -143,7 +140,7 @@ export class WorkerLauncher extends Base {
   /**
    * Try launch worker process via turf
    */
-  doTryLaunch = async (task: LaunchTask) => {
+  doLauchTask = async (task: LaunchTask) => {
     const { event, requestId, funcName, disposable, options, toReserve } = task;
 
     this.logger.info(
@@ -247,13 +244,18 @@ export class WorkerLauncher extends Base {
       });
       const serverSockPath = (dataPlane as any).getServerSockPath();
 
-      const worker = this.snapshot.register(
+      const workerInitData = new WorkerInitData(
         funcName,
+        { inspect: !!options.inspect },
+        disposable,
+        !!toReserve,
         processName,
         credential,
-        !!options.inspect,
-        disposable
+        requestId
       );
+
+      const worker = this.snapshot.register(workerInitData);
+
       const container = await starter.start(
         serverSockPath,
         processName,
@@ -265,29 +267,9 @@ export class WorkerLauncher extends Base {
       worker.setContainer(container);
 
       const started = performance.now();
-
-      this.logger.info(
-        'worker(%s, %s, %s, inspect %s, disposable %s) started, cost: %s, related request(%s)',
-        funcName,
-        processName,
-        credential,
-        options.inspect,
-        disposable,
-        performance.now() - now,
-        requestId
-      );
-
       await worker.ready();
 
-      this.logger.info(
-        'worker(%s, %s, inspect %s, disposable %s) ready, cost: %s, related request(%s)',
-        funcName,
-        credential,
-        options.inspect,
-        disposable,
-        performance.now() - started,
-        requestId
-      );
+      worker.logger.ready(performance.now() - started);
     } catch (e) {
       await this.snapshot.unregister(funcName, processName, !!options.inspect);
       throw e;

@@ -11,6 +11,7 @@ import {
 import { createDeferred, Deferred } from '#self/lib/util';
 import { Container } from '../container/container_manager';
 import assert from 'assert';
+import { WorkerLogger } from './worker_logger';
 
 export type WorkerStats = noslated.data.IWorkerStats;
 
@@ -21,6 +22,43 @@ class WorkerAdditionalData {
   constructor(data: WorkerStats) {
     this.maxActivateRequests = data.maxActivateRequests;
     this.activeRequestCount = data.activeRequestCount;
+  }
+}
+
+type Options = {
+  inspect: boolean;
+};
+class WorkerInitData {
+  readonly funcName: string;
+  readonly options: Options;
+  readonly disposable: boolean;
+  readonly toReserve: boolean;
+
+  readonly credential: string | null;
+  readonly processName: string | null;
+
+  readonly requestId?: string;
+
+  constructor(
+    _funcName: string,
+
+    _options: Options,
+    _disosable = false,
+    _toReserve = false,
+
+    _processName?: string,
+    _credential?: string,
+    _requestId?: string
+  ) {
+    this.funcName = _funcName;
+    this.options = _options;
+    this.disposable = _disosable;
+    this.toReserve = _toReserve;
+
+    this.processName = _processName ?? null;
+    this.credential = _credential ?? null;
+
+    this.requestId = _requestId;
   }
 }
 
@@ -125,9 +163,11 @@ class Worker {
   #initializationTimeout: number;
 
   #config;
-  logger: PrefixedLogger;
+  logger: WorkerLogger;
   requestId: string | undefined;
   readyTimeout: NodeJS.Timeout | undefined;
+
+  public disposable = false;
 
   /**
    * Constructor
@@ -136,15 +176,15 @@ class Worker {
    * @param credential The credential.
    */
   constructor(
+    workerInitData: WorkerInitData,
     config: Config,
-    name: string,
-    credential: string | null = null,
-    public disposable: boolean = false,
     initializationTimeout?: number
   ) {
     this.#config = config;
-    this.#name = name;
-    this.#credential = credential;
+
+    this.disposable = workerInitData.disposable;
+    this.#name = workerInitData.processName!;
+    this.#credential = workerInitData.credential ?? null;
 
     this.#turfContainerStates = null;
     this.#pid = null;
@@ -156,21 +196,24 @@ class Worker {
     this.#initializationTimeout =
       initializationTimeout ?? config.worker.defaultInitializerTimeout;
 
-    this.logger = new PrefixedLogger('worker_stats worker', this.#name);
+    // this.logger = new PrefixedLogger('worker_stats worker', this.#name);
     this.requestId = undefined;
 
     this.#readyDeferred = createDeferred<void>();
+
+    this.logger = new WorkerLogger(workerInitData);
   }
 
   async ready() {
     // 在 await ready 之前状态已经改变了
     if (this.#containerStatus >= ContainerStatus.Ready) {
-      this.logger.info(
-        'Worker(%s, %s) status settle to [%s] before pending ready',
-        this.#name,
-        this.#credential,
-        ContainerStatus[this.#containerStatus]
-      );
+      this.logger.already(ContainerStatus[this.#containerStatus]);
+      // this.logger.info(
+      //   'Worker(%s, %s) status settle to [%s] before pending ready',
+      //   this.#name,
+      //   this.#credential,
+      //   ContainerStatus[this.#containerStatus]
+      // );
 
       if (this.#containerStatus >= ContainerStatus.PendingStop) {
         this.#readyDeferred.reject();
@@ -406,4 +449,4 @@ class Worker {
   }
 }
 
-export { Worker, WorkerAdditionalData };
+export { Worker, WorkerAdditionalData, WorkerInitData };

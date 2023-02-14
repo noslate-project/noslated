@@ -4,6 +4,7 @@ import { ControlPlane } from '../control_plane';
 import { Delta } from '../capacity_manager';
 import { ControlPanelEvent } from '#self/lib/constants';
 import { ContainerManager } from '../container/container_manager';
+import { WorkerInitData } from '../worker_stats';
 
 export class BaseController {
   logger: Logger;
@@ -25,21 +26,14 @@ export class BaseController {
     const expansions = [];
     for (let i = 0; i < deltas.length; i++) {
       const delta = deltas[i];
-      if (deltas[i].count > 0) {
-        const profile = this.plane.functionProfile.get(delta.broker.name);
-        const toReserve =
-          delta.broker.workerCount < delta.broker.reservationCount;
-        expansions.push(
-          this.tryBatchLaunch(
-            delta.broker.name,
-            delta.count,
-            {
-              inspect: delta.broker.isInspector,
-            },
-            profile?.worker?.disposable || false,
-            toReserve
-          )
+      if (delta.count > 0) {
+        const workerInitData = new WorkerInitData(
+          delta.broker.name,
+          { inspect: delta.broker.isInspector },
+          delta.broker.disposable,
+          delta.broker.workerCount < delta.broker.reservationCount
         );
+        expansions.push(this.tryBatchLaunch(workerInitData, delta.count));
       }
     }
     await Promise.all(expansions);
@@ -52,23 +46,14 @@ export class BaseController {
    * @return {Promise<undefined[]>} The result.
    */
   async tryBatchLaunch(
-    functionName: string,
-    count: number,
-    options: ExpansionOptions,
-    disposable = false,
-    toReserve = false
+    workerInitData: WorkerInitData,
+    count: number
   ): Promise<void[]> {
     const { workerLauncher } = this.plane;
     const ret = [];
     for (let i = 0; i < count; i++) {
       ret.push(
-        workerLauncher.tryLaunch(
-          ControlPanelEvent.Expand,
-          functionName,
-          options,
-          disposable,
-          toReserve
-        )
+        workerLauncher.tryLaunch(ControlPanelEvent.Expand, workerInitData)
       );
     }
     return Promise.all(ret);

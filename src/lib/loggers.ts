@@ -2,7 +2,7 @@ import * as MidwayLogger from '@midwayjs/logger';
 import { IMidwayLogger } from '@midwayjs/logger';
 
 const levels = ['debug', 'info', 'warn', 'error'] as const;
-type LogLevels = (typeof levels)[number];
+type LogLevels = typeof levels[number];
 export type Sink = {
   [key in LogLevels]: (...args: unknown[]) => void;
 };

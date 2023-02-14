@@ -25,7 +25,7 @@ import {
   TestContainerManager,
 } from './test_container_manager';
 import { workerLogPath } from '../container/container_manager';
-import { Broker, Worker } from '../worker_stats';
+import { Broker, Worker, WorkerInitData } from '../worker_stats';
 
 describe(common.testName(__filename), function () {
   this.timeout(10_000);
@@ -126,13 +126,22 @@ describe(common.testName(__filename), function () {
       });
       await promise;
 
-      capacityManager.workerStatsSnapshot.register(
-        'func',
-        'hello',
-        'world',
-        false
-      );
-      capacityManager.workerStatsSnapshot.register('func', 'foo', 'bar', false);
+      capacityManager.workerStatsSnapshot.register({
+        funcName: 'func',
+        processName: 'hello',
+        credential: 'world',
+        options: { inspect: false },
+        disposable: false,
+        toReserve: false,
+      });
+      capacityManager.workerStatsSnapshot.register({
+        funcName: 'func',
+        processName: 'foo',
+        credential: 'bar',
+        options: { inspect: false },
+        disposable: false,
+        toReserve: false,
+      });
 
       registerContainers(
         testContainerManager,
@@ -266,32 +275,49 @@ describe(common.testName(__filename), function () {
       });
       await promise;
 
-      capacityManager.workerStatsSnapshot.register(
-        'func',
-        'hello',
-        'world',
-        false
-      );
-      capacityManager.workerStatsSnapshot.register('func', 'foo', 'bar', false);
-      capacityManager.workerStatsSnapshot.register(
-        'lambda',
-        'coco',
-        'nut',
-        false
-      );
+      capacityManager.workerStatsSnapshot.register({
+        funcName: 'func',
+        processName: 'hello',
+        credential: 'world',
+        options: { inspect: false },
+        disposable: false,
+        toReserve: false,
+      });
+
+      capacityManager.workerStatsSnapshot.register({
+        funcName: 'func',
+        processName: 'foo',
+        credential: 'barworld',
+        options: { inspect: false },
+        disposable: false,
+        toReserve: false,
+      });
+      capacityManager.workerStatsSnapshot.register({
+        funcName: 'lambda',
+        processName: 'coco',
+        credential: 'nut',
+        options: { inspect: false },
+        disposable: false,
+        toReserve: false,
+      });
       // 未 ready 不计入 virtual memory size
-      capacityManager.workerStatsSnapshot.register(
-        'lambda',
-        'cocos',
-        '2d',
-        false
-      );
-      capacityManager.workerStatsSnapshot.register(
-        'lambda',
-        'alibaba',
-        'seed of hope',
-        false
-      );
+      capacityManager.workerStatsSnapshot.register({
+        funcName: 'lambda',
+        processName: 'cocos',
+        credential: '2d',
+        options: { inspect: false },
+        disposable: false,
+        toReserve: false,
+      });
+
+      capacityManager.workerStatsSnapshot.register({
+        funcName: 'lambda',
+        processName: 'alibaba',
+        credential: 'seed of hope',
+        options: { inspect: false },
+        disposable: false,
+        toReserve: false,
+      });
 
       registerContainers(
         testContainerManager,
@@ -352,28 +378,30 @@ describe(common.testName(__filename), function () {
       mm(
         capacityManager.plane.workerLauncher,
         'tryLaunch',
-        async (event: ControlPanelEvent, name: any, options: any) => {
+        async (event: ControlPanelEvent, { funcName, options }: any) => {
           assert.strictEqual(event, ControlPanelEvent.Expand);
-          assert.strictEqual(name, 'func');
+          assert.strictEqual(funcName, 'func');
           assert.deepStrictEqual(options, { inspect: true });
           called++;
         }
       );
-      await control.controller.tryBatchLaunch('func', 10, { inspect: true });
+      let workerInitData = new WorkerInitData('func', { inspect: true });
+      await control.controller.tryBatchLaunch(workerInitData, 10);
       assert.strictEqual(called, 10);
 
       called = 0;
       mm(
         capacityManager.plane.workerLauncher,
         'tryLaunch',
-        async (event: ControlPanelEvent, name: any, options: any) => {
+        async (event: ControlPanelEvent, { funcName, options }: any) => {
           assert.strictEqual(event, ControlPanelEvent.Expand);
-          assert.strictEqual(name, 'func');
+          assert.strictEqual(funcName, 'func');
           assert.deepStrictEqual(options, { inspect: false });
           called++;
         }
       );
-      await control.controller.tryBatchLaunch('func', 3, { inspect: false });
+      workerInitData = new WorkerInitData('func', { inspect: false });
+      await control.controller.tryBatchLaunch(workerInitData, 3);
       assert.strictEqual(called, 3);
 
       called = 0;
@@ -383,7 +411,8 @@ describe(common.testName(__filename), function () {
       });
 
       assert.rejects(async () => {
-        await control.controller.tryBatchLaunch('func', 3, { inspect: false });
+        const workerInitData = new WorkerInitData('func', { inspect: false });
+        await control.controller.tryBatchLaunch(workerInitData, 3);
       }, /💩/);
     });
   });
@@ -449,31 +478,49 @@ describe(common.testName(__filename), function () {
       });
       await promise;
 
-      capacityManager.workerStatsSnapshot.register(
-        'func',
-        'hello',
-        'world',
-        false
-      );
-      capacityManager.workerStatsSnapshot.register('func', 'foo', 'bar', false);
-      capacityManager.workerStatsSnapshot.register(
-        'lambda',
-        'coco',
-        'nut',
-        false
-      );
-      capacityManager.workerStatsSnapshot.register(
-        'lambda',
-        'cocos',
-        '2d',
-        false
-      );
-      capacityManager.workerStatsSnapshot.register(
-        'lambda',
-        'alibaba',
-        'seed of hope',
-        false
-      );
+      capacityManager.workerStatsSnapshot.register({
+        funcName: 'func',
+        processName: 'hello',
+        credential: 'world',
+        options: { inspect: false },
+        disposable: false,
+        toReserve: false,
+      });
+
+      capacityManager.workerStatsSnapshot.register({
+        funcName: 'func',
+        processName: 'foo',
+        credential: 'bar',
+        options: { inspect: false },
+        disposable: false,
+        toReserve: false,
+      });
+
+      capacityManager.workerStatsSnapshot.register({
+        funcName: 'lambda',
+        processName: 'coco',
+        credential: 'nut',
+        options: { inspect: false },
+        disposable: false,
+        toReserve: false,
+      });
+      capacityManager.workerStatsSnapshot.register({
+        funcName: 'lambda',
+        processName: 'cocos',
+        credential: '2d',
+        options: { inspect: false },
+        disposable: false,
+        toReserve: false,
+      });
+
+      capacityManager.workerStatsSnapshot.register({
+        funcName: 'lambda',
+        processName: 'alibaba',
+        credential: 'seed of hope',
+        options: { inspect: false },
+        disposable: false,
+        toReserve: false,
+      });
 
       await control.stateManager.syncWorkerData([brokerData1, brokerData2]);
 
@@ -541,37 +588,49 @@ describe(common.testName(__filename), function () {
           { pid: 5, name: 'alibaba', status: TurfContainerStates.running },
         ]);
 
-        capacityManager.workerStatsSnapshot.register(
-          'func',
-          'hello',
-          'world',
-          false
-        );
-        capacityManager.workerStatsSnapshot.register(
-          'func',
-          'foo',
-          'bar',
-          false
-        );
-        capacityManager.workerStatsSnapshot.register(
-          'lambda',
-          'coco',
-          'nut',
-          false
-        );
-        capacityManager.workerStatsSnapshot.register(
-          'lambda',
-          'cocos',
-          '2d',
-          false
-        );
-        capacityManager.workerStatsSnapshot.register(
-          'lambda',
-          'alibaba',
-          'seed of hope',
-          false
-        );
+        capacityManager.workerStatsSnapshot.register({
+          funcName: 'func',
+          processName: 'hello',
+          credential: 'world',
+          options: { inspect: false },
+          disposable: false,
+          toReserve: false,
+        });
 
+        capacityManager.workerStatsSnapshot.register({
+          funcName: 'func',
+          processName: 'foo',
+          credential: 'bar',
+          options: { inspect: false },
+          disposable: false,
+          toReserve: false,
+        });
+
+        capacityManager.workerStatsSnapshot.register({
+          funcName: 'lambda',
+          processName: 'coco',
+          credential: 'nut',
+          options: { inspect: false },
+          disposable: false,
+          toReserve: false,
+        });
+        capacityManager.workerStatsSnapshot.register({
+          funcName: 'lambda',
+          processName: 'cocos',
+          credential: '2d',
+          options: { inspect: false },
+          disposable: false,
+          toReserve: false,
+        });
+
+        capacityManager.workerStatsSnapshot.register({
+          funcName: 'lambda',
+          processName: 'alibaba',
+          credential: 'seed of hope',
+          options: { inspect: false },
+          disposable: false,
+          toReserve: false,
+        });
         if (id === 0)
           mm(capacityManager, 'virtualMemoryPoolSize', 512 * 1024 * 1024 * 6);
 
@@ -654,9 +713,9 @@ describe(common.testName(__filename), function () {
         mm(
           capacityManager.plane.workerLauncher,
           'tryLaunch',
-          async (event: ControlPanelEvent, name: any, options: any) => {
+          async (event: ControlPanelEvent, { funcName, options }: any) => {
             assert.strictEqual(event, ControlPanelEvent.Expand);
-            assert.strictEqual(name, 'func');
+            assert.strictEqual(funcName, 'func');
             assert.deepStrictEqual(options, { inspect: false });
             tryLaunchCalled++;
           }
@@ -728,31 +787,46 @@ describe(common.testName(__filename), function () {
         { pid: 5, name: 'alibaba', status: TurfContainerStates.running },
       ]);
 
-      capacityManager.workerStatsSnapshot.register(
-        'func',
-        'hello',
-        'world',
-        false
-      );
-      capacityManager.workerStatsSnapshot.register('func', 'foo', 'bar', false);
-      capacityManager.workerStatsSnapshot.register(
-        'lambda',
-        'coco',
-        'nut',
-        false
-      );
-      capacityManager.workerStatsSnapshot.register(
-        'lambda',
-        'cocos',
-        '2d',
-        false
-      );
-      capacityManager.workerStatsSnapshot.register(
-        'lambda',
-        'alibaba',
-        'seed of hope',
-        false
-      );
+      capacityManager.workerStatsSnapshot.register({
+        funcName: 'func',
+        processName: 'hello',
+        credential: 'world',
+        options: { inspect: false },
+        disposable: false,
+        toReserve: false,
+      });
+      capacityManager.workerStatsSnapshot.register({
+        funcName: 'func',
+        processName: 'foo',
+        credential: 'bar',
+        options: { inspect: false },
+        disposable: false,
+        toReserve: false,
+      });
+      capacityManager.workerStatsSnapshot.register({
+        funcName: 'lambda',
+        processName: 'coco',
+        credential: 'nut',
+        options: { inspect: false },
+        disposable: false,
+        toReserve: false,
+      });
+      capacityManager.workerStatsSnapshot.register({
+        funcName: 'lambda',
+        processName: 'cocos',
+        credential: '2d',
+        options: { inspect: false },
+        disposable: false,
+        toReserve: false,
+      });
+      capacityManager.workerStatsSnapshot.register({
+        funcName: 'lambda',
+        processName: 'alibaba',
+        credential: 'seed of hope',
+        options: { inspect: false },
+        disposable: false,
+        toReserve: false,
+      });
 
       functionProfileManager.set([], 'WAIT');
 
@@ -919,13 +993,23 @@ describe(common.testName(__filename), function () {
       );
       await EventEmitter.once(functionProfileManager, 'changed');
 
-      capacityManager.workerStatsSnapshot.register(
-        'func',
-        'hello',
-        'world',
-        false
-      );
-      capacityManager.workerStatsSnapshot.register('func', 'foo', 'bar', false);
+      capacityManager.workerStatsSnapshot.register({
+        funcName: 'func',
+        processName: 'hello',
+        credential: 'world',
+        options: { inspect: false },
+        disposable: false,
+        toReserve: false,
+      });
+
+      capacityManager.workerStatsSnapshot.register({
+        funcName: 'func',
+        processName: 'foo',
+        credential: 'bar',
+        options: { inspect: false },
+        disposable: false,
+        toReserve: false,
+      });
 
       mm(brokerData1.workers[0], 'activeRequestCount', 10);
       mm(brokerData1.workers[1], 'activeRequestCount', 10);

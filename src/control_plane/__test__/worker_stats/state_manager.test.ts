@@ -57,18 +57,23 @@ describe.skip(common.testName(__filename), () => {
         'WAIT'
       );
 
-      controlPlane.capacityManager.workerStatsSnapshot.register(
-        'func1',
-        'worker1',
-        'cred1',
-        false
-      );
-      controlPlane.capacityManager.workerStatsSnapshot.register(
-        'func2',
-        'worker1',
-        'cred1',
-        false
-      );
+      controlPlane.capacityManager.workerStatsSnapshot.register({
+        funcName: 'func1',
+        processName: 'worker1',
+        credential: 'cred1',
+        options: { inspect: true },
+        disposable: false,
+        toReserve: false,
+      });
+
+      controlPlane.capacityManager.workerStatsSnapshot.register({
+        funcName: 'func2',
+        processName: 'worker1',
+        credential: 'cred1',
+        options: { inspect: true },
+        disposable: false,
+        toReserve: false,
+      });
 
       const worker1 = capacityManager.workerStatsSnapshot.getWorker(
         'func1',
@@ -157,12 +162,14 @@ describe.skip(common.testName(__filename), () => {
         'WAIT'
       );
 
-      controlPlane.capacityManager.workerStatsSnapshot.register(
-        'func1',
-        'worker1',
-        'cred1',
-        false
-      );
+      controlPlane.capacityManager.workerStatsSnapshot.register({
+        funcName: 'func1',
+        processName: 'worker1',
+        credential: 'cred1',
+        options: { inspect: true },
+        disposable: false,
+        toReserve: false,
+      });
 
       const worker = capacityManager.workerStatsSnapshot.getWorker(
         'func1',
@@ -235,18 +242,22 @@ describe.skip(common.testName(__filename), () => {
         ],
       };
 
-      controlPlane.capacityManager.workerStatsSnapshot.register(
-        'func1',
-        'worker1',
-        'id1',
-        false
-      );
-      controlPlane.capacityManager.workerStatsSnapshot.register(
-        'func1',
-        'worker2',
-        'id2',
-        false
-      );
+      controlPlane.capacityManager.workerStatsSnapshot.register({
+        funcName: 'func1',
+        processName: 'worker1',
+        credential: 'id1',
+        options: { inspect: true },
+        disposable: false,
+        toReserve: false,
+      });
+      controlPlane.capacityManager.workerStatsSnapshot.register({
+        funcName: 'func1',
+        processName: 'worker1',
+        credential: 'id2',
+        options: { inspect: true },
+        disposable: false,
+        toReserve: false,
+      });
 
       await env.turf.create('worker1', simpleSandbox);
       await env.turf.create('worker2', simpleSandbox);
@@ -359,12 +370,14 @@ describe.skip(common.testName(__filename), () => {
         ],
       };
 
-      controlPlane.capacityManager.workerStatsSnapshot.register(
-        'func1',
-        'worker1',
-        'id1',
-        false
-      );
+      controlPlane.capacityManager.workerStatsSnapshot.register({
+        funcName: 'func1',
+        processName: 'worker1',
+        credential: 'id1',
+        options: { inspect: true },
+        disposable: false,
+        toReserve: false,
+      });
 
       const beforeSync = controlPlane.capacityManager.workerStatsSnapshot
         .getBroker('func1', false)!

@@ -87,14 +87,23 @@ describe(common.testName(__filename), () => {
       });
       await promise1;
 
-      capacityManager.workerStatsSnapshot.register(
-        'func',
-        'hello',
-        'world',
-        false
-      );
-      capacityManager.workerStatsSnapshot.register('func', 'foo', 'bar', false);
+      capacityManager.workerStatsSnapshot.register({
+        funcName: 'func',
+        processName: 'hello',
+        credential: 'world',
+        options: { inspect: false },
+        disposable: false,
+        toReserve: false,
+      });
 
+      capacityManager.workerStatsSnapshot.register({
+        funcName: 'func',
+        processName: 'foo',
+        credential: 'bar',
+        options: { inspect: false },
+        disposable: false,
+        toReserve: false,
+      });
       const { promise: promise2, resolve: resolve2 } = createDeferred<void>();
       const syncWorkerData =
         capacityManager.plane.stateManager.syncWorkerData.bind(
@@ -162,13 +171,23 @@ describe(common.testName(__filename), () => {
       });
       await promise1;
 
-      capacityManager.workerStatsSnapshot.register(
-        'func',
-        'hello',
-        'world',
-        false
-      );
-      capacityManager.workerStatsSnapshot.register('func', 'foo', 'bar', false);
+      capacityManager.workerStatsSnapshot.register({
+        funcName: 'func',
+        processName: 'hello',
+        credential: 'world',
+        options: { inspect: false },
+        disposable: false,
+        toReserve: false,
+      });
+
+      capacityManager.workerStatsSnapshot.register({
+        funcName: 'func',
+        processName: 'foo',
+        credential: 'bar',
+        options: { inspect: false },
+        disposable: false,
+        toReserve: false,
+      });
 
       capacityManager.updateWorkerContainerStatus({
         functionName: 'func',
