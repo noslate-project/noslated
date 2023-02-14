@@ -337,9 +337,7 @@ const cases = [
       },
     },
     after: async ({ control }: DefaultEnvironment) => {
-      const workerInitData = new WorkerInitData('aworker_echo', {
-        inspect: false,
-      });
+      const workerInitData = new WorkerInitData('aworker_echo');
       await control.controller.tryBatchLaunch(workerInitData, 1);
       const broker = control.capacityManager.workerStatsSnapshot.getBroker(
         'aworker_echo',
@@ -396,9 +394,7 @@ const cases = [
       },
     },
     after: async ({ control }: DefaultEnvironment) => {
-      const workerInitData = new WorkerInitData('aworker_echo', {
-        inspect: false,
-      });
+      const workerInitData = new WorkerInitData('aworker_echo');
       await control.controller.tryBatchLaunch(workerInitData, 1);
       const broker = control.capacityManager.workerStatsSnapshot.getBroker(
         'aworker_echo',
@@ -461,9 +457,7 @@ const cases = [
       },
     },
     after: async ({ control }: DefaultEnvironment) => {
-      const workerInitData = new WorkerInitData('aworker_echo', {
-        inspect: false,
-      });
+      const workerInitData = new WorkerInitData('aworker_echo');
       await control.controller.tryBatchLaunch(workerInitData, 1);
       const broker = control.capacityManager.workerStatsSnapshot.getBroker(
         'aworker_echo',

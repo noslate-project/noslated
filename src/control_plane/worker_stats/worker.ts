@@ -39,10 +39,11 @@ class WorkerInitData {
 
   readonly requestId?: string;
 
+  // TODO(yilong.lyl): simplify constructor params
   constructor(
     _funcName: string,
 
-    _options: Options,
+    _options = { inspect: true },
     _disosable = false,
     _toReserve = false,
 
@@ -58,7 +59,7 @@ class WorkerInitData {
     this.processName = _processName ?? null;
     this.credential = _credential ?? null;
 
-    this.requestId = _requestId;
+    this.requestId = _requestId ?? undefined;
   }
 }
 
@@ -208,12 +209,6 @@ class Worker {
     // 在 await ready 之前状态已经改变了
     if (this.#containerStatus >= ContainerStatus.Ready) {
       this.logger.already(ContainerStatus[this.#containerStatus]);
-      // this.logger.info(
-      //   'Worker(%s, %s) status settle to [%s] before pending ready',
-      //   this.#name,
-      //   this.#credential,
-      //   ContainerStatus[this.#containerStatus]
-      // );
 
       if (this.#containerStatus >= ContainerStatus.PendingStop) {
         this.#readyDeferred.reject();
@@ -302,7 +297,7 @@ class Worker {
    */
   sync(data: WorkerStats | null) {
     if (data === null) {
-      this.logger.debug('Sync with null.');
+      this.logger.syncWithNull();
     }
 
     this.#data = data ? new WorkerAdditionalData(data) : null;

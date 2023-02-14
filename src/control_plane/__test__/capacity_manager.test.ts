@@ -400,7 +400,7 @@ describe(common.testName(__filename), function () {
           called++;
         }
       );
-      workerInitData = new WorkerInitData('func', { inspect: false });
+      workerInitData = new WorkerInitData('func');
       await control.controller.tryBatchLaunch(workerInitData, 3);
       assert.strictEqual(called, 3);
 
@@ -411,7 +411,7 @@ describe(common.testName(__filename), function () {
       });
 
       assert.rejects(async () => {
-        const workerInitData = new WorkerInitData('func', { inspect: false });
+        const workerInitData = new WorkerInitData('func');
         await control.controller.tryBatchLaunch(workerInitData, 3);
       }, /💩/);
     });

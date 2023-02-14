@@ -9,7 +9,7 @@ export class WorkerLogger {
 
   constructor(_workerInitData: WorkerInitData) {
     this.workerInitData = _workerInitData;
-    this.logger = loggers.get('worker');
+    this.logger = loggers.get(`worker ${this.workerInitData.processName}`);
   }
 
   started(cost: number) {
@@ -45,6 +45,10 @@ export class WorkerLogger {
       this.workerInitData.credential,
       status
     );
+  }
+
+  syncWithNull() {
+    this.debug('Sync with null.');
   }
 
   debug(...args: any[]) {
