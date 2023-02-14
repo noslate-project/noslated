@@ -7,6 +7,7 @@ import { DefaultSerializer, DefaultDeserializer } from 'v8';
 import download from 'download';
 import crypto from 'crypto';
 import loggers from './logger';
+import { Clock, systemClock } from './clock';
 
 export {
   tryQ,
@@ -51,9 +52,9 @@ function createDeferred<T>(): Deferred<T> {
   return { promise, resolve, reject };
 }
 
-export function sleep(ms: number): Promise<void> {
+export function sleep(ms: number, clock: Clock = systemClock): Promise<void> {
   const deferred = createDeferred<void>();
-  setTimeout(() => {
+  clock.setTimeout(() => {
     deferred.resolve();
   }, ms);
   return deferred.promise;

@@ -3,7 +3,7 @@ import {
   PlaneMetricAttributes,
   ControlPlaneMetrics,
 } from '#self/lib/telemetry/semantic_conventions';
-import { Turf, TurfContainerStates } from '#self/lib/turf';
+import { TurfContainerStates } from '#self/lib/turf';
 import { TurfState } from '#self/lib/turf/types';
 import {
   Meter,
@@ -36,11 +36,7 @@ export class WorkerTelemetry {
   #funcExitCounter: Counter;
   #replicaTotalCountValueObserver: ObservableGauge;
 
-  constructor(
-    meter: Meter,
-    workerStatsSnapshot: WorkerStatsSnapshot,
-    private turf: Turf
-  ) {
+  constructor(meter: Meter, workerStatsSnapshot: WorkerStatsSnapshot) {
     this.#meter = meter;
     this.#workerStatsSnapshot = workerStatsSnapshot;
     this.#workerStatsSnapshot.on('workerStopped', this.onWorkerStopped);
@@ -121,8 +117,8 @@ export class WorkerTelemetry {
           return [];
         }
         return Array.from(broker.workers.values()).map(async worker => {
-          const state = await this.turf
-            .state(worker.name)
+          const state = await worker.container
+            ?.state()
             .catch(() => ({ state: TurfContainerStates.unknown } as TurfState));
           if (state == null || state.state !== TurfContainerStates.running) {
             return;
@@ -134,22 +130,22 @@ export class WorkerTelemetry {
           };
           batchObservableResult.observe(
             this.#cpuUserValueObserver,
-            state['stat.utime'],
+            state['stat.utime'] ?? 0,
             attributes
           );
           batchObservableResult.observe(
             this.#cpuSystemValueObserver,
-            state['stat.stime'],
+            state['stat.stime'] ?? 0,
             attributes
           );
           batchObservableResult.observe(
             this.#rssValueObserver,
-            state['stat.rss'],
+            state['stat.rss'] ?? 0,
             attributes
           );
           batchObservableResult.observe(
             this.#vmValueObserver,
-            state['stat.vsize'],
+            state['stat.vsize'] ?? 0,
             attributes
           );
         });

@@ -10,9 +10,9 @@ import { Turf } from '#self/lib/turf';
 import * as testUtil from '#self/test/util';
 import { ControlPlane } from '#self/control_plane/control_plane';
 import { TurfContainerStates, TurfProcess } from '#self/lib/turf/types';
-import FakeTimers from '@sinonjs/fake-timers';
 import { sleep } from '#self/lib/util';
 import { startTurfD, stopTurfD } from '#self/test/turf';
+import { TurfContainerManager } from '#self/control_plane/container/turf_container_manager';
 
 const conditionalDescribe =
   process.platform === 'darwin' ? describe.skip : describe;
@@ -24,21 +24,23 @@ describe(common.testName(__filename), function () {
     platformEnvironmentVariables: {},
   };
 
+  let containerManager: TurfContainerManager;
   let turf: Turf;
 
   beforeEach(async () => {
     mm(config.dirs, 'noslatedSock', testUtil.TMP_DIR());
     mm(process.env, 'NOSLATED_FORCE_NON_SEED_MODE', '');
     startTurfD();
-    turf = new Turf(config.turf.bin, config.turf.socketPath);
-    await turf.connect();
-    dummyPlane.turf = turf;
+    containerManager = new TurfContainerManager(config);
+    await containerManager.ready();
+    turf = containerManager.client;
+    dummyPlane.containerManager = containerManager;
   });
 
   afterEach(async () => {
     mm.restore();
     fs.rmdirSync(testUtil.TMP_DIR(), { recursive: true });
-    await turf.close();
+    await containerManager.close();
     stopTurfD();
   });
 

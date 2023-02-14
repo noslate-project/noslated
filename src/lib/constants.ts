@@ -1,11 +1,19 @@
+/**
+ * TODO: Rename to WorkerStatus
+ */
 export enum ContainerStatus {
   Created = 1,
-  Ready = 2,
-  PendingStop = 3,
-  Stopped = 4,
-  Unknown = 5,
+  Ready,
+  PendingStop,
+  Stopped,
+  PendingGC,
+  GarbageCollected,
+  Unknown,
 }
 
+/**
+ * TODO: Rename to WorkerStatusReport
+ */
 export enum ContainerStatusReport {
   ContainerInstalled = 'ContainerInstalled',
   RequestDrained = 'RequestDrained',

@@ -4,17 +4,16 @@ import { BaseOf } from '#self/lib/sdk_base';
 import { Broker } from './broker';
 import loggers from '#self/lib/logger';
 import { Logger } from '#self/lib/loggers';
-import * as starters from '../starter';
 import { Worker } from './worker';
 import { FunctionProfileManager } from '#self/lib/function_profile';
 import { Config } from '#self/config';
-import { TurfProcess, TurfState } from '#self/lib/turf/types';
+import { TurfState } from '#self/lib/turf/types';
 import * as root from '#self/proto/root';
 import { ContainerStatus } from '#self/lib/constants';
 import { StatLogger } from './stat_logger';
-import { Turf } from '#self/lib/turf';
 import { Clock, systemClock } from '#self/lib/clock';
 import { TaskQueue } from '#self/lib/task_queue';
+import { workerLogPath } from '../container/container_manager';
 
 export class WorkerStatsSnapshot extends BaseOf(EventEmitter) {
   private logger: Logger;
@@ -27,7 +26,6 @@ export class WorkerStatsSnapshot extends BaseOf(EventEmitter) {
   constructor(
     profileManager: FunctionProfileManager,
     public config: Config,
-    private turf: Turf,
     private clock: Clock = systemClock
   ) {
     super();
@@ -55,9 +53,9 @@ export class WorkerStatsSnapshot extends BaseOf(EventEmitter) {
   }
 
   /**
-   * Sync data from data plane and turf ps.
+   * Sync data from data plane.
    */
-  sync(syncData: root.noslated.data.IBrokerStats[], psData: TurfProcess[]) {
+  sync(syncData: root.noslated.data.IBrokerStats[]) {
     const newMap: Map<string, Broker> = new Map();
     for (const item of syncData) {
       const key = Broker.getKey(item.functionName!, item.inspector!);
@@ -67,13 +65,13 @@ export class WorkerStatsSnapshot extends BaseOf(EventEmitter) {
         continue;
       }
 
-      broker.sync(item.workers!, psData);
+      broker.sync(item.workers!);
       newMap.set(key, broker);
       this.brokers.delete(key);
     }
 
     for (const [key, value] of this.brokers.entries()) {
-      value.sync([], psData);
+      value.sync([]);
       newMap.set(key, value);
     }
 
@@ -103,8 +101,7 @@ export class WorkerStatsSnapshot extends BaseOf(EventEmitter) {
       this.config,
       functionName,
       isInspector,
-      disposable,
-      this.turf
+      disposable
     );
     this.brokers.set(Broker.getKey(functionName, isInspector), broker);
     return broker;
@@ -145,16 +142,22 @@ export class WorkerStatsSnapshot extends BaseOf(EventEmitter) {
   }
 
   /**
+   * TODO: resource manager
    * Unregister worker.
    * @param {string} funcName The function name.
    * @param {string} processName The process name (worker name).
    * @param {boolean} isInspector Whether it's using inspector or not.
    */
-  unregister(funcName: string, processName: string, isInspector: boolean) {
+  async unregister(
+    funcName: string,
+    processName: string,
+    isInspector: boolean
+  ) {
     const brokerKey = Broker.getKey(funcName, isInspector);
     const broker = this.brokers.get(brokerKey);
     if (!broker) return;
-    broker.unregister(processName, true);
+    // TODO: resource manager
+    await broker.unregister(processName);
 
     /* istanbul ignore else */
     if (!broker.workerCount) {
@@ -192,6 +195,7 @@ export class WorkerStatsSnapshot extends BaseOf(EventEmitter) {
   }
 
   /**
+   * TODO: resource manager
    * Try worker GC.
    * @param {Broker} broker The broker object.
    * @param {Worker} worker The worker object.
@@ -216,7 +220,7 @@ export class WorkerStatsSnapshot extends BaseOf(EventEmitter) {
       let emitExceptionMessage;
 
       try {
-        await this.turf.stop(worker.name);
+        await worker.container!.stop();
       } catch (e) {
         this.logger.warn(
           `Failed to stop worker [${worker.name}] via \`.#tryGC()\`.`,
@@ -225,7 +229,7 @@ export class WorkerStatsSnapshot extends BaseOf(EventEmitter) {
       }
 
       try {
-        state = (await this.turf.state(worker.name)) as TurfState;
+        state = (await worker.container!.state()) as TurfState;
         const stime = state['rusage.stime'] ?? 0;
         const utime = state['rusage.utime'] ?? 0;
         //TODO(yilong.lyl): fix typo @zl131478
@@ -252,7 +256,8 @@ export class WorkerStatsSnapshot extends BaseOf(EventEmitter) {
 
       try {
         // 清理 turf 数据
-        await this.turf.delete(worker.name);
+        await worker.container!.terminated;
+        await worker.container!.delete();
       } catch (e) {
         this.logger.warn(
           'Failed to delete worker [%s] via `.#tryGC()`.',
@@ -271,7 +276,7 @@ export class WorkerStatsSnapshot extends BaseOf(EventEmitter) {
   }
 
   #gcLog = async (worker: Worker) => {
-    const logDir = starters.logPath(this.config.logger.dir, worker.name);
+    const logDir = workerLogPath(this.config.logger.dir, worker.name);
     try {
       await fs.promises.rm(logDir, { recursive: true });
       this.logger.debug('[%s] log directory removed: %s.', worker.name, logDir);
@@ -297,7 +302,12 @@ export class WorkerStatsSnapshot extends BaseOf(EventEmitter) {
       }
     }
 
-    await Promise.allSettled(gcs);
+    const result = await Promise.allSettled(gcs);
+    for (const it of result) {
+      if (it.status === 'rejected') {
+        this.logger.error('unexpected error on gc', it.reason);
+      }
+    }
 
     for (const broker of [...this.brokers.values()]) {
       if (!broker.workers.size && !broker.data) {

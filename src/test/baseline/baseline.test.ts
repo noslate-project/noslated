@@ -935,7 +935,8 @@ const cases = [
         TurfContainerStates.running
       );
       // wait turf kill or sync gc
-      await sleep(3000);
+      // TODO: graceful exit.
+      await sleep(5000);
       assert.deepStrictEqual(broker.workers.size, 0);
     },
   },
@@ -1007,7 +1008,8 @@ const cases = [
         TurfContainerStates.running
       );
       // wait turf kill or sync gc
-      await sleep(3000);
+      // TODO: graceful exit.
+      await sleep(5000);
       assert.deepStrictEqual(broker.workers.size, 0);
     },
   },

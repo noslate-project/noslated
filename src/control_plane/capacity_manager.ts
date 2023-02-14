@@ -33,7 +33,6 @@ export class CapacityManager extends Base {
     this.workerStatsSnapshot = new WorkerStatsSnapshot(
       plane.functionProfile,
       config,
-      plane.turf,
       plane.clock
     );
     this.virtualMemoryPoolSize = bytes(config.virtualMemoryPoolSize);

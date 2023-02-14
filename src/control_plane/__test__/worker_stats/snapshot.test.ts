@@ -9,16 +9,17 @@ import {
 import * as common from '#self/test/common';
 import { config } from '#self/config';
 import { FunctionProfileManager as ProfileManager } from '#self/lib/function_profile';
-import { Turf, TurfContainerStates } from '#self/lib/turf';
+import { TurfContainerStates } from '#self/lib/turf';
 import { ContainerStatus, ContainerStatusReport } from '#self/lib/constants';
 import sinon from 'sinon';
 import fs from 'fs';
-import pedding from 'pedding';
-import { Done } from 'mocha';
 import { AworkerFunctionProfile } from '#self/lib/json/function_profile';
 import { NotNullableInterface } from '#self/lib/interfaces';
 import * as root from '#self/proto/root';
-import { startTurfD, stopTurfD } from '#self/test/turf';
+import {
+  registerContainers,
+  TestContainerManager,
+} from '../test_container_manager';
 
 describe(common.testName(__filename), () => {
   const funcData: AworkerFunctionProfile[] = [
@@ -78,24 +79,16 @@ describe(common.testName(__filename), () => {
   ];
 
   let profileManager: ProfileManager;
-  let turf: Turf;
   beforeEach(async () => {
-    startTurfD();
-    turf = new Turf(config.turf.bin, config.turf.socketPath);
-    turf.connect();
     profileManager = new ProfileManager(config);
     await profileManager.set(funcData, 'WAIT');
   });
   afterEach(async () => {
     mm.restore();
-    await turf.close();
-    stopTurfD();
   });
 
   describe('WorkerStatsSnapshot', () => {
-    /**
-     * @type {WorkerStatsSnapshot}
-     */
+    let testContainerManager: TestContainerManager;
     let workerStatsSnapshot: WorkerStatsSnapshot;
     let clock: common.TestClock;
 
@@ -103,10 +96,10 @@ describe(common.testName(__filename), () => {
       clock = common.createTestClock({
         shouldAdvanceTime: true,
       });
+      testContainerManager = new TestContainerManager(clock);
       workerStatsSnapshot = new WorkerStatsSnapshot(
         profileManager,
         config,
-        turf,
         clock
       );
       await workerStatsSnapshot.ready();
@@ -208,20 +201,16 @@ describe(common.testName(__filename), () => {
     });
 
     describe('.unregister()', () => {
-      it('should unregister only one worker', (done: Done) => {
-        done = pedding<Done>(2, done);
+      it('should unregister only one worker', async () => {
         workerStatsSnapshot.register('func', 'hello', 'world', true);
         workerStatsSnapshot.register('func', 'foooo', 'bar', false);
+        registerContainers(testContainerManager, workerStatsSnapshot, [
+          { name: 'hello', pid: 1, status: TurfContainerStates.running },
+          { name: 'foooo', pid: 2, status: TurfContainerStates.running },
+        ]);
 
-        const stub = sinon
-          .stub(turf, 'destroy')
-          .callsFake(async (name: string) => {
-            assert.strictEqual(name, 'foooo');
-            done();
-          });
-
-        workerStatsSnapshot.unregister('func', 'foooo', false);
-        workerStatsSnapshot.unregister('non-exists', 'aha', true);
+        await workerStatsSnapshot.unregister('func', 'foooo', false);
+        await workerStatsSnapshot.unregister('non-exists', 'aha', true);
 
         assert.strictEqual(workerStatsSnapshot.brokers.size, 1);
         const broker = workerStatsSnapshot.brokers.get(
@@ -243,35 +232,23 @@ describe(common.testName(__filename), () => {
         assert(worker instanceof Worker);
         assert.deepStrictEqual(JSON.parse(JSON.stringify(worker.toJSON())), {
           containerStatus: ContainerStatus.Created,
-          turfContainerStates: null,
+          turfContainerStates: TurfContainerStates.init,
           name: 'hello',
           credential: 'world',
           registerTime: worker.registerTime,
-          pid: null,
+          pid: 1,
           data: null,
         });
 
-        stub.restore();
-        done();
+        assert.strictEqual(testContainerManager.list().length, 1);
+        assert.ok(testContainerManager.getContainer('foooo') == null);
       });
 
-      it('should remove broker when workers empty after unregister', (done: Done) => {
-        done = pedding<Done>(2, done);
-
+      it('should remove broker when workers empty after unregister', async () => {
         workerStatsSnapshot.register('func', 'hello', 'world', true);
-
-        const stub = sinon
-          .stub(turf, 'destroy')
-          .callsFake(async (name: string) => {
-            assert.strictEqual(name, 'hello');
-            done();
-          });
-
-        workerStatsSnapshot.unregister('func', 'hello', true);
+        await workerStatsSnapshot.unregister('func', 'hello', true);
 
         assert.strictEqual(workerStatsSnapshot.brokers.size, 0);
-        stub.restore();
-        done();
       });
     });
 
@@ -478,9 +455,7 @@ describe(common.testName(__filename), () => {
       it('should to protobuf object with worker data', () => {
         workerStatsSnapshot.register('func', 'hello', 'world', true);
 
-        workerStatsSnapshot.sync(brokerData, [
-          { pid: 2, name: 'hello', status: TurfContainerStates.running },
-        ]);
+        workerStatsSnapshot.sync(brokerData);
 
         assert.deepStrictEqual(workerStatsSnapshot.toProtobufObject(), [
           {
@@ -499,14 +474,14 @@ describe(common.testName(__filename), () => {
             workers: [
               {
                 containerStatus: ContainerStatus.Created,
-                turfContainerStates: TurfContainerStates.running,
+                turfContainerStates: null,
                 name: 'hello',
                 credential: 'world',
                 data: {
                   maxActivateRequests: 10,
                   activeRequestCount: 1,
                 },
-                pid: 2,
+                pid: null,
                 registerTime: workerStatsSnapshot.getWorker(
                   'func',
                   true,
@@ -520,28 +495,30 @@ describe(common.testName(__filename), () => {
     });
 
     describe('.sync()', () => {
-      it('should sync', () => {
+      it('should sync', async () => {
         workerStatsSnapshot.register('func', 'hello', 'world', true);
         workerStatsSnapshot.register('func', 'foooo', 'bar', false);
 
-        workerStatsSnapshot.sync(
-          [
-            ...brokerData,
-            {
-              functionName: 'hoho',
-              inspector: false,
-              workers: [
-                {
-                  name: 'aho',
-                  credential: 'aha',
-                  maxActivateRequests: 10,
-                  activeRequestCount: 6,
-                },
-              ],
-            },
-          ],
-          [{ pid: 1, name: 'foooo', status: TurfContainerStates.running }]
-        );
+        registerContainers(testContainerManager, workerStatsSnapshot, [
+          { pid: 1, name: 'foooo', status: TurfContainerStates.running },
+        ]);
+        await testContainerManager.reconcileContainers();
+
+        workerStatsSnapshot.sync([
+          ...brokerData,
+          {
+            functionName: 'hoho',
+            inspector: false,
+            workers: [
+              {
+                name: 'aho',
+                credential: 'aha',
+                maxActivateRequests: 10,
+                activeRequestCount: 6,
+              },
+            ],
+          },
+        ]);
 
         // hoho should be ignored
         assert.strictEqual(workerStatsSnapshot.brokers.size, 2);
@@ -597,16 +574,22 @@ describe(common.testName(__filename), () => {
           requestId: '',
         });
 
-        workerStatsSnapshot.sync(brokerData, [
+        registerContainers(testContainerManager, workerStatsSnapshot, [
+          /** foooo has been disappeared */
           { pid: 2, name: 'hello', status: TurfContainerStates.running },
         ]);
+        await testContainerManager.reconcileContainers();
+        workerStatsSnapshot.sync(brokerData);
 
-        const _turfContainerStateses = [TurfContainerStates.running, null];
+        const _turfContainerStateses = [
+          TurfContainerStates.running,
+          TurfContainerStates.unknown,
+        ];
         const _containerStatus: ContainerStatus[] = [
           ContainerStatus.Ready,
-          ContainerStatus.Created,
+          ContainerStatus.Unknown,
         ];
-        const _pids = [2, null];
+        const _pids = [2, 1];
 
         brokers.forEach((broker, i) => {
           assert.strictEqual(broker.name, 'func');
@@ -616,12 +599,7 @@ describe(common.testName(__filename), () => {
             broker.profiles.get('func')!.toJSON(true)
           );
           assert.strictEqual(broker.workers.size, 1);
-
-          if (broker.workers.get('hello')) {
-            assert.strictEqual(broker.startingPool.size, 0);
-          } else {
-            assert.strictEqual(broker.startingPool.size, 1);
-          }
+          assert.strictEqual(broker.startingPool.size, 0);
 
           const worker: Partial<Worker> = JSON.parse(
             JSON.stringify(broker.workers.get(workerNames[i]))
@@ -647,13 +625,13 @@ describe(common.testName(__filename), () => {
 
         await profileManager.set([], 'WAIT');
 
-        workerStatsSnapshot.sync(
-          [brokerData[1]],
-          [
-            { pid: 1, name: 'foooo', status: TurfContainerStates.running },
-            { pid: 2, name: 'hello', status: TurfContainerStates.starting },
-          ]
-        );
+        registerContainers(testContainerManager, workerStatsSnapshot, [
+          { pid: 1, name: 'foooo', status: TurfContainerStates.running },
+          { pid: 2, name: 'hello', status: TurfContainerStates.starting },
+        ]);
+        await testContainerManager.reconcileContainers();
+
+        workerStatsSnapshot.sync([brokerData[1]]);
 
         const brokers = [
           workerStatsSnapshot.getBroker('func', true)!,
@@ -695,13 +673,12 @@ describe(common.testName(__filename), () => {
           });
         });
 
-        workerStatsSnapshot.sync(
-          [brokerData[1]],
-          [
-            { pid: 1, name: 'foooo', status: TurfContainerStates.stopped },
-            { pid: 2, name: 'hello', status: TurfContainerStates.stopping },
-          ]
-        );
+        registerContainers(testContainerManager, workerStatsSnapshot, [
+          { pid: 1, name: 'foooo', status: TurfContainerStates.stopped },
+          { pid: 2, name: 'hello', status: TurfContainerStates.stopping },
+        ]);
+        await testContainerManager.reconcileContainers();
+        workerStatsSnapshot.sync([brokerData[1]]);
 
         const _turfContainerStates = [
           TurfContainerStates.stopping,
@@ -739,13 +716,14 @@ describe(common.testName(__filename), () => {
 
     describe('.correct()', () => {
       it('should correct gc stopped and unknown container', async () => {
-        const spyTurfStop = sinon.spy(turf, 'stop');
-        const spyTurfState = sinon.spy(turf, 'state');
-        const spyTurfDelete = sinon.spy(turf, 'delete');
         const spyFs = sinon.spy(fs.promises, 'rm');
 
         workerStatsSnapshot.register('func', 'hello', 'world', true);
         workerStatsSnapshot.register('func', 'foooo', 'bar', false);
+        registerContainers(testContainerManager, workerStatsSnapshot, [
+          { name: 'hello', pid: 1, status: TurfContainerStates.running },
+          { name: 'foooo', pid: 1, status: TurfContainerStates.running },
+        ]);
 
         updateWorkerContainerStatus(workerStatsSnapshot, {
           functionName: 'func',
@@ -783,16 +761,16 @@ describe(common.testName(__filename), () => {
           workerStatsSnapshot.getBroker('func', false)!.workers.size,
           0
         );
-        assert(spyTurfStop.calledWith('foooo'));
-        assert(spyTurfState.calledWith('foooo'));
-        assert(spyTurfDelete.calledWith('foooo'));
+        assert(testContainerManager.getContainer('foooo') == null);
 
         clock.tick(config.worker.gcLogDelay);
         assert(spyFs.calledWithMatch('/logs/workers/foooo'));
 
-        workerStatsSnapshot.sync(brokerData, [
+        registerContainers(testContainerManager, workerStatsSnapshot, [
           { pid: 2, name: 'hello', status: TurfContainerStates.unknown },
         ]);
+        await testContainerManager.reconcileContainers();
+        workerStatsSnapshot.sync(brokerData);
 
         // 回收 Unknown
         await workerStatsSnapshot.correct();
@@ -806,9 +784,7 @@ describe(common.testName(__filename), () => {
           0
         );
 
-        assert(spyTurfStop.calledWith('hello'));
-        assert(spyTurfState.calledWith('hello'));
-        assert(spyTurfDelete.calledWith('hello'));
+        assert(testContainerManager.getContainer('hello') == null);
 
         clock.tick(config.worker.gcLogDelay);
 
@@ -816,7 +792,7 @@ describe(common.testName(__filename), () => {
 
         await profileManager.set([], 'WAIT');
 
-        workerStatsSnapshot.sync([], []);
+        workerStatsSnapshot.sync([]);
 
         // 配置更新后，回收无用 borker
         await workerStatsSnapshot.correct();
@@ -824,9 +800,6 @@ describe(common.testName(__filename), () => {
         assert.strictEqual(workerStatsSnapshot.getBroker('func', true), null);
         assert.strictEqual(workerStatsSnapshot.getBroker('func', false), null);
 
-        spyTurfStop.restore();
-        spyTurfState.restore();
-        spyTurfDelete.restore();
         spyFs.restore();
       });
     });

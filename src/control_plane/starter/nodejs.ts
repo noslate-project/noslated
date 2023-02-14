@@ -59,6 +59,6 @@ export class NodejsStarter extends BaseStarter implements WorkerStarter {
       envs[ENV.FUNC_INITIALIZER_KEY] = profile.initializer;
     }
 
-    await this.doStart(name, bundlePath, commands, profile, envs, options);
+    return this.doStart(name, bundlePath, commands, profile, envs, options);
   }
 }

@@ -5,23 +5,27 @@ import path from 'path';
 
 import _ from 'lodash';
 import mm from 'mm';
+import sinon from 'sinon';
 import * as common from '#self/test/common';
 import { config } from '#self/config';
 import { ControlPlane } from '#self/control_plane/index';
 import { createDeferred } from '#self/lib/util';
 import { DataPlaneClientManager } from '#self/control_plane/data_plane_client/manager';
 import { mockClientCreatorForManager } from '#self/test/util';
-import * as starters from '#self/control_plane/starter/index';
 import { CapacityManager } from '#self/control_plane/capacity_manager';
-import { TurfContainerStates, TurfProcess } from '#self/lib/turf/types';
-import { noslated } from '#self/proto/root';
+import { TurfContainerStates } from '#self/lib/turf/types';
 import {
   ContainerStatus,
   ContainerStatusReport,
   ControlPanelEvent,
 } from '#self/lib/constants';
-import { Turf } from '#self/lib/turf';
 import { startTurfD, stopTurfD } from '#self/test/turf';
+import {
+  registerContainers,
+  TestContainerManager,
+} from './test_container_manager';
+import { workerLogPath } from '../container/container_manager';
+import { Broker, Worker } from '../worker_stats';
 
 describe(common.testName(__filename), function () {
   this.timeout(10_000);
@@ -67,7 +71,7 @@ describe(common.testName(__filename), function () {
 
   let clock: common.TestClock;
   let control: ControlPlane;
-  let turf: Turf;
+  let testContainerManager: TestContainerManager;
 
   let capacityManager: CapacityManager;
 
@@ -77,8 +81,11 @@ describe(common.testName(__filename), function () {
     clock = common.createTestClock({
       shouldAdvanceTime: true,
     });
-    control = new ControlPlane(config, clock);
-    turf = control.turf;
+    testContainerManager = new TestContainerManager(clock);
+    control = new ControlPlane(config, {
+      clock,
+      containerManager: testContainerManager,
+    });
     await control.ready();
     ({ capacityManager } = control);
   });
@@ -127,84 +134,42 @@ describe(common.testName(__filename), function () {
       );
       capacityManager.workerStatsSnapshot.register('func', 'foo', 'bar', false);
 
-      let correctCalled = false;
-      let psCalled = false;
-      let syncCalled = false;
-      let stateCalled = false;
-      let deleteCalled = false;
-
-      const psData = [
-        { name: 'foo', status: TurfContainerStates.stopped, pid: 123 },
-        { name: 'fop', status: TurfContainerStates.stopped, pid: 124 },
-        { name: 'foq', status: TurfContainerStates.stopping, pid: 125 },
-        { name: 'for', status: TurfContainerStates.forkwait, pid: 126 },
-        { name: 'fos', status: TurfContainerStates.running, pid: 127 },
-        { name: 'fot', status: TurfContainerStates.init, pid: 128 },
-        { name: 'fou', status: TurfContainerStates.running, pid: 129 },
-      ];
-
-      const sync = capacityManager.workerStatsSnapshot.sync.bind(
-        capacityManager.workerStatsSnapshot
-      );
-      const correct = capacityManager.workerStatsSnapshot.correct.bind(
-        capacityManager.workerStatsSnapshot
-      );
-      mm(
+      registerContainers(
+        testContainerManager,
         capacityManager.workerStatsSnapshot,
-        'sync',
-        async (data: noslated.data.IBrokerStats[], _psData: TurfProcess[]) => {
-          assert.deepStrictEqual(psData, _psData);
-          assert.deepStrictEqual(data, [brokerData1]);
-          syncCalled = true;
-          return sync(data, _psData);
-        }
+        [
+          { name: 'foo', status: TurfContainerStates.stopped, pid: 123 },
+          { name: 'fop', status: TurfContainerStates.stopped, pid: 124 },
+          { name: 'foq', status: TurfContainerStates.stopping, pid: 125 },
+          { name: 'for', status: TurfContainerStates.forkwait, pid: 126 },
+          { name: 'fos', status: TurfContainerStates.running, pid: 127 },
+          { name: 'fot', status: TurfContainerStates.init, pid: 128 },
+          { name: 'fou', status: TurfContainerStates.running, pid: 129 },
+        ]
       );
-      mm(capacityManager.workerStatsSnapshot, 'correct', async () => {
-        correctCalled = true;
-        return correct();
-      });
-      mm(turf, 'ps', async () => {
-        psCalled = true;
-        return psData;
-      });
-      mm(turf, 'state', async (name: any) => {
-        assert.strictEqual(name, 'foo');
-        stateCalled = true;
-        return {
-          name: 'emp-ee92f66',
-          pid: 123,
-          state: 'stopped',
-          status: 9,
-        };
-      });
-      mm(turf, 'delete', async (name: any) => {
-        assert.strictEqual(name, 'foo');
-        deleteCalled = true;
-      });
 
-      let workerStoppedBroker;
-      let workerStoppedWorker: any;
+      const syncSpy = sinon.spy(capacityManager.workerStatsSnapshot, 'sync');
+      const correctSpy = sinon.spy(
+        capacityManager.workerStatsSnapshot,
+        'correct'
+      );
+
+      let workerStoppedBroker!: Broker;
+      let workerStoppedWorker!: Worker;
       capacityManager.workerStatsSnapshot.on(
         'workerStopped',
         (emitExceptionMessage, state, broker, worker) => {
           assert.strictEqual(emitExceptionMessage, undefined);
-          assert.deepStrictEqual(state, {
-            name: 'emp-ee92f66',
-            pid: 123,
-            state: 'stopped',
-            status: 9,
-          });
           workerStoppedWorker = worker;
           workerStoppedBroker = broker;
         }
       );
 
       await control.stateManager.syncWorkerData([brokerData1]);
-      assert(syncCalled);
-      assert(psCalled);
-      assert(correctCalled);
-      assert(stateCalled);
-      assert(deleteCalled);
+
+      assert(syncSpy.called);
+      assert(correctSpy.called);
+      assert.ok(testContainerManager.getContainer('foo') == null);
 
       assert.strictEqual(capacityManager.workerStatsSnapshot.brokers.size, 1);
       const broker = capacityManager.workerStatsSnapshot.getBroker(
@@ -250,7 +215,7 @@ describe(common.testName(__filename), function () {
         assert.strictEqual(
           name,
           path.dirname(
-            starters.logPath(
+            workerLogPath(
               capacityManager.workerStatsSnapshot.config.logger.dir,
               'foo',
               'dummy'
@@ -301,14 +266,6 @@ describe(common.testName(__filename), function () {
       });
       await promise;
 
-      mm(turf, 'ps', async () => [
-        { pid: 1, name: 'hello', status: TurfContainerStates.running },
-        { pid: 2, name: 'foo', status: TurfContainerStates.running },
-        { pid: 3, name: 'coco', status: TurfContainerStates.running },
-        { pid: 4, name: 'cocos', status: TurfContainerStates.running },
-        { pid: 5, name: 'alibaba', status: TurfContainerStates.running },
-      ]);
-
       capacityManager.workerStatsSnapshot.register(
         'func',
         'hello',
@@ -334,6 +291,18 @@ describe(common.testName(__filename), function () {
         'alibaba',
         'seed of hope',
         false
+      );
+
+      registerContainers(
+        testContainerManager,
+        capacityManager.workerStatsSnapshot,
+        [
+          { pid: 1, name: 'hello', status: TurfContainerStates.running },
+          { pid: 2, name: 'foo', status: TurfContainerStates.running },
+          { pid: 3, name: 'coco', status: TurfContainerStates.running },
+          { pid: 4, name: 'cocos', status: TurfContainerStates.running },
+          { pid: 5, name: 'alibaba', status: TurfContainerStates.running },
+        ]
       );
 
       await control.stateManager.syncWorkerData([brokerData1, brokerData2]);
@@ -421,26 +390,38 @@ describe(common.testName(__filename), function () {
 
   describe('#stopWorker()', () => {
     it('should destroy worker', async () => {
-      let called = false;
-      mm(turf, 'stop', async (name: any) => {
-        assert.strictEqual(name, 'ojbk');
-        called = true;
-      });
-      await control.controller.stopWorker('ojbk');
-      assert.strictEqual(called, true);
+      registerContainers(
+        testContainerManager,
+        control.capacityManager.workerStatsSnapshot,
+        [{ name: 'foo', pid: 1, status: TurfContainerStates.running }]
+      );
+      await control.controller.stopWorker('foo');
+      await testContainerManager.reconcileContainers();
+      assert.strictEqual(
+        testContainerManager.getContainer('foo')?.status,
+        TurfContainerStates.stopping
+      );
     });
 
     it('should destroy worker failed', async () => {
-      mm(turf, 'stop', async () => {
-        throw new Error('💩');
-      });
+      testContainerManager.setTestContainers([
+        { name: 'foo', pid: 1, status: TurfContainerStates.running },
+      ]);
+      const stub = sinon.stub(
+        testContainerManager.getContainer('foo')!,
+        'stop'
+      );
+      stub.rejects(/failed to stop/);
 
-      assert.rejects(() => control.controller.stopWorker('ojbk'), /💩/);
+      await assert.rejects(
+        () => control.controller.stopWorker('foo'),
+        /failed to stop/
+      );
     });
   });
 
-  describe('#forceDismissAllWorkersInCertainBrokers()', () => {
-    it('should force dismiss', async () => {
+  describe('#stopAllWorkers()', () => {
+    it('should stop all workers', async () => {
       const { functionProfileManager } = capacityManager;
       functionProfileManager.set(
         [
@@ -552,7 +533,7 @@ describe(common.testName(__filename), function () {
         });
         await promise;
 
-        mm(turf, 'ps', async () => [
+        testContainerManager.setTestContainers([
           { pid: 1, name: 'hello', status: TurfContainerStates.running },
           { pid: 2, name: 'foo', status: TurfContainerStates.running },
           { pid: 3, name: 'coco', status: TurfContainerStates.running },
@@ -739,7 +720,7 @@ describe(common.testName(__filename), function () {
       });
       await promise;
 
-      mm(turf, 'ps', async () => [
+      testContainerManager.setTestContainers([
         { pid: 1, name: 'hello', status: TurfContainerStates.running },
         { pid: 2, name: 'foo', status: TurfContainerStates.running },
         { pid: 3, name: 'coco', status: TurfContainerStates.running },
@@ -914,9 +895,9 @@ describe(common.testName(__filename), function () {
       //   2. 2 workers with per 512mb and maximum activate request count
       //   3. do autoScale()
 
-      mm(turf, 'ps', async () => [
-        { pid: 1, name: 'hello', status: 'running' },
-        { pid: 2, name: 'foo', status: 'running' },
+      testContainerManager.setTestContainers([
+        { pid: 1, name: 'hello', status: TurfContainerStates.running },
+        { pid: 2, name: 'foo', status: TurfContainerStates.running },
       ]);
 
       mm(control.controller, 'tryBatchLaunch', async () => {

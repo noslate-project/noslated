@@ -1,5 +1,4 @@
 import fs from 'fs';
-import nodeUtil from 'util';
 import os from 'os';
 import path from 'path';
 import extend from 'extend';
@@ -7,7 +6,6 @@ import extend from 'extend';
 import { Base } from '#self/lib/sdk_base';
 import loggers from '#self/lib/logger';
 import { pairsToMap } from '#self/lib/rpc/key_value_pair';
-import * as utils from '#self/lib/util';
 import { ErrorCode } from '../worker_launcher_error_code';
 import { ControlPlane } from '../control_plane';
 import { Config } from '#self/config';
@@ -16,8 +14,8 @@ import {
   RawFunctionProfile,
 } from '#self/lib/json/function_profile';
 import SPEC_TEMPLATE from '../../lib/json/spec.template.json';
-import { TurfStartOptions } from '#self/lib/turf/types';
 import { kCpuPeriod, kMegaBytes } from '../constants';
+import { Container } from '../container/container_manager';
 
 export interface BaseOptions {
   inspect?: boolean;
@@ -30,19 +28,6 @@ export interface StartOptions extends BaseOptions {
 }
 
 export abstract class BaseStarter extends Base {
-  static bundlePathLock = new Map<string, Promise<void>>();
-
-  /**
-   * Get worker's full log path.
-   * @param {string} baseDir The log base directory.
-   * @param {string} workerName The worker's name.
-   * @param {string} filename The log filename.
-   * @return {string} The full log path.
-   */
-  static logPath(baseDir: string, workerName: string, ...args: string[]) {
-    return path.join(baseDir, 'workers', workerName, ...args);
-  }
-
   /**
    * Find the real bin path
    * @param {string} runtimeName The runtime name.
@@ -101,7 +86,7 @@ export abstract class BaseStarter extends Base {
   logger;
   plane;
   config;
-  turf;
+  containerManager;
   _validV8Options: string[];
 
   /**
@@ -126,7 +111,7 @@ export abstract class BaseStarter extends Base {
     this.plane = plane;
     this.config = config;
     this._validV8Options = [];
-    this.turf = plane.turf;
+    this.containerManager = plane.containerManager;
   }
 
   /**
@@ -211,13 +196,12 @@ export abstract class BaseStarter extends Base {
 
   /**
    * do turf start
-   * @param {string} name the container name
-   * @param {string} bundlePath the bundle path (which has `code` under it)
-   * @param {string[]} args the run command
-   * @param {import('#self/lib/json/function_profile').RawFunctionProfile} profile the profile to be started
-   * @param {object} [appendEnvs] the environment variables to be appended
-   * @param {{ additionalSpec?: object, seed?: string, inspect?: boolean }} options the start options
-   * @return {Promise<void>} a promise
+   * @param name the container name
+   * @param bundlePath the bundle path (which has `code` under it)
+   * @param args the run command
+   * @param profile the profile to be started
+   * @param appendEnvs the environment variables to be appended
+   * @param options the start options
    */
   async doStart(
     name: string,
@@ -226,7 +210,7 @@ export abstract class BaseStarter extends Base {
     profile: ProcessFunctionProfile,
     appendEnvs: Record<string, string> = {},
     options: StartOptions = {}
-  ) {
+  ): Promise<Container> {
     const codePath = path.join(bundlePath, 'code');
 
     const envs = Object.assign(
@@ -244,7 +228,6 @@ export abstract class BaseStarter extends Base {
     delete envs.PATH;
     delete envs.TERM;
 
-    const specPath = path.join(bundlePath, 'config.json');
     const spec = extend(true, {}, SPEC_TEMPLATE, options?.additionalSpec || {});
 
     spec.process.args = args;
@@ -280,52 +263,16 @@ export abstract class BaseStarter extends Base {
       spec.linux.resources.memory.limit *= 100;
     }
 
-    const runLogDir = this.config.logger.dir;
-    const logPath = BaseStarter.logPath(runLogDir, name);
-
-    this.logger.info('create directories for worker(%s)', name);
-    await Promise.all(
-      [logPath, ...(options?.mkdirs ?? [])].map(dir =>
-        fs.promises.mkdir(dir, { recursive: true })
-      )
-    );
-
-    await this._bundlePathLock(bundlePath, async () => {
-      await fs.promises.writeFile(specPath, JSON.stringify(spec), 'utf8');
-      this.logger.info('turf create (%s, %s)', name, bundlePath);
-      await this.turf.create(name, bundlePath);
-    });
-
-    const startOptions: TurfStartOptions = {
-      stdout: path.join(logPath, 'stdout.log'),
-      stderr: path.join(logPath, 'stderr.log'),
-    };
-    if (options?.seed) startOptions.seed = options.seed;
-    this.logger.info('turf start (%s)', name);
-    await this.turf.start(name, startOptions);
-  }
-
-  private async _bundlePathLock<T>(bundlePath: string, fn: () => T) {
-    const start = Date.now();
-    let bundlePathLock = BaseStarter.bundlePathLock.get(bundlePath);
-    while (bundlePathLock != null) {
-      await bundlePathLock;
-      bundlePathLock = BaseStarter.bundlePathLock.get(bundlePath);
-    }
-
-    this.logger.info(
-      'fetched lock on bundle path(%s) cost %d ms',
+    const container = await this.containerManager.create(
+      name,
       bundlePath,
-      Date.now() - start
+      spec,
+      {
+        mkdirs: options.mkdirs,
+      }
     );
-    const { promise, resolve } = utils.createDeferred<void>();
-    BaseStarter.bundlePathLock.set(bundlePath, promise);
-    try {
-      return await fn();
-    } finally {
-      BaseStarter.bundlePathLock.delete(bundlePath);
-      resolve();
-    }
+    await container.start(options);
+    return container;
   }
 
   /**
@@ -344,5 +291,5 @@ export abstract class BaseStarter extends Base {
     profile: RawFunctionProfile,
     bundlePath: string,
     options: BaseOptions
-  ): Promise<void>;
+  ): Promise<Container>;
 }
