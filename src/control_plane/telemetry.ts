@@ -1,3 +1,4 @@
+import { EventBus } from '#self/lib/event-bus';
 import {
   ControlPlaneMetricAttributes,
   PlaneMetricAttributes,
@@ -11,7 +12,9 @@ import {
   ObservableGauge,
   BatchObservableResult,
 } from '@opentelemetry/api';
-import { Broker, WorkerStatsSnapshot } from './worker_stats';
+import { WorkerStoppedEvent } from './events';
+import { Broker } from './worker_stats';
+import { StateManager } from './worker_stats/state_manager';
 
 function mapStateToExitReason(state: TurfState | null): string {
   if (!state) return '';
@@ -27,7 +30,7 @@ function mapStateToExitReason(state: TurfState | null): string {
 
 export class WorkerTelemetry {
   #meter: Meter;
-  #workerStatsSnapshot: WorkerStatsSnapshot;
+  #stateManager: StateManager;
 
   #cpuUserValueObserver: ObservableGauge;
   #cpuSystemValueObserver: ObservableGauge;
@@ -36,10 +39,20 @@ export class WorkerTelemetry {
   #funcExitCounter: Counter;
   #replicaTotalCountValueObserver: ObservableGauge;
 
-  constructor(meter: Meter, workerStatsSnapshot: WorkerStatsSnapshot) {
+  constructor(meter: Meter, stateManager: StateManager, eventBus: EventBus) {
     this.#meter = meter;
-    this.#workerStatsSnapshot = workerStatsSnapshot;
-    this.#workerStatsSnapshot.on('workerStopped', this.onWorkerStopped);
+    this.#stateManager = stateManager;
+    eventBus.subscribe(WorkerStoppedEvent, {
+      next: event => {
+        const data = event.data;
+        this.onWorkerStopped(
+          data.emitExceptionMessage,
+          data.state,
+          data.broker
+        );
+      },
+    });
+
     this.#cpuUserValueObserver = this.#meter.createObservableGauge(
       ControlPlaneMetrics.REPLICA_CPU_USER
     );
@@ -95,7 +108,7 @@ export class WorkerTelemetry {
 
   onObservation = async (batchObservableResult: BatchObservableResult) => {
     await Promise.all(
-      Array.from(this.#workerStatsSnapshot.brokers.values()).flatMap(broker => {
+      Array.from(this.#stateManager.brokers()).flatMap(broker => {
         const functionName = broker.name;
         const runtimeType = broker.data?.runtime;
         if (runtimeType == null) {

@@ -19,9 +19,9 @@ import {
 import { AworkerFunctionProfile } from '#self/lib/json/function_profile';
 import { StateManager } from '#self/control_plane/worker_stats/state_manager';
 import { NoslatedClient } from '#self/sdk';
-import { CapacityManager } from '#self/control_plane/capacity_manager';
 import { DefaultEnvironment } from '#self/test/env/environment';
 import { SimpleContainer } from '../test_container_manager';
+import { WorkerStatusReportEvent } from '#self/control_plane/events';
 
 describe(common.testName(__filename), () => {
   const funcData: AworkerFunctionProfile[] = [
@@ -42,11 +42,10 @@ describe(common.testName(__filename), () => {
   let profileManager: ProfileManager | null;
   let agent: NoslatedClient;
   let stateManager: StateManager;
-  let capacityManager: CapacityManager;
 
   beforeEach(async () => {
     agent = env.agent;
-    ({ stateManager, capacityManager } = env.control);
+    ({ stateManager } = env.control);
 
     profileManager = new ProfileManager(config);
     await profileManager.set(funcData, 'WAIT');
@@ -482,13 +481,13 @@ describe(common.testName(__filename), () => {
         'WAIT'
       );
 
-      capacityManager.workerStatsSnapshot.register(
+      stateManager.workerStatsSnapshot.register(
         'func1',
         'worker1',
         'cred1',
         false
       );
-      worker = capacityManager.workerStatsSnapshot.getWorker(
+      worker = stateManager.workerStatsSnapshot.getWorker(
         'func1',
         false,
         'worker1'
@@ -496,7 +495,7 @@ describe(common.testName(__filename), () => {
     });
 
     afterEach(async () => {
-      await capacityManager.workerStatsSnapshot.unregister(
+      await stateManager.workerStatsSnapshot.unregister(
         'func1',
         'worker1',
         false
@@ -507,13 +506,15 @@ describe(common.testName(__filename), () => {
       const now = performance.now();
 
       setTimeout(() => {
-        stateManager.updateContainerStatusByReport({
-          functionName: 'func1',
-          name: 'worker1',
-          isInspector: false,
-          event: ContainerStatusReport.ContainerInstalled,
-          requestId: '',
-        });
+        stateManager.updateWorkerStatusByReport(
+          new WorkerStatusReportEvent({
+            functionName: 'func1',
+            name: 'worker1',
+            isInspector: false,
+            event: ContainerStatusReport.ContainerInstalled,
+            requestId: '',
+          })
+        );
       }, 500 + 10);
 
       await worker.ready();
@@ -535,13 +536,15 @@ describe(common.testName(__filename), () => {
     it('should throw error when set stopped before ready', async () => {
       process.on('unhandledRejection', (promise, reason) => {});
       setTimeout(() => {
-        stateManager.updateContainerStatusByReport({
-          functionName: 'func1',
-          name: 'worker1',
-          isInspector: false,
-          event: ContainerStatusReport.ContainerDisconnected,
-          requestId: '',
-        });
+        stateManager.updateWorkerStatusByReport(
+          new WorkerStatusReportEvent({
+            functionName: 'func1',
+            name: 'worker1',
+            isInspector: false,
+            event: ContainerStatusReport.ContainerDisconnected,
+            requestId: '',
+          })
+        );
       }, 500);
 
       await assert.rejects(
@@ -556,13 +559,15 @@ describe(common.testName(__filename), () => {
 
     it('should do nothing when emit stopped after ready', async () => {
       setTimeout(() => {
-        stateManager.updateContainerStatusByReport({
-          functionName: 'func1',
-          name: 'worker1',
-          isInspector: false,
-          event: ContainerStatusReport.ContainerInstalled,
-          requestId: '',
-        });
+        stateManager.updateWorkerStatusByReport(
+          new WorkerStatusReportEvent({
+            functionName: 'func1',
+            name: 'worker1',
+            isInspector: false,
+            event: ContainerStatusReport.ContainerInstalled,
+            requestId: '',
+          })
+        );
       }, 200);
 
       const spy = sinon.spy();

@@ -4,7 +4,10 @@ import { DataPlaneSubscription as Subscription } from './subscription';
 import { BasePlaneClient } from '#self/lib/base_plane_client';
 import { DataPlaneClientManager } from './manager';
 import { Config } from '#self/config';
+import * as root from '#self/proto/root';
 
+// @ts-ignore protobuf's proprietary EventEmitter
+export interface DataPlaneClient extends root.noslated.data.DataPlane {} // eslint-disable-line @typescript-eslint/no-empty-interface
 export class DataPlaneClient extends BasePlaneClient {
   #serverSockPath: string;
   subscription: Subscription | null;

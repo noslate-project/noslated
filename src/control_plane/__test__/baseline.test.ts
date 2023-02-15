@@ -260,10 +260,7 @@ const cases = [
       },
     },
     after: async ({ control }: DefaultEnvironment) => {
-      const broker = control.capacityManager.workerStatsSnapshot.getBroker(
-        'aworker_echo',
-        false
-      )!;
+      const broker = control.stateManager.getBroker('aworker_echo', false)!;
       while (true) {
         if (broker.workerCount !== 4) {
           await sleep(10);
@@ -298,10 +295,7 @@ const cases = [
       },
     },
     after: async ({ control }: DefaultEnvironment) => {
-      const broker = control.capacityManager.workerStatsSnapshot.getBroker(
-        'aworker_echo',
-        false
-      )!;
+      const broker = control.stateManager.getBroker('aworker_echo', false)!;
       while (true) {
         if (broker.workerCount !== 2) {
           await sleep(10);
@@ -336,13 +330,10 @@ const cases = [
       },
     },
     after: async ({ control }: DefaultEnvironment) => {
-      await control.controller.tryBatchLaunch('aworker_echo', 1, {
+      await control.defaultController['tryBatchLaunch']('aworker_echo', 1, {
         inspect: false,
       });
-      const broker = control.capacityManager.workerStatsSnapshot.getBroker(
-        'aworker_echo',
-        false
-      )!;
+      const broker = control.stateManager.getBroker('aworker_echo', false)!;
       while (true) {
         if (broker.workerCount !== 2) {
           await sleep(10);
@@ -364,7 +355,7 @@ const cases = [
       );
       mm(broker, 'redundantTimes', 60);
 
-      await control.capacityManager.autoScale();
+      await control.defaultController['autoScale']();
 
       // shrink and leave `names[idx]` because LCC
       assert.strictEqual(broker.workers.size, 1);
@@ -394,13 +385,10 @@ const cases = [
       },
     },
     after: async ({ control }: DefaultEnvironment) => {
-      await control.controller.tryBatchLaunch('aworker_echo', 1, {
+      await control.defaultController['tryBatchLaunch']('aworker_echo', 1, {
         inspect: false,
       });
-      const broker = control.capacityManager.workerStatsSnapshot.getBroker(
-        'aworker_echo',
-        false
-      )!;
+      const broker = control.stateManager.getBroker('aworker_echo', false)!;
       while (true) {
         if (broker.workerCount !== 2) {
           await sleep(10);
@@ -428,7 +416,7 @@ const cases = [
       );
       mm(broker, 'redundantTimes', 60);
 
-      await control.capacityManager.autoScale();
+      await control.defaultController['autoScale']();
 
       // shrink and leave `names[idx]` because FILO
       assert.strictEqual(broker.workers.size, 1);
@@ -458,13 +446,10 @@ const cases = [
       },
     },
     after: async ({ control }: DefaultEnvironment) => {
-      await control.controller.tryBatchLaunch('aworker_echo', 1, {
+      await control.defaultController['tryBatchLaunch']('aworker_echo', 1, {
         inspect: false,
       });
-      const broker = control.capacityManager.workerStatsSnapshot.getBroker(
-        'aworker_echo',
-        false
-      )!;
+      const broker = control.stateManager.getBroker('aworker_echo', false)!;
       while (true) {
         if (broker.workerCount !== 2) {
           await sleep(10);
@@ -492,7 +477,7 @@ const cases = [
       );
       mm(broker, 'redundantTimes', 60);
 
-      await control.capacityManager.autoScale();
+      await control.defaultController['autoScale']();
 
       // shrink and leave `names[idx]` because FIFO
       assert.strictEqual(broker.workers.size, 1);

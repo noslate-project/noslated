@@ -81,7 +81,7 @@ export class WorkerLauncher extends Base {
     this.codeManager = this.plane.codeManager;
     this.functionProfile = this.plane.functionProfile;
     this.dataPlaneClientManager = this.plane.dataPlaneClientManager;
-    this.snapshot = this.plane.capacityManager.workerStatsSnapshot;
+    this.snapshot = this.plane.stateManager.workerStatsSnapshot;
 
     await Promise.all([
       this.starters.nodejs.ready(),
@@ -174,7 +174,7 @@ export class WorkerLauncher extends Base {
     } = profile;
 
     // get broker / virtualMemoryUsed / virtualMemoryPoolSize, etc.
-    const broker = capacityManager.workerStatsSnapshot.getOrCreateBroker(
+    const broker = this.snapshot.getOrCreateBroker(
       funcName,
       !!options.inspect,
       profile.worker?.disposable

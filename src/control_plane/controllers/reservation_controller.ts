@@ -1,12 +1,12 @@
-import { BaseController } from './controller';
 import { ControlPlane } from '../control_plane';
 import { Logger, loggers } from '#self/lib/loggers';
 import { Delta } from '../capacity_manager';
+import { BaseController } from './base_controller';
 
 export class ReservationController extends BaseController {
   logger: Logger;
 
-  constructor(public plane: ControlPlane) {
+  constructor(plane: ControlPlane) {
     super(plane);
     this.logger = loggers.get('reservation controller');
   }
