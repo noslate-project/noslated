@@ -51,18 +51,23 @@ describe(common.testName(__filename), () => {
         'WAIT'
       );
 
-      stateManager.workerStatsSnapshot.register(
-        'func1',
-        'worker1',
-        'cred1',
-        false
-      );
-      stateManager.workerStatsSnapshot.register(
-        'func2',
-        'worker1',
-        'cred1',
-        false
-      );
+      stateManager.workerStatsSnapshot.register({
+        funcName: 'func1',
+        processName: 'worker1',
+        credential: 'cred1',
+        options: { inspect: false },
+        disposable: false,
+        toReserve: false,
+      });
+
+      stateManager.workerStatsSnapshot.register({
+        funcName: 'func2',
+        processName: 'worker1',
+        credential: 'cred1',
+        options: { inspect: false },
+        disposable: false,
+        toReserve: false,
+      });
 
       const worker1 = stateManager.workerStatsSnapshot.getWorker(
         'func1',
@@ -163,12 +168,14 @@ describe(common.testName(__filename), () => {
         'WAIT'
       );
 
-      stateManager.workerStatsSnapshot.register(
-        'func1',
-        'worker1',
-        'cred1',
-        false
-      );
+      stateManager.workerStatsSnapshot.register({
+        funcName: 'func1',
+        processName: 'worker1',
+        credential: 'cred1',
+        options: { inspect: false },
+        disposable: false,
+        toReserve: false,
+      });
 
       const worker = stateManager.workerStatsSnapshot.getWorker(
         'func1',
@@ -245,18 +252,22 @@ describe(common.testName(__filename), () => {
         ],
       };
 
-      stateManager.workerStatsSnapshot.register(
-        'func1',
-        'worker1',
-        'id1',
-        false
-      );
-      stateManager.workerStatsSnapshot.register(
-        'func1',
-        'worker2',
-        'id2',
-        false
-      );
+      stateManager.workerStatsSnapshot.register({
+        funcName: 'func1',
+        processName: 'worker1',
+        credential: 'id1',
+        options: { inspect: false },
+        disposable: false,
+        toReserve: false,
+      });
+      stateManager.workerStatsSnapshot.register({
+        funcName: 'func1',
+        processName: 'worker2',
+        credential: 'id2',
+        options: { inspect: false },
+        disposable: false,
+        toReserve: false,
+      });
 
       registerContainers(
         env.containerManager,
@@ -368,12 +379,14 @@ describe(common.testName(__filename), () => {
         ],
       };
 
-      stateManager.workerStatsSnapshot.register(
-        'func1',
-        'worker1',
-        'id1',
-        false
-      );
+      stateManager.workerStatsSnapshot.register({
+        funcName: 'func1',
+        processName: 'worker1',
+        credential: 'id1',
+        options: { inspect: false },
+        disposable: false,
+        toReserve: false,
+      });
 
       const beforeSync = stateManager.workerStatsSnapshot
         .getBroker('func1', false)!

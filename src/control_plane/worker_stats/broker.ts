@@ -7,7 +7,7 @@ import {
 import { FunctionProfileManager } from '#self/lib/function_profile';
 import { RawFunctionProfile } from '#self/lib/json/function_profile';
 import { PrefixedLogger } from '#self/lib/loggers';
-import { Worker, WorkerStats } from './worker';
+import { Worker, WorkerInitData, WorkerStats } from './worker';
 
 enum WaterLevelAction {
   UNKNOWN = 0,
@@ -102,22 +102,20 @@ class Broker {
    * @param processName The process name (worker name).
    * @param credential The credential.
    */
-  register(processName: string, credential: string): Worker {
+  register(workerInitData: WorkerInitData): Worker {
     if (!this.data) {
       throw new Error(`No function profile named ${this.name}.`);
     }
-
     const worker = new Worker(
+      workerInitData,
       this.config,
-      processName,
-      credential,
-      this.disposable,
       this.initializationTimeout
     );
-    this.workers.set(processName, worker);
 
-    this.startingPool.set(processName, {
-      credential,
+    this.workers.set(workerInitData.processName!, worker);
+
+    this.startingPool.set(workerInitData.processName!, {
+      credential: workerInitData.credential!,
       estimateRequestLeft: this.data.worker?.maxActivateRequests,
       maxActivateRequests: this.data.worker?.maxActivateRequests,
     });
