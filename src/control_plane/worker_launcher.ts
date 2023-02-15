@@ -254,11 +254,6 @@ export class WorkerLauncher extends Base {
         requestId
       );
 
-      console.log('workerInitData');
-      
-      console.log(workerInitData);
-      
-
       const worker = this.snapshot.register(workerInitData);
 
       const container = await starter.start(
