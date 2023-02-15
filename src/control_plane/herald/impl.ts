@@ -8,6 +8,7 @@ import * as root from '#self/proto/root';
 import { ServerWritableStream } from '@grpc/grpc-js';
 import { RawFunctionProfile } from '#self/lib/json/function_profile';
 import { Mode } from '#self/lib/function_profile';
+import { FunctionRemovedEvent } from '../events';
 
 /**
  * Herald impl
@@ -174,7 +175,8 @@ export class HeraldImpl {
     }
 
     // Do kill all workers in brokers.
-    await this.plane.controller.stopAllWorkers(killArray);
+    const event = new FunctionRemovedEvent(killArray);
+    await this.plane.eventBus.publish(event);
 
     return {
       set: true,
@@ -192,7 +194,6 @@ export class HeraldImpl {
    * @return {Promise<root.noslated.control.IWorkerStatsSnapshotResponse>} The result.
    */
   async getWorkerStatsSnapshot(): Promise<root.noslated.control.IWorkerStatsSnapshotResponse> {
-    const abstract = this.plane.capacityManager.workerStatsSnapshot;
-    return { brokers: abstract.toProtobufObject() };
+    return { brokers: this.plane.stateManager.getSnapshot() };
   }
 }

@@ -43,7 +43,7 @@ class WorkerInitData {
   constructor(
     _funcName: string,
 
-    _options = { inspect: true },
+    _options = { inspect: false },
     _disosable = false,
     _toReserve = false,
 

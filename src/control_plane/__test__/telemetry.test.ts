@@ -79,10 +79,7 @@ describe(common.testName(__filename), function () {
         process.kill(it.pid, 'SIGKILL');
       });
 
-    await once(
-      env.control.capacityManager.workerStatsSnapshot,
-      'workerStopped'
-    );
+    await once(env.control.stateManager.workerStatsSnapshot, 'workerStopped');
 
     const result = await metricReader!.collect();
     {
@@ -112,9 +109,7 @@ describe(common.testName(__filename), function () {
       const buffer = await bufferFromStream(response);
       assert.strictEqual(buffer.toString('utf8'), 'foobar');
 
-      const broker: any = Array.from(
-        env.control.capacityManager.workerStatsSnapshot.brokers.values()
-      )[0];
+      const broker: any = Array.from(env.control.stateManager.brokers())[0];
       assert.ok(broker != null);
       assert.strictEqual(broker.name, nodeJsWorkerTestItem.name);
       const worker: any = Array.from(broker.workers.values())[0];

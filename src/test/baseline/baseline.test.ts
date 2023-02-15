@@ -882,7 +882,7 @@ const cases = [
       }),
     },
     after: async (env: DefaultEnvironment) => {
-      const broker = env.control.capacityManager.workerStatsSnapshot.getBroker(
+      const broker = env.control.stateManager.getBroker(
         'node_worker_without_disposable_true',
         false
       )!;
@@ -923,7 +923,7 @@ const cases = [
       }),
     },
     after: async (env: DefaultEnvironment) => {
-      const broker = env.control.capacityManager.workerStatsSnapshot.getBroker(
+      const broker = env.control.stateManager.getBroker(
         'node_worker_with_disposable_true',
         false
       )!;
@@ -960,7 +960,7 @@ const cases = [
       ),
     },
     after: async (env: DefaultEnvironment) => {
-      const broker = env.control.capacityManager.workerStatsSnapshot.getBroker(
+      const broker = env.control.stateManager.getBroker(
         'aworker_without_disposable_true',
         false
       )!;
@@ -996,7 +996,7 @@ const cases = [
       ),
     },
     after: async (env: DefaultEnvironment) => {
-      const broker = env.control.capacityManager.workerStatsSnapshot.getBroker(
+      const broker = env.control.stateManager.getBroker(
         'aworker_with_disposable_true',
         false
       )!;

@@ -5,39 +5,33 @@ import assert from 'assert';
 import mm from 'mm';
 import _ from 'lodash';
 
-import { NoslatedClient } from '#self/sdk';
 import * as common from '#self/test/common';
 import { ControlPlane } from '#self/control_plane/index';
-import { FIXTURES_DIR } from '#self/test/util';
-import { CapacityManager } from '#self/control_plane/capacity_manager';
 import { ContainerStatus, ContainerStatusReport } from '#self/lib/constants';
 import { StateManager } from '#self/control_plane/worker_stats/state_manager';
-import { DefaultEnvironment } from '#self/test/env/environment';
 import { workerLogPath } from '#self/control_plane/container/container_manager';
+import { WorkerStatusReportEvent } from '#self/control_plane/events';
+import { registerContainers } from '../test_container_manager';
+import { TurfContainerStates } from '#self/lib/turf';
+import { TestEnvironment } from '../environment';
 
-const simpleSandbox = path.resolve(FIXTURES_DIR, 'sandbox_simple');
-
-// TODO: refactor test.
-describe.skip(common.testName(__filename), () => {
+describe(common.testName(__filename), () => {
   let stateManager: StateManager;
-  let capacityManager: CapacityManager;
 
-  const env = new DefaultEnvironment({
+  const env = new TestEnvironment({
     createTestClock: true,
   });
-  let agent: NoslatedClient;
   let controlPlane: ControlPlane;
 
   beforeEach(async () => {
-    agent = env.agent;
     controlPlane = env.control;
 
-    ({ stateManager, capacityManager } = controlPlane);
+    ({ stateManager } = controlPlane);
   });
 
   describe('updateContainerStatusByReport()', () => {
     it('should update regularly', async () => {
-      await agent.setFunctionProfile(
+      await controlPlane.functionProfile.set(
         [
           {
             name: 'func1',
@@ -57,30 +51,30 @@ describe.skip(common.testName(__filename), () => {
         'WAIT'
       );
 
-      controlPlane.capacityManager.workerStatsSnapshot.register({
+      stateManager.workerStatsSnapshot.register({
         funcName: 'func1',
         processName: 'worker1',
         credential: 'cred1',
-        options: { inspect: true },
+        options: { inspect: false },
         disposable: false,
         toReserve: false,
       });
 
-      controlPlane.capacityManager.workerStatsSnapshot.register({
+      stateManager.workerStatsSnapshot.register({
         funcName: 'func2',
         processName: 'worker1',
         credential: 'cred1',
-        options: { inspect: true },
+        options: { inspect: false },
         disposable: false,
         toReserve: false,
       });
 
-      const worker1 = capacityManager.workerStatsSnapshot.getWorker(
+      const worker1 = stateManager.workerStatsSnapshot.getWorker(
         'func1',
         false,
         'worker1'
       );
-      const worker2 = capacityManager.workerStatsSnapshot.getWorker(
+      const worker2 = stateManager.workerStatsSnapshot.getWorker(
         'func2',
         false,
         'worker1'
@@ -89,67 +83,79 @@ describe.skip(common.testName(__filename), () => {
       assert(worker1);
       assert(worker2);
 
-      stateManager.updateContainerStatusByReport({
-        functionName: 'func1',
-        name: 'worker1',
-        isInspector: false,
-        event: ContainerStatusReport.ContainerInstalled,
-        requestId: '',
-      });
+      stateManager.updateWorkerStatusByReport(
+        new WorkerStatusReportEvent({
+          functionName: 'func1',
+          name: 'worker1',
+          isInspector: false,
+          event: ContainerStatusReport.ContainerInstalled,
+          requestId: '',
+        })
+      );
 
       assert.strictEqual(worker1.containerStatus, ContainerStatus.Ready);
 
-      stateManager.updateContainerStatusByReport({
-        functionName: 'func1',
-        name: 'worker1',
-        isInspector: false,
-        event: ContainerStatusReport.RequestDrained,
-        requestId: '',
-      });
+      stateManager.updateWorkerStatusByReport(
+        new WorkerStatusReportEvent({
+          functionName: 'func1',
+          name: 'worker1',
+          isInspector: false,
+          event: ContainerStatusReport.RequestDrained,
+          requestId: '',
+        })
+      );
 
       assert.strictEqual(worker1.containerStatus, ContainerStatus.Stopped);
 
-      stateManager.updateContainerStatusByReport({
-        functionName: 'func1',
-        name: 'worker1',
-        isInspector: false,
-        event: ContainerStatusReport.ContainerDisconnected,
-        requestId: '',
-      });
+      stateManager.updateWorkerStatusByReport(
+        new WorkerStatusReportEvent({
+          functionName: 'func1',
+          name: 'worker1',
+          isInspector: false,
+          event: ContainerStatusReport.ContainerDisconnected,
+          requestId: '',
+        })
+      );
 
       assert.strictEqual(worker1.containerStatus, ContainerStatus.Stopped);
 
-      stateManager.updateContainerStatusByReport({
-        functionName: 'func1',
-        name: 'worker1',
-        isInspector: false,
-        event: 'Unknown state',
-        requestId: '',
-      });
+      stateManager.updateWorkerStatusByReport(
+        new WorkerStatusReportEvent({
+          functionName: 'func1',
+          name: 'worker1',
+          isInspector: false,
+          event: 'Unknown state',
+          requestId: '',
+        })
+      );
 
       assert.strictEqual(worker1.containerStatus, ContainerStatus.Stopped);
 
-      stateManager.updateContainerStatusByReport({
-        functionName: 'func2',
-        name: 'worker1',
-        isInspector: false,
-        event: 'Unknown state',
-        requestId: '',
-      });
+      stateManager.updateWorkerStatusByReport(
+        new WorkerStatusReportEvent({
+          functionName: 'func2',
+          name: 'worker1',
+          isInspector: false,
+          event: 'Unknown state',
+          requestId: '',
+        })
+      );
 
-      stateManager.updateContainerStatusByReport({
-        functionName: 'func2',
-        name: 'worker1',
-        isInspector: false,
-        event: ContainerStatusReport.ContainerDisconnected,
-        requestId: '',
-      });
+      stateManager.updateWorkerStatusByReport(
+        new WorkerStatusReportEvent({
+          functionName: 'func2',
+          name: 'worker1',
+          isInspector: false,
+          event: ContainerStatusReport.ContainerDisconnected,
+          requestId: '',
+        })
+      );
 
       assert.strictEqual(worker2.containerStatus, ContainerStatus.Unknown);
     });
 
     it('should not update with illegal ContainerStatusReport order', async () => {
-      await agent.setFunctionProfile(
+      await controlPlane.functionProfile.set(
         [
           {
             name: 'func1',
@@ -162,16 +168,16 @@ describe.skip(common.testName(__filename), () => {
         'WAIT'
       );
 
-      controlPlane.capacityManager.workerStatsSnapshot.register({
+      stateManager.workerStatsSnapshot.register({
         funcName: 'func1',
         processName: 'worker1',
         credential: 'cred1',
-        options: { inspect: true },
+        options: { inspect: false },
         disposable: false,
         toReserve: false,
       });
 
-      const worker = capacityManager.workerStatsSnapshot.getWorker(
+      const worker = stateManager.workerStatsSnapshot.getWorker(
         'func1',
         false,
         'worker1'
@@ -188,23 +194,27 @@ describe.skip(common.testName(__filename), () => {
         }
       );
 
-      stateManager.updateContainerStatusByReport({
-        functionName: 'func1',
-        name: 'worker1',
-        isInspector: false,
-        event: ContainerStatusReport.RequestDrained,
-        requestId: '',
-      });
+      stateManager.updateWorkerStatusByReport(
+        new WorkerStatusReportEvent({
+          functionName: 'func1',
+          name: 'worker1',
+          isInspector: false,
+          event: ContainerStatusReport.RequestDrained,
+          requestId: '',
+        })
+      );
 
       assert.strictEqual(worker.containerStatus, ContainerStatus.Stopped);
 
-      stateManager.updateContainerStatusByReport({
-        functionName: 'func1',
-        name: 'worker1',
-        isInspector: false,
-        event: ContainerStatusReport.ContainerInstalled,
-        requestId: '',
-      });
+      stateManager.updateWorkerStatusByReport(
+        new WorkerStatusReportEvent({
+          functionName: 'func1',
+          name: 'worker1',
+          isInspector: false,
+          event: ContainerStatusReport.ContainerInstalled,
+          requestId: '',
+        })
+      );
 
       assert.strictEqual(worker.containerStatus, ContainerStatus.Stopped);
     });
@@ -212,7 +222,7 @@ describe.skip(common.testName(__filename), () => {
 
   describe('syncWorkerData()', () => {
     it('should sync', async () => {
-      await agent.setFunctionProfile(
+      await controlPlane.functionProfile.set(
         [
           {
             name: 'func1',
@@ -242,40 +252,43 @@ describe.skip(common.testName(__filename), () => {
         ],
       };
 
-      controlPlane.capacityManager.workerStatsSnapshot.register({
+      stateManager.workerStatsSnapshot.register({
         funcName: 'func1',
         processName: 'worker1',
         credential: 'id1',
-        options: { inspect: true },
+        options: { inspect: false },
         disposable: false,
         toReserve: false,
       });
-      controlPlane.capacityManager.workerStatsSnapshot.register({
+      stateManager.workerStatsSnapshot.register({
         funcName: 'func1',
-        processName: 'worker1',
+        processName: 'worker2',
         credential: 'id2',
-        options: { inspect: true },
+        options: { inspect: false },
         disposable: false,
         toReserve: false,
       });
 
-      await env.turf.create('worker1', simpleSandbox);
-      await env.turf.create('worker2', simpleSandbox);
-      await env.turf.start('worker1');
-      await env.turf.start('worker2');
-
+      registerContainers(
+        env.containerManager,
+        stateManager.workerStatsSnapshot,
+        [
+          { name: 'worker1', status: TurfContainerStates.running, pid: 123 },
+          { name: 'worker2', status: TurfContainerStates.running, pid: 124 },
+        ]
+      );
       await stateManager.syncWorkerData([brokerStat1]);
 
-      assert.strictEqual(capacityManager.workerStatsSnapshot.brokers.size, 1);
+      assert.strictEqual(stateManager.workerStatsSnapshot.brokers.size, 1);
       assert.strictEqual(
-        capacityManager.workerStatsSnapshot.getBroker('func1', false)!.workers
+        stateManager.workerStatsSnapshot.getBroker('func1', false)!.workers
           .size,
         2
       );
 
       assert.deepStrictEqual(
         _.omit(
-          capacityManager.workerStatsSnapshot
+          stateManager.workerStatsSnapshot
             .getBroker('func1', false)!
             .getWorker('worker1')!
             .toJSON(),
@@ -291,7 +304,7 @@ describe.skip(common.testName(__filename), () => {
         }
       );
       {
-        const worker2 = capacityManager.workerStatsSnapshot
+        const worker2 = stateManager.workerStatsSnapshot
           .getBroker('func1', false)!
           .getWorker('worker2');
         assert(worker2);
@@ -306,18 +319,18 @@ describe.skip(common.testName(__filename), () => {
           }
         );
 
-        process.kill(worker2.pid!, 'SIGKILL');
+        await env.containerManager.getContainer('worker2')!.stop();
         await stateManager.syncWorkerData([brokerStat1]);
       }
 
-      assert.strictEqual(capacityManager.workerStatsSnapshot.brokers.size, 1);
+      assert.strictEqual(stateManager.workerStatsSnapshot.brokers.size, 1);
       assert.strictEqual(
-        capacityManager.workerStatsSnapshot.getBroker('func1', false)!.workers
+        stateManager.workerStatsSnapshot.getBroker('func1', false)!.workers
           .size,
         1
       );
       assert.deepStrictEqual(
-        capacityManager.workerStatsSnapshot
+        stateManager.workerStatsSnapshot
           .getBroker('func1', false)!
           .getWorker('worker2'),
         null
@@ -329,11 +342,7 @@ describe.skip(common.testName(__filename), () => {
         assert.strictEqual(
           name,
           path.dirname(
-            workerLogPath(
-              capacityManager.workerStatsSnapshot.config.logger.dir,
-              'worker2',
-              'dummy'
-            )
+            workerLogPath(stateManager['config'].logger.dir, 'worker2', 'dummy')
           )
         );
         assert.deepStrictEqual(options, { recursive: true });
@@ -345,7 +354,7 @@ describe.skip(common.testName(__filename), () => {
     });
 
     it('should not sync with empty psData', async () => {
-      await agent.setFunctionProfile(
+      await controlPlane.functionProfile.set(
         [
           {
             name: 'func1',
@@ -370,23 +379,23 @@ describe.skip(common.testName(__filename), () => {
         ],
       };
 
-      controlPlane.capacityManager.workerStatsSnapshot.register({
+      stateManager.workerStatsSnapshot.register({
         funcName: 'func1',
         processName: 'worker1',
         credential: 'id1',
-        options: { inspect: true },
+        options: { inspect: false },
         disposable: false,
         toReserve: false,
       });
 
-      const beforeSync = controlPlane.capacityManager.workerStatsSnapshot
+      const beforeSync = stateManager.workerStatsSnapshot
         .getBroker('func1', false)!
         .getWorker('worker1')!
         .toJSON();
 
       await stateManager.syncWorkerData([brokerStat1]);
 
-      const afterSync = controlPlane.capacityManager.workerStatsSnapshot
+      const afterSync = stateManager.workerStatsSnapshot
         .getBroker('func1', false)!
         .getWorker('worker1')!
         .toJSON();

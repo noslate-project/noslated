@@ -1,28 +1,28 @@
 import { performance } from 'perf_hooks';
-import { BaseController } from './controller';
 import { ControlPlane } from '../control_plane';
 import { Logger, loggers } from '#self/lib/loggers';
 import { ContainerStatus, ContainerStatusReport } from '#self/lib/constants';
-import { NotNullableInterface } from '#self/lib/interfaces';
-import * as root from '#self/proto/root';
+import { WorkerStatusReportEvent } from '../events';
+import { BaseController } from './base_controller';
 
 export class DisposableController extends BaseController {
   logger: Logger;
 
-  constructor(public plane: ControlPlane) {
+  constructor(plane: ControlPlane) {
     super(plane);
     this.logger = loggers.get('disposable controller');
+
+    this.plane.eventBus.subscribe(WorkerStatusReportEvent, {
+      next: event => {
+        return this.tryStopDisposableWorkerByReport(event);
+      },
+    });
   }
 
-  async tryStopDisposableWorkerByReport(
-    report: NotNullableInterface<root.noslated.data.IContainerStatusReport>
-  ) {
-    const { functionName, name, requestId, isInspector, event } = report;
-    const broker = this.plane.capacityManager.workerStatsSnapshot.getBroker(
-      functionName,
-      isInspector
-    );
-    const worker = this.plane.capacityManager.workerStatsSnapshot.getWorker(
+  async tryStopDisposableWorkerByReport(eve: WorkerStatusReportEvent) {
+    const { functionName, name, requestId, isInspector, event } = eve.data;
+    const broker = this.plane.stateManager.getBroker(functionName, isInspector);
+    const worker = this.plane.stateManager.getWorker(
       functionName,
       isInspector,
       name
@@ -30,8 +30,9 @@ export class DisposableController extends BaseController {
 
     if (!broker || !worker) {
       this.logger.warn(
-        'containerStatusReport report [%j] skip because no broker and worker related.',
-        report
+        'containerStatusReport report [%s, %s] skip because no broker and worker related.',
+        functionName,
+        name
       );
       return;
     }
