@@ -101,7 +101,7 @@ describe(common.testName(__filename), function () {
         await killWorker(env, item.name);
 
         await once(
-          env.control.stateManager.workerStatsSnapshot,
+          env.control._ctx.getInstance('stateManager').workerStatsSnapshot,
           'workerStopped'
         );
 

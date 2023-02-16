@@ -9,7 +9,7 @@ describe(testName(__filename), () => {
 
   const env = new DefaultEnvironment();
   beforeEach(async () => {
-    guest = new Guest(env.control.herald.address);
+    guest = new Guest(env.control._ctx.getInstance('herald').address);
     guest.addService((descriptor as any).noslated.control.ControlPlane);
     await guest.start();
   });

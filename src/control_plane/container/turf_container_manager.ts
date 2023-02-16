@@ -19,18 +19,22 @@ import {
   TurfStartOptions,
   TurfState,
 } from '#self/lib/turf/types';
+import { DependencyContext } from '#self/lib/dependency_context';
+import { ConfigContext } from '../deps';
 
 const TurfStopRetryableCodes = [TurfCode.EAGAIN];
 
 export class TurfContainerManager implements ContainerManager {
+  private config: Config;
   private bundlePathLock = new Map<string, Promise<void>>();
   private logger: Logger;
   private containers = new Map<string, TurfContainer>();
 
   client: Turf;
 
-  constructor(private config: Config) {
-    this.client = new Turf(config.turf.bin, config.turf.socketPath);
+  constructor(ctx: DependencyContext<ConfigContext>) {
+    this.config = ctx.getInstance('config');
+    this.client = new Turf(this.config.turf.bin, this.config.turf.socketPath);
     this.logger = loggers.get('turf-manager');
   }
 

@@ -4,7 +4,11 @@ import mm from 'mm';
 import { Broker } from '#self/control_plane/worker_stats/index';
 import * as common from '#self/test/common';
 import { config } from '#self/config';
-import { FunctionProfileManager as ProfileManager } from '#self/lib/function_profile';
+import {
+  FunctionProfileManager as ProfileManager,
+  FunctionProfileManagerContext,
+  FunctionProfileUpdateEvent,
+} from '#self/lib/function_profile';
 import { TurfContainerStates } from '#self/lib/turf';
 import {
   AworkerFunctionProfile,
@@ -24,6 +28,8 @@ import {
   TestContainerManager,
 } from '../test_container_manager';
 import { registerWorkers } from '../util';
+import { DependencyContext } from '#self/lib/dependency_context';
+import { EventBus } from '#self/lib/event-bus';
 
 describe(common.testName(__filename), () => {
   const funcData: AworkerFunctionProfile[] = [
@@ -56,7 +62,13 @@ describe(common.testName(__filename), () => {
 
   let profileManager: ProfileManager | null;
   beforeEach(async () => {
-    profileManager = new ProfileManager(config);
+    const ctx = new DependencyContext<FunctionProfileManagerContext>();
+    ctx.bindInstance('config', config);
+    ctx.bindInstance(
+      'eventBus',
+      new EventBus([FunctionProfileUpdateEvent.type])
+    );
+    profileManager = new ProfileManager(ctx);
     await profileManager.set(funcData, 'WAIT');
   });
   afterEach(() => {

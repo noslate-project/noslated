@@ -1,4 +1,3 @@
-import { config } from '#self/config';
 import { Clock, systemClock } from '#self/lib/clock';
 import { createTestClock, TestClock } from '#self/test/common';
 import {
@@ -36,7 +35,7 @@ export class TestEnvironment extends MochaEnvironment {
     this.containerManager = new TestContainerManager(this.clock);
 
     mockClientCreatorForManager(DataPlaneClientManager);
-    this.control = new ControlPlane(config, {
+    this.control = new ControlPlane({
       clock: this.clock,
       containerManager: this.containerManager,
     });

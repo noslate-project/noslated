@@ -4,8 +4,7 @@ import { descriptor } from '#self/lib/rpc/util';
 import { HeraldImpl } from './impl';
 import { Host } from '#self/lib/rpc/host';
 import { getCurrentPlaneId } from '#self/lib/util';
-import { ControlPlane } from '../control_plane';
-import { Config } from '#self/config';
+import { ControlPlaneDependencyContext } from '../deps';
 
 const logger = require('#self/lib/logger').get('herald');
 
@@ -16,7 +15,8 @@ const logger = require('#self/lib/logger').get('herald');
 export class Herald extends Host {
   impl: HeraldImpl;
 
-  constructor(public plane: ControlPlane, public config: Config) {
+  constructor(ctx: ControlPlaneDependencyContext) {
+    const config = ctx.getInstance('config');
     const sockPath = path.join(
       config.dirs.noslatedSock,
       `cp-${getCurrentPlaneId()}.sock`
@@ -24,7 +24,7 @@ export class Herald extends Host {
     fs.mkdirSync(path.dirname(sockPath), { recursive: true });
 
     super(`unix://${sockPath}`, logger);
-    this.impl = new HeraldImpl(config, this);
+    this.impl = new HeraldImpl(ctx);
   }
 
   async ready() {

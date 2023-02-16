@@ -12,6 +12,8 @@ import { mockClientCreatorForManager } from '#self/test/util';
 import { RawFunctionProfile } from '#self/lib/json/function_profile';
 import { DataPlane } from '#self/data_plane/index';
 import { startTurfD, stopTurfD } from '#self/test/turf';
+import sinon from 'sinon';
+import { PlatformEnvironsUpdatedEvent } from '#self/control_plane/events';
 
 describe(testName(__filename), () => {
   let agent: NoslatedClient;
@@ -44,11 +46,12 @@ describe(testName(__filename), () => {
         },
       };
 
-      control = new ControlPlane(config);
-      const checkV8Options = control.herald.impl.checkV8Options;
+      control = new ControlPlane();
+      const herald = control._ctx.getInstance('herald');
+      const checkV8Options = herald.impl.checkV8Options;
       let errMessage = '';
       mm(
-        control.herald.impl,
+        herald.impl,
         'checkV8Options',
         function (this: ControlPlane, profiles: RawFunctionProfile[]) {
           try {
@@ -86,11 +89,12 @@ describe(testName(__filename), () => {
         },
       };
 
-      control = new ControlPlane(config);
-      const checkV8Options = control.herald.impl.checkV8Options;
+      control = new ControlPlane();
+      const herald = control._ctx.getInstance('herald');
+      const checkV8Options = herald.impl.checkV8Options;
       let errMessage = '';
       mm(
-        control.herald.impl,
+        herald.impl,
         'checkV8Options',
         function (this: ControlPlane, profiles: RawFunctionProfile[]) {
           try {
@@ -141,33 +145,42 @@ describe(testName(__filename), () => {
       assert.deepStrictEqual(agent.platformEnvironmentVariables, envs);
     });
 
-    it('should set platform environment variables', async () => {
-      control = new ControlPlane(config);
+    it('should publish platform environment variables updated events', async () => {
+      control = new ControlPlane();
       mockClientCreatorForManager(DataPlaneClientManager);
       mockClientCreatorForManager(_DataPlaneClientManager);
       await control.ready();
       await agent.start();
 
-      assert.deepStrictEqual(control.platformEnvironmentVariables, {});
+      const stub = sinon.stub();
+      const eventBus = control._ctx.getInstance('eventBus');
+      eventBus.subscribe(PlatformEnvironsUpdatedEvent, {
+        next: stub,
+      });
 
       await agent.setPlatformEnvironmentVariables(envs);
 
       assert.notStrictEqual(agent.platformEnvironmentVariables, envs);
       assert.deepStrictEqual(agent.platformEnvironmentVariables, envs);
 
-      assert.deepStrictEqual(control.platformEnvironmentVariables, {
+      assert.strictEqual(stub.callCount, 1);
+      assert.deepStrictEqual(stub.args[0][0].data, {
         foo: 'bar',
       });
     });
 
     it('should throw error if not string', async () => {
-      control = new ControlPlane(config);
+      control = new ControlPlane();
       mockClientCreatorForManager(DataPlaneClientManager);
       mockClientCreatorForManager(_DataPlaneClientManager);
       await control.ready();
       await agent.start();
 
-      assert.deepStrictEqual(control.platformEnvironmentVariables, {});
+      const stub = sinon.stub();
+      const eventBus = control._ctx.getInstance('eventBus');
+      eventBus.subscribe(PlatformEnvironsUpdatedEvent, {
+        next: stub,
+      });
 
       await assert.rejects(
         agent.setPlatformEnvironmentVariables([
@@ -181,17 +194,21 @@ describe(testName(__filename), () => {
       );
 
       assert.deepStrictEqual(agent.platformEnvironmentVariables, []);
-      assert.deepStrictEqual(control.platformEnvironmentVariables, {});
+      assert.strictEqual(stub.callCount, 0);
     });
 
     it('should throw error if reserved key hits', async () => {
-      control = new ControlPlane(config);
+      control = new ControlPlane();
       mockClientCreatorForManager(DataPlaneClientManager);
       mockClientCreatorForManager(_DataPlaneClientManager);
       await control.ready();
       await agent.start();
 
-      assert.deepStrictEqual(control.platformEnvironmentVariables, {});
+      const stub = sinon.stub();
+      const eventBus = control._ctx.getInstance('eventBus');
+      eventBus.subscribe(PlatformEnvironsUpdatedEvent, {
+        next: stub,
+      });
 
       await assert.rejects(
         agent.setPlatformEnvironmentVariables([
@@ -205,7 +222,7 @@ describe(testName(__filename), () => {
       );
 
       assert.deepStrictEqual(agent.platformEnvironmentVariables, []);
-      assert.deepStrictEqual(control.platformEnvironmentVariables, {});
+      assert.strictEqual(stub.callCount, 0);
     });
   });
 });

@@ -13,14 +13,12 @@ import type {
   AworkerFunctionProfile,
 } from './json/function_profile';
 import { Config } from '#self/config';
+import { EventBus } from './event-bus';
+import { DependencyContext } from './dependency_context';
 
 const logger = loggers.get('function_profile');
 
 export type Mode = 'IMMEDIATELY' | 'WAIT';
-type PresetFunction = (
-  profile: RawFunctionProfile[],
-  mode: Mode
-) => Promise<void>;
 
 /**
  * Per function profile
@@ -118,29 +116,40 @@ interface QueueItem {
   deferred: utils.Deferred<void>;
 }
 
+interface FunctionProfileUpdateEventData {
+  profile: RawFunctionProfile[];
+  mode: Mode;
+}
+export class FunctionProfileUpdateEvent extends Event {
+  static type = 'function-profile-updated';
+  constructor(public data: FunctionProfileUpdateEventData) {
+    super(FunctionProfileUpdateEvent.type);
+  }
+}
+
+export type FunctionProfileManagerContext = {
+  eventBus: EventBus;
+  config: Config;
+};
 /**
  * Function profile manager
  */
 export class FunctionProfileManager extends EventEmitter {
-  preset;
+  private _eventBus: EventBus;
+  private _config: Config;
   setQueue;
   setQueueRunning;
-  config;
   profile: PerFunctionProfile[];
   jsonValidator;
   internal;
-  /**
-   * constructor
-   * @param config The global config object.
-   * @param preset The preset function
-   */
-  constructor(config?: Config, preset?: PresetFunction) {
-    super();
 
-    this.preset = preset;
+  constructor(ctx: DependencyContext<FunctionProfileManagerContext>) {
+    super();
+    this._eventBus = ctx.getInstance('eventBus');
+    this._config = ctx.getInstance('config');
+
     this.setQueue = new LinkList<QueueItem>();
     this.setQueueRunning = false;
-    this.config = config;
 
     this.profile = [];
     this.jsonValidator = new JSONValidator();
@@ -149,13 +158,17 @@ export class FunctionProfileManager extends EventEmitter {
         this: FunctionProfileManager,
         profile: RawFunctionProfile[]
       ) {
-        this.profile = PerFunctionProfile.fromJSONArray(profile, this.config);
-        if (this.preset) {
-          const preset = this.preset;
-          preset(this.profile, 'IMMEDIATELY').catch(e => {
-            logger.warn('Failed to preset profile:', e.stack);
+        this.profile = PerFunctionProfile.fromJSONArray(profile, this._config);
+        this._eventBus
+          .publish(
+            new FunctionProfileUpdateEvent({
+              profile: this.profile,
+              mode: 'IMMEDIATELY',
+            })
+          )
+          .catch(e => {
+            logger.warn('Failed to publish FunctionProfileUpdateEvent:', e);
           }); // do not await
-        }
         logger.debug('Function profile has been updated: %j', this.profile);
         this.emit('changed', this.profile);
 
@@ -188,22 +201,6 @@ export class FunctionProfileManager extends EventEmitter {
         return deferred.promise;
       },
     };
-  }
-
-  /**
-   * Set preset function
-   * @param preset The preset function
-   */
-  setPreset(preset: PresetFunction) {
-    this.preset = preset;
-  }
-
-  /**
-   * Get preset function
-   * @return The preset function
-   */
-  getPreset() {
-    return this.preset;
   }
 
   /**
@@ -253,17 +250,15 @@ export class FunctionProfileManager extends EventEmitter {
     const stringified = JSON.stringify(profile);
     logger.debug('Updating code relation.', stringified);
 
-    let preset;
-    if (this.preset) {
-      preset = this.preset;
-    } else {
-      preset = async () => {};
-    }
-
     let errored = false;
     let error;
     try {
-      await preset(profile, 'WAIT');
+      await this._eventBus.publish(
+        new FunctionProfileUpdateEvent({
+          profile,
+          mode: 'WAIT',
+        })
+      );
     } catch (e) {
       errored = true;
       error = e;
@@ -271,7 +266,7 @@ export class FunctionProfileManager extends EventEmitter {
 
     if (!errored) {
       if (!this.setQueue.valueAt(0)!.immediatelyInterrupted) {
-        this.profile = PerFunctionProfile.fromJSONArray(profile, this.config);
+        this.profile = PerFunctionProfile.fromJSONArray(profile, this._config);
         logger.debug('Code relation has been delayed-updated', stringified);
         this.emit('changed', this.profile, false);
       } else {

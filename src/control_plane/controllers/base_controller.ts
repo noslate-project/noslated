@@ -1,13 +1,26 @@
 import { ControlPlaneEvent } from '#self/lib/constants';
 import { Logger } from '#self/lib/loggers';
 import { Delta } from '../capacity_manager';
-import { ControlPlane } from '../control_plane';
 import { WorkerMetadata } from '../worker_stats';
+import { FunctionProfileManager } from '#self/lib/function_profile';
+import { ContainerManager } from '../container/container_manager';
+import { ControlPlaneDependencyContext } from '../deps';
+import { WorkerLauncher } from '../worker_launcher';
+import { StateManager } from '../worker_stats/state_manager';
 
 export abstract class BaseController {
   abstract logger: Logger;
+  protected _functionProfile: FunctionProfileManager;
+  protected _workerLauncher: WorkerLauncher;
+  protected _containerManager: ContainerManager;
+  protected _stateManager: StateManager;
 
-  constructor(protected plane: ControlPlane) {}
+  constructor(ctx: ControlPlaneDependencyContext) {
+    this._functionProfile = ctx.getInstance('functionProfile');
+    this._workerLauncher = ctx.getInstance('workerLauncher');
+    this._containerManager = ctx.getInstance('containerManager');
+    this._stateManager = ctx.getInstance('stateManager');
+  }
 
   /**
    * Expand.
@@ -40,11 +53,10 @@ export abstract class BaseController {
     workerMetadata: WorkerMetadata,
     count: number
   ): Promise<void[]> {
-    const { workerLauncher } = this.plane;
     const ret = [];
     for (let i = 0; i < count; i++) {
       ret.push(
-        workerLauncher.tryLaunch(ControlPlaneEvent.Expand, workerMetadata)
+        this._workerLauncher.tryLaunch(ControlPlaneEvent.Expand, workerMetadata)
       );
     }
     return Promise.all(ret);
@@ -54,7 +66,7 @@ export abstract class BaseController {
    * Destroy worker.
    */
   protected async stopWorker(workerName: string, requestId?: string) {
-    const container = this.plane.containerManager.getContainer(workerName);
+    const container = this._containerManager.getContainer(workerName);
     if (container == null) {
       return;
     }
@@ -74,7 +86,7 @@ export abstract class BaseController {
       return;
     }
 
-    const stateManager = this.plane.stateManager;
+    const stateManager = this._stateManager;
     const promises = [];
     this.logger.info('stop all worker of function %j', names);
     for (const name of names) {

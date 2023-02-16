@@ -46,9 +46,8 @@ describe(common.testName(__filename), () => {
 
   beforeEach(async () => {
     agent = env.agent;
-    ({ stateManager } = env.control);
-
-    profileManager = new ProfileManager(config);
+    stateManager = env.control._ctx.getInstance('stateManager');
+    profileManager = env.control._ctx.getInstance('functionProfile');
     await profileManager.set(funcData, 'WAIT');
   });
   afterEach(async () => {

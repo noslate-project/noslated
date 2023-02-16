@@ -1,18 +1,19 @@
 import { performance } from 'perf_hooks';
-import { ControlPlane } from '../control_plane';
 import { Logger, loggers } from '#self/lib/loggers';
 import { ContainerStatus, ContainerStatusReport } from '#self/lib/constants';
 import { WorkerStatusReportEvent } from '../events';
 import { BaseController } from './base_controller';
+import { ControlPlaneDependencyContext } from '../deps';
 
 export class DisposableController extends BaseController {
   logger: Logger;
 
-  constructor(plane: ControlPlane) {
-    super(plane);
+  constructor(ctx: ControlPlaneDependencyContext) {
+    super(ctx);
     this.logger = loggers.get('disposable controller');
 
-    this.plane.eventBus.subscribe(WorkerStatusReportEvent, {
+    const eventBus = ctx.getInstance('eventBus');
+    eventBus.subscribe(WorkerStatusReportEvent, {
       next: event => {
         return this.tryStopDisposableWorkerByReport(event);
       },
@@ -21,8 +22,8 @@ export class DisposableController extends BaseController {
 
   async tryStopDisposableWorkerByReport(eve: WorkerStatusReportEvent) {
     const { functionName, name, requestId, isInspector, event } = eve.data;
-    const broker = this.plane.stateManager.getBroker(functionName, isInspector);
-    const worker = this.plane.stateManager.getWorker(
+    const broker = this._stateManager.getBroker(functionName, isInspector);
+    const worker = this._stateManager.getWorker(
       functionName,
       isInspector,
       name

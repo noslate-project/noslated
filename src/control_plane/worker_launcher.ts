@@ -4,8 +4,6 @@ import loggers from '#self/lib/logger';
 import * as naming from '#self/lib/naming';
 import * as starters from './starter';
 import { ErrorCode } from './worker_launcher_error_code';
-import { ControlPlane } from './control_plane';
-import { Config } from '#self/config';
 import { RawFunctionProfile } from '#self/lib/json/function_profile';
 import { BaseOptions } from './starter/base';
 import { CodeManager } from './code_manager';
@@ -17,6 +15,8 @@ import { performance } from 'perf_hooks';
 import { ControlPlaneEvent } from '#self/lib/constants';
 import { Priority, TaskQueue } from '#self/lib/task_queue';
 import { Container } from './container/container_manager';
+import { ControlPlaneDependencyContext } from './deps';
+import { CapacityManager } from './capacity_manager';
 
 export interface WorkerStarter {
   start(
@@ -30,36 +30,35 @@ export interface WorkerStarter {
 }
 
 export class WorkerLauncher extends Base {
-  plane;
   logger;
   config;
   starters;
-  codeManager!: CodeManager;
-  functionProfile!: FunctionProfileManager;
-  dataPlaneClientManager!: DataPlaneClientManager;
-  snapshot!: WorkerStatsSnapshot;
+  codeManager: CodeManager;
+  functionProfile: FunctionProfileManager;
+  dataPlaneClientManager: DataPlaneClientManager;
+  capacityManager: CapacityManager;
+  snapshot: WorkerStatsSnapshot;
   launchQueue: TaskQueue<LaunchTask>;
 
-  /**
-   * Constructor
-   * @param {import('./control_plane').ControlPlane} plane The plane object.
-   * @param {typeof import('#self/config/default')} config The global config object.
-   */
-  constructor(plane: ControlPlane, config: Config) {
+  constructor(ctx: ControlPlaneDependencyContext) {
     super();
-    this.plane = plane;
+    this.config = ctx.getInstance('config');
+    this.codeManager = ctx.getInstance('codeManager');
+    this.functionProfile = ctx.getInstance('functionProfile');
+    this.dataPlaneClientManager = ctx.getInstance('dataPlaneClientManager');
+    this.snapshot = ctx.getInstance('stateManager').workerStatsSnapshot;
+    this.capacityManager = ctx.getInstance('capacityManager');
 
     this.logger = loggers.get('worker launcher');
-    this.config = config;
 
     this.starters = {
-      nodejs: new starters.Nodejs(plane, config),
-      aworker: new starters.Aworker(plane, config),
+      nodejs: new starters.Nodejs(ctx),
+      aworker: new starters.Aworker(ctx),
     };
 
     this.launchQueue = new TaskQueue(this.doLauchTask, {
-      concurrency: config.controlPlane.expandConcurrency,
-      clock: plane.clock,
+      concurrency: this.config.controlPlane.expandConcurrency,
+      clock: ctx.getInstance('clock'),
     });
   }
 
@@ -78,11 +77,6 @@ export class WorkerLauncher extends Base {
    * Init (override)
    */
   async _init() {
-    this.codeManager = this.plane.codeManager;
-    this.functionProfile = this.plane.functionProfile;
-    this.dataPlaneClientManager = this.plane.dataPlaneClientManager;
-    this.snapshot = this.plane.stateManager.workerStatsSnapshot;
-
     await Promise.all([
       this.starters.nodejs.ready(),
       this.starters.aworker.ready(),
@@ -161,10 +155,7 @@ export class WorkerLauncher extends Base {
     const profile = pprofile.toJSON(true);
     const credential = naming.credential(funcName);
     const processName = naming.processName(funcName);
-    const {
-      dataPlaneClientManager,
-      plane: { capacityManager },
-    } = this;
+    const { dataPlaneClientManager, capacityManager } = this;
     const {
       worker: { replicaCountLimit },
     } = profile;

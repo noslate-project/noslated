@@ -4,7 +4,11 @@ import path from 'path';
 import { NoslatedDelegateService } from '#self/delegate/index';
 import { BaseOf } from '#self/lib/sdk_base';
 import { FunctionConfigBag } from './function_config';
-import { FunctionProfileManager, Mode } from '#self/lib/function_profile';
+import {
+  FunctionProfileManager,
+  FunctionProfileManagerContext,
+  Mode,
+} from '#self/lib/function_profile';
 import { getCurrentPlaneId, setDifference } from '#self/lib/util';
 import { InspectorAgent } from '#self/diagnostics/inspector_agent';
 import { RpcError, RpcStatus } from '#self/lib/rpc/error';
@@ -26,6 +30,9 @@ import { Readable } from 'stream';
 import { Metadata, TriggerResponse } from '#self/delegate/request_response';
 import { ContainerStatusReport } from '#self/lib/constants';
 import { DataPlaneHost } from './data_plane_host';
+import { DependencyContext } from '#self/lib/dependency_context';
+import { EventBus } from '#self/lib/event-bus';
+import { events } from './events';
 
 const logger = require('#self/lib/logger').get('data flow controller');
 
@@ -85,7 +92,11 @@ export class DataFlowController extends BaseOf(EventEmitter) {
 
     fs.mkdirSync(path.dirname(delegateSockPath), { recursive: true });
 
-    this.profileManager = new FunctionProfileManager(config);
+    // TODO: data plane ctx.
+    const ctx = new DependencyContext<FunctionProfileManagerContext>();
+    ctx.bindInstance('eventBus', new EventBus(events));
+    ctx.bindInstance('config', config);
+    this.profileManager = new FunctionProfileManager(ctx);
 
     this.namespaceResolver = new NamespaceResolver(this);
     this.delegate = new NoslatedDelegateService(delegateSockPath, {

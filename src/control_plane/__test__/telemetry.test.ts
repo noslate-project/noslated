@@ -16,6 +16,7 @@ import {
   nodeJsWorkerTestItem,
 } from '#self/test/telemetry-util';
 import { DefaultEnvironment } from '#self/test/env/environment';
+import { StateManager } from '../worker_stats/state_manager';
 
 describe(common.testName(__filename), function () {
   // Debug version of Node.js may take longer time to bootstrap.
@@ -23,6 +24,7 @@ describe(common.testName(__filename), function () {
 
   let meterProvider: MeterProvider;
   let metricReader: TestMetricReader;
+  let stateManager: StateManager;
 
   beforeEach(async () => {
     metricReader = new TestMetricReader();
@@ -36,6 +38,9 @@ describe(common.testName(__filename), function () {
   });
 
   const env = new DefaultEnvironment();
+  beforeEach(() => {
+    stateManager = env.control._ctx.getInstance('stateManager');
+  });
 
   it('should collect replica metrics', async () => {
     await env.agent.setFunctionProfile([nodeJsWorkerTestItem.profile] as any);
@@ -79,7 +84,7 @@ describe(common.testName(__filename), function () {
         process.kill(it.pid, 'SIGKILL');
       });
 
-    await once(env.control.stateManager.workerStatsSnapshot, 'workerStopped');
+    await once(stateManager.workerStatsSnapshot, 'workerStopped');
 
     const result = await metricReader!.collect();
     {
@@ -109,7 +114,7 @@ describe(common.testName(__filename), function () {
       const buffer = await bufferFromStream(response);
       assert.strictEqual(buffer.toString('utf8'), 'foobar');
 
-      const broker: any = Array.from(env.control.stateManager.brokers())[0];
+      const broker: any = Array.from(stateManager.brokers())[0];
       assert.ok(broker != null);
       assert.strictEqual(broker.name, nodeJsWorkerTestItem.name);
       const worker: any = Array.from(broker.workers.values())[0];

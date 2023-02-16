@@ -5,9 +5,12 @@ import * as testUtil from '#self/test/util';
 import path from 'path';
 import assert from 'assert';
 import sinon from 'sinon';
+import { DependencyContext } from '#self/lib/dependency_context';
+import { ConfigContext } from '../deps';
 
 describe(testName(__filename), () => {
   describe('ensure', () => {
+    let ctx: DependencyContext<ConfigContext>;
     before(async () => {
       await testUtil.startResourceServer();
     });
@@ -16,13 +19,22 @@ describe(testName(__filename), () => {
       testUtil.stopResourceServer();
     });
 
+    beforeEach(() => {
+      ctx = new DependencyContext<ConfigContext>();
+      ctx.bindInstance('config', {
+        dirs: {
+          noslatedWork: testUtil.TMP_DIR(),
+        },
+      } as any);
+    });
+
     afterEach(() => {
       sinon.restore();
       testUtil.unlinkTmpDir();
     });
 
     it('should generate integrity sigil', async () => {
-      const codeManager = new CodeManager(testUtil.TMP_DIR());
+      const codeManager = new CodeManager(ctx);
       const bundlePath = await codeManager.ensure(
         'test',
         'http://127.0.0.1:55331/aworker-echo.zip',
@@ -33,7 +45,7 @@ describe(testName(__filename), () => {
     });
 
     it('should invalidate bundle if integrity sigil not presents', async () => {
-      let codeManager = new CodeManager(testUtil.TMP_DIR());
+      let codeManager = new CodeManager(ctx);
       const spy = sinon.spy(codeManager, 'ensureFromHTTP');
 
       const bundlePath = await codeManager.ensure(
@@ -44,7 +56,7 @@ describe(testName(__filename), () => {
       await fs.rm(bundlePath, { recursive: true });
 
       // simulates process restart
-      codeManager = new CodeManager(testUtil.TMP_DIR());
+      codeManager = new CodeManager(ctx);
       const bundlePath2 = await codeManager.ensure(
         'test',
         'http://127.0.0.1:55331/aworker-echo.zip',

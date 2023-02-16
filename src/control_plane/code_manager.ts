@@ -6,6 +6,8 @@ import util from 'util';
 import loggers from '#self/lib/logger';
 import * as naming from '#self/lib/naming';
 import * as utils from '#self/lib/util';
+import { ConfigContext } from './deps';
+import { DependencyContext } from '#self/lib/dependency_context';
 
 async function exists(filepath: string) {
   let exists = true;
@@ -20,9 +22,11 @@ async function exists(filepath: string) {
 export class CodeManager extends EventEmitter {
   logger;
   map: Map<string, Promise<string> | boolean>;
+  workDir: string;
 
-  constructor(private workDir: string) {
+  constructor(ctx: DependencyContext<ConfigContext>) {
     super();
+    this.workDir = ctx.getInstance('config').dirs.noslatedWork;
     this.logger = loggers.get('code manager');
 
     this.map = new Map();

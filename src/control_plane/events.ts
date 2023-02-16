@@ -1,4 +1,5 @@
 import { Event } from '#self/lib/event-bus';
+import { FunctionProfileUpdateEvent } from '#self/lib/function_profile';
 import { NotNullableInterface } from '#self/lib/interfaces';
 import { TurfState } from '#self/lib/turf/types';
 import * as root from '#self/proto/root';
@@ -9,6 +10,13 @@ export class FunctionRemovedEvent extends Event {
   static type = 'function-removed';
   constructor(public data: string[]) {
     super(FunctionRemovedEvent.type);
+  }
+}
+
+export class PlatformEnvironsUpdatedEvent extends Event {
+  static type = 'platform-environs-updated';
+  constructor(public data: Record<string, string>) {
+    super(PlatformEnvironsUpdatedEvent.type);
   }
 }
 
@@ -54,6 +62,8 @@ export class WorkerTrafficStatsEvent extends Event {
 
 export const events = [
   FunctionRemovedEvent,
+  FunctionProfileUpdateEvent,
+  PlatformEnvironsUpdatedEvent,
   RequestQueueingEvent,
   WorkerStatusReportEvent,
   WorkerStoppedEvent,

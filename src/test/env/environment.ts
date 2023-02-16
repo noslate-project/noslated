@@ -78,13 +78,15 @@ export class DefaultEnvironment extends MochaEnvironment {
 
     this.data = new DataPlane(config);
 
-    const containerManager = new TurfContainerManager(config);
-    this.control = new ControlPlane(config, {
+    this.control = new ControlPlane({
       clock: this.clock,
-      containerManager: containerManager,
     });
-    this.agent = new NoslatedClient();
+    const containerManager = this.control._ctx.getInstance(
+      'containerManager'
+    ) as TurfContainerManager;
     this.turf = containerManager.client;
+
+    this.agent = new NoslatedClient();
 
     await Promise.all([
       this.data.ready(),
