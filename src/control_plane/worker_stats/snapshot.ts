@@ -4,7 +4,7 @@ import { BaseOf } from '#self/lib/sdk_base';
 import { Broker } from './broker';
 import loggers from '#self/lib/logger';
 import { Logger } from '#self/lib/loggers';
-import { Worker, WorkerInitData } from './worker';
+import { Worker, WorkerMetadata } from './worker';
 import { FunctionProfileManager } from '#self/lib/function_profile';
 import { Config } from '#self/config';
 import { TurfState } from '#self/lib/turf/types';
@@ -127,18 +127,18 @@ export class WorkerStatsSnapshot extends BaseOf(EventEmitter) {
    * @param {string} credential The credential.
    * @param {boolean} isInspector Whether it's using inspector or not.
    */
-  register(workerInitData: WorkerInitData): Worker {
+  register(workerMetadata: WorkerMetadata): Worker {
     const broker = this.getOrCreateBroker(
-      workerInitData.funcName,
-      workerInitData.options.inspect,
-      workerInitData.disposable
+      workerMetadata.funcName,
+      workerMetadata.options.inspect,
+      workerMetadata.disposable
     );
     if (!broker) {
       throw new Error(
-        `No function named ${workerInitData.funcName} in function profile.`
+        `No function named ${workerMetadata.funcName} in function profile.`
       );
     }
-    return broker.register(workerInitData);
+    return broker.register(workerMetadata);
   }
 
   /**

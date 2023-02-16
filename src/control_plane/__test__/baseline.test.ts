@@ -7,7 +7,7 @@ import { ResourceServer } from '#self/test/baseline/resource-server';
 import { testWorker } from '#self/test/util';
 import { config } from '#self/config';
 import { DefaultEnvironment } from '#self/test/env/environment';
-import { WorkerInitData } from '../worker_stats';
+import { WorkerMetadata } from '../worker_stats';
 
 const sleep = require('#self/lib/util').sleep;
 
@@ -331,8 +331,8 @@ const cases = [
       },
     },
     after: async ({ control }: DefaultEnvironment) => {
-      const workerInitData = new WorkerInitData('aworker_echo');
-      await control.defaultController['tryBatchLaunch'](workerInitData, 1);
+      const workerMetadata = new WorkerMetadata('aworker_echo');
+      await control.defaultController['tryBatchLaunch'](workerMetadata, 1);
       const broker = control.stateManager.getBroker('aworker_echo', false)!;
       while (true) {
         if (broker.workerCount !== 2) {
@@ -385,8 +385,8 @@ const cases = [
       },
     },
     after: async ({ control }: DefaultEnvironment) => {
-      const workerInitData = new WorkerInitData('aworker_echo');
-      await control.defaultController['tryBatchLaunch'](workerInitData, 1);
+      const workerMetadata = new WorkerMetadata('aworker_echo');
+      await control.defaultController['tryBatchLaunch'](workerMetadata, 1);
       const broker = control.stateManager.workerStatsSnapshot.getBroker(
         'aworker_echo',
         false
@@ -448,8 +448,8 @@ const cases = [
       },
     },
     after: async ({ control }: DefaultEnvironment) => {
-      const workerInitData = new WorkerInitData('aworker_echo');
-      await control.defaultController['tryBatchLaunch'](workerInitData, 1);
+      const workerMetadata = new WorkerMetadata('aworker_echo');
+      await control.defaultController['tryBatchLaunch'](workerMetadata, 1);
       const broker = control.stateManager.getBroker('aworker_echo', false)!;
       while (true) {
         if (broker.workerCount !== 2) {

@@ -27,7 +27,7 @@ class WorkerAdditionalData {
 type WorkerInitOption = {
   inspect: boolean;
 };
-class WorkerInitData {
+class WorkerMetadata {
   readonly funcName: string;
   readonly options: WorkerInitOption;
   readonly disposable: boolean;
@@ -176,15 +176,15 @@ class Worker {
    * @param credential The credential.
    */
   constructor(
-    workerInitData: WorkerInitData,
+    workerMetadata: WorkerMetadata,
     config: Config,
     initializationTimeout?: number
   ) {
     this.#config = config;
 
-    this.disposable = workerInitData.disposable;
-    this.#name = workerInitData.processName!;
-    this.#credential = workerInitData.credential ?? null;
+    this.disposable = workerMetadata.disposable;
+    this.#name = workerMetadata.processName!;
+    this.#credential = workerMetadata.credential ?? null;
 
     this.#turfContainerStates = null;
     this.#pid = null;
@@ -196,12 +196,11 @@ class Worker {
     this.#initializationTimeout =
       initializationTimeout ?? config.worker.defaultInitializerTimeout;
 
-    // this.logger = new PrefixedLogger('worker_stats worker', this.#name);
     this.requestId = undefined;
 
     this.#readyDeferred = createDeferred<void>();
 
-    this.logger = new WorkerLogger(workerInitData);
+    this.logger = new WorkerLogger(workerMetadata);
   }
 
   async ready() {
@@ -443,4 +442,4 @@ class Worker {
   }
 }
 
-export { Worker, WorkerAdditionalData, WorkerInitData };
+export { Worker, WorkerAdditionalData, WorkerMetadata as WorkerMetadata };

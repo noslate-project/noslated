@@ -11,7 +11,7 @@ import { BaseOptions } from './starter/base';
 import { CodeManager } from './code_manager';
 import { FunctionProfileManager } from '#self/lib/function_profile';
 import { DataPlaneClientManager } from './data_plane_client/manager';
-import { WorkerInitData, WorkerStatsSnapshot } from './worker_stats';
+import { WorkerMetadata, WorkerStatsSnapshot } from './worker_stats';
 import { kMemoryLimit } from './constants';
 import { performance } from 'perf_hooks';
 import { ControlPanelEvent } from '#self/lib/constants';
@@ -109,12 +109,12 @@ export class WorkerLauncher extends Base {
   /**
    * Try launch worker process via turf
    * @param {ControlPanelEvent} event The event.
-   * @param {WorkerInitData} workerInitData The worker init data.
+   * @param {WorkerMetadata} workerMetadata The worker init data.
    * @return {Promise<void>} The result.
    */
-  async tryLaunch(event: ControlPanelEvent, workerInitData: WorkerInitData) {
+  async tryLaunch(event: ControlPanelEvent, workerMetadata: WorkerMetadata) {
     const { funcName, disposable, options, requestId, toReserve } =
-      workerInitData;
+      workerMetadata;
 
     return this.launchQueue.enqueue(
       {
@@ -243,7 +243,7 @@ export class WorkerLauncher extends Base {
       });
       const serverSockPath = (dataPlane as any).getServerSockPath();
 
-      const workerInitData = new WorkerInitData(
+      const workerMetadata = new WorkerMetadata(
         funcName,
         { inspect: !!options.inspect },
         disposable,
@@ -253,7 +253,7 @@ export class WorkerLauncher extends Base {
         requestId
       );
 
-      const worker = this.snapshot.register(workerInitData);
+      const worker = this.snapshot.register(workerMetadata);
 
       const container = await starter.start(
         serverSockPath,

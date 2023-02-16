@@ -12,7 +12,7 @@ import {
 } from '../worker_launcher_error_code';
 import { BaseController } from './base_controller';
 import { Config } from '#self/config';
-import { WorkerInitData } from '../worker_stats';
+import { WorkerMetadata } from '../worker_stats';
 
 export class DefaultController extends BaseController {
   logger: Logger;
@@ -63,7 +63,7 @@ export class DefaultController extends BaseController {
       throw err;
     }
 
-    const workerInitData = new WorkerInitData(
+    const workerMetadata = new WorkerMetadata(
       profile.name,
       { inspect: false },
       !!profile.worker?.disposable,
@@ -75,7 +75,7 @@ export class DefaultController extends BaseController {
 
       await this.plane.workerLauncher.tryLaunch(
         ControlPanelEvent.RequestQueueExpand,
-        workerInitData
+        workerMetadata
       );
       this.logger.info(
         'Request(%s) queueing for func(%s, inspect %s) expanded, cost: %sms.',
