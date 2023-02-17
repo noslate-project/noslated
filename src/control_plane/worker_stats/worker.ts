@@ -24,7 +24,7 @@ class WorkerAdditionalData {
   }
 }
 
-type WorkerInitOption = {
+type WorkerOption = {
   inspect: boolean;
 };
 class WorkerMetadata {
@@ -35,7 +35,7 @@ class WorkerMetadata {
   constructor(
     readonly funcName: string,
 
-    readonly options = { inspect: false },
+    readonly options: WorkerOption = { inspect: false },
     readonly disposable = false,
     readonly toReserve = false,
 
