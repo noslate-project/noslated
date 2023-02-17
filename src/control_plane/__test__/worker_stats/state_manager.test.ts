@@ -14,6 +14,7 @@ import { WorkerStatusReportEvent } from '#self/control_plane/events';
 import { registerContainers } from '../test_container_manager';
 import { TurfContainerStates } from '#self/lib/turf';
 import { TestEnvironment } from '../environment';
+import { registerWorkers } from '../util';
 
 describe(common.testName(__filename), () => {
   let stateManager: StateManager;
@@ -50,24 +51,24 @@ describe(common.testName(__filename), () => {
         ],
         'WAIT'
       );
-
-      stateManager.workerStatsSnapshot.register({
-        funcName: 'func1',
-        processName: 'worker1',
-        credential: 'cred1',
-        options: { inspect: false },
-        disposable: false,
-        toReserve: false,
-      });
-
-      stateManager.workerStatsSnapshot.register({
-        funcName: 'func2',
-        processName: 'worker1',
-        credential: 'cred1',
-        options: { inspect: false },
-        disposable: false,
-        toReserve: false,
-      });
+      registerWorkers(stateManager.workerStatsSnapshot, [
+        {
+          funcName: 'func1',
+          processName: 'worker1',
+          credential: 'cred1',
+          options: { inspect: false },
+          disposable: false,
+          toReserve: false,
+        },
+        {
+          funcName: 'func2',
+          processName: 'worker1',
+          credential: 'cred1',
+          options: { inspect: false },
+          disposable: false,
+          toReserve: false,
+        },
+      ]);
 
       const worker1 = stateManager.workerStatsSnapshot.getWorker(
         'func1',
@@ -168,14 +169,16 @@ describe(common.testName(__filename), () => {
         'WAIT'
       );
 
-      stateManager.workerStatsSnapshot.register({
-        funcName: 'func1',
-        processName: 'worker1',
-        credential: 'cred1',
-        options: { inspect: false },
-        disposable: false,
-        toReserve: false,
-      });
+      registerWorkers(stateManager.workerStatsSnapshot, [
+        {
+          funcName: 'func1',
+          processName: 'worker1',
+          credential: 'cred1',
+          options: { inspect: false },
+          disposable: false,
+          toReserve: false,
+        },
+      ]);
 
       const worker = stateManager.workerStatsSnapshot.getWorker(
         'func1',
@@ -252,22 +255,24 @@ describe(common.testName(__filename), () => {
         ],
       };
 
-      stateManager.workerStatsSnapshot.register({
-        funcName: 'func1',
-        processName: 'worker1',
-        credential: 'id1',
-        options: { inspect: false },
-        disposable: false,
-        toReserve: false,
-      });
-      stateManager.workerStatsSnapshot.register({
-        funcName: 'func1',
-        processName: 'worker2',
-        credential: 'id2',
-        options: { inspect: false },
-        disposable: false,
-        toReserve: false,
-      });
+      registerWorkers(stateManager.workerStatsSnapshot, [
+        {
+          funcName: 'func1',
+          processName: 'worker1',
+          credential: 'id1',
+          options: { inspect: false },
+          disposable: false,
+          toReserve: false,
+        },
+        {
+          funcName: 'func1',
+          processName: 'worker2',
+          credential: 'id2',
+          options: { inspect: false },
+          disposable: false,
+          toReserve: false,
+        },
+      ]);
 
       registerContainers(
         env.containerManager,
@@ -379,14 +384,16 @@ describe(common.testName(__filename), () => {
         ],
       };
 
-      stateManager.workerStatsSnapshot.register({
-        funcName: 'func1',
-        processName: 'worker1',
-        credential: 'id1',
-        options: { inspect: false },
-        disposable: false,
-        toReserve: false,
-      });
+      registerWorkers(stateManager.workerStatsSnapshot, [
+        {
+          funcName: 'func1',
+          processName: 'worker1',
+          credential: 'id1',
+          options: { inspect: false },
+          disposable: false,
+          toReserve: false,
+        },
+      ]);
 
       const beforeSync = stateManager.workerStatsSnapshot
         .getBroker('func1', false)!

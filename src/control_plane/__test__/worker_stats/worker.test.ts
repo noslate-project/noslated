@@ -22,6 +22,7 @@ import { NoslatedClient } from '#self/sdk';
 import { DefaultEnvironment } from '#self/test/env/environment';
 import { SimpleContainer } from '../test_container_manager';
 import { WorkerStatusReportEvent } from '#self/control_plane/events';
+import { registerWorkers } from '../util';
 
 describe(common.testName(__filename), () => {
   const funcData: AworkerFunctionProfile[] = [
@@ -591,15 +592,16 @@ describe(common.testName(__filename), () => {
         ],
         'WAIT'
       );
-      const workerMetadata = new WorkerMetadata(
-        'func1',
-        { inspect: false },
-        false,
-        false,
-        'worker1',
-        'cred1'
-      );
-      stateManager.workerStatsSnapshot.register(workerMetadata);
+      registerWorkers(stateManager.workerStatsSnapshot, [
+        {
+          funcName: 'func1',
+          processName: 'worker1',
+          credential: 'cred1',
+          options: { inspect: false },
+          disposable: false,
+          toReserve: false,
+        },
+      ]);
       worker = stateManager.workerStatsSnapshot.getWorker(
         'func1',
         false,

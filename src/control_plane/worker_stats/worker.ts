@@ -28,37 +28,23 @@ type WorkerInitOption = {
   inspect: boolean;
 };
 class WorkerMetadata {
-  readonly funcName: string;
-  readonly options: WorkerInitOption;
-  readonly disposable: boolean;
-  readonly toReserve: boolean;
-
   readonly credential: string | null;
   readonly processName: string | null;
 
-  readonly requestId?: string;
-
   // TODO(yilong.lyl): simplify constructor params
   constructor(
-    _funcName: string,
+    readonly funcName: string,
 
-    _options = { inspect: false },
-    _disosable = false,
-    _toReserve = false,
+    readonly options = { inspect: false },
+    readonly disposable = false,
+    readonly toReserve = false,
 
     _processName?: string,
     _credential?: string,
-    _requestId?: string
+    readonly requestId?: string
   ) {
-    this.funcName = _funcName;
-    this.options = _options;
-    this.disposable = _disosable;
-    this.toReserve = _toReserve;
-
     this.processName = _processName ?? null;
     this.credential = _credential ?? null;
-
-    this.requestId = _requestId ?? undefined;
   }
 }
 
@@ -206,7 +192,9 @@ class Worker {
   async ready() {
     // 在 await ready 之前状态已经改变了
     if (this.#containerStatus >= ContainerStatus.Ready) {
-      this.logger.already(ContainerStatus[this.#containerStatus]);
+      this.logger.statusChangedBeforeReady(
+        ContainerStatus[this.#containerStatus]
+      );
 
       if (this.#containerStatus >= ContainerStatus.PendingStop) {
         this.#readyDeferred.reject();

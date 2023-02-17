@@ -7,6 +7,7 @@ import * as common from '#self/test/common';
 import assert from 'assert';
 import mm from 'mm';
 import { TestEnvironment } from '../environment';
+import { registerWorkers } from '../util';
 
 describe(common.testName(__filename), () => {
   const env = new TestEnvironment({
@@ -92,46 +93,48 @@ describe(common.testName(__filename), () => {
           { pid: 5, name: 'alibaba', status: TurfContainerStates.running },
         ]);
 
-        stateManager.workerStatsSnapshot.register({
-          funcName: 'func',
-          processName: 'hello',
-          credential: 'world',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
-        stateManager.workerStatsSnapshot.register({
-          funcName: 'func',
-          processName: 'foo',
-          credential: 'bar',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
-        stateManager.workerStatsSnapshot.register({
-          funcName: 'lambda',
-          processName: 'coco',
-          credential: 'nut',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
-        stateManager.workerStatsSnapshot.register({
-          funcName: 'lambda',
-          processName: 'cocos',
-          credential: '2d',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
-        stateManager.workerStatsSnapshot.register({
-          funcName: 'lambda',
-          processName: 'alibaba',
-          credential: 'seed of hope',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
+        registerWorkers(stateManager.workerStatsSnapshot, [
+          {
+            funcName: 'func',
+            processName: 'hello',
+            credential: 'world',
+            options: { inspect: false },
+            disposable: false,
+            toReserve: false,
+          },
+          {
+            funcName: 'func',
+            processName: 'foo',
+            credential: 'bar',
+            options: { inspect: false },
+            disposable: false,
+            toReserve: false,
+          },
+          {
+            funcName: 'lambda',
+            processName: 'coco',
+            credential: 'nut',
+            options: { inspect: false },
+            disposable: false,
+            toReserve: false,
+          },
+          {
+            funcName: 'lambda',
+            processName: 'cocos',
+            credential: '2d',
+            options: { inspect: false },
+            disposable: false,
+            toReserve: false,
+          },
+          {
+            funcName: 'lambda',
+            processName: 'alibaba',
+            credential: 'seed of hope',
+            options: { inspect: false },
+            disposable: false,
+            toReserve: false,
+          },
+        ]);
 
         if (id === 0)
           mm(
@@ -296,46 +299,48 @@ describe(common.testName(__filename), () => {
         { pid: 5, name: 'alibaba', status: TurfContainerStates.running },
       ]);
 
-      stateManager.workerStatsSnapshot.register({
-        funcName: 'func',
-        processName: 'hello',
-        credential: 'world',
-        options: { inspect: false },
-        disposable: false,
-        toReserve: false,
-      });
-      stateManager.workerStatsSnapshot.register({
-        funcName: 'func',
-        processName: 'foo',
-        credential: 'bar',
-        options: { inspect: false },
-        disposable: false,
-        toReserve: false,
-      });
-      stateManager.workerStatsSnapshot.register({
-        funcName: 'lambda',
-        processName: 'coco',
-        credential: 'nut',
-        options: { inspect: false },
-        disposable: false,
-        toReserve: false,
-      });
-      stateManager.workerStatsSnapshot.register({
-        funcName: 'lambda',
-        processName: 'cocos',
-        credential: '2d',
-        options: { inspect: false },
-        disposable: false,
-        toReserve: false,
-      });
-      stateManager.workerStatsSnapshot.register({
-        funcName: 'lambda',
-        processName: 'alibaba',
-        credential: 'seed of hope',
-        options: { inspect: false },
-        disposable: false,
-        toReserve: false,
-      });
+      registerWorkers(stateManager.workerStatsSnapshot, [
+        {
+          funcName: 'func',
+          processName: 'hello',
+          credential: 'world',
+          options: { inspect: false },
+          disposable: false,
+          toReserve: false,
+        },
+        {
+          funcName: 'func',
+          processName: 'foo',
+          credential: 'bar',
+          options: { inspect: false },
+          disposable: false,
+          toReserve: false,
+        },
+        {
+          funcName: 'lambda',
+          processName: 'coco',
+          credential: 'nut',
+          options: { inspect: false },
+          disposable: false,
+          toReserve: false,
+        },
+        {
+          funcName: 'lambda',
+          processName: 'cocos',
+          credential: '2d',
+          options: { inspect: false },
+          disposable: false,
+          toReserve: false,
+        },
+        {
+          funcName: 'lambda',
+          processName: 'alibaba',
+          credential: 'seed of hope',
+          options: { inspect: false },
+          disposable: false,
+          toReserve: false,
+        },
+      ]);
 
       await controlPlane.functionProfile.set([], 'WAIT');
 
@@ -504,22 +509,25 @@ describe(common.testName(__filename), () => {
         'WAIT'
       );
 
-      stateManager.workerStatsSnapshot.register({
-        funcName: 'func',
-        processName: 'hello',
-        credential: 'world',
-        options: { inspect: false },
-        disposable: false,
-        toReserve: false,
-      });
-      stateManager.workerStatsSnapshot.register({
-        funcName: 'func',
-        processName: 'foo',
-        credential: 'bar',
-        options: { inspect: false },
-        disposable: false,
-        toReserve: false,
-      });
+      registerWorkers(stateManager.workerStatsSnapshot, [
+        {
+          funcName: 'func',
+          processName: 'hello',
+          credential: 'world',
+          options: { inspect: false },
+          disposable: false,
+          toReserve: false,
+        },
+        {
+          funcName: 'func',
+          processName: 'foo',
+          credential: 'bar',
+          options: { inspect: false },
+          disposable: false,
+          toReserve: false,
+        },
+      ]);
+
       mm(brokerData1.workers[0], 'activeRequestCount', 10);
       mm(brokerData1.workers[1], 'activeRequestCount', 10);
       mm(brokerData1.workers[0], 'resourceLimit', {

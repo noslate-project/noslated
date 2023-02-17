@@ -23,6 +23,7 @@ import {
   registerBrokerContainers,
   TestContainerManager,
 } from '../test_container_manager';
+import { registerWorkers } from '../util';
 
 describe(common.testName(__filename), () => {
   const funcData: AworkerFunctionProfile[] = [
@@ -93,14 +94,12 @@ describe(common.testName(__filename), () => {
     describe('.getWorker()', () => {
       it('should get worker', () => {
         const broker = new Broker(profileManager!, config, 'func', true, false);
-        broker.register({
-          processName: 'hello',
-          credential: 'world',
-          funcName: 'func',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
+        registerWorkers(broker, [
+          {
+            processName: 'hello',
+            credential: 'world',
+          },
+        ]);
 
         assert.strictEqual(broker.getWorker('hello')!.credential, 'world');
         assert.strictEqual(broker.getWorker('foo'), null);
@@ -110,14 +109,12 @@ describe(common.testName(__filename), () => {
     describe('.register()', () => {
       it('should register', () => {
         const broker = new Broker(profileManager!, config, 'func', true, false);
-        broker.register({
-          processName: 'foo',
-          credential: 'bar',
-          funcName: 'func',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
+        registerWorkers(broker, [
+          {
+            processName: 'foo',
+            credential: 'bar',
+          },
+        ]);
 
         assert.strictEqual(broker.workers.size, 1);
         assert.strictEqual(broker.startingPool.size, 1);
@@ -144,14 +141,12 @@ describe(common.testName(__filename), () => {
 
         assert.throws(
           () => {
-            broker.register({
-              processName: 'foo',
-              credential: 'bar',
-              funcName: 'foo',
-              options: { inspect: false },
-              disposable: false,
-              toReserve: false,
-            });
+            registerWorkers(broker, [
+              {
+                processName: 'foo',
+                credential: 'bar',
+              },
+            ]);
           },
           {
             message: /No function profile named foo\./,
@@ -164,14 +159,12 @@ describe(common.testName(__filename), () => {
       it('should unregister without container set', async () => {
         const broker = new Broker(profileManager!, config, 'func', true, false);
 
-        broker.register({
-          processName: 'foo',
-          credential: 'bar',
-          funcName: 'func',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
+        registerWorkers(broker, [
+          {
+            processName: 'foo',
+            credential: 'bar',
+          },
+        ]);
         await broker.unregister('foo');
 
         assert.strictEqual(broker.workers.size, 0);
@@ -182,14 +175,12 @@ describe(common.testName(__filename), () => {
         const testContainerManager = new TestContainerManager();
         const broker = new Broker(profileManager!, config, 'func', true, false);
 
-        broker.register({
-          processName: 'foo',
-          credential: 'bar',
-          funcName: 'func',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
+        registerWorkers(broker, [
+          {
+            processName: 'foo',
+            credential: 'bar',
+          },
+        ]);
         registerBrokerContainers(testContainerManager, broker, [
           { name: 'foo', pid: 1, status: TurfContainerStates.running },
         ]);
@@ -204,14 +195,12 @@ describe(common.testName(__filename), () => {
         const testContainerManager = new TestContainerManager();
         const broker = new Broker(profileManager!, config, 'func', true, false);
 
-        broker.register({
-          processName: 'foo',
-          credential: 'bar',
-          funcName: 'func',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
+        registerWorkers(broker, [
+          {
+            processName: 'foo',
+            credential: 'bar',
+          },
+        ]);
         registerBrokerContainers(testContainerManager, broker, [
           { name: 'foo', pid: 1, status: TurfContainerStates.running },
         ]);
@@ -239,14 +228,12 @@ describe(common.testName(__filename), () => {
 
         const broker = new Broker(profileManager!, config, 'func', true, false);
 
-        const worker = broker.register({
-          processName: 'foo',
-          credential: 'bar',
-          funcName: 'func',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
+        const [worker] = registerWorkers(broker, [
+          {
+            processName: 'foo',
+            credential: 'bar',
+          },
+        ]);
         worker.setContainer(container);
         await broker.unregister('bar');
 
@@ -261,14 +248,12 @@ describe(common.testName(__filename), () => {
       it('should removeItemFromStartingPool', () => {
         const broker = new Broker(profileManager!, config, 'func', true, false);
 
-        broker.register({
-          processName: 'foo',
-          credential: 'bar',
-          funcName: 'func',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
+        registerWorkers(broker, [
+          {
+            processName: 'foo',
+            credential: 'bar',
+          },
+        ]);
         broker.removeItemFromStartingPool('foo');
 
         assert.strictEqual(broker.workers.size, 1);
@@ -285,14 +270,12 @@ describe(common.testName(__filename), () => {
       it('should return true when idle and false when busy', () => {
         const broker = new Broker(profileManager!, config, 'func', true, false);
 
-        broker.register({
-          processName: 'coco',
-          credential: 'nut',
-          funcName: 'func',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
+        registerWorkers(broker, [
+          {
+            processName: 'coco',
+            credential: 'nut',
+          },
+        ]);
         for (let i = 0; i < 20; i++) {
           assert.strictEqual(broker.prerequestStartingPool(), i < 10);
         }
@@ -301,22 +284,16 @@ describe(common.testName(__filename), () => {
       it('should return true when idle and false when busy with two items', () => {
         const broker = new Broker(profileManager!, config, 'func', true, false);
 
-        broker.register({
-          processName: 'coco',
-          credential: 'nut',
-          funcName: 'func',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
-        broker.register({
-          processName: 'alibaba',
-          credential: 'seed of hope',
-          funcName: 'func',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
+        registerWorkers(broker, [
+          {
+            processName: 'coco',
+            credential: 'nut',
+          },
+          {
+            processName: 'alibaba',
+            credential: 'seed of hope',
+          },
+        ]);
         for (let i = 0; i < 40; i++) {
           assert.strictEqual(broker.prerequestStartingPool(), i < 20);
         }
@@ -326,22 +303,16 @@ describe(common.testName(__filename), () => {
     describe('.mostIdleNWorkers()', () => {
       it('should get', () => {
         const broker = new Broker(profileManager!, config, 'func', true, false);
-        broker.register({
-          processName: 'hello',
-          credential: 'world',
-          funcName: 'func',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
-        broker.register({
-          processName: 'foo',
-          credential: 'bar',
-          funcName: 'func',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
+        registerWorkers(broker, [
+          {
+            processName: 'hello',
+            credential: 'world',
+          },
+          {
+            processName: 'foo',
+            credential: 'bar',
+          },
+        ]);
 
         broker.sync([
           {
@@ -391,22 +362,16 @@ describe(common.testName(__filename), () => {
 
       it('should run with activeRequestCount order', () => {
         const broker = new Broker(profileManager!, config, 'func', true, false);
-        broker.register({
-          processName: 'hello',
-          credential: 'world',
-          funcName: 'func',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
-        broker.register({
-          processName: 'foo',
-          credential: 'bar',
-          funcName: 'func',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
+        registerWorkers(broker, [
+          {
+            processName: 'hello',
+            credential: 'world',
+          },
+          {
+            processName: 'foo',
+            credential: 'bar',
+          },
+        ]);
 
         // 更新到运行状态
         broker.workers.forEach(worker => {
@@ -456,22 +421,16 @@ describe(common.testName(__filename), () => {
 
       it('should run with credential order when activeRequestCount is equal (1)', () => {
         const broker = new Broker(profileManager!, config, 'func', true, false);
-        broker.register({
-          processName: 'hello',
-          credential: 'world',
-          funcName: 'func',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
-        broker.register({
-          processName: 'foo',
-          credential: 'bar',
-          funcName: 'func',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
+        registerWorkers(broker, [
+          {
+            processName: 'hello',
+            credential: 'world',
+          },
+          {
+            processName: 'foo',
+            credential: 'bar',
+          },
+        ]);
 
         // 更新到运行状态
         broker.workers.forEach(worker => {
@@ -521,22 +480,16 @@ describe(common.testName(__filename), () => {
 
       it('should run with credential order when activeRequestCount is equal (2)', () => {
         const broker = new Broker(profileManager!, config, 'func', true, false);
-        broker.register({
-          processName: 'hello',
-          credential: 'world',
-          funcName: 'func',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
-        broker.register({
-          processName: 'foo',
-          credential: 'bar',
-          funcName: 'func',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
+        registerWorkers(broker, [
+          {
+            processName: 'hello',
+            credential: 'world',
+          },
+          {
+            processName: 'foo',
+            credential: 'bar',
+          },
+        ]);
 
         // 更新到运行状态
         broker.workers.forEach(worker => {
@@ -586,22 +539,16 @@ describe(common.testName(__filename), () => {
 
       it('should get when has non-valid', () => {
         const broker = new Broker(profileManager!, config, 'func', true, false);
-        broker.register({
-          processName: 'hello',
-          credential: 'world',
-          funcName: 'func',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
-        broker.register({
-          processName: 'foo',
-          credential: 'bar',
-          funcName: 'func',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
+        registerWorkers(broker, [
+          {
+            processName: 'hello',
+            credential: 'world',
+          },
+          {
+            processName: 'foo',
+            credential: 'bar',
+          },
+        ]);
 
         broker.sync([
           {
@@ -646,23 +593,19 @@ describe(common.testName(__filename), () => {
     describe('.newestNWorkers()', () => {
       it('should get', async () => {
         const broker = new Broker(profileManager!, config, 'func', true, false);
-        broker.register({
-          processName: 'hello',
-          credential: 'world',
-          funcName: 'func',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
+        registerWorkers(broker, [
+          {
+            processName: 'hello',
+            credential: 'world',
+          },
+        ]);
         await sleep(100);
-        broker.register({
-          processName: 'foo',
-          credential: 'bar',
-          funcName: 'func',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
+        registerWorkers(broker, [
+          {
+            processName: 'foo',
+            credential: 'bar',
+          },
+        ]);
 
         broker.sync([
           {
@@ -712,23 +655,20 @@ describe(common.testName(__filename), () => {
 
       it('should run with registerTime order', async () => {
         const broker = new Broker(profileManager!, config, 'func', true, false);
-        broker.register({
-          processName: 'hello',
-          credential: 'world',
-          funcName: 'func',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
+        registerWorkers(broker, [
+          {
+            processName: 'hello',
+            credential: 'world',
+          },
+        ]);
+
         await sleep(100);
-        broker.register({
-          processName: 'foo',
-          credential: 'bar',
-          funcName: 'func',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
+        registerWorkers(broker, [
+          {
+            processName: 'foo',
+            credential: 'bar',
+          },
+        ]);
 
         // 更新到运行状态
         broker.workers.forEach(worker => {
@@ -778,23 +718,19 @@ describe(common.testName(__filename), () => {
 
       it('should get when has non-valid', async () => {
         const broker = new Broker(profileManager!, config, 'func', true, false);
-        broker.register({
-          processName: 'hello',
-          credential: 'world',
-          funcName: 'func',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
+        registerWorkers(broker, [
+          {
+            processName: 'hello',
+            credential: 'world',
+          },
+        ]);
         await sleep(100);
-        broker.register({
-          processName: 'foo',
-          credential: 'bar',
-          funcName: 'func',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
+        registerWorkers(broker, [
+          {
+            processName: 'foo',
+            credential: 'bar',
+          },
+        ]);
 
         broker.sync([
           {
@@ -839,23 +775,19 @@ describe(common.testName(__filename), () => {
     describe('.oldestNWorkers()', () => {
       it('should get', async () => {
         const broker = new Broker(profileManager!, config, 'func', true, false);
-        broker.register({
-          processName: 'hello',
-          credential: 'world',
-          funcName: 'func',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
+        registerWorkers(broker, [
+          {
+            processName: 'hello',
+            credential: 'world',
+          },
+        ]);
         await sleep(100);
-        broker.register({
-          processName: 'foo',
-          credential: 'bar',
-          funcName: 'func',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
+        registerWorkers(broker, [
+          {
+            processName: 'foo',
+            credential: 'bar',
+          },
+        ]);
 
         broker.sync([
           {
@@ -905,23 +837,19 @@ describe(common.testName(__filename), () => {
 
       it('should run with registerTime order', async () => {
         const broker = new Broker(profileManager!, config, 'func', true, false);
-        broker.register({
-          processName: 'hello',
-          credential: 'world',
-          funcName: 'func',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
+        registerWorkers(broker, [
+          {
+            processName: 'hello',
+            credential: 'world',
+          },
+        ]);
         await sleep(100);
-        broker.register({
-          processName: 'foo',
-          credential: 'bar',
-          funcName: 'func',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
+        registerWorkers(broker, [
+          {
+            processName: 'foo',
+            credential: 'bar',
+          },
+        ]);
 
         // 更新到运行状态
         broker.workers.forEach(worker => {
@@ -971,23 +899,19 @@ describe(common.testName(__filename), () => {
 
       it('should get when has non-valid', async () => {
         const broker = new Broker(profileManager!, config, 'func', true, false);
-        broker.register({
-          processName: 'hello',
-          credential: 'world',
-          funcName: 'func',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
+        registerWorkers(broker, [
+          {
+            processName: 'hello',
+            credential: 'world',
+          },
+        ]);
         await sleep(100);
-        broker.register({
-          processName: 'foo',
-          credential: 'bar',
-          funcName: 'func',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
+        registerWorkers(broker, [
+          {
+            processName: 'foo',
+            credential: 'bar',
+          },
+        ]);
 
         broker.sync([
           {
@@ -1038,22 +962,16 @@ describe(common.testName(__filename), () => {
           false,
           false
         );
-        broker.register({
-          processName: 'hello',
-          credential: 'world',
-          funcName: 'func',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
-        broker.register({
-          processName: 'foo',
-          credential: 'bar',
-          funcName: 'func',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
+        registerWorkers(broker, [
+          {
+            processName: 'hello',
+            credential: 'world',
+          },
+          {
+            processName: 'foo',
+            credential: 'bar',
+          },
+        ]);
 
         // TODO: 这么做不合法，需要调整测试用例
         broker.updateWorkerContainerStatus(
@@ -1100,22 +1018,16 @@ describe(common.testName(__filename), () => {
           false,
           false
         );
-        broker.register({
-          processName: 'hello',
-          credential: 'world',
-          funcName: 'func',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
-        broker.register({
-          processName: 'foo',
-          credential: 'bar',
-          funcName: 'func',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
+        registerWorkers(broker, [
+          {
+            processName: 'hello',
+            credential: 'world',
+          },
+          {
+            processName: 'foo',
+            credential: 'bar',
+          },
+        ]);
 
         broker.updateWorkerContainerStatus(
           'foo',
@@ -1159,22 +1071,16 @@ describe(common.testName(__filename), () => {
           false,
           false
         );
-        broker.register({
-          processName: 'hello',
-          credential: 'world',
-          funcName: 'func',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
-        broker.register({
-          processName: 'foo',
-          credential: 'bar',
-          funcName: 'func',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
+        registerWorkers(broker, [
+          {
+            processName: 'hello',
+            credential: 'world',
+          },
+          {
+            processName: 'foo',
+            credential: 'bar',
+          },
+        ]);
 
         // 只启动一个
         broker.updateWorkerContainerStatus(
@@ -1201,22 +1107,16 @@ describe(common.testName(__filename), () => {
           false,
           false
         );
-        broker.register({
-          processName: 'hello',
-          credential: 'world',
-          funcName: 'func',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
-        broker.register({
-          processName: 'foo',
-          credential: 'bar',
-          funcName: 'func',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
+        registerWorkers(broker, [
+          {
+            processName: 'hello',
+            credential: 'world',
+          },
+          {
+            processName: 'foo',
+            credential: 'bar',
+          },
+        ]);
 
         broker.updateWorkerContainerStatus(
           'hello',
@@ -1257,14 +1157,12 @@ describe(common.testName(__filename), () => {
           false
         );
 
-        broker.register({
-          processName: 'hello',
-          credential: 'world',
-          funcName: 'func',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
+        registerWorkers(broker, [
+          {
+            processName: 'hello',
+            credential: 'world',
+          },
+        ]);
         broker.data = null;
         assert.strictEqual(broker.evaluateWaterLevel(), -1);
       });
@@ -1278,14 +1176,12 @@ describe(common.testName(__filename), () => {
           false
         );
 
-        broker.register({
-          processName: 'hello',
-          credential: 'world',
-          funcName: 'func',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
+        registerWorkers(broker, [
+          {
+            processName: 'hello',
+            credential: 'world',
+          },
+        ]);
         broker.data = null;
         assert.strictEqual(broker.evaluateWaterLevel(true), 0);
       });
@@ -1299,14 +1195,12 @@ describe(common.testName(__filename), () => {
           false
         );
 
-        broker.register({
-          processName: 'hello',
-          credential: 'world',
-          funcName: 'func',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
+        registerWorkers(broker, [
+          {
+            processName: 'hello',
+            credential: 'world',
+          },
+        ]);
 
         broker.updateWorkerContainerStatus(
           'hello',
@@ -1333,22 +1227,16 @@ describe(common.testName(__filename), () => {
           false,
           false
         );
-        broker.register({
-          processName: 'hello',
-          credential: 'world',
-          funcName: 'func',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
-        broker.register({
-          processName: 'foo',
-          credential: 'bar',
-          funcName: 'func',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
+        registerWorkers(broker, [
+          {
+            processName: 'hello',
+            credential: 'world',
+          },
+          {
+            processName: 'foo',
+            credential: 'bar',
+          },
+        ]);
 
         broker.updateWorkerContainerStatus(
           'foo',
@@ -1384,22 +1272,16 @@ describe(common.testName(__filename), () => {
           false,
           false
         );
-        broker.register({
-          processName: 'hello',
-          credential: 'world',
-          funcName: 'func',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
-        broker.register({
-          processName: 'foo',
-          credential: 'bar',
-          funcName: 'func',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
+        registerWorkers(broker, [
+          {
+            processName: 'hello',
+            credential: 'world',
+          },
+          {
+            processName: 'foo',
+            credential: 'bar',
+          },
+        ]);
 
         broker.updateWorkerContainerStatus(
           'foo',
@@ -1439,22 +1321,16 @@ describe(common.testName(__filename), () => {
           false,
           false
         );
-        broker.register({
-          processName: 'hello',
-          credential: 'world',
-          funcName: 'func',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
-        broker.register({
-          processName: 'foo',
-          credential: 'bar',
-          funcName: 'func',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
+        registerWorkers(broker, [
+          {
+            processName: 'hello',
+            credential: 'world',
+          },
+          {
+            processName: 'foo',
+            credential: 'bar',
+          },
+        ]);
 
         broker.updateWorkerContainerStatus(
           'foo',
@@ -1495,22 +1371,16 @@ describe(common.testName(__filename), () => {
           false,
           false
         );
-        broker.register({
-          processName: 'hello',
-          credential: 'world',
-          funcName: 'func',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
-        broker.register({
-          processName: 'foo',
-          credential: 'bar',
-          funcName: 'func',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
+        registerWorkers(broker, [
+          {
+            processName: 'hello',
+            credential: 'world',
+          },
+          {
+            processName: 'foo',
+            credential: 'bar',
+          },
+        ]);
 
         broker.updateWorkerContainerStatus(
           'foo',
@@ -1548,22 +1418,16 @@ describe(common.testName(__filename), () => {
           false,
           false
         );
-        broker.register({
-          processName: 'hello',
-          credential: 'world',
-          funcName: 'func',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
-        broker.register({
-          processName: 'foo',
-          credential: 'bar',
-          funcName: 'func',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
+        registerWorkers(broker, [
+          {
+            processName: 'hello',
+            credential: 'world',
+          },
+          {
+            processName: 'foo',
+            credential: 'bar',
+          },
+        ]);
 
         broker.updateWorkerContainerStatus(
           'foo',
@@ -1600,22 +1464,16 @@ describe(common.testName(__filename), () => {
           false,
           false
         );
-        broker.register({
-          processName: 'hello',
-          credential: 'world',
-          funcName: 'func',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
-        broker.register({
-          processName: 'foo',
-          credential: 'bar',
-          funcName: 'func',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
+        registerWorkers(broker, [
+          {
+            processName: 'hello',
+            credential: 'world',
+          },
+          {
+            processName: 'foo',
+            credential: 'bar',
+          },
+        ]);
 
         broker.updateWorkerContainerStatus(
           'foo',
@@ -1652,22 +1510,16 @@ describe(common.testName(__filename), () => {
           false,
           false
         );
-        broker.register({
-          processName: 'hello',
-          credential: 'world',
-          funcName: 'func',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
-        broker.register({
-          processName: 'foo',
-          credential: 'bar',
-          funcName: 'func',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
+        registerWorkers(broker, [
+          {
+            processName: 'hello',
+            credential: 'world',
+          },
+          {
+            processName: 'foo',
+            credential: 'bar',
+          },
+        ]);
 
         broker.updateWorkerContainerStatus(
           'foo',
@@ -1704,22 +1556,16 @@ describe(common.testName(__filename), () => {
           false,
           false
         );
-        broker.register({
-          processName: 'hello',
-          credential: 'world',
-          funcName: 'func',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
-        broker.register({
-          processName: 'foo',
-          credential: 'bar',
-          funcName: 'func',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
+        registerWorkers(broker, [
+          {
+            processName: 'hello',
+            credential: 'world',
+          },
+          {
+            processName: 'foo',
+            credential: 'bar',
+          },
+        ]);
 
         broker.updateWorkerContainerStatus(
           'foo',
@@ -1769,14 +1615,13 @@ describe(common.testName(__filename), () => {
             maxActivateRequests: 10,
             activeRequestCount: 10,
           });
-          broker.register({
-            processName: String(i),
-            credential: String(i),
-            funcName: 'func',
-            options: { inspect: false },
-            disposable: false,
-            toReserve: false,
-          });
+          registerWorkers(broker, [
+            {
+              processName: String(i),
+              credential: String(i),
+              funcName: 'func',
+            },
+          ]);
 
           broker.updateWorkerContainerStatus(
             String(i),
@@ -1807,14 +1652,13 @@ describe(common.testName(__filename), () => {
             maxActivateRequests: 10,
             activeRequestCount: 10,
           });
-          broker.register({
-            processName: String(i),
-            credential: String(i),
-            funcName: 'func',
-            options: { inspect: false },
-            disposable: false,
-            toReserve: false,
-          });
+          registerWorkers(broker, [
+            {
+              processName: String(i),
+              credential: String(i),
+              funcName: 'func',
+            },
+          ]);
           broker.updateWorkerContainerStatus(
             String(i),
             ContainerStatus.Ready,
@@ -1830,22 +1674,16 @@ describe(common.testName(__filename), () => {
       let broker: Broker;
       beforeEach(() => {
         broker = new Broker(profileManager!, config, 'func', false, false);
-        broker.register({
-          processName: 'hello',
-          credential: 'world',
-          funcName: 'func',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
-        broker.register({
-          processName: 'foo',
-          credential: 'bar',
-          funcName: 'func',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
+        registerWorkers(broker, [
+          {
+            processName: 'hello',
+            credential: 'world',
+          },
+          {
+            processName: 'foo',
+            credential: 'bar',
+          },
+        ]);
 
         broker.updateWorkerContainerStatus(
           'hello',
@@ -1887,26 +1725,22 @@ describe(common.testName(__filename), () => {
         });
 
         it('should not get in having startingPool', () => {
-          broker.register({
-            processName: 'coco',
-            credential: 'nut',
-            funcName: 'func',
-            options: { inspect: false },
-            disposable: false,
-            toReserve: false,
-          });
+          registerWorkers(broker, [
+            {
+              processName: 'coco',
+              credential: 'world',
+            },
+          ]);
           assert.strictEqual(broker.workerCount, 2);
         });
 
         it('should get when having stopped', () => {
-          broker.register({
-            processName: 'coco',
-            credential: 'nut',
-            funcName: 'func',
-            options: { inspect: false },
-            disposable: false,
-            toReserve: false,
-          });
+          registerWorkers(broker, [
+            {
+              processName: 'coco',
+              credential: 'nut',
+            },
+          ]);
           broker.sync([
             {
               name: 'hello',
@@ -1935,28 +1769,24 @@ describe(common.testName(__filename), () => {
       describe('get .virtualMemory()', () => {
         it('should get virtualMemory with startingPool, ignore in startingPool', () => {
           assert.strictEqual(broker.virtualMemory, 1024000000);
-          broker.register({
-            processName: 'coco',
-            credential: 'nut',
-            funcName: 'func',
-            options: { inspect: false },
-            disposable: false,
-            toReserve: false,
-          });
+          registerWorkers(broker, [
+            {
+              processName: 'coco',
+              credential: 'nut',
+            },
+          ]);
           assert.strictEqual(broker.virtualMemory, 1024000000);
         });
 
         it('should get virtualMemory', () => {
           assert.strictEqual(broker.virtualMemory, 1024000000);
 
-          broker.register({
-            processName: 'coco',
-            credential: 'nut',
-            funcName: 'func',
-            options: { inspect: false },
-            disposable: false,
-            toReserve: false,
-          });
+          registerWorkers(broker, [
+            {
+              processName: 'coco',
+              credential: 'nut',
+            },
+          ]);
 
           broker.sync([
             {
@@ -1990,14 +1820,12 @@ describe(common.testName(__filename), () => {
       describe('get .totalMaxActivateRequests()', () => {
         it('should get totalMaxActivateRequests', () => {
           assert.strictEqual(broker.totalMaxActivateRequests, 20);
-          broker.register({
-            processName: 'coco',
-            credential: 'nut',
-            funcName: 'func',
-            options: { inspect: false },
-            disposable: false,
-            toReserve: false,
-          });
+          registerWorkers(broker, [
+            {
+              processName: 'coco',
+              credential: 'nut',
+            },
+          ]);
           assert.strictEqual(broker.totalMaxActivateRequests, 20);
 
           broker.updateWorkerContainerStatus(
@@ -2038,14 +1866,12 @@ describe(common.testName(__filename), () => {
       describe('get .activeRequestCount()', () => {
         it('should get activeRequestCount', () => {
           assert.strictEqual(broker.activeRequestCount, 11);
-          broker.register({
-            processName: 'coco',
-            credential: 'nut',
-            funcName: 'func',
-            options: { inspect: false },
-            disposable: false,
-            toReserve: false,
-          });
+          registerWorkers(broker, [
+            {
+              processName: 'coco',
+              credential: 'nut',
+            },
+          ]);
           assert.strictEqual(broker.activeRequestCount, 11);
 
           broker.updateWorkerContainerStatus(
@@ -2086,14 +1912,12 @@ describe(common.testName(__filename), () => {
       describe('get #waterLevel()', () => {
         it('should get waterLevel', () => {
           assert.strictEqual(broker.waterLevel, 0.55);
-          broker.register({
-            processName: 'coco',
-            credential: 'nut',
-            funcName: 'func',
-            options: { inspect: false },
-            disposable: false,
-            toReserve: false,
-          });
+          registerWorkers(broker, [
+            {
+              processName: 'coco',
+              credential: 'nut',
+            },
+          ]);
           assert.strictEqual(broker.waterLevel, 0.55);
 
           broker.updateWorkerContainerStatus(
@@ -2245,22 +2069,16 @@ describe(common.testName(__filename), () => {
       it('should sync', () => {
         const testContainerManager = new TestContainerManager();
         const broker = new Broker(profileManager!, config, 'func', true, false);
-        broker.register({
-          processName: 'hello',
-          credential: 'world',
-          funcName: 'func',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
-        broker.register({
-          processName: 'foo',
-          credential: 'bar',
-          funcName: 'func',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
+        registerWorkers(broker, [
+          {
+            processName: 'hello',
+            credential: 'world',
+          },
+          {
+            processName: 'foo',
+            credential: 'bar',
+          },
+        ]);
 
         broker.updateWorkerContainerStatus(
           'hello',
@@ -2333,22 +2151,16 @@ describe(common.testName(__filename), () => {
       it('should sync with no function profile', async () => {
         const testContainerManager = new TestContainerManager();
         const broker = new Broker(profileManager!, config, 'func', true, false);
-        broker.register({
-          processName: 'hello',
-          credential: 'world',
-          funcName: 'func',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
-        broker.register({
-          processName: 'foo',
-          credential: 'bar',
-          funcName: 'func',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
+        registerWorkers(broker, [
+          {
+            processName: 'hello',
+            credential: 'world',
+          },
+          {
+            processName: 'foo',
+            credential: 'bar',
+          },
+        ]);
 
         broker.updateWorkerContainerStatus(
           'hello',
@@ -2422,22 +2234,16 @@ describe(common.testName(__filename), () => {
     describe('.shrinkDraw()', () => {
       it('should use default strategy LCC', () => {
         const broker = new Broker(profileManager!, config, 'func', true, false);
-        broker.register({
-          processName: 'hello',
-          credential: 'world',
-          funcName: 'func',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
-        broker.register({
-          processName: 'foo',
-          credential: 'bar',
-          funcName: 'func',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
+        registerWorkers(broker, [
+          {
+            processName: 'hello',
+            credential: 'world',
+          },
+          {
+            processName: 'foo',
+            credential: 'bar',
+          },
+        ]);
         broker.data = null;
 
         broker.updateWorkerContainerStatus(
@@ -2472,22 +2278,16 @@ describe(common.testName(__filename), () => {
 
       it('should use default strategy LCC when worker strategy not supported', () => {
         const broker = new Broker(profileManager!, config, 'func', true, false);
-        broker.register({
-          processName: 'hello',
-          credential: 'world',
-          funcName: 'func',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
-        broker.register({
-          processName: 'foo',
-          credential: 'bar',
-          funcName: 'func',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
+        registerWorkers(broker, [
+          {
+            processName: 'hello',
+            credential: 'world',
+          },
+          {
+            processName: 'foo',
+            credential: 'bar',
+          },
+        ]);
 
         broker.updateWorkerContainerStatus(
           'hello',
@@ -2535,22 +2335,16 @@ describe(common.testName(__filename), () => {
 
       it('should use default strategy LCC when worker strategy is empty', () => {
         const broker = new Broker(profileManager!, config, 'func', true, false);
-        broker.register({
-          processName: 'hello',
-          credential: 'world',
-          funcName: 'func',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
-        broker.register({
-          processName: 'foo',
-          credential: 'bar',
-          funcName: 'func',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
+        registerWorkers(broker, [
+          {
+            processName: 'hello',
+            credential: 'world',
+          },
+          {
+            processName: 'foo',
+            credential: 'bar',
+          },
+        ]);
 
         broker.updateWorkerContainerStatus(
           'hello',
@@ -2599,23 +2393,19 @@ describe(common.testName(__filename), () => {
       it('should use worker strategy FIFO', async () => {
         const broker = new Broker(profileManager!, config, 'func', true, false);
 
-        broker.register({
-          processName: 'hello',
-          credential: 'world',
-          funcName: 'func',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
+        registerWorkers(broker, [
+          {
+            processName: 'hello',
+            credential: 'world',
+          },
+        ]);
         await sleep(100);
-        broker.register({
-          processName: 'foo',
-          credential: 'bar',
-          funcName: 'func',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
+        registerWorkers(broker, [
+          {
+            processName: 'foo',
+            credential: 'bar',
+          },
+        ]);
 
         broker.updateWorkerContainerStatus(
           'hello',
@@ -2664,23 +2454,19 @@ describe(common.testName(__filename), () => {
       it('should use worker strategy FILO', async () => {
         const broker = new Broker(profileManager!, config, 'func', true, false);
 
-        broker.register({
-          processName: 'hello',
-          credential: 'world',
-          funcName: 'func',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
+        registerWorkers(broker, [
+          {
+            processName: 'hello',
+            credential: 'world',
+          },
+        ]);
         await sleep(100);
-        broker.register({
-          processName: 'foo',
-          credential: 'bar',
-          funcName: 'func',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
+        registerWorkers(broker, [
+          {
+            processName: 'foo',
+            credential: 'bar',
+          },
+        ]);
 
         broker.updateWorkerContainerStatus(
           'hello',

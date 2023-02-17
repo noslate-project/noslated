@@ -35,7 +35,7 @@ export class WorkerLogger {
     );
   }
 
-  already(status: string) {
+  statusChangedBeforeReady(status: string) {
     this.logger.info(
       'Worker(%s, %s) status settle to [%s] before pending ready',
       this.workerMetadata.processName,

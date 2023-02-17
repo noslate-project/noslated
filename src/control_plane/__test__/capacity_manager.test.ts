@@ -14,6 +14,7 @@ import {
 } from './test_container_manager';
 import { StateManager } from '../worker_stats/state_manager';
 import { WorkerStatusReportEvent } from '../events';
+import { registerWorkers } from './util';
 
 describe(common.testName(__filename), function () {
   this.timeout(10_000);
@@ -112,47 +113,49 @@ describe(common.testName(__filename), function () {
         'WAIT'
       );
 
-      stateManager.workerStatsSnapshot.register({
-        funcName: 'func',
-        processName: 'hello',
-        credential: 'world',
-        options: { inspect: false },
-        disposable: false,
-        toReserve: false,
-      });
-      stateManager.workerStatsSnapshot.register({
-        funcName: 'func',
-        processName: 'foo',
-        credential: 'barworld',
-        options: { inspect: false },
-        disposable: false,
-        toReserve: false,
-      });
-      stateManager.workerStatsSnapshot.register({
-        funcName: 'lambda',
-        processName: 'coco',
-        credential: 'nut',
-        options: { inspect: false },
-        disposable: false,
-        toReserve: false,
-      });
-      // 未 ready 不计入 virtual memory size
-      stateManager.workerStatsSnapshot.register({
-        funcName: 'lambda',
-        processName: 'cocos',
-        credential: '2d',
-        options: { inspect: false },
-        disposable: false,
-        toReserve: false,
-      });
-      stateManager.workerStatsSnapshot.register({
-        funcName: 'lambda',
-        processName: 'alibaba',
-        credential: 'seed of hope',
-        options: { inspect: false },
-        disposable: false,
-        toReserve: false,
-      });
+      registerWorkers(stateManager.workerStatsSnapshot, [
+        {
+          funcName: 'func',
+          processName: 'hello',
+          credential: 'world',
+          options: { inspect: false },
+          disposable: false,
+          toReserve: false,
+        },
+        {
+          funcName: 'func',
+          processName: 'foo',
+          credential: 'barworld',
+          options: { inspect: false },
+          disposable: false,
+          toReserve: false,
+        },
+        {
+          funcName: 'lambda',
+          processName: 'coco',
+          credential: 'nut',
+          options: { inspect: false },
+          disposable: false,
+          toReserve: false,
+        },
+        {
+          // 未 ready 不计入 virtual memory size
+          funcName: 'lambda',
+          processName: 'cocos',
+          credential: '2d',
+          options: { inspect: false },
+          disposable: false,
+          toReserve: false,
+        },
+        {
+          funcName: 'lambda',
+          processName: 'alibaba',
+          credential: 'seed of hope',
+          options: { inspect: false },
+          disposable: false,
+          toReserve: false,
+        },
+      ]);
 
       registerContainers(
         testContainerManager,

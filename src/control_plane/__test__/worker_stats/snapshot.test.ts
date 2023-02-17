@@ -20,6 +20,7 @@ import {
   registerContainers,
   TestContainerManager,
 } from '../test_container_manager';
+import { registerWorkers } from '../util';
 
 describe(common.testName(__filename), () => {
   const funcData: AworkerFunctionProfile[] = [
@@ -111,23 +112,24 @@ describe(common.testName(__filename), () => {
 
     describe('.register()', () => {
       it('should register', () => {
-        workerStatsSnapshot.register({
-          funcName: 'func',
-          processName: 'hello',
-          credential: 'world',
-          options: { inspect: true },
-          disposable: false,
-          toReserve: false,
-        });
-
-        workerStatsSnapshot.register({
-          funcName: 'func',
-          processName: 'foooo',
-          credential: 'bar',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
+        registerWorkers(workerStatsSnapshot, [
+          {
+            funcName: 'func',
+            processName: 'hello',
+            credential: 'world',
+            options: { inspect: true },
+            disposable: false,
+            toReserve: false,
+          },
+          {
+            funcName: 'func',
+            processName: 'foooo',
+            credential: 'bar',
+            options: { inspect: false },
+            disposable: false,
+            toReserve: false,
+          },
+        ]);
 
         assert.strictEqual(workerStatsSnapshot.brokers.size, 2);
         const brokerKeys = [...workerStatsSnapshot.brokers.keys()].sort();
@@ -206,14 +208,16 @@ describe(common.testName(__filename), () => {
       it('should throw', () => {
         assert.throws(
           () => {
-            workerStatsSnapshot.register({
-              funcName: 'non-exists',
-              processName: 'aha',
-              credential: 'oho',
-              options: { inspect: true },
-              disposable: false,
-              toReserve: false,
-            });
+            registerWorkers(workerStatsSnapshot, [
+              {
+                funcName: 'non-exists',
+                processName: 'aha',
+                credential: 'oho',
+                options: { inspect: true },
+                disposable: false,
+                toReserve: false,
+              },
+            ]);
           },
           {
             message: /No function named non-exists in function profile\./,
@@ -224,23 +228,25 @@ describe(common.testName(__filename), () => {
 
     describe('.unregister()', () => {
       it('should unregister only one worker', async () => {
-        workerStatsSnapshot.register({
-          funcName: 'func',
-          processName: 'hello',
-          credential: 'world',
-          options: { inspect: true },
-          disposable: false,
-          toReserve: false,
-        });
+        registerWorkers(workerStatsSnapshot, [
+          {
+            funcName: 'func',
+            processName: 'hello',
+            credential: 'world',
+            options: { inspect: true },
+            disposable: false,
+            toReserve: false,
+          },
+          {
+            funcName: 'func',
+            processName: 'foooo',
+            credential: 'bar',
+            options: { inspect: false },
+            disposable: false,
+            toReserve: false,
+          },
+        ]);
 
-        workerStatsSnapshot.register({
-          funcName: 'func',
-          processName: 'foooo',
-          credential: 'bar',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
         registerContainers(testContainerManager, workerStatsSnapshot, [
           { name: 'hello', pid: 1, status: TurfContainerStates.running },
           { name: 'foooo', pid: 2, status: TurfContainerStates.running },
@@ -282,14 +288,16 @@ describe(common.testName(__filename), () => {
       });
 
       it('should remove broker when workers empty after unregister', async () => {
-        workerStatsSnapshot.register({
-          funcName: 'func',
-          processName: 'hello',
-          credential: 'world',
-          options: { inspect: true },
-          disposable: false,
-          toReserve: false,
-        });
+        registerWorkers(workerStatsSnapshot, [
+          {
+            funcName: 'func',
+            processName: 'hello',
+            credential: 'world',
+            options: { inspect: true },
+            disposable: false,
+            toReserve: false,
+          },
+        ]);
         await workerStatsSnapshot.unregister('func', 'hello', true);
 
         assert.strictEqual(workerStatsSnapshot.brokers.size, 0);
@@ -298,23 +306,24 @@ describe(common.testName(__filename), () => {
 
     describe('.getBroker()', () => {
       it('should get broker', () => {
-        workerStatsSnapshot.register({
-          funcName: 'func',
-          processName: 'hello',
-          credential: 'world',
-          options: { inspect: true },
-          disposable: false,
-          toReserve: false,
-        });
-
-        workerStatsSnapshot.register({
-          funcName: 'func',
-          processName: 'foooo',
-          credential: 'bar',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
+        registerWorkers(workerStatsSnapshot, [
+          {
+            funcName: 'func',
+            processName: 'hello',
+            credential: 'world',
+            options: { inspect: true },
+            disposable: false,
+            toReserve: false,
+          },
+          {
+            funcName: 'func',
+            processName: 'foooo',
+            credential: 'bar',
+            options: { inspect: false },
+            disposable: false,
+            toReserve: false,
+          },
+        ]);
 
         const brokers = [
           workerStatsSnapshot.getBroker('func', true)!,
@@ -378,23 +387,24 @@ describe(common.testName(__filename), () => {
       });
 
       it('should not get broker', () => {
-        workerStatsSnapshot.register({
-          funcName: 'func',
-          processName: 'hello',
-          credential: 'world',
-          options: { inspect: true },
-          disposable: false,
-          toReserve: false,
-        });
-
-        workerStatsSnapshot.register({
-          funcName: 'func',
-          processName: 'foooo',
-          credential: 'bar',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
+        registerWorkers(workerStatsSnapshot, [
+          {
+            funcName: 'func',
+            processName: 'hello',
+            credential: 'world',
+            options: { inspect: true },
+            disposable: false,
+            toReserve: false,
+          },
+          {
+            funcName: 'func',
+            processName: 'foooo',
+            credential: 'bar',
+            options: { inspect: false },
+            disposable: false,
+            toReserve: false,
+          },
+        ]);
         assert.strictEqual(
           workerStatsSnapshot.getBroker('non-exists', true),
           null
@@ -404,23 +414,24 @@ describe(common.testName(__filename), () => {
 
     describe('.getWorker()', () => {
       it('should get worker', () => {
-        workerStatsSnapshot.register({
-          funcName: 'func',
-          processName: 'hello',
-          credential: 'world',
-          options: { inspect: true },
-          disposable: false,
-          toReserve: false,
-        });
-
-        workerStatsSnapshot.register({
-          funcName: 'func',
-          processName: 'foooo',
-          credential: 'bar',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
+        registerWorkers(workerStatsSnapshot, [
+          {
+            funcName: 'func',
+            processName: 'hello',
+            credential: 'world',
+            options: { inspect: true },
+            disposable: false,
+            toReserve: false,
+          },
+          {
+            funcName: 'func',
+            processName: 'foooo',
+            credential: 'bar',
+            options: { inspect: false },
+            disposable: false,
+            toReserve: false,
+          },
+        ]);
 
         const workers: Worker[] = [
           workerStatsSnapshot.getWorker('func', true, 'hello')!,
@@ -453,23 +464,24 @@ describe(common.testName(__filename), () => {
       });
 
       it('should not get worker', () => {
-        workerStatsSnapshot.register({
-          funcName: 'func',
-          processName: 'hello',
-          credential: 'world',
-          options: { inspect: true },
-          disposable: false,
-          toReserve: false,
-        });
-
-        workerStatsSnapshot.register({
-          funcName: 'func',
-          processName: 'foooo',
-          credential: 'bar',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
+        registerWorkers(workerStatsSnapshot, [
+          {
+            funcName: 'func',
+            processName: 'hello',
+            credential: 'world',
+            options: { inspect: true },
+            disposable: false,
+            toReserve: false,
+          },
+          {
+            funcName: 'func',
+            processName: 'foooo',
+            credential: 'bar',
+            options: { inspect: false },
+            disposable: false,
+            toReserve: false,
+          },
+        ]);
 
         assert.strictEqual(
           workerStatsSnapshot.getWorker('func', false, 'hello'),
@@ -491,23 +503,24 @@ describe(common.testName(__filename), () => {
 
     describe('.toProtobufObject()', () => {
       it('should to protobuf object', () => {
-        workerStatsSnapshot.register({
-          funcName: 'func',
-          processName: 'hello',
-          credential: 'world',
-          options: { inspect: true },
-          disposable: false,
-          toReserve: false,
-        });
-
-        workerStatsSnapshot.register({
-          funcName: 'func',
-          processName: 'foooo',
-          credential: 'bar',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
+        registerWorkers(workerStatsSnapshot, [
+          {
+            funcName: 'func',
+            processName: 'hello',
+            credential: 'world',
+            options: { inspect: true },
+            disposable: false,
+            toReserve: false,
+          },
+          {
+            funcName: 'func',
+            processName: 'foooo',
+            credential: 'bar',
+            options: { inspect: false },
+            disposable: false,
+            toReserve: false,
+          },
+        ]);
 
         assert.deepStrictEqual(workerStatsSnapshot.toProtobufObject(), [
           {
@@ -572,15 +585,16 @@ describe(common.testName(__filename), () => {
       });
 
       it('should to protobuf object with worker data', () => {
-        workerStatsSnapshot.register({
-          funcName: 'func',
-          processName: 'hello',
-          credential: 'world',
-          options: { inspect: true },
-          disposable: false,
-          toReserve: false,
-        });
-
+        registerWorkers(workerStatsSnapshot, [
+          {
+            funcName: 'func',
+            processName: 'hello',
+            credential: 'world',
+            options: { inspect: true },
+            disposable: false,
+            toReserve: false,
+          },
+        ]);
         workerStatsSnapshot.sync(brokerData);
 
         assert.deepStrictEqual(workerStatsSnapshot.toProtobufObject(), [
@@ -622,23 +636,24 @@ describe(common.testName(__filename), () => {
 
     describe('.sync()', () => {
       it('should sync', async () => {
-        workerStatsSnapshot.register({
-          funcName: 'func',
-          processName: 'hello',
-          credential: 'world',
-          options: { inspect: true },
-          disposable: false,
-          toReserve: false,
-        });
-
-        workerStatsSnapshot.register({
-          funcName: 'func',
-          processName: 'foooo',
-          credential: 'bar',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
+        registerWorkers(workerStatsSnapshot, [
+          {
+            funcName: 'func',
+            processName: 'hello',
+            credential: 'world',
+            options: { inspect: true },
+            disposable: false,
+            toReserve: false,
+          },
+          {
+            funcName: 'func',
+            processName: 'foooo',
+            credential: 'bar',
+            options: { inspect: false },
+            disposable: false,
+            toReserve: false,
+          },
+        ]);
 
         registerContainers(testContainerManager, workerStatsSnapshot, [
           { pid: 1, name: 'foooo', status: TurfContainerStates.running },
@@ -761,23 +776,24 @@ describe(common.testName(__filename), () => {
       });
 
       it('should sync that not in profile', async () => {
-        workerStatsSnapshot.register({
-          funcName: 'func',
-          processName: 'hello',
-          credential: 'world',
-          options: { inspect: true },
-          disposable: false,
-          toReserve: false,
-        });
-
-        workerStatsSnapshot.register({
-          funcName: 'func',
-          processName: 'foooo',
-          credential: 'bar',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
+        registerWorkers(workerStatsSnapshot, [
+          {
+            funcName: 'func',
+            processName: 'hello',
+            credential: 'world',
+            options: { inspect: true },
+            disposable: false,
+            toReserve: false,
+          },
+          {
+            funcName: 'func',
+            processName: 'foooo',
+            credential: 'bar',
+            options: { inspect: false },
+            disposable: false,
+            toReserve: false,
+          },
+        ]);
 
         await profileManager.set([], 'WAIT');
 
@@ -874,23 +890,24 @@ describe(common.testName(__filename), () => {
       it('should correct gc stopped and unknown container', async () => {
         const spyFs = sinon.spy(fs.promises, 'rm');
 
-        workerStatsSnapshot.register({
-          funcName: 'func',
-          processName: 'hello',
-          credential: 'world',
-          options: { inspect: true },
-          disposable: false,
-          toReserve: false,
-        });
-
-        workerStatsSnapshot.register({
-          funcName: 'func',
-          processName: 'foooo',
-          credential: 'bar',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        });
+        registerWorkers(workerStatsSnapshot, [
+          {
+            funcName: 'func',
+            processName: 'hello',
+            credential: 'world',
+            options: { inspect: true },
+            disposable: false,
+            toReserve: false,
+          },
+          {
+            funcName: 'func',
+            processName: 'foooo',
+            credential: 'bar',
+            options: { inspect: false },
+            disposable: false,
+            toReserve: false,
+          },
+        ]);
         registerContainers(testContainerManager, workerStatsSnapshot, [
           { name: 'hello', pid: 1, status: TurfContainerStates.running },
           { name: 'foooo', pid: 1, status: TurfContainerStates.running },
