@@ -63,7 +63,7 @@ export class WorkerLogger {
   }
 
   foundTurfState(state: TurfContainerStates) {
-    this.logger.info('found turf state %s.',state);
+    this.logger.info('found turf state %s.', state);
   }
 
   updateContainerStatus(
@@ -73,10 +73,12 @@ export class WorkerLogger {
     level?: LogLevels,
     extra?: string
   ) {
-    this.logger[level ?? 'info']('update container status [%s] from [%s] by event [%s]%s',
-    ContainerStatus[to],
-    ContainerStatus[from],
-    event,
-    extra ? extra : '.');
+    this.logger[level ?? 'info'](
+      'update container status [%s] from [%s] by event [%s]%s',
+      ContainerStatus[to],
+      ContainerStatus[from],
+      event,
+      extra ? extra : '.'
+    );
   }
 }
