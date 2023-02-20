@@ -3,7 +3,7 @@ import loggers from '#self/lib/logger';
 import { Logger } from '#self/lib/loggers';
 import { ControlPlane } from '../control_plane';
 import { Delta } from '../capacity_manager';
-import { ControlPanelEvent } from '#self/lib/constants';
+import { ControlPlaneEvent } from '#self/lib/constants';
 import { ContainerManager } from '../container/container_manager';
 import { RequestQueueingEvent, WorkerTrafficStatsEvent } from '../events';
 import {
@@ -74,7 +74,7 @@ export class DefaultController extends BaseController {
       const now = performance.now();
 
       await this.plane.workerLauncher.tryLaunch(
-        ControlPanelEvent.RequestQueueExpand,
+        ControlPlaneEvent.RequestQueueExpand,
         workerMetadata
       );
       this.logger.info(

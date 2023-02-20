@@ -1,4 +1,4 @@
-import { ControlPanelEvent } from '#self/lib/constants';
+import { ControlPlaneEvent } from '#self/lib/constants';
 import { Logger } from '#self/lib/loggers';
 import { Delta } from '../capacity_manager';
 import { ControlPlane } from '../control_plane';
@@ -44,7 +44,7 @@ export abstract class BaseController {
     const ret = [];
     for (let i = 0; i < count; i++) {
       ret.push(
-        workerLauncher.tryLaunch(ControlPanelEvent.Expand, workerMetadata)
+        workerLauncher.tryLaunch(ControlPlaneEvent.Expand, workerMetadata)
       );
     }
     return Promise.all(ret);

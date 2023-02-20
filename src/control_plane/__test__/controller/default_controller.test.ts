@@ -1,7 +1,7 @@
 import { ControlPlane } from '#self/control_plane';
 import { WorkerStatusReportEvent } from '#self/control_plane/events';
 import { StateManager } from '#self/control_plane/worker_stats/state_manager';
-import { ContainerStatusReport, ControlPanelEvent } from '#self/lib/constants';
+import { ContainerStatusReport, ControlPlaneEvent } from '#self/lib/constants';
 import { TurfContainerStates } from '#self/lib/turf';
 import * as common from '#self/test/common';
 import assert from 'assert';
@@ -232,8 +232,8 @@ describe(common.testName(__filename), () => {
         mm(
           controlPlane.workerLauncher,
           'tryLaunch',
-          async (event: ControlPanelEvent, { funcName, options }: any) => {
-            assert.strictEqual(event, ControlPanelEvent.Expand);
+          async (event: ControlPlaneEvent, { funcName, options }: any) => {
+            assert.strictEqual(event, ControlPlaneEvent.Expand);
             assert.strictEqual(funcName, 'func');
             assert.deepStrictEqual(options, { inspect: false });
             tryLaunchCalled++;

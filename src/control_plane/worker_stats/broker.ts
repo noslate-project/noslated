@@ -2,7 +2,7 @@ import { Config } from '#self/config';
 import {
   ContainerStatus,
   ContainerStatusReport,
-  ControlPanelEvent,
+  ControlPlaneEvent,
 } from '#self/lib/constants';
 import { FunctionProfileManager } from '#self/lib/function_profile';
 import { RawFunctionProfile } from '#self/lib/json/function_profile';
@@ -390,7 +390,7 @@ class Broker {
   updateWorkerContainerStatus(
     workerName: string,
     status: ContainerStatus,
-    event: ControlPanelEvent | ContainerStatusReport
+    event: ControlPlaneEvent | ContainerStatusReport
   ) {
     const worker = this.workers.get(workerName);
 
@@ -521,7 +521,7 @@ class Broker {
       this.updateWorkerContainerStatus(
         worker.name,
         ContainerStatus.PendingStop,
-        ControlPanelEvent.Shrink
+        ControlPlaneEvent.Shrink
       );
     });
 

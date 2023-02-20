@@ -14,7 +14,7 @@ import { DataPlaneClientManager } from './data_plane_client/manager';
 import { WorkerMetadata, WorkerStatsSnapshot } from './worker_stats';
 import { kMemoryLimit } from './constants';
 import { performance } from 'perf_hooks';
-import { ControlPanelEvent } from '#self/lib/constants';
+import { ControlPlaneEvent } from '#self/lib/constants';
 import { Priority, TaskQueue } from '#self/lib/task_queue';
 import { Container } from './container/container_manager';
 
@@ -108,11 +108,11 @@ export class WorkerLauncher extends Base {
 
   /**
    * Try launch worker process via turf
-   * @param {ControlPanelEvent} event The event.
+   * @param {ControlPlaneEvent} event The event.
    * @param {WorkerMetadata} workerMetadata The worker init data.
    * @return {Promise<void>} The result.
    */
-  async tryLaunch(event: ControlPanelEvent, workerMetadata: WorkerMetadata) {
+  async tryLaunch(event: ControlPlaneEvent, workerMetadata: WorkerMetadata) {
     const { funcName, disposable, options, requestId, toReserve } =
       workerMetadata;
 
@@ -282,7 +282,7 @@ export interface WorkerLaunchItem {
 }
 
 interface LaunchTask {
-  event: ControlPanelEvent;
+  event: ControlPlaneEvent;
   timestamp: number;
   funcName: string;
   disposable: boolean;

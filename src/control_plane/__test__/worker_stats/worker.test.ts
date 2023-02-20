@@ -14,7 +14,7 @@ import { TurfContainerStates } from '#self/lib/turf';
 import {
   ContainerStatus,
   ContainerStatusReport,
-  ControlPanelEvent,
+  ControlPlaneEvent,
 } from '#self/lib/constants';
 import { AworkerFunctionProfile } from '#self/lib/json/function_profile';
 import { StateManager } from '#self/control_plane/worker_stats/state_manager';
@@ -293,7 +293,7 @@ describe(common.testName(__filename), () => {
 
       worker.updateContainerStatus(
         ContainerStatus.PendingStop,
-        ControlPanelEvent.Shrink
+        ControlPlaneEvent.Shrink
       );
 
       assert.strictEqual(worker.containerStatus, ContainerStatus.PendingStop);
@@ -375,14 +375,14 @@ describe(common.testName(__filename), () => {
 
       worker.updateContainerStatus(
         ContainerStatus.Created,
-        ControlPanelEvent.Expand
+        ControlPlaneEvent.Expand
       );
 
       assert.strictEqual(worker.containerStatus, ContainerStatus.Stopped);
 
       worker.updateContainerStatus(
         ContainerStatus.PendingStop,
-        ControlPanelEvent.Shrink
+        ControlPlaneEvent.Shrink
       );
 
       assert.strictEqual(worker.containerStatus, ContainerStatus.Stopped);
@@ -457,7 +457,7 @@ describe(common.testName(__filename), () => {
       assert.strictEqual(worker.containerStatus, ContainerStatus.Created);
 
       clock.tick(config.worker.defaultInitializerTimeout + 1000);
-      const spy = sinon.spy(worker.logger, 'info');
+      const spy = sinon.spy(worker.logger, 'statusSwitchTo');
 
       container.updateStatus(TurfContainerStates.running);
       assert.strictEqual(
@@ -466,7 +466,12 @@ describe(common.testName(__filename), () => {
       );
       assert.strictEqual(worker.containerStatus, ContainerStatus.Stopped);
 
-      assert(spy.calledWithMatch(/connect timeout/));
+      assert(
+        spy.calledWithMatch(
+          ContainerStatus.Stopped,
+          sinon.match(/connect timeout/)
+        )
+      );
 
       spy.restore();
     });
@@ -493,7 +498,7 @@ describe(common.testName(__filename), () => {
       assert.strictEqual(worker.containerStatus, ContainerStatus.Created);
 
       clock.tick(config.worker.defaultInitializerTimeout + 1000);
-      const spy = sinon.spy(worker.logger, 'info');
+      const spy = sinon.spy(worker.logger, 'statusSwitchTo');
 
       container.updateStatus(TurfContainerStates.running);
 
@@ -503,7 +508,12 @@ describe(common.testName(__filename), () => {
       );
       assert.strictEqual(worker.containerStatus, ContainerStatus.Stopped);
 
-      assert(spy.calledWithMatch(/connect timeout/));
+      assert(
+        spy.calledWithMatch(
+          ContainerStatus.Stopped,
+          sinon.match(/connect timeout/)
+        )
+      );
 
       spy.restore();
     });
@@ -530,12 +540,17 @@ describe(common.testName(__filename), () => {
       assert.strictEqual(worker.containerStatus, ContainerStatus.Created);
 
       clock.tick(config.worker.defaultInitializerTimeout + 1000);
-      const spy = sinon.spy(worker.logger, 'info');
+      const spy = sinon.spy(worker.logger, 'statusSwitchTo');
 
       container.updateStatus('unsupported' as TurfContainerStates);
       assert.strictEqual(worker.containerStatus, ContainerStatus.Stopped);
 
-      assert(spy.calledWithMatch(/connect timeout/));
+      assert(
+        spy.calledWithMatch(
+          ContainerStatus.Stopped,
+          sinon.match(/connect timeout/)
+        )
+      );
 
       spy.restore();
     });

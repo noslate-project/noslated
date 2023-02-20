@@ -1,6 +1,13 @@
 import loggers from '#self/lib/logger';
 import { WorkerMetadata } from './worker';
-import { Logger } from '#self/lib/loggers';
+import { Logger, LogLevels } from '#self/lib/loggers';
+import {
+  ContainerStatus,
+  ContainerStatusReport,
+  ControlPlaneEvent,
+  TurfStatusEvent,
+} from '#self/lib/constants';
+import { TurfContainerStates } from '#self/lib/turf';
 
 export class WorkerLogger {
   private logger: Logger;
@@ -18,7 +25,7 @@ export class WorkerLogger {
       this.workerMetadata.credential,
       this.workerMetadata.options.inspect,
       this.workerMetadata.disposable,
-      cost,
+      cost.toFixed(3),
       this.workerMetadata.requestId
     );
   }
@@ -30,37 +37,46 @@ export class WorkerLogger {
       this.workerMetadata.credential,
       this.workerMetadata.options.inspect,
       this.workerMetadata.disposable,
-      cost,
+      cost.toFixed(3),
       this.workerMetadata.requestId
     );
   }
 
   statusChangedBeforeReady(status: string) {
     this.logger.info(
-      'Worker(%s, %s) status settle to [%s] before pending ready',
-      this.workerMetadata.processName,
+      'Worker(%s) status settle to [%s] before pending ready.',
       this.workerMetadata.credential,
       status
     );
   }
 
   syncWithNull() {
-    this.debug('Sync with null.');
+    this.logger.debug('Sync with null.');
   }
 
-  debug(...args: any[]) {
-    this.logger.debug(...args);
+  statusSwitchTo(statusTo: ContainerStatus, reason: string, level?: LogLevels) {
+    this.logger[level ?? 'info'](
+      'switch worker container status to [%s], because %s.',
+      ContainerStatus[statusTo],
+      reason
+    );
   }
 
-  info(...args: any[]) {
-    this.logger.info(...args);
+  foundTurfState(state: TurfContainerStates) {
+    this.logger.info('found turf state %s.',state);
   }
 
-  error(...args: any[]) {
-    this.logger.error(...args);
-  }
-
-  warn(...args: any[]) {
-    this.logger.warn(...args);
+  updateContainerStatus(
+    to: ContainerStatus,
+    from: ContainerStatus,
+    event: TurfStatusEvent | ContainerStatusReport | ControlPlaneEvent,
+    level?: LogLevels,
+    extra?: string
+  ) {
+    this.logger[level ?? 'info']('update container status [%s] from [%s] by event [%s]%s',
+    ContainerStatus[to],
+    ContainerStatus[from],
+    event,
+    extra ? extra : '.');
   }
 }

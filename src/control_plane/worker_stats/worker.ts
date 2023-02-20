@@ -5,7 +5,7 @@ import {
   ContainerStatus,
   ContainerStatusReport,
   TurfStatusEvent,
-  ControlPanelEvent,
+  ControlPlaneEvent,
 } from '#self/lib/constants';
 import { createDeferred, Deferred } from '#self/lib/util';
 import { Container } from '../container/container_manager';
@@ -309,8 +309,9 @@ class Worker {
             ContainerStatus.Stopped,
             TurfStatusEvent.ConnectTimeout
           );
-          this.logger.info(
-            'switch worker container status to [Stopped], because connect timeout.'
+          this.logger.statusSwitchTo(
+            ContainerStatus.Stopped,
+            'connect timeout'
           );
         }
         // always be Created, wait dp ContainerInstalled to Ready
@@ -321,15 +322,18 @@ class Worker {
           ContainerStatus.Unknown,
           TurfStatusEvent.StatusUnknown
         );
-        this.logger.error(
-          'switch worker container status to [Unknown], because turf state is unknown.'
+        this.logger.statusSwitchTo(
+          ContainerStatus.Unknown,
+          'turf state is unknown',
+          'error'
         );
         break;
       }
       case TurfContainerStates.stopping:
       case TurfContainerStates.stopped: {
-        this.logger.info(
-          'switch worker container status to [Stopped], because turf state is stopped/stopping.'
+        this.logger.statusSwitchTo(
+          ContainerStatus.Stopped,
+          'turf state is stopped/stopping'
         );
         this.updateContainerStatus(
           ContainerStatus.Stopped,
@@ -341,8 +345,9 @@ class Worker {
         // 只有 Ready 运行时无法找到的情况视为异常
         // 其他情况不做处理
         if (this.#containerStatus === ContainerStatus.Ready) {
-          this.logger.info(
-            'switch worker container status to [Stopped], because sandbox disappeared.'
+          this.logger.statusSwitchTo(
+            ContainerStatus.Stopped,
+            'sandbox disappeared'
           );
           this.updateContainerStatus(
             ContainerStatus.Stopped,
@@ -355,7 +360,7 @@ class Worker {
         //这个状态不需要处理，仅 seed 会存在
         break;
       default:
-        this.logger.info('found turf state: ', turfState);
+        this.logger.foundTurfState(turfState);
 
         if (
           Date.now() - this.#registerTime > this.#initializationTimeout &&
@@ -365,8 +370,9 @@ class Worker {
             ContainerStatus.Stopped,
             TurfStatusEvent.ConnectTimeout
           );
-          this.logger.info(
-            'switch worker container status to [Stopped], because connect timeout.'
+          this.logger.statusSwitchTo(
+            ContainerStatus.Stopped,
+            'connect timeout'
           );
         }
     }
@@ -405,14 +411,16 @@ class Worker {
 
   updateContainerStatus(
     status: ContainerStatus,
-    event: TurfStatusEvent | ContainerStatusReport | ControlPanelEvent
+    event: TurfStatusEvent | ContainerStatusReport | ControlPlaneEvent
   ) {
     if (status < this.#containerStatus) {
-      this.logger.warn(
-        'update container status [%s] from [%s] by event [%s] is illegal.',
-        ContainerStatus[status],
-        ContainerStatus[this.#containerStatus],
-        event
+      const a = ContainerStatus[ContainerStatus.Created];
+      this.logger.updateContainerStatus(
+        status,
+        this.#containerStatus,
+        event,
+        'warn',
+        ' is illegal.'
       );
       return;
     }
@@ -421,12 +429,7 @@ class Worker {
 
     this.#containerStatus = status;
 
-    this.logger.info(
-      'update container status [%s] from [%s] by event [%s].',
-      ContainerStatus[status],
-      ContainerStatus[oldStatus],
-      event
-    );
+    this.logger.updateContainerStatus(status, oldStatus, event);
   }
 }
 

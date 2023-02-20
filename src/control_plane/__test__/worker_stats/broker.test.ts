@@ -13,7 +13,7 @@ import {
 import {
   ContainerStatus,
   ContainerStatusReport,
-  ControlPanelEvent,
+  ControlPlaneEvent,
   TurfStatusEvent,
 } from '#self/lib/constants';
 import sinon from 'sinon';
@@ -977,12 +977,12 @@ describe(common.testName(__filename), () => {
         broker.updateWorkerContainerStatus(
           'foo',
           ContainerStatus.Ready,
-          ControlPanelEvent.RequestQueueExpand
+          ControlPlaneEvent.RequestQueueExpand
         );
         broker.updateWorkerContainerStatus(
           'hello',
           ContainerStatus.Ready,
-          ControlPanelEvent.RequestQueueExpand
+          ControlPlaneEvent.RequestQueueExpand
         );
 
         broker.sync([
@@ -1032,12 +1032,12 @@ describe(common.testName(__filename), () => {
         broker.updateWorkerContainerStatus(
           'foo',
           ContainerStatus.Ready,
-          ControlPanelEvent.RequestQueueExpand
+          ControlPlaneEvent.RequestQueueExpand
         );
         broker.updateWorkerContainerStatus(
           'hello',
           ContainerStatus.Ready,
-          ControlPanelEvent.RequestQueueExpand
+          ControlPlaneEvent.RequestQueueExpand
         );
 
         broker.sync([
@@ -1086,7 +1086,7 @@ describe(common.testName(__filename), () => {
         broker.updateWorkerContainerStatus(
           'hello',
           ContainerStatus.Ready,
-          ControlPanelEvent.RequestQueueExpand
+          ControlPlaneEvent.RequestQueueExpand
         );
 
         broker.sync([
@@ -1121,7 +1121,7 @@ describe(common.testName(__filename), () => {
         broker.updateWorkerContainerStatus(
           'hello',
           ContainerStatus.Ready,
-          ControlPanelEvent.RequestQueueExpand
+          ControlPlaneEvent.RequestQueueExpand
         );
 
         broker.sync([
@@ -1205,7 +1205,7 @@ describe(common.testName(__filename), () => {
         broker.updateWorkerContainerStatus(
           'hello',
           ContainerStatus.Ready,
-          ControlPanelEvent.RequestQueueExpand
+          ControlPlaneEvent.RequestQueueExpand
         );
 
         broker.sync([
@@ -1241,12 +1241,12 @@ describe(common.testName(__filename), () => {
         broker.updateWorkerContainerStatus(
           'foo',
           ContainerStatus.Ready,
-          ControlPanelEvent.RequestQueueExpand
+          ControlPlaneEvent.RequestQueueExpand
         );
         broker.updateWorkerContainerStatus(
           'hello',
           ContainerStatus.Ready,
-          ControlPanelEvent.RequestQueueExpand
+          ControlPlaneEvent.RequestQueueExpand
         );
 
         broker.sync([
@@ -1286,12 +1286,12 @@ describe(common.testName(__filename), () => {
         broker.updateWorkerContainerStatus(
           'foo',
           ContainerStatus.Ready,
-          ControlPanelEvent.RequestQueueExpand
+          ControlPlaneEvent.RequestQueueExpand
         );
         broker.updateWorkerContainerStatus(
           'hello',
           ContainerStatus.Ready,
-          ControlPanelEvent.RequestQueueExpand
+          ControlPlaneEvent.RequestQueueExpand
         );
 
         broker.sync([
@@ -1335,12 +1335,12 @@ describe(common.testName(__filename), () => {
         broker.updateWorkerContainerStatus(
           'foo',
           ContainerStatus.Ready,
-          ControlPanelEvent.RequestQueueExpand
+          ControlPlaneEvent.RequestQueueExpand
         );
         broker.updateWorkerContainerStatus(
           'hello',
           ContainerStatus.Ready,
-          ControlPanelEvent.RequestQueueExpand
+          ControlPlaneEvent.RequestQueueExpand
         );
 
         broker.sync([
@@ -1385,12 +1385,12 @@ describe(common.testName(__filename), () => {
         broker.updateWorkerContainerStatus(
           'foo',
           ContainerStatus.Ready,
-          ControlPanelEvent.RequestQueueExpand
+          ControlPlaneEvent.RequestQueueExpand
         );
         broker.updateWorkerContainerStatus(
           'hello',
           ContainerStatus.Ready,
-          ControlPanelEvent.RequestQueueExpand
+          ControlPlaneEvent.RequestQueueExpand
         );
 
         broker.sync([
@@ -1432,12 +1432,12 @@ describe(common.testName(__filename), () => {
         broker.updateWorkerContainerStatus(
           'foo',
           ContainerStatus.Ready,
-          ControlPanelEvent.RequestQueueExpand
+          ControlPlaneEvent.RequestQueueExpand
         );
         broker.updateWorkerContainerStatus(
           'hello',
           ContainerStatus.Ready,
-          ControlPanelEvent.RequestQueueExpand
+          ControlPlaneEvent.RequestQueueExpand
         );
 
         broker.sync([
@@ -1478,12 +1478,12 @@ describe(common.testName(__filename), () => {
         broker.updateWorkerContainerStatus(
           'foo',
           ContainerStatus.Ready,
-          ControlPanelEvent.RequestQueueExpand
+          ControlPlaneEvent.RequestQueueExpand
         );
         broker.updateWorkerContainerStatus(
           'hello',
           ContainerStatus.Ready,
-          ControlPanelEvent.RequestQueueExpand
+          ControlPlaneEvent.RequestQueueExpand
         );
 
         broker.sync([
@@ -1524,12 +1524,12 @@ describe(common.testName(__filename), () => {
         broker.updateWorkerContainerStatus(
           'foo',
           ContainerStatus.Ready,
-          ControlPanelEvent.RequestQueueExpand
+          ControlPlaneEvent.RequestQueueExpand
         );
         broker.updateWorkerContainerStatus(
           'hello',
           ContainerStatus.Ready,
-          ControlPanelEvent.RequestQueueExpand
+          ControlPlaneEvent.RequestQueueExpand
         );
 
         broker.sync([
@@ -1570,12 +1570,12 @@ describe(common.testName(__filename), () => {
         broker.updateWorkerContainerStatus(
           'foo',
           ContainerStatus.Ready,
-          ControlPanelEvent.RequestQueueExpand
+          ControlPlaneEvent.RequestQueueExpand
         );
         broker.updateWorkerContainerStatus(
           'hello',
           ContainerStatus.Ready,
-          ControlPanelEvent.RequestQueueExpand
+          ControlPlaneEvent.RequestQueueExpand
         );
 
         broker.sync([
@@ -1626,7 +1626,7 @@ describe(common.testName(__filename), () => {
           broker.updateWorkerContainerStatus(
             String(i),
             ContainerStatus.Ready,
-            ControlPanelEvent.RequestQueueExpand
+            ControlPlaneEvent.RequestQueueExpand
           );
         }
         broker.sync(mocked);
@@ -1662,7 +1662,7 @@ describe(common.testName(__filename), () => {
           broker.updateWorkerContainerStatus(
             String(i),
             ContainerStatus.Ready,
-            ControlPanelEvent.RequestQueueExpand
+            ControlPlaneEvent.RequestQueueExpand
           );
         }
         broker.sync(mocked);
@@ -1688,12 +1688,12 @@ describe(common.testName(__filename), () => {
         broker.updateWorkerContainerStatus(
           'hello',
           ContainerStatus.Ready,
-          ControlPanelEvent.RequestQueueExpand
+          ControlPlaneEvent.RequestQueueExpand
         );
         broker.updateWorkerContainerStatus(
           'foo',
           ContainerStatus.Ready,
-          ControlPanelEvent.RequestQueueExpand
+          ControlPlaneEvent.RequestQueueExpand
         );
 
         broker.sync([
@@ -1831,7 +1831,7 @@ describe(common.testName(__filename), () => {
           broker.updateWorkerContainerStatus(
             'coco',
             ContainerStatus.Ready,
-            ControlPanelEvent.RequestQueueExpand
+            ControlPlaneEvent.RequestQueueExpand
           );
 
           broker.sync([
@@ -1877,7 +1877,7 @@ describe(common.testName(__filename), () => {
           broker.updateWorkerContainerStatus(
             'coco',
             ContainerStatus.Ready,
-            ControlPanelEvent.RequestQueueExpand
+            ControlPlaneEvent.RequestQueueExpand
           );
 
           broker.sync([
@@ -1923,7 +1923,7 @@ describe(common.testName(__filename), () => {
           broker.updateWorkerContainerStatus(
             'coco',
             ContainerStatus.Ready,
-            ControlPanelEvent.RequestQueueExpand
+            ControlPlaneEvent.RequestQueueExpand
           );
 
           broker.sync([
@@ -2083,7 +2083,7 @@ describe(common.testName(__filename), () => {
         broker.updateWorkerContainerStatus(
           'hello',
           ContainerStatus.Ready,
-          ControlPanelEvent.RequestQueueExpand
+          ControlPlaneEvent.RequestQueueExpand
         );
 
         registerBrokerContainers(testContainerManager, broker, [
@@ -2165,7 +2165,7 @@ describe(common.testName(__filename), () => {
         broker.updateWorkerContainerStatus(
           'hello',
           ContainerStatus.Ready,
-          ControlPanelEvent.RequestQueueExpand
+          ControlPlaneEvent.RequestQueueExpand
         );
 
         await profileManager!.set([], 'WAIT');
@@ -2249,12 +2249,12 @@ describe(common.testName(__filename), () => {
         broker.updateWorkerContainerStatus(
           'hello',
           ContainerStatus.Ready,
-          ControlPanelEvent.RequestQueueExpand
+          ControlPlaneEvent.RequestQueueExpand
         );
         broker.updateWorkerContainerStatus(
           'foo',
           ContainerStatus.Ready,
-          ControlPanelEvent.RequestQueueExpand
+          ControlPlaneEvent.RequestQueueExpand
         );
 
         broker.sync([
@@ -2292,12 +2292,12 @@ describe(common.testName(__filename), () => {
         broker.updateWorkerContainerStatus(
           'hello',
           ContainerStatus.Ready,
-          ControlPanelEvent.RequestQueueExpand
+          ControlPlaneEvent.RequestQueueExpand
         );
         broker.updateWorkerContainerStatus(
           'foo',
           ContainerStatus.Ready,
-          ControlPanelEvent.RequestQueueExpand
+          ControlPlaneEvent.RequestQueueExpand
         );
 
         broker.sync([
@@ -2349,12 +2349,12 @@ describe(common.testName(__filename), () => {
         broker.updateWorkerContainerStatus(
           'hello',
           ContainerStatus.Ready,
-          ControlPanelEvent.RequestQueueExpand
+          ControlPlaneEvent.RequestQueueExpand
         );
         broker.updateWorkerContainerStatus(
           'foo',
           ContainerStatus.Ready,
-          ControlPanelEvent.RequestQueueExpand
+          ControlPlaneEvent.RequestQueueExpand
         );
 
         broker.sync([
@@ -2410,12 +2410,12 @@ describe(common.testName(__filename), () => {
         broker.updateWorkerContainerStatus(
           'hello',
           ContainerStatus.Ready,
-          ControlPanelEvent.RequestQueueExpand
+          ControlPlaneEvent.RequestQueueExpand
         );
         broker.updateWorkerContainerStatus(
           'foo',
           ContainerStatus.Ready,
-          ControlPanelEvent.RequestQueueExpand
+          ControlPlaneEvent.RequestQueueExpand
         );
 
         broker.sync([
@@ -2471,12 +2471,12 @@ describe(common.testName(__filename), () => {
         broker.updateWorkerContainerStatus(
           'hello',
           ContainerStatus.Ready,
-          ControlPanelEvent.RequestQueueExpand
+          ControlPlaneEvent.RequestQueueExpand
         );
         broker.updateWorkerContainerStatus(
           'foo',
           ContainerStatus.Ready,
-          ControlPanelEvent.RequestQueueExpand
+          ControlPlaneEvent.RequestQueueExpand
         );
 
         broker.sync([
