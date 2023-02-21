@@ -414,7 +414,7 @@ class Worker {
     event: TurfStatusEvent | ContainerStatusReport | ControlPlaneEvent
   ) {
     if (status < this.#containerStatus) {
-      const a = ContainerStatus[ContainerStatus.Created];
+      ContainerStatus[ContainerStatus.Created];
       this.logger.updateContainerStatus(
         status,
         this.#containerStatus,
