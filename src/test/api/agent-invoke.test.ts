@@ -35,7 +35,7 @@ describe(common.testName(__filename), function () {
     assert.strictEqual(buffer.toString('utf8'), 'foobar');
   });
 
-  it('invoke with delaying readable', async () => {
+  it('invoke duplex stream', async () => {
     await env.agent.setFunctionProfile([item.profile] as any);
 
     const readable = new Readable({
