@@ -6,7 +6,7 @@ import mm from 'mm';
 import sinon from 'sinon';
 
 import FakeTimers, { Clock } from '@sinonjs/fake-timers';
-import { Worker } from '#self/control_plane/worker_stats/index';
+import { Worker, WorkerMetadata } from '#self/control_plane/worker_stats/index';
 import * as common from '#self/test/common';
 import { config } from '#self/config';
 import { FunctionProfileManager as ProfileManager } from '#self/lib/function_profile';
@@ -14,7 +14,7 @@ import { TurfContainerStates } from '#self/lib/turf';
 import {
   ContainerStatus,
   ContainerStatusReport,
-  ControlPanelEvent,
+  ControlPlaneEvent,
 } from '#self/lib/constants';
 import { AworkerFunctionProfile } from '#self/lib/json/function_profile';
 import { StateManager } from '#self/control_plane/worker_stats/state_manager';
@@ -22,6 +22,7 @@ import { NoslatedClient } from '#self/sdk';
 import { DefaultEnvironment } from '#self/test/env/environment';
 import { SimpleContainer } from '../test_container_manager';
 import { WorkerStatusReportEvent } from '#self/control_plane/events';
+import { registerWorkers } from '../util';
 
 describe(common.testName(__filename), () => {
   const funcData: AworkerFunctionProfile[] = [
@@ -56,7 +57,15 @@ describe(common.testName(__filename), () => {
 
   describe('constructor', () => {
     it('should construct', () => {
-      const worker = new Worker(config, 'hello', 'world');
+      const workerMetadata = new WorkerMetadata(
+        'func',
+        { inspect: false },
+        false,
+        false,
+        'hello',
+        'world'
+      );
+      const worker = new Worker(workerMetadata, config);
       assert.deepStrictEqual(_.omit(worker.toJSON(), ['registerTime']), {
         name: 'hello',
         credential: 'world',
@@ -69,7 +78,14 @@ describe(common.testName(__filename), () => {
     });
 
     it('should construct with credential null', () => {
-      const worker = new Worker(config, 'hello');
+      const workerMetadata = new WorkerMetadata(
+        'func',
+        { inspect: false },
+        false,
+        false,
+        'hello'
+      );
+      const worker = new Worker(workerMetadata, config);
       assert.deepStrictEqual(_.omit(worker.toJSON(), ['registerTime']), {
         name: 'hello',
         credential: null,
@@ -84,7 +100,15 @@ describe(common.testName(__filename), () => {
 
   describe('.sync()', () => {
     it('should sync data', () => {
-      const worker = new Worker(config, 'hello', 'world');
+      const workerMetadata = new WorkerMetadata(
+        'func',
+        { inspect: false },
+        false,
+        false,
+        'hello',
+        'world'
+      );
+      const worker = new Worker(workerMetadata, config);
       const container = new SimpleContainer('hello');
       worker.setContainer(container);
       container.updateStatus(TurfContainerStates.stopped);
@@ -112,7 +136,15 @@ describe(common.testName(__filename), () => {
 
   describe('.setContainer()', () => {
     it('should sync container status', () => {
-      const worker = new Worker(config, 'hello', 'world');
+      const workerMetadata = new WorkerMetadata(
+        'func',
+        { inspect: false },
+        false,
+        false,
+        'hello',
+        'world'
+      );
+      const worker = new Worker(workerMetadata, config);
       const container = new SimpleContainer('hello');
       worker.setContainer(container);
       container.updateStatus(TurfContainerStates.stopped);
@@ -129,7 +161,15 @@ describe(common.testName(__filename), () => {
     });
 
     it('should sync container status (hit -> not hit)', () => {
-      const worker = new Worker(config, 'hello', 'world');
+      const workerMetadata = new WorkerMetadata(
+        'func',
+        { inspect: false },
+        false,
+        false,
+        'hello',
+        'world'
+      );
+      const worker = new Worker(workerMetadata, config);
       const container = new SimpleContainer('hello');
       worker.setContainer(container);
       container.updateStatus(TurfContainerStates.stopped);
@@ -182,7 +222,15 @@ describe(common.testName(__filename), () => {
         maxActivateRequests: 10,
         activeRequestCount: 5,
       };
-      const worker = new Worker(config, 'hello', 'world');
+      const workerMetadata = new WorkerMetadata(
+        'func',
+        { inspect: false },
+        false,
+        false,
+        'hello',
+        'world'
+      );
+      const worker = new Worker(workerMetadata, config);
       const container = new SimpleContainer('hello');
 
       worker.sync(data);
@@ -216,7 +264,15 @@ describe(common.testName(__filename), () => {
         maxActivateRequests: 10,
         activeRequestCount: 5,
       };
-      const worker = new Worker(config, 'hello', 'world');
+      const workerMetadata = new WorkerMetadata(
+        'func',
+        { inspect: false },
+        false,
+        false,
+        'hello',
+        'world'
+      );
+      const worker = new Worker(workerMetadata, config);
 
       worker.sync(data);
       assert.strictEqual(worker.containerStatus, ContainerStatus.Created);
@@ -237,7 +293,7 @@ describe(common.testName(__filename), () => {
 
       worker.updateContainerStatus(
         ContainerStatus.PendingStop,
-        ControlPanelEvent.Shrink
+        ControlPlaneEvent.Shrink
       );
 
       assert.strictEqual(worker.containerStatus, ContainerStatus.PendingStop);
@@ -253,7 +309,15 @@ describe(common.testName(__filename), () => {
         maxActivateRequests: 10,
         activeRequestCount: 5,
       };
-      const worker = new Worker(config, 'hello', 'world');
+      const workerMetadata = new WorkerMetadata(
+        'func',
+        { inspect: false },
+        false,
+        false,
+        'hello',
+        'world'
+      );
+      const worker = new Worker(workerMetadata, config);
 
       worker.sync(data);
       assert.strictEqual(worker.containerStatus, ContainerStatus.Created);
@@ -285,7 +349,15 @@ describe(common.testName(__filename), () => {
         maxActivateRequests: 10,
         activeRequestCount: 5,
       };
-      const worker = new Worker(config, 'hello', 'world');
+      const workerMetadata = new WorkerMetadata(
+        'func',
+        { inspect: false },
+        false,
+        false,
+        'hello',
+        'world'
+      );
+      const worker = new Worker(workerMetadata, config);
 
       worker.sync(data);
       assert.strictEqual(worker.containerStatus, ContainerStatus.Created);
@@ -303,14 +375,14 @@ describe(common.testName(__filename), () => {
 
       worker.updateContainerStatus(
         ContainerStatus.Created,
-        ControlPanelEvent.Expand
+        ControlPlaneEvent.Expand
       );
 
       assert.strictEqual(worker.containerStatus, ContainerStatus.Stopped);
 
       worker.updateContainerStatus(
         ContainerStatus.PendingStop,
-        ControlPanelEvent.Shrink
+        ControlPlaneEvent.Shrink
       );
 
       assert.strictEqual(worker.containerStatus, ContainerStatus.Stopped);
@@ -329,7 +401,15 @@ describe(common.testName(__filename), () => {
     });
 
     it('should state unknown when event unsupported', async () => {
-      const worker = new Worker(config, 'hello', 'world');
+      const workerMetadata = new WorkerMetadata(
+        'func',
+        { inspect: false },
+        false,
+        false,
+        'hello',
+        'world'
+      );
+      const worker = new Worker(workerMetadata, config);
       assert.strictEqual(worker.containerStatus, ContainerStatus.Created);
 
       worker.updateContainerStatusByEvent(
@@ -355,7 +435,15 @@ describe(common.testName(__filename), () => {
         maxActivateRequests: 10,
         activeRequestCount: 5,
       };
-      const worker = new Worker(config, 'hello', 'world');
+      const workerMetadata = new WorkerMetadata(
+        'func',
+        { inspect: false },
+        false,
+        false,
+        'hello',
+        'world'
+      );
+      const worker = new Worker(workerMetadata, config);
 
       const container = new SimpleContainer('hello');
       worker.setContainer(container);
@@ -369,7 +457,7 @@ describe(common.testName(__filename), () => {
       assert.strictEqual(worker.containerStatus, ContainerStatus.Created);
 
       clock.tick(config.worker.defaultInitializerTimeout + 1000);
-      const spy = sinon.spy(worker.logger, 'info');
+      const spy = sinon.spy(worker.logger, 'statusSwitchTo');
 
       container.updateStatus(TurfContainerStates.running);
       assert.strictEqual(
@@ -378,13 +466,26 @@ describe(common.testName(__filename), () => {
       );
       assert.strictEqual(worker.containerStatus, ContainerStatus.Stopped);
 
-      assert(spy.calledWithMatch(/connect timeout/));
+      assert(
+        spy.calledWithMatch(
+          ContainerStatus.Stopped,
+          sinon.match(/connect timeout/)
+        )
+      );
 
       spy.restore();
     });
 
     it('without data', () => {
-      const worker = new Worker(config, 'hello', 'world');
+      const workerMetadata = new WorkerMetadata(
+        'func',
+        { inspect: false },
+        false,
+        false,
+        'hello',
+        'world'
+      );
+      const worker = new Worker(workerMetadata, config);
 
       const container = new SimpleContainer('hello');
       worker.setContainer(container);
@@ -397,7 +498,7 @@ describe(common.testName(__filename), () => {
       assert.strictEqual(worker.containerStatus, ContainerStatus.Created);
 
       clock.tick(config.worker.defaultInitializerTimeout + 1000);
-      const spy = sinon.spy(worker.logger, 'info');
+      const spy = sinon.spy(worker.logger, 'statusSwitchTo');
 
       container.updateStatus(TurfContainerStates.running);
 
@@ -407,13 +508,26 @@ describe(common.testName(__filename), () => {
       );
       assert.strictEqual(worker.containerStatus, ContainerStatus.Stopped);
 
-      assert(spy.calledWithMatch(/connect timeout/));
+      assert(
+        spy.calledWithMatch(
+          ContainerStatus.Stopped,
+          sinon.match(/connect timeout/)
+        )
+      );
 
       spy.restore();
     });
 
     it('created to stop when unsupported state timeout', () => {
-      const worker = new Worker(config, 'hello', 'world');
+      const workerMetadata = new WorkerMetadata(
+        'func',
+        { inspect: false },
+        false,
+        false,
+        'hello',
+        'world'
+      );
+      const worker = new Worker(workerMetadata, config);
 
       const container = new SimpleContainer('hello');
       worker.setContainer(container);
@@ -426,18 +540,31 @@ describe(common.testName(__filename), () => {
       assert.strictEqual(worker.containerStatus, ContainerStatus.Created);
 
       clock.tick(config.worker.defaultInitializerTimeout + 1000);
-      const spy = sinon.spy(worker.logger, 'info');
+      const spy = sinon.spy(worker.logger, 'statusSwitchTo');
 
       container.updateStatus('unsupported' as TurfContainerStates);
       assert.strictEqual(worker.containerStatus, ContainerStatus.Stopped);
 
-      assert(spy.calledWithMatch(/connect timeout/));
+      assert(
+        spy.calledWithMatch(
+          ContainerStatus.Stopped,
+          sinon.match(/connect timeout/)
+        )
+      );
 
       spy.restore();
     });
 
     it('do nothing when unsupported state', () => {
-      const worker = new Worker(config, 'hello', 'world');
+      const workerMetadata = new WorkerMetadata(
+        'func',
+        { inspect: false },
+        false,
+        false,
+        'hello',
+        'world'
+      );
+      const worker = new Worker(workerMetadata, config);
 
       const container = new SimpleContainer('hello');
       worker.setContainer(container);
@@ -480,13 +607,16 @@ describe(common.testName(__filename), () => {
         ],
         'WAIT'
       );
-
-      stateManager.workerStatsSnapshot.register(
-        'func1',
-        'worker1',
-        'cred1',
-        false
-      );
+      registerWorkers(stateManager.workerStatsSnapshot, [
+        {
+          funcName: 'func1',
+          processName: 'worker1',
+          credential: 'cred1',
+          options: { inspect: false },
+          disposable: false,
+          toReserve: false,
+        },
+      ]);
       worker = stateManager.workerStatsSnapshot.getWorker(
         'func1',
         false,

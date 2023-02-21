@@ -1,11 +1,8 @@
-import { ControlPanelEvent } from '#self/lib/constants';
+import { ControlPlaneEvent } from '#self/lib/constants';
 import { Logger } from '#self/lib/loggers';
 import { Delta } from '../capacity_manager';
 import { ControlPlane } from '../control_plane';
-
-interface ExpansionOptions {
-  inspect?: boolean;
-}
+import { WorkerMetadata } from '../worker_stats';
 
 export abstract class BaseController {
   abstract logger: Logger;
@@ -20,21 +17,14 @@ export abstract class BaseController {
     const expansions = [];
     for (let i = 0; i < deltas.length; i++) {
       const delta = deltas[i];
-      if (deltas[i].count > 0) {
-        const profile = this.plane.functionProfile.get(delta.broker.name);
-        const toReserve =
-          delta.broker.workerCount < delta.broker.reservationCount;
-        expansions.push(
-          this.tryBatchLaunch(
-            delta.broker.name,
-            delta.count,
-            {
-              inspect: delta.broker.isInspector,
-            },
-            profile?.worker?.disposable || false,
-            toReserve
-          )
+      if (delta.count > 0) {
+        const workerMetadata = new WorkerMetadata(
+          delta.broker.name,
+          { inspect: delta.broker.isInspector },
+          delta.broker.disposable,
+          delta.broker.workerCount < delta.broker.reservationCount
         );
+        expansions.push(this.tryBatchLaunch(workerMetadata, delta.count));
       }
     }
     await Promise.all(expansions);
@@ -46,24 +36,15 @@ export abstract class BaseController {
    * @param count How many processes would be started.
    * @param options The options.
    */
-  private async tryBatchLaunch(
-    functionName: string,
-    count: number,
-    options: ExpansionOptions,
-    disposable = false,
-    toReserve = false
+  async tryBatchLaunch(
+    workerMetadata: WorkerMetadata,
+    count: number
   ): Promise<void[]> {
     const { workerLauncher } = this.plane;
     const ret = [];
     for (let i = 0; i < count; i++) {
       ret.push(
-        workerLauncher.tryLaunch(
-          ControlPanelEvent.Expand,
-          functionName,
-          options,
-          disposable,
-          toReserve
-        )
+        workerLauncher.tryLaunch(ControlPlaneEvent.Expand, workerMetadata)
       );
     }
     return Promise.all(ret);

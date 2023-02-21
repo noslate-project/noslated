@@ -3,12 +3,16 @@ import loggers from '#self/lib/logger';
 import { Logger } from '#self/lib/loggers';
 import { ControlPlane } from '../control_plane';
 import { Delta } from '../capacity_manager';
-import { ControlPanelEvent } from '#self/lib/constants';
+import { ControlPlaneEvent } from '#self/lib/constants';
 import { ContainerManager } from '../container/container_manager';
 import { RequestQueueingEvent, WorkerTrafficStatsEvent } from '../events';
-import { wrapLaunchErrorObject } from '../worker_launcher_error_code';
+import {
+  ErrorCode,
+  wrapLaunchErrorObject,
+} from '../worker_launcher_error_code';
 import { BaseController } from './base_controller';
 import { Config } from '#self/config';
+import { WorkerMetadata } from '../worker_stats';
 
 export class DefaultController extends BaseController {
   logger: Logger;
@@ -53,19 +57,25 @@ export class DefaultController extends BaseController {
     }
 
     const profile = this.plane.functionProfile.get(name);
+    if (!profile) {
+      const err = new Error(`No function named ${name}.`);
+      err.code = ErrorCode.kNoFunction;
+      throw err;
+    }
+
+    const workerMetadata = new WorkerMetadata(
+      profile.name,
+      { inspect: false },
+      !!profile.worker?.disposable,
+      false
+    );
 
     try {
       const now = performance.now();
 
       await this.plane.workerLauncher.tryLaunch(
-        ControlPanelEvent.RequestQueueExpand,
-        name,
-        {
-          inspect: isInspect,
-        },
-        profile?.worker?.disposable || false,
-        false,
-        requestId
+        ControlPlaneEvent.RequestQueueExpand,
+        workerMetadata
       );
       this.logger.info(
         'Request(%s) queueing for func(%s, inspect %s) expanded, cost: %sms.',

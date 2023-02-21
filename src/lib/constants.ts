@@ -20,7 +20,7 @@ export enum ContainerStatusReport {
   ContainerDisconnected = 'ContainerDisconnected',
 }
 
-export enum ControlPanelEvent {
+export enum ControlPlaneEvent {
   Shrink = 'Shrink',
   Expand = 'Expand',
   RequestQueueExpand = 'RequestQueueExpand',

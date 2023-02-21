@@ -1,12 +1,13 @@
 import { ControlPlane } from '#self/control_plane';
 import { WorkerStatusReportEvent } from '#self/control_plane/events';
 import { StateManager } from '#self/control_plane/worker_stats/state_manager';
-import { ContainerStatusReport, ControlPanelEvent } from '#self/lib/constants';
+import { ContainerStatusReport, ControlPlaneEvent } from '#self/lib/constants';
 import { TurfContainerStates } from '#self/lib/turf';
 import * as common from '#self/test/common';
 import assert from 'assert';
 import mm from 'mm';
 import { TestEnvironment } from '../environment';
+import { registerWorkers } from '../util';
 
 describe(common.testName(__filename), () => {
   const env = new TestEnvironment({
@@ -92,31 +93,48 @@ describe(common.testName(__filename), () => {
           { pid: 5, name: 'alibaba', status: TurfContainerStates.running },
         ]);
 
-        stateManager.workerStatsSnapshot.register(
-          'func',
-          'hello',
-          'world',
-          false
-        );
-        stateManager.workerStatsSnapshot.register('func', 'foo', 'bar', false);
-        stateManager.workerStatsSnapshot.register(
-          'lambda',
-          'coco',
-          'nut',
-          false
-        );
-        stateManager.workerStatsSnapshot.register(
-          'lambda',
-          'cocos',
-          '2d',
-          false
-        );
-        stateManager.workerStatsSnapshot.register(
-          'lambda',
-          'alibaba',
-          'seed of hope',
-          false
-        );
+        registerWorkers(stateManager.workerStatsSnapshot, [
+          {
+            funcName: 'func',
+            processName: 'hello',
+            credential: 'world',
+            options: { inspect: false },
+            disposable: false,
+            toReserve: false,
+          },
+          {
+            funcName: 'func',
+            processName: 'foo',
+            credential: 'bar',
+            options: { inspect: false },
+            disposable: false,
+            toReserve: false,
+          },
+          {
+            funcName: 'lambda',
+            processName: 'coco',
+            credential: 'nut',
+            options: { inspect: false },
+            disposable: false,
+            toReserve: false,
+          },
+          {
+            funcName: 'lambda',
+            processName: 'cocos',
+            credential: '2d',
+            options: { inspect: false },
+            disposable: false,
+            toReserve: false,
+          },
+          {
+            funcName: 'lambda',
+            processName: 'alibaba',
+            credential: 'seed of hope',
+            options: { inspect: false },
+            disposable: false,
+            toReserve: false,
+          },
+        ]);
 
         if (id === 0)
           mm(
@@ -214,9 +232,9 @@ describe(common.testName(__filename), () => {
         mm(
           controlPlane.workerLauncher,
           'tryLaunch',
-          async (event: ControlPanelEvent, name: any, options: any) => {
-            assert.strictEqual(event, ControlPanelEvent.Expand);
-            assert.strictEqual(name, 'func');
+          async (event: ControlPlaneEvent, { funcName, options }: any) => {
+            assert.strictEqual(event, ControlPlaneEvent.Expand);
+            assert.strictEqual(funcName, 'func');
             assert.deepStrictEqual(options, { inspect: false });
             tryLaunchCalled++;
           }
@@ -281,21 +299,48 @@ describe(common.testName(__filename), () => {
         { pid: 5, name: 'alibaba', status: TurfContainerStates.running },
       ]);
 
-      stateManager.workerStatsSnapshot.register(
-        'func',
-        'hello',
-        'world',
-        false
-      );
-      stateManager.workerStatsSnapshot.register('func', 'foo', 'bar', false);
-      stateManager.workerStatsSnapshot.register('lambda', 'coco', 'nut', false);
-      stateManager.workerStatsSnapshot.register('lambda', 'cocos', '2d', false);
-      stateManager.workerStatsSnapshot.register(
-        'lambda',
-        'alibaba',
-        'seed of hope',
-        false
-      );
+      registerWorkers(stateManager.workerStatsSnapshot, [
+        {
+          funcName: 'func',
+          processName: 'hello',
+          credential: 'world',
+          options: { inspect: false },
+          disposable: false,
+          toReserve: false,
+        },
+        {
+          funcName: 'func',
+          processName: 'foo',
+          credential: 'bar',
+          options: { inspect: false },
+          disposable: false,
+          toReserve: false,
+        },
+        {
+          funcName: 'lambda',
+          processName: 'coco',
+          credential: 'nut',
+          options: { inspect: false },
+          disposable: false,
+          toReserve: false,
+        },
+        {
+          funcName: 'lambda',
+          processName: 'cocos',
+          credential: '2d',
+          options: { inspect: false },
+          disposable: false,
+          toReserve: false,
+        },
+        {
+          funcName: 'lambda',
+          processName: 'alibaba',
+          credential: 'seed of hope',
+          options: { inspect: false },
+          disposable: false,
+          toReserve: false,
+        },
+      ]);
 
       await controlPlane.functionProfile.set([], 'WAIT');
 
@@ -464,13 +509,24 @@ describe(common.testName(__filename), () => {
         'WAIT'
       );
 
-      stateManager.workerStatsSnapshot.register(
-        'func',
-        'hello',
-        'world',
-        false
-      );
-      stateManager.workerStatsSnapshot.register('func', 'foo', 'bar', false);
+      registerWorkers(stateManager.workerStatsSnapshot, [
+        {
+          funcName: 'func',
+          processName: 'hello',
+          credential: 'world',
+          options: { inspect: false },
+          disposable: false,
+          toReserve: false,
+        },
+        {
+          funcName: 'func',
+          processName: 'foo',
+          credential: 'bar',
+          options: { inspect: false },
+          disposable: false,
+          toReserve: false,
+        },
+      ]);
 
       mm(brokerData1.workers[0], 'activeRequestCount', 10);
       mm(brokerData1.workers[1], 'activeRequestCount', 10);

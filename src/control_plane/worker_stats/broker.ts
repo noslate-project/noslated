@@ -2,12 +2,12 @@ import { Config } from '#self/config';
 import {
   ContainerStatus,
   ContainerStatusReport,
-  ControlPanelEvent,
+  ControlPlaneEvent,
 } from '#self/lib/constants';
 import { FunctionProfileManager } from '#self/lib/function_profile';
 import { RawFunctionProfile } from '#self/lib/json/function_profile';
 import { PrefixedLogger } from '#self/lib/loggers';
-import { Worker, WorkerStats } from './worker';
+import { Worker, WorkerMetadata, WorkerStats } from './worker';
 
 enum WaterLevelAction {
   UNKNOWN = 0,
@@ -102,22 +102,20 @@ class Broker {
    * @param processName The process name (worker name).
    * @param credential The credential.
    */
-  register(processName: string, credential: string): Worker {
+  register(workerMetadata: WorkerMetadata): Worker {
     if (!this.data) {
       throw new Error(`No function profile named ${this.name}.`);
     }
-
     const worker = new Worker(
+      workerMetadata,
       this.config,
-      processName,
-      credential,
-      this.disposable,
       this.initializationTimeout
     );
-    this.workers.set(processName, worker);
 
-    this.startingPool.set(processName, {
-      credential,
+    this.workers.set(workerMetadata.processName!, worker);
+
+    this.startingPool.set(workerMetadata.processName!, {
+      credential: workerMetadata.credential!,
       estimateRequestLeft: this.data.worker?.maxActivateRequests,
       maxActivateRequests: this.data.worker?.maxActivateRequests,
     });
@@ -392,7 +390,7 @@ class Broker {
   updateWorkerContainerStatus(
     workerName: string,
     status: ContainerStatus,
-    event: ControlPanelEvent | ContainerStatusReport
+    event: ControlPlaneEvent | ContainerStatusReport
   ) {
     const worker = this.workers.get(workerName);
 
@@ -523,7 +521,7 @@ class Broker {
       this.updateWorkerContainerStatus(
         worker.name,
         ContainerStatus.PendingStop,
-        ControlPanelEvent.Shrink
+        ControlPlaneEvent.Shrink
       );
     });
 

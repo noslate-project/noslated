@@ -1,16 +1,16 @@
 import { TurfContainerStates, TurfProcess } from '#self/lib/turf/types';
 import type { noslated } from '#self/proto/root';
-import { PrefixedLogger } from '#self/lib/loggers';
 import { Config } from '#self/config';
 import {
   ContainerStatus,
   ContainerStatusReport,
   TurfStatusEvent,
-  ControlPanelEvent,
+  ControlPlaneEvent,
 } from '#self/lib/constants';
 import { createDeferred, Deferred } from '#self/lib/util';
 import { Container } from '../container/container_manager';
 import assert from 'assert';
+import { WorkerLogger } from './worker_logger';
 
 export type WorkerStats = noslated.data.IWorkerStats;
 
@@ -21,6 +21,30 @@ class WorkerAdditionalData {
   constructor(data: WorkerStats) {
     this.maxActivateRequests = data.maxActivateRequests;
     this.activeRequestCount = data.activeRequestCount;
+  }
+}
+
+type WorkerOption = {
+  inspect: boolean;
+};
+class WorkerMetadata {
+  readonly credential: string | null;
+  readonly processName: string | null;
+
+  // TODO(yilong.lyl): simplify constructor params
+  constructor(
+    readonly funcName: string,
+
+    readonly options: WorkerOption = { inspect: false },
+    readonly disposable = false,
+    readonly toReserve = false,
+
+    _processName?: string,
+    _credential?: string,
+    readonly requestId?: string
+  ) {
+    this.processName = _processName ?? null;
+    this.credential = _credential ?? null;
   }
 }
 
@@ -125,9 +149,11 @@ class Worker {
   #initializationTimeout: number;
 
   #config;
-  logger: PrefixedLogger;
+  logger: WorkerLogger;
   requestId: string | undefined;
   readyTimeout: NodeJS.Timeout | undefined;
+
+  public disposable = false;
 
   /**
    * Constructor
@@ -136,15 +162,15 @@ class Worker {
    * @param credential The credential.
    */
   constructor(
+    workerMetadata: WorkerMetadata,
     config: Config,
-    name: string,
-    credential: string | null = null,
-    public disposable: boolean = false,
     initializationTimeout?: number
   ) {
     this.#config = config;
-    this.#name = name;
-    this.#credential = credential;
+
+    this.disposable = workerMetadata.disposable;
+    this.#name = workerMetadata.processName!;
+    this.#credential = workerMetadata.credential ?? null;
 
     this.#turfContainerStates = null;
     this.#pid = null;
@@ -156,19 +182,17 @@ class Worker {
     this.#initializationTimeout =
       initializationTimeout ?? config.worker.defaultInitializerTimeout;
 
-    this.logger = new PrefixedLogger('worker_stats worker', this.#name);
     this.requestId = undefined;
 
     this.#readyDeferred = createDeferred<void>();
+
+    this.logger = new WorkerLogger(workerMetadata);
   }
 
   async ready() {
     // 在 await ready 之前状态已经改变了
     if (this.#containerStatus >= ContainerStatus.Ready) {
-      this.logger.info(
-        'Worker(%s, %s) status settle to [%s] before pending ready',
-        this.#name,
-        this.#credential,
+      this.logger.statusChangedBeforeReady(
         ContainerStatus[this.#containerStatus]
       );
 
@@ -259,7 +283,7 @@ class Worker {
    */
   sync(data: WorkerStats | null) {
     if (data === null) {
-      this.logger.debug('Sync with null.');
+      this.logger.syncWithNull();
     }
 
     this.#data = data ? new WorkerAdditionalData(data) : null;
@@ -285,8 +309,9 @@ class Worker {
             ContainerStatus.Stopped,
             TurfStatusEvent.ConnectTimeout
           );
-          this.logger.info(
-            'switch worker container status to [Stopped], because connect timeout.'
+          this.logger.statusSwitchTo(
+            ContainerStatus.Stopped,
+            'connect timeout'
           );
         }
         // always be Created, wait dp ContainerInstalled to Ready
@@ -297,15 +322,18 @@ class Worker {
           ContainerStatus.Unknown,
           TurfStatusEvent.StatusUnknown
         );
-        this.logger.error(
-          'switch worker container status to [Unknown], because turf state is unknown.'
+        this.logger.statusSwitchTo(
+          ContainerStatus.Unknown,
+          'turf state is unknown',
+          'error'
         );
         break;
       }
       case TurfContainerStates.stopping:
       case TurfContainerStates.stopped: {
-        this.logger.info(
-          'switch worker container status to [Stopped], because turf state is stopped/stopping.'
+        this.logger.statusSwitchTo(
+          ContainerStatus.Stopped,
+          'turf state is stopped/stopping'
         );
         this.updateContainerStatus(
           ContainerStatus.Stopped,
@@ -317,8 +345,9 @@ class Worker {
         // 只有 Ready 运行时无法找到的情况视为异常
         // 其他情况不做处理
         if (this.#containerStatus === ContainerStatus.Ready) {
-          this.logger.info(
-            'switch worker container status to [Stopped], because sandbox disappeared.'
+          this.logger.statusSwitchTo(
+            ContainerStatus.Stopped,
+            'sandbox disappeared'
           );
           this.updateContainerStatus(
             ContainerStatus.Stopped,
@@ -331,7 +360,7 @@ class Worker {
         //这个状态不需要处理，仅 seed 会存在
         break;
       default:
-        this.logger.info('found turf state: ', turfState);
+        this.logger.foundTurfState(turfState);
 
         if (
           Date.now() - this.#registerTime > this.#initializationTimeout &&
@@ -341,8 +370,9 @@ class Worker {
             ContainerStatus.Stopped,
             TurfStatusEvent.ConnectTimeout
           );
-          this.logger.info(
-            'switch worker container status to [Stopped], because connect timeout.'
+          this.logger.statusSwitchTo(
+            ContainerStatus.Stopped,
+            'connect timeout'
           );
         }
     }
@@ -381,14 +411,16 @@ class Worker {
 
   updateContainerStatus(
     status: ContainerStatus,
-    event: TurfStatusEvent | ContainerStatusReport | ControlPanelEvent
+    event: TurfStatusEvent | ContainerStatusReport | ControlPlaneEvent
   ) {
     if (status < this.#containerStatus) {
-      this.logger.warn(
-        'update container status [%s] from [%s] by event [%s] is illegal.',
-        ContainerStatus[status],
-        ContainerStatus[this.#containerStatus],
-        event
+      ContainerStatus[ContainerStatus.Created];
+      this.logger.updateContainerStatus(
+        status,
+        this.#containerStatus,
+        event,
+        'warn',
+        ' is illegal.'
       );
       return;
     }
@@ -397,13 +429,8 @@ class Worker {
 
     this.#containerStatus = status;
 
-    this.logger.info(
-      'update container status [%s] from [%s] by event [%s].',
-      ContainerStatus[status],
-      ContainerStatus[oldStatus],
-      event
-    );
+    this.logger.updateContainerStatus(status, oldStatus, event);
   }
 }
 
-export { Worker, WorkerAdditionalData };
+export { Worker, WorkerAdditionalData, WorkerMetadata as WorkerMetadata };
