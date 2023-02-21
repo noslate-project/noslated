@@ -4,8 +4,8 @@ package noslated.data;
 import "common.proto";
 
 service PushServer {
-  rpc invoke(InvokeRequest) returns (InvokeResponse);
-  rpc invokeService(InvokeRequest) returns (InvokeResponse);
+  rpc invoke(stream InvokeRequest) returns (stream InvokeResponse);
+  rpc invokeService(stream InvokeRequest) returns (stream InvokeResponse);
 }
 
 message InvokeRequest {

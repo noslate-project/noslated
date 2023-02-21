@@ -1,21 +1,41 @@
 import loggers from '#self/lib/logger';
 import { RequestLogger } from '../request_logger';
-import { bufferFromStream } from '#self/lib/util';
+import { createDeferred } from '#self/lib/util';
 import { Metadata, TriggerResponse } from '#self/delegate/request_response';
 import { tuplesToPairs, pairsToTuples } from '#self/lib/rpc/key_value_pair';
 import { DataFlowController } from '../data_flow_controller';
 import { Config } from '#self/config';
 import { Logger } from '#self/lib/loggers';
-import { ServerWritableStream } from '@grpc/grpc-js';
+import { ServerDuplexStream } from '@grpc/grpc-js';
 import * as root from '#self/proto/root';
 import { NotNullableInterface } from '#self/lib/interfaces';
-import { InvokeResponse, IPushServer } from '#self/lib/interfaces/push_server';
+import { Readable } from 'stream';
+import { IPushServer } from '#self/lib/interfaces/push_server';
+
+interface InvokeRequest extends Readable {
+  /** InvokeRequest name */
+  name: string;
+  /** InvokeRequest url */
+  url: string;
+  /** InvokeRequest method */
+  method: string;
+  /** InvokeRequest headers */
+  headers: root.noslated.IKeyValuePair[];
+  /** InvokeRequest baggage */
+  baggage: root.noslated.IKeyValuePair[];
+  /** InvokeRequest timeout */
+  timeout: number;
+  /** InvokeRequest requestId */
+  requestId: string;
+}
+
+interface PipeResult {
+  bytesSent: number;
+  status: number;
+  error?: unknown;
+}
 
 export class PushServerImpl implements IPushServer {
-  /**
-   * @param {import('../data_flow_controller').DataFlowController} dataFlowController -
-   * @param {import('#self/config')} config -
-   */
   logger: Logger;
   requestLogger: RequestLogger;
 
@@ -29,109 +49,166 @@ export class PushServerImpl implements IPushServer {
 
   async #invoke(
     type: string,
-    {
-      name,
-      body,
-      url,
-      method,
-      headers,
-      baggage,
-      timeout,
-      requestId,
-    }: NotNullableInterface<root.noslated.data.IInvokeRequest>
+    req: InvokeRequest,
+    call: ServerDuplexStream<
+      root.noslated.data.InvokeRequest,
+      root.noslated.data.InvokeResponse
+    >
   ) {
     const start = Date.now();
     const metadata = new Metadata({
-      url,
-      method,
+      url: req.url,
+      method: req.method,
       headers: pairsToTuples(
-        (headers as NotNullableInterface<root.noslated.IKeyValuePair>[]) ?? []
+        (req.headers as NotNullableInterface<root.noslated.IKeyValuePair>[]) ??
+          []
       ),
       baggage: pairsToTuples(
-        (baggage as NotNullableInterface<root.noslated.IKeyValuePair>[]) ?? []
+        (req.baggage as NotNullableInterface<root.noslated.IKeyValuePair>[]) ??
+          []
       ),
       // TODO: negotiate with deadline;
-      timeout,
-      requestId,
+      timeout: req.timeout,
+      requestId: req.requestId,
     });
-    let bytesSent = 0;
-    let status = 0;
-    let error: unknown;
 
-    try {
-      const response: TriggerResponse = await this.dataFlowController[type](
-        name,
-        body,
-        metadata
+    const resFuture = this.dataFlowController[type](req.name, req, metadata);
+    const pipeResult = await this._pipeResponse(resFuture, call);
+    const end = Date.now();
+    this.requestLogger.access(
+      req.name,
+      metadata,
+      end - start,
+      String(pipeResult.status),
+      pipeResult.bytesSent,
+      req.requestId
+    );
+    if (pipeResult.error) {
+      this.requestLogger.error(
+        req.name,
+        pipeResult.error as Error,
+        req.requestId
       );
-      const data = await bufferFromStream(response);
-      bytesSent = data.byteLength;
-      status = response.status;
-      return {
-        result: {
-          status: response.status,
-          headers: tuplesToPairs(response.metadata.headers ?? []),
-          body: data,
-        },
-      };
-    } catch (e: unknown) {
-      error = e;
-      return {
-        error: e,
-      };
-    } finally {
-      const end = Date.now();
-      this.requestLogger.access(
-        name as string,
-        metadata,
-        end - start,
-        String(status),
-        bytesSent,
-        requestId
-      );
-      if (error) {
-        this.requestLogger.error(name as string, error as Error, requestId);
-      }
     }
   }
 
   async invoke(
-    call: ServerWritableStream<
+    call: ServerDuplexStream<
       root.noslated.data.InvokeRequest,
       root.noslated.data.InvokeResponse
     >
-  ): Promise<InvokeResponse> {
-    const { name, body, url, method, headers, baggage, timeout, requestId } =
-      call.request;
-    return this.#invoke('invoke', {
-      name,
-      body,
-      url,
-      method,
-      headers,
-      baggage,
-      timeout,
-      requestId,
-    } as NotNullableInterface<root.noslated.data.IInvokeRequest>);
+  ): Promise<void> {
+    const req = await this._parsePushServerDuplexStream(call);
+    await this.#invoke('invoke', req, call);
   }
 
   async invokeService(
-    call: ServerWritableStream<
+    call: ServerDuplexStream<
       root.noslated.data.InvokeRequest,
       root.noslated.data.InvokeResponse
     >
-  ): Promise<InvokeResponse> {
-    const { name, body, url, method, headers, baggage, timeout, requestId } =
-      call.request;
-    return this.#invoke('invokeService', {
-      name,
-      body,
-      url,
-      method,
-      headers,
-      baggage,
-      timeout,
-      requestId,
-    } as NotNullableInterface<root.noslated.data.IInvokeRequest>);
+  ): Promise<void> {
+    const req = await this._parsePushServerDuplexStream(call);
+    await this.#invoke('invokeService', req, call);
+  }
+
+  private _parsePushServerDuplexStream(
+    call: ServerDuplexStream<
+      root.noslated.data.InvokeRequest,
+      root.noslated.data.InvokeResponse
+    >
+  ): Promise<InvokeRequest> {
+    const readable = new Readable({
+      read() {},
+      destroy(err, cb) {
+        cb(null);
+      },
+    }) as InvokeRequest;
+
+    const deferred = createDeferred<InvokeRequest>();
+    let headerReceived = false;
+    call.on('data', (msg: root.noslated.data.IInvokeRequest) => {
+      if (!headerReceived) {
+        headerReceived = true;
+        readable.name = msg.name!;
+        readable.url = msg.url!;
+        readable.method = msg.method!;
+        readable.headers = msg.headers!;
+        readable.baggage = msg.baggage!;
+        readable.timeout = msg.timeout!;
+        readable.requestId = msg.requestId!;
+        deferred.resolve(readable);
+      }
+      if (msg.body) {
+        readable.push(msg.body);
+      }
+    });
+    call.on('end', () => {
+      readable.push(null);
+    });
+    call.on('error', e => {
+      readable.destroy(e);
+    });
+
+    return deferred.promise;
+  }
+
+  private async _pipeResponse(
+    resFuture: Promise<TriggerResponse>,
+    call: ServerDuplexStream<
+      root.noslated.data.IInvokeRequest,
+      root.noslated.data.IInvokeResponse
+    >
+  ): Promise<PipeResult> {
+    let res: TriggerResponse;
+    try {
+      res = await resFuture;
+    } catch (e) {
+      call.write({
+        error: e as root.noslated.data.IInvokeErrorResponse,
+      });
+      return {
+        status: 0,
+        bytesSent: 0,
+        error: e,
+      };
+    }
+
+    call.write({
+      result: {
+        status: res.status,
+        headers: tuplesToPairs(res.metadata.headers ?? []),
+      },
+    });
+
+    const deferred = createDeferred<PipeResult>();
+    let bytesSent = 0;
+    res.on('data', chunk => {
+      call.write({
+        result: {
+          body: chunk,
+        },
+      });
+      bytesSent += chunk.byteLength;
+    });
+    res.on('end', () => {
+      call.end();
+      deferred.resolve({
+        status: res.status,
+        bytesSent,
+      });
+    });
+    res.on('error', e => {
+      call.write({
+        error: e as root.noslated.data.IInvokeErrorResponse,
+      });
+      deferred.resolve({
+        status: res.status,
+        bytesSent,
+        error: e,
+      });
+    });
+
+    return deferred.promise;
   }
 }

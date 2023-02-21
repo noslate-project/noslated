@@ -13,7 +13,7 @@ import {
   MetadataInit,
   Metadata,
 } from '#self/delegate/request_response';
-import { bufferFromStream, DeepRequired, jsonClone } from '#self/lib/util';
+import { createDeferred, DeepRequired, jsonClone } from '#self/lib/util';
 import { DataPlaneClientManager } from './data_plane_client_manager';
 import { ControlPlaneClientManager } from './control_plane_client_manager';
 // json could not be loaded with #self.
@@ -24,6 +24,8 @@ import { Mode } from '#self/lib/function_profile';
 import { ServiceProfileItem } from '#self/data_plane/service_selector';
 import * as root from '#self/proto/root';
 import { kDefaultRequestId } from '#self/lib/constants';
+import { ClientDuplexStream } from '@grpc/grpc-js';
+import { isUint8Array } from 'util/types';
 
 /**
  * Noslated client
@@ -283,11 +285,6 @@ export class NoslatedClient extends EventEmitter {
 
   /**
    * Invoke.
-   * @param {'invoke' | 'invokeService'} type The invoke type.
-   * @param {string} name The name.
-   * @param {Readable | Buffer} data Input data.
-   * @param {import('#self/delegate/request_response').Metadata} metadata The metadata.
-   * @return {Promise<import('#self/delegate/request_response').TriggerResponse>} The invoke response.
    */
   async #invoke(
     type: InvokeType,
@@ -295,55 +292,113 @@ export class NoslatedClient extends EventEmitter {
     data: Readable | Buffer,
     metadata?: InvokeMetadata
   ): Promise<TriggerResponse> {
-    /** @type {DataPlaneClient} */
     const plane = this.dataPlaneClientManager.sample();
     if (plane == null) {
       throw new Error('No activated data plane.');
     }
 
-    let body;
-    if (data instanceof Readable) {
-      // TODO: stream support;
-      body = await bufferFromStream(data);
-    } else if (data instanceof Buffer) {
-      body = data;
-    }
-
-    const result: DeepRequired<root.noslated.data.IInvokeResponse> =
-      await plane[type](
-        {
-          name,
-          url: metadata?.url,
-          method: metadata?.method,
-          headers: tuplesToPairs(metadata?.headers ?? []),
-          baggage: tuplesToPairs(metadata?.baggage ?? []),
-          // TODO: negotiate with deadline;
-          timeout: metadata?.timeout,
-          body,
-          requestId: metadata?.requestId ?? kDefaultRequestId,
-        } as root.noslated.data.IInvokeRequest,
-        {
-          // TODO: proper deadline definition;
-          deadline: Date.now() + (metadata?.timeout ?? 10_000) + 1_000,
-        }
-      );
-    if (result.error) {
-      const error = new Error();
-      Object.assign(error, result.error);
-      throw error;
-    }
-
-    const response = new TriggerResponse({
-      status: result.result.status,
-      metadata: new Metadata({
-        headers: pairsToTuples(result.result.headers ?? []),
-      }),
+    const call: ClientDuplexStream<
+      root.noslated.data.IInvokeRequest,
+      root.noslated.data.InvokeResponse
+    > = plane[type]({
+      // TODO: proper deadline definition;
+      deadline: Date.now() + (metadata?.timeout ?? 10_000) + 1_000,
     });
 
-    response.push(result.result.body);
-    response.push(null);
+    const headerMsg: root.noslated.data.IInvokeRequest = {
+      name,
+      url: metadata?.url,
+      method: metadata?.method,
+      headers: tuplesToPairs(metadata?.headers ?? []),
+      baggage: tuplesToPairs(metadata?.baggage ?? []),
+      // TODO: negotiate with deadline;
+      timeout: metadata?.timeout,
+      requestId: metadata?.requestId ?? kDefaultRequestId,
+    };
+    // Fast path for buffer request.
+    if (isUint8Array(data)) {
+      headerMsg.body = data;
+    }
+    call.write(headerMsg);
 
-    return response;
+    if (data instanceof Readable) {
+      data.on('data', chunk => {
+        call.write({
+          body: chunk,
+        });
+      });
+      data.on('end', () => {
+        call.end();
+      });
+      data.on('error', e => {
+        call.destroy(e);
+      });
+    } else {
+      call.end();
+    }
+
+    const res = await this._parseClientDuplexStream(call);
+    return res;
+  }
+
+  private _parseClientDuplexStream(
+    call: ClientDuplexStream<
+      root.noslated.data.InvokeRequest,
+      root.noslated.data.InvokeResponse
+    >
+  ): Promise<TriggerResponse> {
+    const deferred = createDeferred<TriggerResponse>();
+    let headerReceived = false;
+    let res: TriggerResponse;
+    call.on('data', (msg: root.noslated.data.InvokeResponse) => {
+      if (msg.error) {
+        const error = new Error();
+        Object.assign(error, msg.error);
+
+        if (headerReceived) {
+          res.destroy(error);
+        } else {
+          deferred.reject(error);
+        }
+        return;
+      }
+      const result = msg.result!;
+      if (!headerReceived) {
+        headerReceived = true;
+        res = new TriggerResponse({
+          read: () => {},
+          destroy: () => {},
+          status: result.status!,
+          metadata: new Metadata({
+            headers: pairsToTuples(
+              (result.headers as DeepRequired<root.noslated.IKeyValuePair[]>) ??
+                []
+            ),
+          }),
+        });
+        deferred.resolve(res);
+        return;
+      }
+      res.push(result.body);
+    });
+    call.on('end', () => {
+      if (headerReceived) {
+        res.push(null);
+        return;
+      } else {
+        deferred.reject(new Error('foo'));
+      }
+    });
+    call.on('error', e => {
+      if (headerReceived) {
+        res.destroy(e);
+      } else {
+        deferred.reject(e);
+      }
+      return;
+    });
+
+    return deferred.promise;
   }
 }
 
