@@ -5,6 +5,7 @@ import { bufferFromStream } from '#self/lib/util';
 import { TriggerResponse, Metadata } from '#self/delegate/request_response';
 import { Readable } from 'stream';
 import { DefaultEnvironment } from '../env/environment';
+import { once } from 'events';
 
 const item = {
   name: 'node_worker_echo',
@@ -32,6 +33,42 @@ describe(common.testName(__filename), function () {
     assert.ok(response.metadata instanceof Metadata);
     const buffer = await bufferFromStream(response);
     assert.strictEqual(buffer.toString('utf8'), 'foobar');
+  });
+
+  it('invoke duplex stream', async () => {
+    await env.agent.setFunctionProfile([item.profile] as any);
+
+    const readable = new Readable({
+      read() {},
+      destroy() {},
+    });
+    let pushCount = 0;
+    const pushReadable = () => {
+      if (pushCount >= 3) {
+        return;
+      }
+      pushCount++;
+      readable.push(Buffer.from('foobar'));
+      if (pushCount === 3) {
+        readable.push(null);
+      }
+    };
+    pushReadable();
+
+    const response = await env.agent.invoke(item.name, readable);
+    assert.ok(response instanceof TriggerResponse);
+    assert.ok(response.metadata instanceof Metadata);
+
+    const bufs: Buffer[] = [];
+    response.on('data', chunk => {
+      bufs.push(chunk);
+      pushReadable();
+    });
+    await once(response, 'end');
+    assert.strictEqual(
+      Buffer.concat(bufs).toString('utf8'),
+      'foobarfoobarfoobar'
+    );
   });
 
   it('invoke with malfunctioning readable in immediate', async () => {
