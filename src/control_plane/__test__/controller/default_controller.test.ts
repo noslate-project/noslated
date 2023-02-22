@@ -1,7 +1,12 @@
 import { ControlPlane } from '#self/control_plane';
+import { CapacityManager } from '#self/control_plane/capacity_manager';
+import { DefaultController } from '#self/control_plane/controllers';
+import { DataPlaneClientManager } from '#self/control_plane/data_plane_client/manager';
 import { WorkerStatusReportEvent } from '#self/control_plane/events';
+import { WorkerLauncher } from '#self/control_plane/worker_launcher';
 import { StateManager } from '#self/control_plane/worker_stats/state_manager';
 import { ContainerStatusReport, ControlPlaneEvent } from '#self/lib/constants';
+import { FunctionProfileManager } from '#self/lib/function_profile';
 import { TurfContainerStates } from '#self/lib/turf';
 import * as common from '#self/test/common';
 import assert from 'assert';
@@ -15,10 +20,22 @@ describe(common.testName(__filename), () => {
   });
   let controlPlane: ControlPlane;
   let stateManager: StateManager;
+  let functionProfile: FunctionProfileManager;
+  let capacityManager: CapacityManager;
+  let workerLauncher: WorkerLauncher;
+  let dataPlaneClientManager: DataPlaneClientManager;
+  let defaultController: DefaultController;
 
   beforeEach(async () => {
     controlPlane = env.control;
-    ({ stateManager } = controlPlane);
+    stateManager = controlPlane._ctx.getInstance('stateManager');
+    functionProfile = controlPlane._ctx.getInstance('functionProfile');
+    capacityManager = controlPlane._ctx.getInstance('capacityManager');
+    workerLauncher = controlPlane._ctx.getInstance('workerLauncher');
+    dataPlaneClientManager = controlPlane._ctx.getInstance(
+      'dataPlaneClientManager'
+    );
+    defaultController = controlPlane._ctx.getInstance('defaultController');
   });
 
   const brokerData1 = {
@@ -65,7 +82,7 @@ describe(common.testName(__filename), () => {
       it(`should auto scale with ${
         id === 0 ? 'enough' : 'not enough'
       } memory`, async () => {
-        await controlPlane.functionProfile.set(
+        await functionProfile.set(
           [
             {
               name: 'func',
@@ -137,11 +154,7 @@ describe(common.testName(__filename), () => {
         ]);
 
         if (id === 0)
-          mm(
-            controlPlane.capacityManager,
-            'virtualMemoryPoolSize',
-            512 * 1024 * 1024 * 6
-          );
+          mm(capacityManager, 'virtualMemoryPoolSize', 512 * 1024 * 1024 * 6);
 
         stateManager.updateWorkerStatusByReport(
           new WorkerStatusReportEvent({
@@ -230,7 +243,7 @@ describe(common.testName(__filename), () => {
         let reduceCapacityCalled = 0;
         let stopWorkerCalled = 0;
         mm(
-          controlPlane.workerLauncher,
+          workerLauncher,
           'tryLaunch',
           async (event: ControlPlaneEvent, { funcName, options }: any) => {
             assert.strictEqual(event, ControlPlaneEvent.Expand);
@@ -240,7 +253,7 @@ describe(common.testName(__filename), () => {
           }
         );
         mm(
-          controlPlane.dataPlaneClientManager,
+          dataPlaneClientManager,
           'reduceCapacity',
           async (data: { brokers: string | any[] }) => {
             assert.strictEqual(data.brokers.length, 1);
@@ -257,12 +270,12 @@ describe(common.testName(__filename), () => {
             return ret.brokers;
           }
         );
-        mm(controlPlane.defaultController, 'stopWorker', async (name: any) => {
+        mm(defaultController, 'stopWorker', async (name: any) => {
           assert.strictEqual(name, 'cocos');
           stopWorkerCalled++;
         });
 
-        await controlPlane.defaultController['autoScale']();
+        await defaultController['autoScale']();
 
         assert.strictEqual(tryLaunchCalled, id === 0 ? 1 : 0);
         assert.strictEqual(reduceCapacityCalled, 1);
@@ -271,7 +284,7 @@ describe(common.testName(__filename), () => {
     }
 
     it('should auto shrink when function not exist in function profile manager', async () => {
-      await controlPlane.functionProfile.set(
+      await functionProfile.set(
         [
           {
             name: 'func',
@@ -342,7 +355,7 @@ describe(common.testName(__filename), () => {
         },
       ]);
 
-      await controlPlane.functionProfile.set([], 'WAIT');
+      await functionProfile.set([], 'WAIT');
 
       stateManager.updateWorkerStatusByReport(
         new WorkerStatusReportEvent({
@@ -432,11 +445,11 @@ describe(common.testName(__filename), () => {
       let tryLaunchCalled = 0;
       let reduceCapacityCalled = 0;
       let stopWorkerCalled = 0;
-      mm(controlPlane.workerLauncher, 'tryLaunch', async () => {
+      mm(workerLauncher, 'tryLaunch', async () => {
         tryLaunchCalled++;
       });
       mm(
-        controlPlane.dataPlaneClientManager,
+        dataPlaneClientManager,
         'reduceCapacity',
         async (data: { brokers: string | any[] }) => {
           assert.strictEqual(data.brokers.length, 2);
@@ -462,13 +475,13 @@ describe(common.testName(__filename), () => {
         }
       );
       let left = ['cocos', 'coco', 'alibaba', 'foo', 'hello'];
-      mm(controlPlane.defaultController, 'stopWorker', async (name: string) => {
+      mm(defaultController, 'stopWorker', async (name: string) => {
         assert(left.includes(name));
         left = left.filter(n => name !== n);
         stopWorkerCalled++;
       });
 
-      await controlPlane.defaultController['autoScale']();
+      await defaultController['autoScale']();
 
       assert.strictEqual(tryLaunchCalled, 0);
       assert.strictEqual(reduceCapacityCalled, 1);
@@ -492,11 +505,11 @@ describe(common.testName(__filename), () => {
         { pid: 2, name: 'foo', status: TurfContainerStates.running },
       ]);
 
-      mm(controlPlane.defaultController, 'tryBatchLaunch', async () => {
+      mm(defaultController, 'tryBatchLaunch', async () => {
         throw new Error('Should not be called.');
       });
 
-      await controlPlane.functionProfile.set(
+      await functionProfile.set(
         [
           {
             name: 'func',
@@ -536,14 +549,10 @@ describe(common.testName(__filename), () => {
       mm(brokerData1.workers[1], 'resourceLimit', {
         memory: 512 * 1024 * 1024,
       });
-      mm(
-        controlPlane.capacityManager,
-        'virtualMemoryPoolSize',
-        1024 * 1024 * 1024
-      );
+      mm(capacityManager, 'virtualMemoryPoolSize', 1024 * 1024 * 1024);
 
       await stateManager.syncWorkerData([brokerData1]);
-      await assert.doesNotReject(controlPlane.defaultController['autoScale']());
+      await assert.doesNotReject(defaultController['autoScale']());
     });
   });
 });

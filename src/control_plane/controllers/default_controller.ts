@@ -1,38 +1,43 @@
 import _ from 'lodash';
 import loggers from '#self/lib/logger';
 import { Logger } from '#self/lib/loggers';
-import { ControlPlane } from '../control_plane';
-import { Delta } from '../capacity_manager';
 import { ControlPlaneEvent } from '#self/lib/constants';
-import { ContainerManager } from '../container/container_manager';
+import { CapacityManager, Delta } from '../capacity_manager';
 import { RequestQueueingEvent, WorkerTrafficStatsEvent } from '../events';
 import {
   ErrorCode,
   wrapLaunchErrorObject,
 } from '../worker_launcher_error_code';
 import { BaseController } from './base_controller';
-import { Config } from '#self/config';
 import { WorkerMetadata } from '../worker_stats';
+import { ControlPlaneDependencyContext } from '../deps';
+import { DataPlaneClientManager } from '../data_plane_client/manager';
+import { ReservationController } from './reservation_controller';
 
 export class DefaultController extends BaseController {
   logger: Logger;
   shrinking: boolean;
-  containerManager: ContainerManager;
+  private _capacityManager: CapacityManager;
+  private _reservationController: ReservationController;
+  private _dataPlaneClientManager: DataPlaneClientManager;
 
-  constructor(plane: ControlPlane, private config: Config) {
-    super(plane);
+  constructor(ctx: ControlPlaneDependencyContext) {
+    super(ctx);
+    this._capacityManager = ctx.getInstance('capacityManager');
+    this._reservationController = ctx.getInstance('reservationController');
+    this._dataPlaneClientManager = ctx.getInstance('dataPlaneClientManager');
+
     this.logger = loggers.get('default controller');
     this.shrinking = false;
-    this.containerManager = plane.containerManager;
 
-    const eventBus = plane.eventBus;
+    const eventBus = ctx.getInstance('eventBus');
     eventBus.subscribe(RequestQueueingEvent, {
       next: event => {
         return this.expandDueToQueueingRequest(event);
       },
     });
     eventBus.subscribe(WorkerTrafficStatsEvent, {
-      next: event => {
+      next: () => {
         return this.autoScale();
       },
     });
@@ -52,11 +57,11 @@ export class DefaultController extends BaseController {
       isInspect
     );
 
-    if (!this.plane.capacityManager.allowExpandingOnRequestQueueing(event)) {
+    if (!this._capacityManager.allowExpandingOnRequestQueueing(event)) {
       return;
     }
 
-    const profile = this.plane.functionProfile.get(name);
+    const profile = this._functionProfile.get(name);
     if (!profile) {
       const err = new Error(`No function named ${name}.`);
       err.code = ErrorCode.kNoFunction;
@@ -73,7 +78,7 @@ export class DefaultController extends BaseController {
     try {
       const now = performance.now();
 
-      await this.plane.workerLauncher.tryLaunch(
+      await this._workerLauncher.tryLaunch(
         ControlPlaneEvent.RequestQueueExpand,
         workerMetadata
       );
@@ -104,7 +109,7 @@ export class DefaultController extends BaseController {
     // update current workers data
     try {
       if (brokers) {
-        await this.plane.stateManager.syncWorkerData(brokers);
+        await this._stateManager.syncWorkerData(brokers);
       }
     } catch (e) {
       this.logger.warn('Failed to sync data.', e);
@@ -113,9 +118,9 @@ export class DefaultController extends BaseController {
   }
 
   private async autoScale() {
-    const brokers = [...this.plane.stateManager.brokers()];
+    const brokers = [...this._stateManager.brokers()];
     const { expandDeltas, shrinkDeltas } =
-      this.plane.capacityManager.evaluteScaleDeltas(brokers);
+      this._capacityManager.evaluteScaleDeltas(brokers);
 
     const { true: reservationDeltas = [], false: regularDeltas = [] } =
       _.groupBy(
@@ -134,7 +139,7 @@ export class DefaultController extends BaseController {
     try {
       await Promise.all([
         this.expand(regularDeltas),
-        this.plane.reservationController.expand(reservationDeltas),
+        this._reservationController.expand(reservationDeltas),
       ]);
     } catch (e) {
       errors.push(e);
@@ -196,8 +201,7 @@ export class DefaultController extends BaseController {
       );
     }
     if (!shrinkData.length) return; // To avoid unneccessary logic below.
-    const { dataPlaneClientManager } = this.plane;
-    const ensured = await dataPlaneClientManager.reduceCapacity({
+    const ensured = await this._dataPlaneClientManager.reduceCapacity({
       brokers: shrinkData,
     });
     if (!ensured || !ensured.length) {
@@ -207,7 +211,7 @@ export class DefaultController extends BaseController {
     const up = [];
     for (const broker of ensured) {
       for (const worker of broker?.workers || []) {
-        const realWorker = this.plane.stateManager.getWorker(
+        const realWorker = this._stateManager.getWorker(
           broker.functionName!,
           broker.inspector!,
           worker.name!

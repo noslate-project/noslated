@@ -7,15 +7,17 @@ import { Base } from '#self/lib/sdk_base';
 import loggers from '#self/lib/logger';
 import { pairsToMap } from '#self/lib/rpc/key_value_pair';
 import { ErrorCode } from '../worker_launcher_error_code';
-import { ControlPlane } from '../control_plane';
-import { Config } from '#self/config';
 import {
   ProcessFunctionProfile,
   RawFunctionProfile,
 } from '#self/lib/json/function_profile';
 import SPEC_TEMPLATE from '../../lib/json/spec.template.json';
 import { kCpuPeriod, kMegaBytes } from '../constants';
-import { Container } from '../container/container_manager';
+import { Container, ContainerManager } from '../container/container_manager';
+import { PlatformEnvironsUpdatedEvent } from '../events';
+import { Config } from '#self/config';
+import { EventBus } from '#self/lib/event-bus';
+import { DependencyContext } from '#self/lib/dependency_context';
 
 export interface BaseOptions {
   inspect?: boolean;
@@ -26,6 +28,12 @@ export interface StartOptions extends BaseOptions {
   seed?: string;
   mkdirs?: string[];
 }
+
+export type StarterContext = {
+  config: Config;
+  containerManager: ContainerManager;
+  eventBus: EventBus;
+};
 
 export abstract class BaseStarter extends Base {
   /**
@@ -84,34 +92,32 @@ export abstract class BaseStarter extends Base {
   runtime;
   bin;
   logger;
-  plane;
   config;
   containerManager;
   _validV8Options: string[];
 
-  /**
-   * constructor
-   * @param {string} runtime The runtime name.
-   * @param {string} bin The bin name.
-   * @param {string} loggerName The logger name.
-   * @param {import('../control_plane').ControlPlane} plane The plane object.
-   * @param {typeof import('#self/config/default')} config The global config object.
-   */
+  platformEnvirons: Record<string, string> = {};
+
   constructor(
     runtime: string,
     bin: string,
     loggerName: string,
-    plane: ControlPlane,
-    config: Config
+    ctx: DependencyContext<StarterContext>
   ) {
     super();
     this.runtime = runtime;
     this.bin = bin;
     this.logger = loggers.get(loggerName);
-    this.plane = plane;
-    this.config = config;
     this._validV8Options = [];
-    this.containerManager = plane.containerManager;
+    this.config = ctx.getInstance('config');
+    this.containerManager = ctx.getInstance('containerManager');
+
+    const eventBus = ctx.getInstance('eventBus');
+    eventBus.subscribe(PlatformEnvironsUpdatedEvent, {
+      next: event => {
+        this.platformEnvirons = event.data;
+      },
+    });
   }
 
   /**
@@ -217,7 +223,7 @@ export abstract class BaseStarter extends Base {
       {
         TZ: process.env.TZ,
       },
-      this.plane.platformEnvironmentVariables,
+      this.platformEnvirons,
       pairsToMap(profile.environments || []),
       appendEnvs
     );

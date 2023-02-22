@@ -1,6 +1,3 @@
-import { Config } from '#self/config';
-import { ControlPlane } from '../control_plane';
-
 import cp from 'child_process';
 import fs from 'fs';
 import path from 'path';
@@ -9,14 +6,15 @@ import { BaseOptions, BaseStarter } from './base';
 import { ENV } from './constant';
 import { NodejsFunctionProfile } from '#self/lib/json/function_profile';
 import { WorkerStarter } from '../worker_launcher';
+import { ControlPlaneDependencyContext } from '../deps';
 
 const NOSLATED_STARTER_PATH = require.resolve('../../starter/noslated_node');
 
 export class NodejsStarter extends BaseStarter implements WorkerStarter {
   binPath;
 
-  constructor(plane: ControlPlane, config: Config) {
-    super('nodejs', 'node', 'node starter', plane, config);
+  constructor(ctx: ControlPlaneDependencyContext) {
+    super('nodejs', 'node', 'node starter', ctx);
     this.binPath = BaseStarter.findRealBinPath('nodejs', 'node');
   }
 

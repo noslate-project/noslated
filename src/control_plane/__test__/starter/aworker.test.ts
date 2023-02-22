@@ -8,11 +8,14 @@ import { config } from '#self/config';
 import { Aworker } from '#self/control_plane/starter/index';
 import { Turf } from '#self/lib/turf';
 import * as testUtil from '#self/test/util';
-import { ControlPlane } from '#self/control_plane/control_plane';
 import { TurfContainerStates, TurfProcess } from '#self/lib/turf/types';
 import { sleep } from '#self/lib/util';
 import { startTurfD, stopTurfD } from '#self/test/turf';
 import { TurfContainerManager } from '#self/control_plane/container/turf_container_manager';
+import { DependencyContext } from '#self/lib/dependency_context';
+import { EventBus } from '#self/lib/event-bus';
+import { PlatformEnvironsUpdatedEvent } from '#self/control_plane/events';
+import { StarterContext } from '#self/control_plane/starter/base';
 
 const conditionalDescribe =
   process.platform === 'darwin' ? describe.skip : describe;
@@ -20,27 +23,31 @@ const conditionalDescribe =
 describe(common.testName(__filename), function () {
   this.timeout(10000);
 
-  const dummyPlane: any = {
-    platformEnvironmentVariables: {},
-  };
-
-  let containerManager: TurfContainerManager;
+  let ctx: DependencyContext<StarterContext>;
   let turf: Turf;
 
   beforeEach(async () => {
     mm(config.dirs, 'noslatedSock', testUtil.TMP_DIR());
     mm(process.env, 'NOSLATED_FORCE_NON_SEED_MODE', '');
     startTurfD();
-    containerManager = new TurfContainerManager(config);
-    await containerManager.ready();
-    turf = containerManager.client;
-    dummyPlane.containerManager = containerManager;
+
+    ctx = new DependencyContext();
+    ctx.bindInstance('config', config);
+    ctx.bindInstance(
+      'eventBus',
+      new EventBus([PlatformEnvironsUpdatedEvent.type])
+    );
+    ctx.bind('containerManager', TurfContainerManager);
+    await ctx.bootstrap();
+
+    await ctx.bootstrap();
+    turf = (ctx.getInstance('containerManager') as TurfContainerManager).client;
   });
 
   afterEach(async () => {
     mm.restore();
+    await ctx.dispose();
     fs.rmdirSync(testUtil.TMP_DIR(), { recursive: true });
-    await containerManager.close();
     stopTurfD();
   });
 
@@ -48,7 +55,7 @@ describe(common.testName(__filename), function () {
     it('should start seed', async () => {
       let aworker;
       try {
-        aworker = new Aworker(dummyPlane as any, config);
+        aworker = new Aworker(ctx);
         await aworker.ready();
         await aworker.waitSeedReady();
 
@@ -72,10 +79,7 @@ describe(common.testName(__filename), function () {
 
   conditionalDescribe('#keepSeedAliveTimer', () => {
     it('seed should keep alive', async () => {
-      const aworker = new Aworker(
-        dummyPlane as unknown as ControlPlane,
-        config
-      );
+      const aworker = new Aworker(ctx);
       await aworker.ready();
       await aworker.waitSeedReady();
 
@@ -111,7 +115,7 @@ describe(common.testName(__filename), function () {
     it('should start with seed', async () => {
       let aworker;
       try {
-        aworker = new Aworker(dummyPlane as any, config);
+        aworker = new Aworker(ctx);
         await aworker.ready();
         await aworker.waitSeedReady();
 
@@ -162,7 +166,7 @@ describe(common.testName(__filename), function () {
           this.logger.info('dummy keeper');
         });
 
-        aworker = new Aworker(dummyPlane as ControlPlane, config);
+        aworker = new Aworker(ctx);
         await aworker.ready();
 
         const bundlePath = path.join(

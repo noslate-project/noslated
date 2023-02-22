@@ -15,9 +15,11 @@ import { registerContainers } from '../test_container_manager';
 import { TurfContainerStates } from '#self/lib/turf';
 import { TestEnvironment } from '../environment';
 import { registerWorkers } from '../util';
+import { FunctionProfileManager } from '#self/lib/function_profile';
 
 describe(common.testName(__filename), () => {
   let stateManager: StateManager;
+  let functionProfile: FunctionProfileManager;
 
   const env = new TestEnvironment({
     createTestClock: true,
@@ -26,13 +28,13 @@ describe(common.testName(__filename), () => {
 
   beforeEach(async () => {
     controlPlane = env.control;
-
-    ({ stateManager } = controlPlane);
+    stateManager = controlPlane._ctx.getInstance('stateManager');
+    functionProfile = controlPlane._ctx.getInstance('functionProfile');
   });
 
   describe('updateContainerStatusByReport()', () => {
     it('should update regularly', async () => {
-      await controlPlane.functionProfile.set(
+      await functionProfile.set(
         [
           {
             name: 'func1',
@@ -156,7 +158,7 @@ describe(common.testName(__filename), () => {
     });
 
     it('should not update with illegal ContainerStatusReport order', async () => {
-      await controlPlane.functionProfile.set(
+      await functionProfile.set(
         [
           {
             name: 'func1',
@@ -225,7 +227,7 @@ describe(common.testName(__filename), () => {
 
   describe('syncWorkerData()', () => {
     it('should sync', async () => {
-      await controlPlane.functionProfile.set(
+      await functionProfile.set(
         [
           {
             name: 'func1',
@@ -359,7 +361,7 @@ describe(common.testName(__filename), () => {
     });
 
     it('should not sync with empty psData', async () => {
-      await controlPlane.functionProfile.set(
+      await functionProfile.set(
         [
           {
             name: 'func1',

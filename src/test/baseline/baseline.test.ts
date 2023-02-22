@@ -618,7 +618,11 @@ const cases = [
   {
     name: 'node_worker_echo_no_enough_memory_pool_fastfail',
     before: async (env: DefaultEnvironment) => {
-      mm(env.control.capacityManager, 'virtualMemoryPoolSize', 1);
+      mm(
+        env.control._ctx.getInstance('capacityManager'),
+        'virtualMemoryPoolSize',
+        1
+      );
     },
     profile: {
       name: 'node_worker_echo',
@@ -882,10 +886,9 @@ const cases = [
       }),
     },
     after: async (env: DefaultEnvironment) => {
-      const broker = env.control.stateManager.getBroker(
-        'node_worker_without_disposable_true',
-        false
-      )!;
+      const broker = env.control._ctx
+        .getInstance('stateManager')
+        .getBroker('node_worker_without_disposable_true', false)!;
       assert.deepStrictEqual(broker.workers.size, 1);
       const worker = broker.workers.values().next().value;
       assert.deepStrictEqual(worker.containerStatus, ContainerStatus.Ready);
@@ -923,10 +926,9 @@ const cases = [
       }),
     },
     after: async (env: DefaultEnvironment) => {
-      const broker = env.control.stateManager.getBroker(
-        'node_worker_with_disposable_true',
-        false
-      )!;
+      const broker = env.control._ctx
+        .getInstance('stateManager')
+        .getBroker('node_worker_with_disposable_true', false)!;
       assert.deepStrictEqual(broker.workers.size, 1);
       const worker = broker.workers.values().next().value;
       assert.deepStrictEqual(worker.containerStatus, ContainerStatus.Stopped);
@@ -960,10 +962,9 @@ const cases = [
       ),
     },
     after: async (env: DefaultEnvironment) => {
-      const broker = env.control.stateManager.getBroker(
-        'aworker_without_disposable_true',
-        false
-      )!;
+      const broker = env.control._ctx
+        .getInstance('stateManager')
+        .getBroker('aworker_without_disposable_true', false)!;
       assert.deepStrictEqual(broker.workers.size, 1);
       const worker = broker.workers.values().next().value;
       assert.deepStrictEqual(worker.containerStatus, ContainerStatus.Ready);
@@ -996,10 +997,9 @@ const cases = [
       ),
     },
     after: async (env: DefaultEnvironment) => {
-      const broker = env.control.stateManager.getBroker(
-        'aworker_with_disposable_true',
-        false
-      )!;
+      const broker = env.control._ctx
+        .getInstance('stateManager')
+        .getBroker('aworker_with_disposable_true', false)!;
       assert.deepStrictEqual(broker.workers.size, 1);
       const worker = broker.workers.values().next().value;
       assert.deepStrictEqual(worker.containerStatus, ContainerStatus.Stopped);

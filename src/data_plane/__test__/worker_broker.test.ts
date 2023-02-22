@@ -2,7 +2,11 @@ import assert from 'assert';
 
 import * as common from '#self/test/common';
 import { findResponseHeaderValue } from '#self/test/util';
-import { FunctionProfileManager } from '#self/lib/function_profile';
+import {
+  FunctionProfileManager,
+  FunctionProfileManagerContext,
+  FunctionProfileUpdateEvent,
+} from '#self/lib/function_profile';
 import { PendingRequest, WorkerBroker } from '../worker_broker';
 import { kMegaBytes } from '#self/control_plane/constants';
 import { DataFlowController } from '../data_flow_controller';
@@ -11,6 +15,9 @@ import { createDeferred, sleep, bufferFromStream } from '#self/lib/util';
 import { DefaultEnvironment } from '#self/test/env/environment';
 import { Worker } from '#self/data_plane/worker_broker';
 import * as sinon from 'sinon';
+import { DependencyContext } from '#self/lib/dependency_context';
+import { EventBus } from '#self/lib/event-bus';
+import { config } from '#self/config';
 
 const PROFILES = [
   {
@@ -45,13 +52,17 @@ const mockHost = {
 };
 
 describe(common.testName(__filename), () => {
-  const env = new DefaultEnvironment();
-
   describe('WorkerBroker#bindWorker', async () => {
     let profileManager: FunctionProfileManager;
 
     beforeEach(async () => {
-      profileManager = new FunctionProfileManager();
+      const ctx = new DependencyContext<FunctionProfileManagerContext>();
+      ctx.bindInstance('config', config);
+      ctx.bindInstance(
+        'eventBus',
+        new EventBus([FunctionProfileUpdateEvent.type])
+      );
+      profileManager = new FunctionProfileManager(ctx);
       await profileManager.set(PROFILES as any, 'IMMEDIATELY');
     });
 
@@ -184,7 +195,13 @@ describe(common.testName(__filename), () => {
     let profileManager: FunctionProfileManager;
 
     beforeEach(async () => {
-      profileManager = new FunctionProfileManager();
+      const ctx = new DependencyContext<FunctionProfileManagerContext>();
+      ctx.bindInstance('config', config);
+      ctx.bindInstance(
+        'eventBus',
+        new EventBus([FunctionProfileUpdateEvent.type])
+      );
+      profileManager = new FunctionProfileManager(ctx);
       await profileManager.set(PROFILES as any, 'IMMEDIATELY');
     });
 
@@ -285,6 +302,8 @@ describe(common.testName(__filename), () => {
   });
 
   describe('tryConsumeQueue', () => {
+    const env = new DefaultEnvironment();
+
     it('should consume request queue', async () => {
       await env.agent.setFunctionProfile([
         {
@@ -357,20 +376,22 @@ describe(common.testName(__filename), () => {
       const interval = setInterval(async () => {
         if (times === 10) {
           // 等待 worker 关闭流量
-          await env.control.dataPlaneClientManager.reduceCapacity({
-            brokers: [
-              {
-                functionName: 'aworker_echo',
-                inspector: false,
-                workers: [
-                  {
-                    name: dpWorker.name,
-                    credential: dpWorker.credential,
-                  },
-                ],
-              },
-            ],
-          });
+          await env.control._ctx
+            .getInstance('dataPlaneClientManager')
+            .reduceCapacity({
+              brokers: [
+                {
+                  functionName: 'aworker_echo',
+                  inspector: false,
+                  workers: [
+                    {
+                      name: dpWorker.name,
+                      credential: dpWorker.credential,
+                    },
+                  ],
+                },
+              ],
+            });
 
           // worker traffic off
           defer.resolve();
@@ -402,6 +423,8 @@ describe(common.testName(__filename), () => {
   });
 
   describe('DisposableWorker', () => {
+    const env = new DefaultEnvironment();
+
     it('should stop worker after invoke success', async () => {
       await env.agent.setFunctionProfile([
         {

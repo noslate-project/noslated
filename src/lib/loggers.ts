@@ -11,7 +11,7 @@ interface LoggerMeta {
   label: string;
 }
 
-const noopSink = (() => {
+const noopSink: Sink = (() => {
   const log = () => {};
   const logger: any = {
     [Symbol.toStringTag]: 'NoopLogger',

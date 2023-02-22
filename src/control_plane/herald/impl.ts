@@ -1,31 +1,35 @@
 import * as _ from 'lodash';
 import loggers from '#self/lib/logger';
 import { pairsToMap, KVPairs } from '#self/lib/rpc/key_value_pair';
-import { Config } from '#self/config';
-import { Herald } from './index';
-import { ControlPlane } from '../control_plane';
 import * as root from '#self/proto/root';
 import { ServerWritableStream } from '@grpc/grpc-js';
 import { RawFunctionProfile } from '#self/lib/json/function_profile';
-import { Mode } from '#self/lib/function_profile';
-import { FunctionRemovedEvent } from '../events';
+import { FunctionProfileManager, Mode } from '#self/lib/function_profile';
+import { FunctionRemovedEvent, PlatformEnvironsUpdatedEvent } from '../events';
+import { ControlPlaneDependencyContext } from '../deps';
+import { EventBus } from '#self/lib/event-bus';
+import { WorkerLauncher } from '../worker_launcher';
+import { DataPlaneClientManager } from '../data_plane_client/manager';
+import { StateManager } from '../worker_stats/state_manager';
 
 /**
  * Herald impl
  */
 export class HeraldImpl {
-  private parent: Herald;
-  private plane: ControlPlane;
   private logger;
+  private _eventBus: EventBus;
+  private _workerLauncher: WorkerLauncher;
+  private _functionProfile: FunctionProfileManager;
+  private _dataPlaneClientManager: DataPlaneClientManager;
+  private _stateManager: StateManager;
 
-  constructor(private config: Config, herald: Herald) {
-    this.parent = herald;
-
-    /**
-     * @type {import('../control_plane').ControlPlane}
-     */
-    this.plane = herald.plane;
+  constructor(ctx: ControlPlaneDependencyContext) {
     this.logger = loggers.get('herald impl');
+    this._eventBus = ctx.getInstance('eventBus');
+    this._workerLauncher = ctx.getInstance('workerLauncher');
+    this._functionProfile = ctx.getInstance('functionProfile');
+    this._dataPlaneClientManager = ctx.getInstance('dataPlaneClientManager');
+    this._stateManager = ctx.getInstance('stateManager');
   }
 
   /**
@@ -44,7 +48,7 @@ export class HeraldImpl {
     this.logger.info('Setting platform environment variables %o.', envs);
 
     const target = pairsToMap(envs as KVPairs);
-    this.plane.platformEnvironmentVariables = target;
+    this._eventBus.publish(new PlatformEnvironsUpdatedEvent(target));
 
     this.logger.info('Platform environment variables set.');
 
@@ -70,7 +74,7 @@ export class HeraldImpl {
           runtime = 'aworker';
           break;
       }
-      this.plane.workerLauncher.starters[runtime].checkV8Options(v8Options);
+      this._workerLauncher.starters[runtime].checkV8Options(v8Options);
     }
   }
 
@@ -85,7 +89,7 @@ export class HeraldImpl {
       root.noslated.SetFunctionProfileResponse
     >
   ): Promise<root.noslated.ISetFunctionProfileResponse> {
-    const orig = this.plane.functionProfile.profile.map(p => p.toJSON());
+    const orig = this._functionProfile.profile.map(p => p.toJSON());
     const { profiles = [], mode } = call.request;
     this.logger.info(
       'Setting function profiles with %s, count: %d',
@@ -95,7 +99,7 @@ export class HeraldImpl {
 
     // 验证 worker v8options
     try {
-      await this.plane.workerLauncher.ready();
+      await this._workerLauncher.ready();
       this.checkV8Options(profiles);
     } catch (e) {
       this.logger.warn(
@@ -109,16 +113,15 @@ export class HeraldImpl {
     let error;
     let dataSet = false;
     try {
-      await this.plane.functionProfile.set(
+      await this._functionProfile.set(
         profiles as RawFunctionProfile[],
         mode as Mode
       );
-      await this.plane.dataPlaneClientManager.ready();
-      const results =
-        await this.plane.dataPlaneClientManager.setFunctionProfile(
-          profiles as RawFunctionProfile[],
-          mode as Mode
-        );
+      await this._dataPlaneClientManager.ready();
+      const results = await this._dataPlaneClientManager.setFunctionProfile(
+        profiles as RawFunctionProfile[],
+        mode as Mode
+      );
       if (!results.length) dataSet = true;
       else {
         dataSet = results.reduce<boolean>((ans, item) => {
@@ -136,7 +139,7 @@ export class HeraldImpl {
 
     if (error || !dataSet) {
       try {
-        await this.plane.functionProfile.set(orig, 'IMMEDIATELY');
+        await this._functionProfile.set(orig, 'IMMEDIATELY');
       } catch (e) {
         this.logger.warn('Failed to rollback function profile.', e);
       }
@@ -176,7 +179,7 @@ export class HeraldImpl {
 
     // Do kill all workers in brokers.
     const event = new FunctionRemovedEvent(killArray);
-    await this.plane.eventBus.publish(event);
+    await this._eventBus.publish(event);
 
     return {
       set: true,
@@ -185,7 +188,7 @@ export class HeraldImpl {
 
   async getFunctionProfile() {
     return {
-      profiles: this.plane.functionProfile.profile,
+      profiles: this._functionProfile.profile,
     };
   }
 
@@ -194,6 +197,6 @@ export class HeraldImpl {
    * @return {Promise<root.noslated.control.IWorkerStatsSnapshotResponse>} The result.
    */
   async getWorkerStatsSnapshot(): Promise<root.noslated.control.IWorkerStatsSnapshotResponse> {
-    return { brokers: this.plane.stateManager.getSnapshot() };
+    return { brokers: this._stateManager.getSnapshot() };
   }
 }

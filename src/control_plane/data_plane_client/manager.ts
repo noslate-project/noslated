@@ -2,21 +2,28 @@ import * as _ from 'lodash';
 import { BasePlaneClientManager } from '#self/lib/base_plane_client_manager';
 import { DataPlaneClient } from './client';
 import { loggers } from '#self/lib/loggers';
-import { ControlPlane } from '../control_plane';
-import { Config } from '#self/config';
 import * as root from '#self/proto/root';
 import { RawFunctionProfile } from '#self/lib/json/function_profile';
+import { ControlPlaneDependencyContext } from '../deps';
+import { FunctionProfileManager } from '#self/lib/function_profile';
+import { EventBus } from '#self/lib/event-bus';
 
 /**
  * Data plane client manager
  */
 export class DataPlaneClientManager extends BasePlaneClientManager {
-  constructor(public plane: ControlPlane, public config: Config) {
+  private _functionProfile: FunctionProfileManager;
+  private _eventBus: EventBus;
+
+  constructor(ctx: ControlPlaneDependencyContext) {
+    const config = ctx.getInstance('config');
     super(
       config,
       config.plane.dataPlaneCount,
       loggers.get('data_plane/manager')
     );
+    this._functionProfile = ctx.getInstance('functionProfile');
+    this._eventBus = ctx.getInstance('eventBus');
   }
 
   /**
@@ -25,7 +32,7 @@ export class DataPlaneClientManager extends BasePlaneClientManager {
    * @return {DataPlaneGuest} The created plane client.
    */
   _createPlaneClient(planeId: number): DataPlaneClient {
-    return new DataPlaneClient(this, planeId, this.config);
+    return new DataPlaneClient(this._eventBus, planeId, this.config);
   }
 
   /**
@@ -37,7 +44,7 @@ export class DataPlaneClientManager extends BasePlaneClientManager {
 
     (client as any)
       .setFunctionProfile({
-        profiles: this.plane.functionProfile.profile,
+        profiles: this._functionProfile.profile,
         mode: 'IMMEDIATELY',
       })
       .catch(() => {

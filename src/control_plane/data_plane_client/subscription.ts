@@ -1,5 +1,4 @@
 import loggers from '#self/lib/logger';
-import { DataPlaneClientManager } from './manager';
 import { DataPlaneClient } from './client';
 import { Logger } from '#self/lib/loggers';
 import * as root from '#self/proto/root';
@@ -18,15 +17,10 @@ export class DataPlaneSubscription {
     'containerStatusReport',
   ];
 
-  eventBus: EventBus;
   logger: Logger;
 
-  constructor(
-    manager: DataPlaneClientManager,
-    private client: DataPlaneClient
-  ) {
+  constructor(private eventBus: EventBus, private client: DataPlaneClient) {
     this.client = client;
-    this.eventBus = manager.plane.eventBus;
     this.logger = loggers.get('data plane subscription');
   }
 

@@ -1,6 +1,5 @@
 import * as root from '#self/proto/root';
 import { ContainerStatus, ContainerStatusReport } from '#self/lib/constants';
-import { ControlPlane } from '../control_plane';
 import { Logger, loggers } from '#self/lib/loggers';
 import {
   WorkerStatusReportEvent,
@@ -13,24 +12,28 @@ import { Base } from '#self/lib/sdk_base';
 import { Broker } from './broker';
 import { Worker } from './worker';
 import { TurfState } from '#self/lib/turf/types';
+import { ControlPlaneDependencyContext } from '../deps';
 
 export class StateManager extends Base {
   logger: Logger;
+  config: Config;
   functionProfile;
   containerManager;
-  workerStatsSnapshot;
+  workerStatsSnapshot: WorkerStatsSnapshot;
 
-  constructor(plane: ControlPlane, private config: Config) {
+  constructor(ctx: ControlPlaneDependencyContext) {
     super();
     this.logger = loggers.get('state manager');
-    this.functionProfile = plane.functionProfile;
-    this.containerManager = plane.containerManager;
+    this.functionProfile = ctx.getInstance('functionProfile');
+    this.containerManager = ctx.getInstance('containerManager');
+    this.config = ctx.getInstance('config');
 
     this.workerStatsSnapshot = new WorkerStatsSnapshot(
-      plane.functionProfile,
-      config,
-      plane.clock
+      ctx.getInstance('functionProfile'),
+      this.config,
+      ctx.getInstance('clock')
     );
+    const eventBus = ctx.getInstance('eventBus');
 
     this.workerStatsSnapshot.on(
       'workerStopped',
@@ -44,18 +47,18 @@ export class StateManager extends Base {
           state,
           broker,
         });
-        plane.eventBus.publish(event).catch(e => {
+        eventBus.publish(event).catch(e => {
           this.logger.error('unexpected error on worker stopped event', e);
         });
       }
     );
 
-    plane.eventBus.subscribe(WorkerTrafficStatsEvent, {
+    eventBus.subscribe(WorkerTrafficStatsEvent, {
       next: event => {
         return this.syncWorkerData(event.data.brokers);
       },
     });
-    plane.eventBus.subscribe(WorkerStatusReportEvent, {
+    eventBus.subscribe(WorkerStatusReportEvent, {
       next: event => {
         return this.updateWorkerStatusByReport(event);
       },

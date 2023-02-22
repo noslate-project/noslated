@@ -3,13 +3,12 @@ import cp from 'child_process';
 import fs from 'fs';
 import path from 'path';
 
-import { BaseOptions, BaseStarter, StartOptions } from './base';
+import { BaseOptions, BaseStarter, StarterContext, StartOptions } from './base';
 import { TurfContainerStates } from '#self/lib/turf/wrapper';
 import * as naming from '#self/lib/naming';
-import { ControlPlane } from '../control_plane';
-import { Config } from '#self/config';
 import { AworkerFunctionProfile } from '#self/lib/json/function_profile';
 import { Container, workerLogPath } from '../container/container_manager';
+import { DependencyContext } from '#self/lib/dependency_context';
 
 const SEED_CONTAINER_NAME = '___seed___';
 const SameOriginSharedDataRoot = '/tmp/noslated-sosd';
@@ -21,8 +20,8 @@ export class AworkerStarter extends BaseStarter {
   binPath;
   seedContainer?: Container;
 
-  constructor(plane: ControlPlane, config: Config) {
-    super('aworker', 'aworker', 'aworker starter', plane, config);
+  constructor(ctx: DependencyContext<StarterContext>) {
+    super('aworker', 'aworker', 'aworker starter', ctx);
     this.keepSeedAliveTimer = null;
     this.closed = false;
     this.binPath = BaseStarter.findRealBinPath('aworker', 'aworker');

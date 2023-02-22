@@ -3,9 +3,9 @@ import { Base } from '#self/lib/sdk_base';
 import loggers from '#self/lib/logger';
 import { Logger } from '#self/lib/loggers';
 import { Broker } from './worker_stats';
-import { ControlPlane } from './control_plane';
-import { Config } from '#self/config';
 import { RequestQueueingEvent } from './events';
+import { ControlPlaneDependencyContext } from './deps';
+import { StateManager } from './worker_stats/state_manager';
 
 /**
  * CapacityManager
@@ -13,9 +13,12 @@ import { RequestQueueingEvent } from './events';
 export class CapacityManager extends Base {
   virtualMemoryPoolSize: number;
   logger: Logger;
+  stateManager: StateManager;
 
-  constructor(private plane: ControlPlane, private config: Config) {
+  constructor(ctx: ControlPlaneDependencyContext) {
     super();
+    const config = ctx.getInstance('config');
+    this.stateManager = ctx.getInstance('stateManager');
 
     this.virtualMemoryPoolSize = bytes(config.virtualMemoryPoolSize);
     this.logger = loggers.get('capacity manager');
@@ -72,7 +75,7 @@ export class CapacityManager extends Base {
    * @param {Delta[]} deltas
    */
   regulateDeltas(deltas: Delta[]) {
-    const memoUsed = this.plane.capacityManager.virtualMemoryUsed;
+    const memoUsed = this.virtualMemoryUsed;
     const needMemo = deltas.reduce((memo, delta, i) => {
       const broker: Broker = delta.broker;
       return delta.count > 0 ? memo + delta.count * broker.memoryLimit : memo;
@@ -80,13 +83,8 @@ export class CapacityManager extends Base {
 
     let rate = 1.0;
 
-    if (
-      needMemo + memoUsed >
-      this.plane.capacityManager.virtualMemoryPoolSize
-    ) {
-      rate =
-        (this.plane.capacityManager.virtualMemoryPoolSize - memoUsed) /
-        needMemo;
+    if (needMemo + memoUsed > this.virtualMemoryPoolSize) {
+      rate = (this.virtualMemoryPoolSize - memoUsed) / needMemo;
       for (let i = 0; i < deltas.length; i++) {
         const { count, broker } = deltas[i];
         if (count > 0) {
@@ -117,7 +115,7 @@ export class CapacityManager extends Base {
    * @type {number}
    */
   get virtualMemoryUsed() {
-    return [...this.plane.stateManager.brokers()].reduce(
+    return [...this.stateManager.brokers()].reduce(
       (memo, broker) => memo + broker.virtualMemory,
       0
     );
@@ -126,7 +124,7 @@ export class CapacityManager extends Base {
   allowExpandingOnRequestQueueing(event: RequestQueueingEvent): boolean {
     const { name, isInspect, requestId } = event.data;
 
-    const broker = this.plane.stateManager.getBroker(name, isInspect);
+    const broker = this.stateManager.getBroker(name, isInspect);
 
     if (broker && broker.prerequestStartingPool() && !broker.disposable) {
       this.logger.info(

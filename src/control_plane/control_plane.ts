@@ -1,89 +1,67 @@
 import { BaseOf } from '#self/lib/sdk_base';
-import { dumpConfig, Config } from '#self/config';
-import { CapacityManager } from './capacity_manager';
-import { CodeManager } from './code_manager';
-import { DataPlaneClientManager } from './data_plane_client/manager';
-import { FunctionProfileManager, Mode } from '#self/lib/function_profile';
-import { Herald } from './herald';
+import { dumpConfig } from '#self/config';
 import loggers from '#self/lib/logger';
 import { Logger } from '#self/lib/loggers';
-import { WorkerLauncher } from './worker_launcher';
 import { EventEmitter } from 'events';
 import { WorkerTelemetry } from './telemetry';
 import { getMeter } from '#self/lib/telemetry/otel';
 import { Meter } from '@opentelemetry/api';
-import { RawFunctionProfile } from '#self/lib/json/function_profile';
-import { StateManager } from './worker_stats/state_manager';
 import {
-  DefaultController,
-  DisposableController,
-  ReservationController,
-} from './controllers';
-import { Clock, systemClock } from '#self/lib/clock';
-import { ContainerManager } from './container/container_manager';
-import { TurfContainerManager } from './container/turf_container_manager';
+  ConfigurableControlPlaneDeps,
+  ControlPlaneDependencyContext,
+} from './deps';
 import { EventBus } from '#self/lib/event-bus';
-import { events } from './events';
-
-export interface ControlPlaneOptions {
-  clock?: Clock;
-  containerManager?: ContainerManager;
-}
+import { StateManager } from './worker_stats/state_manager';
+import { CodeManager } from './code_manager';
+import { FunctionProfileUpdateEvent } from '#self/lib/function_profile';
 
 /**
  * ControlPlane
  */
 export class ControlPlane extends BaseOf(EventEmitter) {
-  clock: Clock;
-  eventBus: EventBus;
-  containerManager: ContainerManager;
-  meter: Meter;
-  dataPlaneClientManager: DataPlaneClientManager;
-  herald: Herald;
-  codeManager: CodeManager;
-  functionProfile: FunctionProfileManager;
-  workerLauncher: WorkerLauncher;
-  capacityManager: CapacityManager;
-  workerTelemetry: WorkerTelemetry;
-  logger: Logger;
-  platformEnvironmentVariables: Record<string, string>;
-  stateManager: StateManager;
+  /**
+   * @internal
+   * Public for testing.
+   */
+  public _ctx: ControlPlaneDependencyContext;
 
-  defaultController: DefaultController;
-  reservationController: ReservationController;
-  disposableController: DisposableController;
+  private _meter: Meter;
+  private _logger: Logger;
+  private _workerTelemetry: WorkerTelemetry;
+  private _eventBus: EventBus;
+  private _stateManager: StateManager;
+  private _codeManager: CodeManager;
 
-  constructor(private config: Config, options?: ControlPlaneOptions) {
+  constructor(deps?: ConfigurableControlPlaneDeps) {
     super();
-    dumpConfig('control', config);
 
-    this.clock = options?.clock ?? systemClock;
-    this.eventBus = new EventBus(events);
-    this.containerManager =
-      options?.containerManager ?? new TurfContainerManager(config);
+    this._ctx = new ControlPlaneDependencyContext(deps);
 
-    this.meter = getMeter();
-    this.dataPlaneClientManager = new DataPlaneClientManager(this, config);
-    this.herald = new Herald(this, config);
-    this.codeManager = new CodeManager(this.config.dirs.noslatedWork);
-    this.functionProfile = new FunctionProfileManager(
-      config,
-      this.onPresetFunctionProfile.bind(this)
+    dumpConfig('control', this._ctx.getInstance('config'));
+
+    this._eventBus = this._ctx.getInstance('eventBus');
+    this._stateManager = this._ctx.getInstance('stateManager');
+    this._codeManager = this._ctx.getInstance('codeManager');
+
+    this._meter = getMeter();
+    this._workerTelemetry = new WorkerTelemetry(
+      this._meter,
+      this._stateManager,
+      this._eventBus
     );
-    this.workerLauncher = new WorkerLauncher(this, config);
-    this.capacityManager = new CapacityManager(this, config);
-    this.stateManager = new StateManager(this, config);
-    this.workerTelemetry = new WorkerTelemetry(
-      this.meter,
-      this.stateManager,
-      this.eventBus
-    );
-    this.defaultController = new DefaultController(this, config);
-    this.reservationController = new ReservationController(this);
-    this.disposableController = new DisposableController(this);
 
-    this.logger = loggers.get('control plane');
-    this.platformEnvironmentVariables = {};
+    this._logger = loggers.get('control plane');
+
+    this._ctx
+      .getInstance('dataPlaneClientManager')
+      .on('newClientReady', plane => {
+        this.emit('newDataPlaneClientReady', plane);
+      });
+    this._eventBus.subscribe(FunctionProfileUpdateEvent, {
+      next: event => {
+        return this._onPresetFunctionProfile(event);
+      },
+    });
   }
 
   /**
@@ -91,18 +69,7 @@ export class ControlPlane extends BaseOf(EventEmitter) {
    * @return {Promise<void>} The result.
    */
   async _init() {
-    this.dataPlaneClientManager.on('newClientReady', plane => {
-      this.emit('newDataPlaneClientReady', plane);
-    });
-
-    return Promise.all([
-      this.containerManager.ready(),
-      this.stateManager.ready(),
-      this.dataPlaneClientManager.ready(),
-      this.herald.ready(),
-      this.workerLauncher.ready(),
-      this.capacityManager.ready(),
-    ]);
+    await this._ctx.bootstrap();
   }
 
   /**
@@ -110,39 +77,21 @@ export class ControlPlane extends BaseOf(EventEmitter) {
    * @return {Promise<void>} The result.
    */
   async _close() {
-    this.dataPlaneClientManager.removeAllListeners('newClientReady');
-
-    await Promise.all([
-      this.dataPlaneClientManager.close(),
-      this.herald.close(),
-      this.workerLauncher.close(),
-      this.stateManager.close(),
-      this.capacityManager.close(),
-    ]);
-    await this.containerManager.close();
-    return;
+    await this._ctx.dispose();
   }
 
-  /**
-   * onPresetFunctionProfile
-   * @param {any[]} profile The profile array.
-   * @param {'IMMEDIATELY' | 'WAIT'} mode The set mode.
-   * @return {Promise<void>} The set result.
-   */
-  async onPresetFunctionProfile(
-    profile: RawFunctionProfile[] = [],
-    mode: Mode
-  ) {
-    this.stateManager.updateFunctionProfile();
+  private async _onPresetFunctionProfile(event: FunctionProfileUpdateEvent) {
+    const { profile, mode } = event.data;
+    this._stateManager.updateFunctionProfile();
 
     const promises = profile.map(({ name, url, signature }) => {
-      return this.codeManager.ensure(name, url, signature);
+      return this._codeManager.ensure(name, url, signature);
     });
 
     const promise = Promise.allSettled(promises).then(ret => {
       for (const r of ret) {
         if (r.status === 'rejected') {
-          this.logger.warn('Failed to ensure profile:', r.reason);
+          this._logger.warn('Failed to ensure profile:', r.reason);
         }
       }
     });

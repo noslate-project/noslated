@@ -1,10 +1,7 @@
 import assert from 'assert';
 import mm from 'mm';
 import * as common from '#self/test/common';
-import { config } from '#self/config';
 import { ControlPlane } from '#self/control_plane/index';
-import { DataPlaneClientManager } from '#self/control_plane/data_plane_client/manager';
-import { mockClientCreatorForManager } from '#self/test/util';
 import { CapacityManager } from '#self/control_plane/capacity_manager';
 import { TurfContainerStates } from '#self/lib/turf/types';
 import { ContainerStatusReport } from '#self/lib/constants';
@@ -15,6 +12,9 @@ import {
 import { StateManager } from '../worker_stats/state_manager';
 import { WorkerStatusReportEvent } from '../events';
 import { registerWorkers } from './util';
+import { FunctionProfileManager } from '#self/lib/function_profile';
+import { DataPlaneClientManager } from '../data_plane_client/manager';
+import { mockClientCreatorForManager } from '#self/test/util';
 
 describe(common.testName(__filename), function () {
   this.timeout(10_000);
@@ -64,6 +64,7 @@ describe(common.testName(__filename), function () {
 
   let capacityManager: CapacityManager;
   let stateManager: StateManager;
+  let functionProfile: FunctionProfileManager;
 
   beforeEach(async () => {
     mockClientCreatorForManager(DataPlaneClientManager);
@@ -71,12 +72,14 @@ describe(common.testName(__filename), function () {
       shouldAdvanceTime: true,
     });
     testContainerManager = new TestContainerManager(clock);
-    control = new ControlPlane(config, {
+    control = new ControlPlane({
       clock,
       containerManager: testContainerManager,
     });
     await control.ready();
-    ({ capacityManager, stateManager } = control);
+    capacityManager = control._ctx.getInstance('capacityManager');
+    functionProfile = control._ctx.getInstance('functionProfile');
+    stateManager = control._ctx.getInstance('stateManager');
   });
 
   afterEach(async () => {
@@ -87,7 +90,7 @@ describe(common.testName(__filename), function () {
 
   describe('get #virtualMemoryUsed()', () => {
     it('should get virtual memory used', async () => {
-      await control.functionProfile.set(
+      await functionProfile.set(
         [
           {
             name: 'func',
@@ -169,7 +172,7 @@ describe(common.testName(__filename), function () {
         ]
       );
 
-      await control.stateManager.syncWorkerData([brokerData1, brokerData2]);
+      await stateManager.syncWorkerData([brokerData1, brokerData2]);
 
       stateManager.updateWorkerStatusByReport(
         new WorkerStatusReportEvent({
