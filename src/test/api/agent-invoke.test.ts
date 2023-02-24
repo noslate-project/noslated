@@ -71,6 +71,50 @@ describe(common.testName(__filename), function () {
     );
   });
 
+  it('destroy request stream', async () => {
+    await env.agent.setFunctionProfile([item.profile] as any);
+
+    const readable = new Readable({
+      read() {},
+      destroy(err, callback) {
+        callback(err);
+      },
+    });
+    readable.push(Buffer.from('foobar'));
+
+    const response = await env.agent.invoke(item.name, readable);
+    assert.ok(response instanceof TriggerResponse);
+    assert.ok(response.metadata instanceof Metadata);
+
+    response.on('data', () => {
+      readable.destroy(new Error('foobar'));
+    });
+
+    await assert.rejects(
+      once(response, 'end'),
+      /CANCELLED: Cancelled on client/
+    );
+  });
+
+  it('destroy response stream', async () => {
+    await env.agent.setFunctionProfile([item.profile] as any);
+
+    const readable = new Readable({
+      read() {},
+      destroy() {},
+    });
+    readable.push(Buffer.from('foobar'));
+
+    const response = await env.agent.invoke(item.name, readable);
+    assert.ok(response instanceof TriggerResponse);
+    assert.ok(response.metadata instanceof Metadata);
+
+    response.on('data', () => {
+      response.destroy(new Error('foo'));
+    });
+    await assert.rejects(once(response, 'end'), /foo/);
+  });
+
   it('invoke with malfunctioning readable in immediate', async () => {
     await env.agent.setFunctionProfile([item.profile] as any);
 
@@ -80,43 +124,10 @@ describe(common.testName(__filename), function () {
       },
     });
 
-    let err;
-    try {
-      await env.agent.invoke(item.name, readable);
-    } catch (e) {
-      err = e;
-    }
-    assert.ok(err !== undefined);
-    assert.ok((err as Error).message.match(/foobar/));
-  });
-
-  // TODO: serialization error, performance cost on iterating.
-  it.skip('invoke with mis-typing metadata', async () => {
-    await env.agent.setFunctionProfile([item.profile] as any);
-
-    const fatalCases = ['foo', ['foo'], ['foo', null]];
-    for (const esac of fatalCases) {
-      let err: Error;
-      try {
-        const stream = await env.agent.invoke(item.name, Buffer.from('foo'), {
-          headers: esac,
-        } as any);
-        stream.destroy();
-      } catch (e) {
-        err = e as Error;
-      }
-      assert.throws(() => {
-        throw err;
-      }, /Expect a key value pair/);
-    }
-
-    const tolerableCases = [[['foo', null]], [[null, 1]]];
-    for (const esac of tolerableCases) {
-      const stream = await env.agent.invoke(item.name, Buffer.from('foo'), {
-        headers: esac,
-      } as any);
-      stream.destroy();
-    }
+    await assert.rejects(
+      env.agent.invoke(item.name, readable),
+      /CANCELLED: Cancelled on client/
+    );
   });
 
   // TODO(kaidi.zkd): readable.destroy 之后，服务的识别成正常的 `end` 事件了

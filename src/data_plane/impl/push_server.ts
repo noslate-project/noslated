@@ -146,7 +146,12 @@ export class PushServerImpl implements IPushServer {
     call.on('end', () => {
       readable.push(null);
     });
+    call.on('cancelled', () => {
+      this.logger.debug('Call cancelled, aborting request');
+      readable.destroy(new Error('Request aborted'));
+    });
     call.on('error', e => {
+      this.logger.debug('Call errored, aborting request');
       readable.destroy(e);
     });
 
@@ -202,11 +207,22 @@ export class PushServerImpl implements IPushServer {
       call.write({
         error: e as root.noslated.data.IInvokeErrorResponse,
       });
+      call.end();
       deferred.resolve({
         status: res.status,
         bytesSent,
         error: e,
       });
+    });
+
+    // destroy response when the call has been cancelled.
+    call.on('cancelled', () => {
+      this.logger.debug('Call cancelled, aborting response');
+      res.destroy(new Error('Call cancelled.'));
+    });
+    call.on('error', e => {
+      this.logger.debug('Call errored, aborting response');
+      res.destroy(e);
     });
 
     return deferred.promise;
