@@ -330,8 +330,8 @@ export class NoslatedClient extends EventEmitter {
       data.on('end', () => {
         call.end();
       });
-      data.on('error', e => {
-        call.destroy(e);
+      data.on('error', () => {
+        call.cancel();
       });
     } else {
       call.end();
@@ -349,6 +349,7 @@ export class NoslatedClient extends EventEmitter {
   ): Promise<TriggerResponse> {
     const deferred = createDeferred<TriggerResponse>();
     let headerReceived = false;
+    let hasErrored = false;
     let res: TriggerResponse;
     call.on('data', (msg: root.noslated.data.InvokeResponse) => {
       if (msg.error) {
@@ -367,7 +368,12 @@ export class NoslatedClient extends EventEmitter {
         headerReceived = true;
         res = new TriggerResponse({
           read: () => {},
-          destroy: () => {},
+          destroy: (err, cb) => {
+            /** cancel the call in any conditions */
+            call.cancel();
+            /** emit error event */
+            process.nextTick(() => cb(err));
+          },
           status: result.status!,
           metadata: new Metadata({
             headers: pairsToTuples(
@@ -379,23 +385,28 @@ export class NoslatedClient extends EventEmitter {
         deferred.resolve(res);
         return;
       }
-      res.push(result.body);
+      if (result.body) {
+        res.push(result.body);
+      }
     });
     call.on('end', () => {
+      /** Avoid emitting 'end' event on response when the call has emitted error */
+      if (hasErrored) {
+        return;
+      }
       if (headerReceived) {
         res.push(null);
-        return;
       } else {
-        deferred.reject(new Error('foo'));
+        deferred.reject(new Error('No headers received'));
       }
     });
     call.on('error', e => {
+      hasErrored = true;
       if (headerReceived) {
         res.destroy(e);
       } else {
         deferred.reject(e);
       }
-      return;
     });
 
     return deferred.promise;
