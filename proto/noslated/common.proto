@@ -61,4 +61,5 @@ message FunctionProfileWorker {
   string shrinkStrategy = 7;
   repeated string execArgv = 8;
   bool disposable = 9;
+  bool disableSeed = 10;
 }
