@@ -152,6 +152,54 @@ describe(common.testName(__filename), function () {
       }
     });
 
+    it('should start function with seed disabled', async () => {
+      let aworker;
+      try {
+        aworker = new Aworker(dummyPlane as any, config);
+        await aworker.ready();
+        await aworker.waitSeedReady();
+
+        const bundlePath = path.join(
+          testUtil.TMP_DIR(),
+          'bundles',
+          Aworker.SEED_CONTAINER_NAME
+        );
+        fs.mkdirSync(path.join(bundlePath, 'code'), { recursive: true });
+        fs.writeFileSync(path.join(bundlePath, 'code', 'index.js'), '');
+        mm(turf, 'create', async (...args: any[]) => {
+          assert.deepStrictEqual(args, ['foo', bundlePath]);
+        });
+
+        mm(turf, 'start', async (...args: any[]) => {
+          assert.deepStrictEqual(args, [
+            'foo',
+            {
+              stdout: args[1].stdout,
+              stderr: args[1].stderr,
+            },
+          ]);
+        });
+
+        await aworker.start(
+          'foo.sock',
+          'foo',
+          'bar',
+          {
+            name: 'foo',
+            sourceFile: 'index.js',
+            runtime: 'aworker',
+            worker: {
+              disableSeed: true,
+            },
+          } as any,
+          bundlePath,
+          {}
+        );
+      } finally {
+        await aworker?.close();
+      }
+    });
+
     it('should start without seed', async () => {
       let aworker;
       try {
