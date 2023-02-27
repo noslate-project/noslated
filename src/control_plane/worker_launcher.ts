@@ -224,7 +224,6 @@ export class WorkerLauncher extends Base {
     }
 
     try {
-      const now = performance.now();
 
       const dataPlane = await dataPlaneClientManager.registerWorkerCredential({
         funcName,
@@ -246,6 +245,7 @@ export class WorkerLauncher extends Base {
 
       const worker = this.snapshot.register(workerMetadata);
 
+      const now = performance.now();
       const container = await starter.start(
         serverSockPath,
         processName,
@@ -256,9 +256,10 @@ export class WorkerLauncher extends Base {
       );
       worker.setContainer(container);
 
+      worker.logger.start(performance.now() - now);
+
       const started = performance.now();
       await worker.ready();
-
       worker.logger.ready(performance.now() - started);
     } catch (e) {
       await this.snapshot.unregister(funcName, processName, !!options.inspect);

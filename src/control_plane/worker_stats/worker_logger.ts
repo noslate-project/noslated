@@ -18,7 +18,7 @@ export class WorkerLogger {
     this.logger = loggers.get(`worker ${this.workerMetadata.processName}`);
   }
 
-  started(cost: number) {
+  start(cost: number) {
     this.logger.info(
       'worker(%s, %s, inspect %s, disposable %s) started, cost: %s, related request(%s)',
       this.workerMetadata.funcName,
