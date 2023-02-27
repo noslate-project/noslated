@@ -82,6 +82,10 @@
           },
           "description": "The additional exec argv."
         },
+        "disableSeed": {
+          "type": "boolean",
+          "description": "disable turf seed mode"
+        },
         "disposable": {
           "type": "boolean",
           "description": "whether worker destroy after one request finished"
