@@ -224,7 +224,6 @@ export class WorkerLauncher extends Base {
     }
 
     try {
-
       const dataPlane = await dataPlaneClientManager.registerWorkerCredential({
         funcName,
         processName,
