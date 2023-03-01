@@ -23,6 +23,7 @@ interface ProcessFunctionProfile {
     fastFailRequestsOnStarting?: boolean;
     v8Options?: string[];
     execArgv?: string[];
+    disableSeed?: boolean;
     disposable?: boolean;
   };
   environments?: {

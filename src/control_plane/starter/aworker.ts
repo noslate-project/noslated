@@ -190,6 +190,9 @@ export class AworkerStarter extends BaseStarter {
     if (seedStatus !== TurfContainerStates.forkwait) {
       useSeed = false;
     }
+    if (profile.worker?.disableSeed) {
+      useSeed = false;
+    }
 
     const startOptions: StartOptions = {
       inspect: !!options?.inspect,
