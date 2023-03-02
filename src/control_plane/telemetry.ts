@@ -13,7 +13,6 @@ import {
   BatchObservableResult,
 } from '@opentelemetry/api';
 import { WorkerStoppedEvent } from './events';
-import { Broker } from './worker_stats';
 import { StateManager } from './worker_stats/state_manager';
 
 function mapStateToExitReason(state: TurfState | null): string {
@@ -44,12 +43,7 @@ export class WorkerTelemetry {
     this.#stateManager = stateManager;
     eventBus.subscribe(WorkerStoppedEvent, {
       next: event => {
-        const data = event.data;
-        this.onWorkerStopped(
-          data.emitExceptionMessage,
-          data.state,
-          data.broker
-        );
+        this.onWorkerStopped(event);
       },
     });
 
@@ -81,16 +75,12 @@ export class WorkerTelemetry {
     ]);
   }
 
-  onWorkerStopped = (
-    emitExceptionMessage: string | undefined,
-    state: TurfState | null,
-    broker: Broker
-  ) => {
+  onWorkerStopped = (event: WorkerStoppedEvent) => {
+    const { emitExceptionMessage, state, functionName, runtimeType } =
+      event.data;
     if (emitExceptionMessage) {
       return;
     }
-    const functionName = broker.name;
-    const runtimeType = broker.data?.runtime;
     if (runtimeType == null) {
       return;
     }

@@ -1,10 +1,6 @@
 import path from 'path';
 import { TurfContainerStates, TurfSpec, TurfState } from '#self/lib/turf/types';
 
-export interface ContainerCreateOptions {
-  mkdirs?: string[];
-}
-
 export interface ContainerStartOptions {
   seed?: string;
 }
@@ -13,12 +9,7 @@ export interface ContainerManager {
   ready(): Promise<void>;
   close(): Promise<void>;
 
-  create(
-    name: string,
-    bundlePath: string,
-    spec: TurfSpec,
-    options?: ContainerCreateOptions
-  ): Promise<Container>;
+  create(name: string, bundlePath: string, spec: TurfSpec): Promise<Container>;
   getContainer(name: string): Container | null;
   list(): Container[];
   reconcileContainers(): Promise<void>;

@@ -64,10 +64,7 @@ describe(common.testName(__filename), () => {
   beforeEach(async () => {
     const ctx = new DependencyContext<FunctionProfileManagerContext>();
     ctx.bindInstance('config', config);
-    ctx.bindInstance(
-      'eventBus',
-      new EventBus([FunctionProfileUpdateEvent.type])
-    );
+    ctx.bindInstance('eventBus', new EventBus([FunctionProfileUpdateEvent]));
     profileManager = new ProfileManager(ctx);
     await profileManager.set(funcData, 'WAIT');
   });

@@ -18,6 +18,7 @@ import { PlatformEnvironsUpdatedEvent } from '../events';
 import { Config } from '#self/config';
 import { EventBus } from '#self/lib/event-bus';
 import { DependencyContext } from '#self/lib/dependency_context';
+import { ResourceManager, ResourceManagerContext } from '../resource_manager';
 
 export interface BaseOptions {
   inspect?: boolean;
@@ -32,8 +33,9 @@ export interface StartOptions extends BaseOptions {
 export type StarterContext = {
   config: Config;
   containerManager: ContainerManager;
+  resourceManager: ResourceManager;
   eventBus: EventBus;
-};
+} & ResourceManagerContext;
 
 export abstract class BaseStarter extends Base {
   /**
@@ -94,6 +96,7 @@ export abstract class BaseStarter extends Base {
   logger;
   config;
   containerManager;
+  resourceManager;
   _validV8Options: string[];
 
   platformEnvirons: Record<string, string> = {};
@@ -111,6 +114,7 @@ export abstract class BaseStarter extends Base {
     this._validV8Options = [];
     this.config = ctx.getInstance('config');
     this.containerManager = ctx.getInstance('containerManager');
+    this.resourceManager = ctx.getInstance('resourceManager');
 
     const eventBus = ctx.getInstance('eventBus');
     eventBus.subscribe(PlatformEnvironsUpdatedEvent, {
@@ -269,14 +273,10 @@ export abstract class BaseStarter extends Base {
       spec.linux.resources.memory.limit *= 100;
     }
 
-    const container = await this.containerManager.create(
-      name,
-      bundlePath,
-      spec,
-      {
-        mkdirs: options.mkdirs,
-      }
-    );
+    const [container] = await Promise.all([
+      this.containerManager.create(name, bundlePath, spec),
+      this.resourceManager.makeWorkerDirs(name, options.mkdirs ?? []),
+    ]);
     await container.start(options);
     return container;
   }

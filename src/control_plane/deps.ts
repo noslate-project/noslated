@@ -20,6 +20,7 @@ import {
 import { DataPlaneClientManager } from './data_plane_client/manager';
 import { events } from './events';
 import { Herald } from './herald';
+import { ResourceManager } from './resource_manager';
 import { WorkerLauncher } from './worker_launcher';
 import { StateManager } from './worker_stats/state_manager';
 
@@ -39,6 +40,7 @@ export type ControlPlaneDeps = {
   workerLauncher: WorkerLauncher;
   capacityManager: CapacityManager;
   stateManager: StateManager;
+  resourceManager: ResourceManager;
 
   defaultController: DefaultController;
   reservationController: ReservationController;
@@ -77,6 +79,7 @@ export class ControlPlaneDependencyContext extends DependencyContext<
     this.bind('workerLauncher', WorkerLauncher);
     this.bind('capacityManager', CapacityManager);
     this.bind('stateManager', StateManager);
+    this.bind('resourceManager', ResourceManager);
     this.bind('defaultController', DefaultController);
     this.bind('reservationController', ReservationController);
     this.bind('disposableController', DisposableController);

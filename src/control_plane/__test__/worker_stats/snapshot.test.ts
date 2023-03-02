@@ -15,8 +15,6 @@ import {
 } from '#self/lib/function_profile';
 import { TurfContainerStates } from '#self/lib/turf';
 import { ContainerStatus, ContainerStatusReport } from '#self/lib/constants';
-import sinon from 'sinon';
-import fs from 'fs';
 import { AworkerFunctionProfile } from '#self/lib/json/function_profile';
 import { NotNullableInterface } from '#self/lib/interfaces';
 import * as root from '#self/proto/root';
@@ -27,6 +25,7 @@ import {
 import { registerWorkers } from '../util';
 import { DependencyContext } from '#self/lib/dependency_context';
 import { EventBus } from '#self/lib/event-bus';
+import { once } from 'events';
 
 describe(common.testName(__filename), () => {
   const funcData: AworkerFunctionProfile[] = [
@@ -89,10 +88,7 @@ describe(common.testName(__filename), () => {
   beforeEach(async () => {
     const ctx = new DependencyContext<FunctionProfileManagerContext>();
     ctx.bindInstance('config', config);
-    ctx.bindInstance(
-      'eventBus',
-      new EventBus([FunctionProfileUpdateEvent.type])
-    );
+    ctx.bindInstance('eventBus', new EventBus([FunctionProfileUpdateEvent]));
     profileManager = new ProfileManager(ctx);
     await profileManager.set(funcData, 'WAIT');
   });
@@ -110,11 +106,7 @@ describe(common.testName(__filename), () => {
         shouldAdvanceTime: true,
       });
       testContainerManager = new TestContainerManager(clock);
-      workerStatsSnapshot = new WorkerStatsSnapshot(
-        profileManager,
-        config,
-        clock
-      );
+      workerStatsSnapshot = new WorkerStatsSnapshot(profileManager, config);
       await workerStatsSnapshot.ready();
     });
     afterEach(async () => {
@@ -900,8 +892,6 @@ describe(common.testName(__filename), () => {
 
     describe('.correct()', () => {
       it('should correct gc stopped and unknown container', async () => {
-        const spyFs = sinon.spy(fs.promises, 'rm');
-
         registerWorkers(workerStatsSnapshot, [
           {
             funcName: 'func',
@@ -950,7 +940,8 @@ describe(common.testName(__filename), () => {
           1
         );
 
-        // 回收 Stoppped
+        let workerStoppedFuture = once(workerStatsSnapshot, 'workerStopped');
+        // 回收 Stopped
         await workerStatsSnapshot.correct();
 
         assert.strictEqual(
@@ -963,8 +954,12 @@ describe(common.testName(__filename), () => {
         );
         assert(testContainerManager.getContainer('foooo') == null);
 
-        clock.tick(config.worker.gcLogDelay);
-        assert(spyFs.calledWithMatch('/logs/workers/foooo'));
+        {
+          const [emitExceptionMessage /* state */, , broker, worker] =
+            await workerStoppedFuture;
+          assert.ok(emitExceptionMessage == null);
+          assert.strictEqual(worker.name, 'foooo');
+        }
 
         registerContainers(testContainerManager, workerStatsSnapshot, [
           { pid: 2, name: 'hello', status: TurfContainerStates.unknown },
@@ -972,6 +967,7 @@ describe(common.testName(__filename), () => {
         await testContainerManager.reconcileContainers();
         workerStatsSnapshot.sync(brokerData);
 
+        workerStoppedFuture = once(workerStatsSnapshot, 'workerStopped');
         // 回收 Unknown
         await workerStatsSnapshot.correct();
 
@@ -986,9 +982,12 @@ describe(common.testName(__filename), () => {
 
         assert(testContainerManager.getContainer('hello') == null);
 
-        clock.tick(config.worker.gcLogDelay);
-
-        assert(spyFs.calledWithMatch('/logs/workers/hello'));
+        {
+          const [emitExceptionMessage /* state */, , broker, worker] =
+            await workerStoppedFuture;
+          assert.ok(emitExceptionMessage == null);
+          assert.strictEqual(worker.name, 'hello');
+        }
 
         await profileManager.set([], 'WAIT');
 
@@ -999,15 +998,6 @@ describe(common.testName(__filename), () => {
 
         assert.strictEqual(workerStatsSnapshot.getBroker('func', true), null);
         assert.strictEqual(workerStatsSnapshot.getBroker('func', false), null);
-
-        spyFs.restore();
-      });
-    });
-
-    describe('.close()', () => {
-      it('should close gcQueue after close', async () => {
-        await workerStatsSnapshot.close();
-        assert(workerStatsSnapshot['gcQueue'].closed);
       });
     });
   });

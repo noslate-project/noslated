@@ -1,4 +1,5 @@
 import { systemClock } from './clock';
+import { createDeferred } from './util';
 
 export class Event {
   // TODO: default global clock.
@@ -18,10 +19,13 @@ export interface Observer<T> {
 export class EventBus {
   private _map: Map<string, EventChannel>;
 
-  constructor(events: string[]) {
+  constructor(events: EventConstructor<Event>[]) {
     this._map = new Map();
-    for (const name of events) {
-      this._map.set(name, new EventChannel(name));
+    for (const eventConstructor of events) {
+      this._map.set(
+        eventConstructor.type,
+        new EventChannel(eventConstructor.type)
+      );
     }
   }
 
@@ -57,6 +61,19 @@ export class EventBus {
   ) {
     const channel = this._getChannel(eve.type);
     channel.unsubscribe(observer);
+  }
+
+  once<T extends Event>(eve: EventConstructor<T>): Promise<T> {
+    const deferred = createDeferred<T>();
+    const observer: Observer<T> = {
+      next: event => {
+        deferred.resolve(event);
+        this.unsubscribe(eve, observer);
+      },
+    };
+    this.subscribe(eve, observer);
+
+    return deferred.promise;
   }
 }
 
