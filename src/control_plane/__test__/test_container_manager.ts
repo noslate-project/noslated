@@ -7,7 +7,6 @@ import {
 } from '#self/lib/turf/types';
 import {
   Container,
-  ContainerCreateOptions,
   ContainerManager,
   ContainerStartOptions,
 } from '../container/container_manager';
@@ -30,7 +29,7 @@ export class TestContainerManager implements ContainerManager {
     for (const it of list) {
       const container =
         this.containers.get(it.name) ??
-        new TestContainer(it.name, '', SPEC, {}, this);
+        new TestContainer(it.name, '', SPEC, this);
       container.pid = it.pid;
       container.pendingStatus = it.status;
       this.containers.set(it.name, container);
@@ -40,16 +39,9 @@ export class TestContainerManager implements ContainerManager {
   async create(
     name: string,
     bundlePath: string,
-    spec: TurfSpec,
-    options?: ContainerCreateOptions
+    spec: TurfSpec
   ): Promise<Container> {
-    const container = new TestContainer(
-      name,
-      bundlePath,
-      spec,
-      options ?? {},
-      this
-    );
+    const container = new TestContainer(name, bundlePath, spec, this);
     this.containers.set(name, container);
     return container;
   }
@@ -86,7 +78,6 @@ export class SimpleContainer implements Container {
     readonly name: string,
     readonly bundlePath?: string,
     readonly spec?: TurfSpec,
-    readonly options?: ContainerCreateOptions,
     private clock: Clock = systemClock
   ) {
     this.terminatedDeferred = createDeferred();
@@ -178,10 +169,9 @@ export class TestContainer extends SimpleContainer {
     name: string,
     bundlePath: string,
     spec: TurfSpec,
-    options: ContainerCreateOptions,
     private manager: TestContainerManager
   ) {
-    super(name, bundlePath, spec, options, manager.clock);
+    super(name, bundlePath, spec, manager.clock);
   }
 
   async delete() {
@@ -191,7 +181,7 @@ export class TestContainer extends SimpleContainer {
 }
 
 export class NoopContainer implements Container {
-  async start(options?: ContainerStartOptions): Promise<void> {}
+  async start(): Promise<void> {}
   async stop(): Promise<void> {}
   async state(): Promise<TurfState> {
     throw new Error('not implemented');

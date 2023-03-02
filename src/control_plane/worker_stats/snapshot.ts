@@ -1,5 +1,4 @@
 import EventEmitter from 'events';
-import fs from 'fs';
 import { BaseOf } from '#self/lib/sdk_base';
 import { Broker } from './broker';
 import loggers from '#self/lib/logger';
@@ -11,9 +10,6 @@ import { TurfState } from '#self/lib/turf/types';
 import * as root from '#self/proto/root';
 import { ContainerStatus } from '#self/lib/constants';
 import { StatLogger } from './stat_logger';
-import { Clock, systemClock } from '#self/lib/clock';
-import { TaskQueue } from '#self/lib/task_queue';
-import { workerLogPath } from '../container/container_manager';
 
 export class WorkerStatsSnapshot extends BaseOf(EventEmitter) {
   private logger: Logger;
@@ -21,13 +17,7 @@ export class WorkerStatsSnapshot extends BaseOf(EventEmitter) {
   public brokers: Map<string, Broker>;
   private statLogger: StatLogger;
 
-  private gcQueue: TaskQueue<Worker>;
-
-  constructor(
-    profileManager: FunctionProfileManager,
-    public config: Config,
-    private clock: Clock = systemClock
-  ) {
+  constructor(profileManager: FunctionProfileManager, public config: Config) {
     super();
 
     this.logger = loggers.get('worker_stats snapshot');
@@ -36,20 +26,6 @@ export class WorkerStatsSnapshot extends BaseOf(EventEmitter) {
     this.statLogger = new StatLogger();
 
     this.brokers = new Map();
-
-    this.gcQueue = new TaskQueue<Worker>(this.#gcLog, {
-      clock: this.clock,
-    });
-  }
-
-  async _init() {
-    // ignore
-  }
-
-  async _close() {
-    /** ignore unfinished tasks */
-    this.gcQueue.clear();
-    this.gcQueue.close();
   }
 
   /**
@@ -266,29 +242,9 @@ export class WorkerStatsSnapshot extends BaseOf(EventEmitter) {
         );
       }
 
-      // 清理 log 文件
-      this.gcQueue.enqueue(worker, {
-        delay: this.config.worker.gcLogDelay,
-      });
-
       broker.workers.delete(worker.name);
     }
   }
-
-  #gcLog = async (worker: Worker) => {
-    const logDir = workerLogPath(this.config.logger.dir, worker.name);
-    try {
-      await fs.promises.rm(logDir, { recursive: true });
-      this.logger.debug('[%s] log directory removed: %s.', worker.name, logDir);
-    } catch (e) {
-      this.logger.warn(
-        'Failed to rm [%s] log directory: %s.',
-        worker.name,
-        logDir,
-        e
-      );
-    }
-  };
 
   /**
    * Correct synced data (remove GCed items)

@@ -1,23 +1,22 @@
-import path from 'path';
-import * as fs from 'fs';
 import assert from 'assert';
-
-import mm from 'mm';
 import _ from 'lodash';
-
 import * as common from '#self/test/common';
 import { ControlPlane } from '#self/control_plane/index';
 import { ContainerStatus, ContainerStatusReport } from '#self/lib/constants';
 import { StateManager } from '#self/control_plane/worker_stats/state_manager';
-import { workerLogPath } from '#self/control_plane/container/container_manager';
-import { WorkerStatusReportEvent } from '#self/control_plane/events';
+import {
+  WorkerStatusReportEvent,
+  WorkerStoppedEvent,
+} from '#self/control_plane/events';
 import { registerContainers } from '../test_container_manager';
 import { TurfContainerStates } from '#self/lib/turf';
 import { TestEnvironment } from '../environment';
 import { registerWorkers } from '../util';
 import { FunctionProfileManager } from '#self/lib/function_profile';
+import { EventBus } from '#self/lib/event-bus';
 
 describe(common.testName(__filename), () => {
+  let eventBus: EventBus;
   let stateManager: StateManager;
   let functionProfile: FunctionProfileManager;
 
@@ -28,6 +27,7 @@ describe(common.testName(__filename), () => {
 
   beforeEach(async () => {
     controlPlane = env.control;
+    eventBus = controlPlane._ctx.getInstance('eventBus');
     stateManager = controlPlane._ctx.getInstance('stateManager');
     functionProfile = controlPlane._ctx.getInstance('functionProfile');
   });
@@ -310,6 +310,8 @@ describe(common.testName(__filename), () => {
           data: { maxActivateRequests: 10, activeRequestCount: 1 },
         }
       );
+
+      const workerStoppedFuture = eventBus.once(WorkerStoppedEvent);
       {
         const worker2 = stateManager.workerStatsSnapshot
           .getBroker('func1', false)!
@@ -343,21 +345,8 @@ describe(common.testName(__filename), () => {
         null
       );
 
-      // should delete directory after 5 minutes.
-      let rmCalled = false;
-      mm(fs.promises, 'rm', async (name: any, options: any) => {
-        assert.strictEqual(
-          name,
-          path.dirname(
-            workerLogPath(stateManager['config'].logger.dir, 'worker2', 'dummy')
-          )
-        );
-        assert.deepStrictEqual(options, { recursive: true });
-        rmCalled = true;
-      });
-
-      env.testClock.tick(10 * 1000 * 60);
-      assert(rmCalled);
+      const event = await workerStoppedFuture;
+      assert.strictEqual(event.data.workerName, 'worker2');
     });
 
     it('should not sync with empty psData', async () => {

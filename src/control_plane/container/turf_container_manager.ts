@@ -5,7 +5,6 @@ import { Logger, loggers } from '#self/lib/loggers';
 import { createDeferred, Deferred, sleep } from '#self/lib/util';
 import {
   Container,
-  ContainerCreateOptions,
   ContainerManager,
   ContainerStartOptions,
   workerLogPath,
@@ -49,19 +48,11 @@ export class TurfContainerManager implements ContainerManager {
   async create(
     name: string,
     bundlePath: string,
-    spec: TurfSpec,
-    options?: ContainerCreateOptions
+    spec: TurfSpec
   ): Promise<Container> {
     const runLogDir = this.config.logger.dir;
     const logPath = workerLogPath(runLogDir, name);
     const specPath = path.join(bundlePath, 'config.json');
-
-    this.logger.info('create directories for worker(%s)', name);
-    await Promise.all(
-      [logPath, ...(options?.mkdirs ?? [])].map(dir =>
-        fs.promises.mkdir(dir, { recursive: true })
-      )
-    );
 
     await this._bundlePathLock(bundlePath, async () => {
       await fs.promises.writeFile(specPath, JSON.stringify(spec), 'utf8');

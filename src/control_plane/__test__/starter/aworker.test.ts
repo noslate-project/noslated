@@ -14,8 +14,13 @@ import { startTurfD, stopTurfD } from '#self/test/turf';
 import { TurfContainerManager } from '#self/control_plane/container/turf_container_manager';
 import { DependencyContext } from '#self/lib/dependency_context';
 import { EventBus } from '#self/lib/event-bus';
-import { PlatformEnvironsUpdatedEvent } from '#self/control_plane/events';
+import {
+  PlatformEnvironsUpdatedEvent,
+  WorkerStoppedEvent,
+} from '#self/control_plane/events';
 import { StarterContext } from '#self/control_plane/starter/base';
+import { ResourceManager } from '#self/control_plane/resource_manager';
+import { systemClock } from '#self/lib/clock';
 
 const conditionalDescribe =
   process.platform === 'darwin' ? describe.skip : describe;
@@ -33,13 +38,13 @@ describe(common.testName(__filename), function () {
 
     ctx = new DependencyContext();
     ctx.bindInstance('config', config);
+    ctx.bindInstance('clock', systemClock);
     ctx.bindInstance(
       'eventBus',
-      new EventBus([PlatformEnvironsUpdatedEvent.type])
+      new EventBus([PlatformEnvironsUpdatedEvent, WorkerStoppedEvent])
     );
     ctx.bind('containerManager', TurfContainerManager);
-    await ctx.bootstrap();
-
+    ctx.bind('resourceManager', ResourceManager);
     await ctx.bootstrap();
     turf = (ctx.getInstance('containerManager') as TurfContainerManager).client;
   });

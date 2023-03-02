@@ -30,8 +30,7 @@ export class StateManager extends Base {
 
     this.workerStatsSnapshot = new WorkerStatsSnapshot(
       ctx.getInstance('functionProfile'),
-      this.config,
-      ctx.getInstance('clock')
+      this.config
     );
     const eventBus = ctx.getInstance('eventBus');
 
@@ -40,12 +39,15 @@ export class StateManager extends Base {
       (
         emitExceptionMessage: string | undefined,
         state: TurfState | null,
-        broker: Broker
+        broker: Broker,
+        worker: Worker
       ) => {
         const event = new WorkerStoppedEvent({
           emitExceptionMessage,
           state,
-          broker,
+          functionName: broker.name,
+          runtimeType: broker.data?.runtime!,
+          workerName: worker.name,
         });
         eventBus.publish(event).catch(e => {
           this.logger.error('unexpected error on worker stopped event', e);

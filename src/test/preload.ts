@@ -1,6 +1,7 @@
 import os from 'os';
 import path from 'path';
 import { isatty } from 'tty';
+import { createHook } from 'async_hooks';
 
 process.env.NOSLATED_LOG_LEVEL = 'debug';
 process.env.NOSLATED_SOCKS_DIR = path.join(
@@ -21,3 +22,30 @@ process.on('exit', () => {
     global.gc();
   }
 });
+
+if (process.env.DETECT_HANDLE_LEAKS) {
+  const map = new Map();
+  const hooks = createHook({
+    init: (asyncId, type) => {
+      if (type === 'PROMISE') {
+        return;
+      }
+      map.set(asyncId, {
+        type,
+        stack: new Error().stack,
+      });
+    },
+    destroy: asyncId => {
+      map.delete(asyncId);
+    },
+  });
+  hooks.enable();
+  const listener = (signal: NodeJS.Signals) => {
+    hooks.disable();
+    console.log(map);
+    process.off(signal, listener);
+    process.kill(0, signal);
+  };
+  process.on('SIGTERM', listener);
+  process.on('SIGINT', listener);
+}

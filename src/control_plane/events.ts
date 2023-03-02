@@ -1,10 +1,10 @@
 import { Event } from '#self/lib/event-bus';
 import { FunctionProfileUpdateEvent } from '#self/lib/function_profile';
 import { NotNullableInterface } from '#self/lib/interfaces';
+import { RuntimeType } from '#self/lib/json/function_profile';
 import { TurfState } from '#self/lib/turf/types';
 import * as root from '#self/proto/root';
 import { DataPlaneClient } from './data_plane_client/client';
-import { Broker } from './worker_stats';
 
 export class FunctionRemovedEvent extends Event {
   static type = 'function-removed';
@@ -42,7 +42,9 @@ export class WorkerStatusReportEvent extends Event {
 interface WorkerStoppedData {
   emitExceptionMessage: string | undefined;
   state: TurfState | null;
-  broker: Broker;
+  runtimeType: RuntimeType;
+  functionName: string;
+  workerName: string;
 }
 export class WorkerStoppedEvent extends Event {
   static type = 'worker-stopped';
@@ -68,4 +70,4 @@ export const events = [
   WorkerStatusReportEvent,
   WorkerStoppedEvent,
   WorkerTrafficStatsEvent,
-].map(it => it.type);
+];
