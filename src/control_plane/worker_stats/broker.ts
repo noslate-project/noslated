@@ -275,7 +275,7 @@ class Broker {
 
       worker.sync(item);
       newMap.set(name, worker);
-      this.workers.delete(item.name!);
+      this.workers.delete(name);
     }
 
     for (const item of this.workers.values()) {
