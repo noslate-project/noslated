@@ -17,6 +17,7 @@ import { Priority, TaskQueue } from '#self/lib/task_queue';
 import { Container } from './container/container_manager';
 import { ControlPlaneDependencyContext } from './deps';
 import { CapacityManager } from './capacity_manager';
+import { TurfContainerStates } from '#self/lib/turf';
 
 export interface WorkerStarter {
   start(
@@ -223,27 +224,27 @@ export class WorkerLauncher extends Base {
       throw err;
     }
 
+    const dataPlane = await dataPlaneClientManager.registerWorkerCredential({
+      funcName,
+      processName,
+      credential,
+      inspect: !!options.inspect,
+    });
+    const serverSockPath = (dataPlane as any).getServerSockPath();
+
+    const workerMetadata = new WorkerMetadata(
+      funcName,
+      { inspect: !!options.inspect },
+      disposable,
+      !!toReserve,
+      processName,
+      credential,
+      requestId
+    );
+
+    const worker = this.snapshot.register(workerMetadata);
+
     try {
-      const dataPlane = await dataPlaneClientManager.registerWorkerCredential({
-        funcName,
-        processName,
-        credential,
-        inspect: !!options.inspect,
-      });
-      const serverSockPath = (dataPlane as any).getServerSockPath();
-
-      const workerMetadata = new WorkerMetadata(
-        funcName,
-        { inspect: !!options.inspect },
-        disposable,
-        !!toReserve,
-        processName,
-        credential,
-        requestId
-      );
-
-      const worker = this.snapshot.register(workerMetadata);
-
       const now = performance.now();
       const container = await starter.start(
         serverSockPath,
@@ -254,16 +255,15 @@ export class WorkerLauncher extends Base {
         options
       );
       worker.setContainer(container);
-
       worker.logger.start(performance.now() - now);
-
-      const started = performance.now();
-      await worker.ready();
-      worker.logger.ready(performance.now() - started);
     } catch (e) {
-      await this.snapshot.unregister(funcName, processName, !!options.inspect);
+      worker.switchTo(TurfContainerStates.unknown);
       throw e;
     }
+
+    const started = performance.now();
+    await worker.ready();
+    worker.logger.ready(performance.now() - started);
   };
 }
 

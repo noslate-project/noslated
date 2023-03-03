@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { Config, dumpConfig } from '#self/config';
+import { Config, config, dumpConfig } from '#self/config';
 import { Base } from '#self/lib/sdk_base';
 import { DataFlowController } from './data_flow_controller';
 import { DataPlaneHost } from './data_plane_host';
@@ -9,13 +9,15 @@ import { Logger, loggers } from '#self/lib/loggers';
 import { DaprAdaptor } from '#self/delegate/dapr_adaptor';
 
 export class DataPlane extends Base {
+  config: Config;
   logger: Logger;
   host: DataPlaneHost;
   dataFlowController: DataFlowController;
 
-  constructor(private config: Config) {
+  constructor() {
     super();
     dumpConfig('data', config);
+    this.config = config;
 
     this.logger = loggers.get('data plane');
     const sockPath = path.join(

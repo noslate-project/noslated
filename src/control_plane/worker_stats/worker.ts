@@ -1,4 +1,4 @@
-import { TurfContainerStates, TurfProcess } from '#self/lib/turf/types';
+import { TurfContainerStates } from '#self/lib/turf/types';
 import type { noslated } from '#self/proto/root';
 import { Config } from '#self/config';
 import {
@@ -49,19 +49,6 @@ class WorkerMetadata {
 }
 
 class Worker {
-  /**
-   * Find ps data via name
-   * @param {TurfPsItem[]} psData The ps data.
-   * @param {string} name The worker name.
-   * @return {TurfPsItem | null} The result.
-   */
-  static findPsData(psData: TurfProcess[], name: string) {
-    for (const data of psData) {
-      if (data.name === name) return data;
-    }
-    return null;
-  }
-
   /**
    * Underlying turf container.
    */
@@ -148,7 +135,6 @@ class Worker {
   #readyDeferred: Deferred<void>;
   #initializationTimeout: number;
 
-  #config;
   logger: WorkerLogger;
   requestId: string | undefined;
   readyTimeout: NodeJS.Timeout | undefined;
@@ -166,8 +152,6 @@ class Worker {
     config: Config,
     initializationTimeout?: number
   ) {
-    this.#config = config;
-
     this.disposable = workerMetadata.disposable;
     this.#name = workerMetadata.processName!;
     this.#credential = workerMetadata.credential ?? null;
@@ -282,10 +266,6 @@ class Worker {
    * @param psData The turf ps data.
    */
   sync(data: WorkerStats | null) {
-    if (data === null) {
-      this.logger.syncWithNull();
-    }
-
     this.#data = data ? new WorkerAdditionalData(data) : null;
   }
 

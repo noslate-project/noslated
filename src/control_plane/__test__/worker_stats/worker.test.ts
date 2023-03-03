@@ -623,14 +623,6 @@ describe(common.testName(__filename), () => {
       )!;
     });
 
-    afterEach(async () => {
-      await stateManager.workerStatsSnapshot.unregister(
-        'func1',
-        'worker1',
-        false
-      );
-    });
-
     it('should worker ready after initializer handler success', async () => {
       const now = performance.now();
 

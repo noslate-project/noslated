@@ -117,30 +117,6 @@ export class WorkerStatsSnapshot extends BaseOf(EventEmitter) {
     return broker.register(workerMetadata);
   }
 
-  /**
-   * TODO: resource manager
-   * Unregister worker.
-   * @param {string} funcName The function name.
-   * @param {string} processName The process name (worker name).
-   * @param {boolean} isInspector Whether it's using inspector or not.
-   */
-  async unregister(
-    funcName: string,
-    processName: string,
-    isInspector: boolean
-  ) {
-    const brokerKey = Broker.getKey(funcName, isInspector);
-    const broker = this.brokers.get(brokerKey);
-    if (!broker) return;
-    // TODO: resource manager
-    await broker.unregister(processName);
-
-    /* istanbul ignore else */
-    if (!broker.workerCount) {
-      this.brokers.delete(brokerKey);
-    }
-  }
-
   toProtobufObject(): root.noslated.data.IBrokerStats[] {
     return [...this.brokers.values()].map(broker => ({
       name: broker.name,

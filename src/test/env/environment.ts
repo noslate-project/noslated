@@ -1,4 +1,3 @@
-import { config } from '#self/config';
 import { TurfContainerManager } from '#self/control_plane/container/turf_container_manager';
 import { ControlPlane } from '#self/control_plane/index';
 import { DataPlane } from '#self/data_plane/index';
@@ -76,7 +75,7 @@ export class DefaultEnvironment extends MochaEnvironment {
       this.clock = systemClock;
     }
 
-    this.data = new DataPlane(config);
+    this.data = new DataPlane();
 
     this.control = new ControlPlane({
       clock: this.clock,
