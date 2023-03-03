@@ -8,6 +8,7 @@ import { testWorker } from '#self/test/util';
 import { config } from '#self/config';
 import { DefaultEnvironment } from '#self/test/env/environment';
 import { WorkerMetadata } from '../worker_stats';
+import { WorkerStoppedEvent } from '../events';
 
 const sleep = require('#self/lib/util').sleep;
 
@@ -552,4 +553,33 @@ describe(common.testName(__filename), function () {
       });
     });
   }
+
+  describe('should stop worker when initialization timed out', () => {
+    const env = new DefaultEnvironment();
+
+    it('test', async () => {
+      await env.agent.setFunctionProfile([
+        {
+          name: 'aworker_init',
+          runtime: 'aworker',
+          url: `file://${baselineDir}/aworker_init`,
+          sourceFile: 'timeout.js',
+          signature: 'md5:234234',
+        },
+      ]);
+
+      const stoppedFuture = env.control._ctx
+        .getInstance('eventBus')
+        .once(WorkerStoppedEvent);
+      await assert.rejects(
+        env.agent.invoke('aworker_init', Buffer.from(''), {
+          method: 'GET',
+        }),
+        /Timeout for waiting worker/
+      );
+
+      const event = await stoppedFuture;
+      assert.strictEqual(event.data.functionName, 'aworker_init');
+    });
+  });
 });

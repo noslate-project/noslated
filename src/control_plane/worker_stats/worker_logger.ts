@@ -50,10 +50,6 @@ export class WorkerLogger {
     );
   }
 
-  syncWithNull() {
-    this.logger.debug('Sync with null.');
-  }
-
   statusSwitchTo(statusTo: ContainerStatus, reason: string, level?: LogLevels) {
     this.logger[level ?? 'info'](
       'switch worker container status to [%s], because %s.',

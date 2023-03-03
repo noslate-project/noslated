@@ -124,22 +124,6 @@ class Broker {
   }
 
   /**
-   * Unregister worker.
-   * @param name The process name (worker name).
-   * @param destroy Whether it should be destroyed by turf.
-   */
-  async unregister(name: string) {
-    const worker = this.workers.get(name);
-    this.workers.delete(name);
-    this.removeItemFromStartingPool(name);
-
-    // TODO: resource manager cleanup
-    await worker?.container?.destroy().catch((e: unknown) => {
-      this.logger.warn(`Failed to destroy worker ${name} in unregistering.`, e);
-    });
-  }
-
-  /**
    * Remove item from starting pool.
    * @param {string} processName The process name (worker name).
    */
@@ -271,26 +255,27 @@ class Broker {
   }
 
   /**
-   * Sync from data plane and turf ps.
+   * Sync from data plane.
    * @param workers The workers.
    */
   sync(workers: WorkerStats[]) {
-    this.data = this.profiles?.get(this.name)?.toJSON(true) || null;
+    this.data = this.profiles.get(this.name)?.toJSON(true) || null;
 
-    /**
-     * @type {Map<string, Worker>}
-     */
-    const newMap = new Map();
+    const newMap: Map<string, Worker> = new Map();
     for (const item of workers) {
-      const worker = this.workers.get(item.name!);
+      const name = item.name;
+      if (name == null) {
+        continue;
+      }
+      const worker = this.workers.get(name);
       if (!worker) {
         // 一切以 Control Plane 已存在数据为准
         continue;
       }
 
       worker.sync(item);
-      newMap.set(item.name, worker);
-      this.workers.delete(item.name!);
+      newMap.set(name, worker);
+      this.workers.delete(name);
     }
 
     for (const item of this.workers.values()) {
@@ -300,7 +285,7 @@ class Broker {
 
     // 将已启动完成、失败的从 `startingPool` 中移除
     for (const startingName of [...this.startingPool.keys()]) {
-      const worker = newMap.get(startingName);
+      const worker = newMap.get(startingName)!;
       if (!worker.isInitializating()) {
         this.logger.debug(
           '%s removed from starting pool due to status ' + '[%s] - [%s]',
@@ -317,9 +302,9 @@ class Broker {
         /* istanbul ignore next */
         if (!item) continue;
 
-        item.maxActivateRequests = worker.data.maxActivateRequests;
+        item.maxActivateRequests = worker.data.maxActivateRequests!;
         item.estimateRequestLeft =
-          worker.data.maxActivateRequests - worker.data.activeRequestCount;
+          worker.data.maxActivateRequests! - worker.data.activeRequestCount!;
       }
     }
 
