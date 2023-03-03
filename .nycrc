@@ -1,0 +1,11 @@
+{
+  "include": [
+    "src",
+    "build"
+  ],
+  "exclude": [
+    "src/proto",
+    "**/__test__",
+    "src/test"
+  ]
+}

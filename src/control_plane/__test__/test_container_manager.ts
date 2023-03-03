@@ -12,10 +12,7 @@ import {
 } from '../container/container_manager';
 import SPEC from '../../lib/json/spec.template.json';
 import { Broker, WorkerStatsSnapshot } from '../worker_stats';
-import { loggers } from '#self/lib/loggers';
-import { createDeferred, Deferred, sleep } from '#self/lib/util';
-
-const logger = loggers.get('test-container');
+import { createDeferred, Deferred } from '#self/lib/util';
 
 export class TestContainerManager implements ContainerManager {
   containers = new Map<string, TestContainer>();
@@ -71,8 +68,8 @@ export class SimpleContainer implements Container {
 
   pendingStatus = TurfContainerStates.init;
   private killed = false;
-  terminated: Promise<void>;
-  private terminatedDeferred: Deferred<void>;
+  terminated: Promise<TurfState | null>;
+  private terminatedDeferred: Deferred<TurfState | null>;
 
   constructor(
     readonly name: string,
@@ -96,7 +93,6 @@ export class SimpleContainer implements Container {
     this.clock.setTimeout(() => {
       this.killed = true;
       this.pendingStatus = TurfContainerStates.stopped;
-      this.terminatedDeferred.resolve();
     }, 10);
   }
 
@@ -133,23 +129,6 @@ export class SimpleContainer implements Container {
     return s;
   }
 
-  async delete(): Promise<void> {
-    if (
-      this.status !== TurfContainerStates.stopped &&
-      this.pendingStatus !== TurfContainerStates.stopped
-    ) {
-      throw new Error('Container still running');
-    }
-    logger.debug('delete container %s', this.name);
-  }
-
-  async destroy(): Promise<void> {
-    await this.stop();
-    // TODO: destroy should be removed.
-    await sleep(10, this.clock);
-    await this.delete();
-  }
-
   updateStatus(pendingStatus?: TurfContainerStates) {
     if (pendingStatus) {
       this.pendingStatus = pendingStatus;
@@ -158,8 +137,18 @@ export class SimpleContainer implements Container {
       return;
     }
     this.status = this.pendingStatus;
+    if (
+      [TurfContainerStates.stopped, TurfContainerStates.unknown].includes(
+        this.status
+      )
+    ) {
+      this._onStopped();
+      this.terminatedDeferred.resolve(this.state());
+    }
     this.onstatuschanged?.();
   }
+
+  _onStopped() {}
 
   onstatuschanged?: () => void;
 }
@@ -174,8 +163,7 @@ export class TestContainer extends SimpleContainer {
     super(name, bundlePath, spec, manager.clock);
   }
 
-  async delete() {
-    await super.delete();
+  _onStopped() {
     this.manager.containers.delete(this.name);
   }
 }
@@ -193,7 +181,7 @@ export class NoopContainer implements Container {
 
   readonly name = 'noop_container';
   readonly status = TurfContainerStates.unknown;
-  terminated: Promise<void> = Promise.resolve();
+  terminated: Promise<null> = Promise.resolve(null);
 }
 
 export function registerContainers(

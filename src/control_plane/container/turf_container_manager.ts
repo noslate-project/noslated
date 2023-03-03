@@ -22,6 +22,10 @@ import { DependencyContext } from '#self/lib/dependency_context';
 import { ConfigContext } from '../deps';
 
 const TurfStopRetryableCodes = [TurfCode.EAGAIN];
+const TurfStoppedStates = [
+  TurfContainerStates.stopped,
+  TurfContainerStates.unknown,
+];
 
 export class TurfContainerManager implements ContainerManager {
   private config: Config;
@@ -127,8 +131,8 @@ export class TurfContainer implements Container {
   pid?: number;
   status: TurfContainerStates;
   onstatuschanged?: () => void;
-  terminated: Promise<void>;
-  terminatedDeferred: Deferred<void>;
+  terminated: Promise<TurfState | null>;
+  terminatedDeferred: Deferred<TurfState | null>;
 
   constructor(
     private client: Turf,
@@ -137,7 +141,7 @@ export class TurfContainer implements Container {
     public name: string
   ) {
     this.status = TurfContainerStates.init;
-    this.terminatedDeferred = createDeferred<void>();
+    this.terminatedDeferred = createDeferred();
     this.terminated = this.terminatedDeferred.promise;
   }
 
@@ -166,15 +170,6 @@ export class TurfContainer implements Container {
     }
   }
 
-  async delete() {
-    await this.client.delete(this.name);
-  }
-
-  async destroy() {
-    await this.stop();
-    await this.delete();
-  }
-
   async state(): Promise<TurfState> {
     const state = await this.client.state(this.name);
     this.stateUpdate(state);
@@ -186,10 +181,35 @@ export class TurfContainer implements Container {
       return;
     }
     this.status = newStatus;
-    if (this.status === TurfContainerStates.stopped) {
-      this.terminatedDeferred.resolve();
+    if (TurfStoppedStates.includes(newStatus)) {
+      this._onStopped();
     }
-    this.onstatuschanged?.();
+    try {
+      this.onstatuschanged?.();
+    } catch (err) {
+      this.logger.error(
+        'unexpected error on onstatuschanged %s',
+        this.name,
+        err
+      );
+    }
+  }
+
+  private async _onStopped() {
+    let state: TurfState | null = null;
+    try {
+      state = await this.client.state(this.name);
+    } catch (err) {
+      this.logger.error('unexpected error on state %s', this.name, err);
+    }
+
+    try {
+      await this.client.delete(this.name);
+    } catch (err) {
+      this.logger.error('unexpected error on delete %s', this.name, err);
+    }
+
+    this.terminatedDeferred.resolve(state);
   }
 
   private stateUpdate(report: TurfState) {

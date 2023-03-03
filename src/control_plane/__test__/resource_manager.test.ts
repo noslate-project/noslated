@@ -39,7 +39,6 @@ describe(testName(__filename), () => {
     const spyFs = sinon.spy(fs, 'rm');
     await ctx.getInstance('eventBus').publish(
       new WorkerStoppedEvent({
-        emitExceptionMessage: undefined,
         state: null,
         runtimeType: 'aworker',
         functionName: 'foobar',

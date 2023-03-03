@@ -40,7 +40,6 @@ export class WorkerStatusReportEvent extends Event {
 }
 
 interface WorkerStoppedData {
-  emitExceptionMessage: string | undefined;
   state: TurfState | null;
   runtimeType: RuntimeType;
   functionName: string;

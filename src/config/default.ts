@@ -54,6 +54,7 @@ export default {
     socketPath: path.join(projectRoot, '.turf/turf.sock'),
     socketSession: true,
     gracefulExitPeriodMs: 3000,
+    reconcilingInterval: 1000,
   },
 
   delegate: {

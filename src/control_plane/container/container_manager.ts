@@ -19,21 +19,13 @@ export interface Container {
   start(options?: ContainerStartOptions): Promise<void>;
   stop(): Promise<void>;
   state(): Promise<TurfState>;
-  /**
-   * @deprecated remove delete. The container should be deleted once the status is stopped.
-   */
-  delete(): Promise<void>;
-  /**
-   * @deprecated remove destroy. The container should be deleted once the status is stopped.
-   */
-  destroy(): Promise<void>;
 
   onstatuschanged?: () => void;
 
   readonly pid?: number;
   readonly name: string;
   readonly status: TurfContainerStates;
-  readonly terminated: Promise<void>;
+  readonly terminated: Promise<TurfState | null>;
 }
 
 /**
