@@ -26,6 +26,10 @@ import { registerWorkers } from '../util';
 import { DependencyContext } from '#self/lib/dependency_context';
 import { EventBus } from '#self/lib/event-bus';
 import { once } from 'events';
+import {
+  ContainerReconciler,
+  ReconcilerContext,
+} from '#self/control_plane/container/reconciler';
 
 describe(common.testName(__filename), () => {
   const funcData: AworkerFunctionProfile[] = [
@@ -97,19 +101,29 @@ describe(common.testName(__filename), () => {
   });
 
   describe('WorkerStatsSnapshot', () => {
+    let ctx: DependencyContext<
+      ReconcilerContext & { containerReconciler: ContainerReconciler }
+    >;
     let testContainerManager: TestContainerManager;
     let workerStatsSnapshot: WorkerStatsSnapshot;
     let clock: common.TestClock;
 
     beforeEach(async () => {
+      ctx = new DependencyContext();
       clock = common.createTestClock({
         shouldAdvanceTime: true,
       });
+      ctx.bindInstance('clock', clock);
       testContainerManager = new TestContainerManager(clock);
+      ctx.bindInstance('containerManager', testContainerManager);
+      ctx.bindInstance('config', config);
+      ctx.bind('containerReconciler', ContainerReconciler);
+      await ctx.bootstrap();
       workerStatsSnapshot = new WorkerStatsSnapshot(profileManager, config);
       await workerStatsSnapshot.ready();
     });
     afterEach(async () => {
+      await ctx.dispose();
       await workerStatsSnapshot.close();
       clock.uninstall();
     });
@@ -877,9 +891,7 @@ describe(common.testName(__filename), () => {
         assert(testContainerManager.getContainer('foooo') == null);
 
         {
-          const [emitExceptionMessage /* state */, , broker, worker] =
-            await workerStoppedFuture;
-          assert.ok(emitExceptionMessage == null);
+          const [, /* state */ broker, worker] = await workerStoppedFuture;
           assert.strictEqual(worker.name, 'foooo');
         }
 
@@ -905,9 +917,7 @@ describe(common.testName(__filename), () => {
         assert(testContainerManager.getContainer('hello') == null);
 
         {
-          const [emitExceptionMessage /* state */, , broker, worker] =
-            await workerStoppedFuture;
-          assert.ok(emitExceptionMessage == null);
+          const [, /* state */ broker, worker] = await workerStoppedFuture;
           assert.strictEqual(worker.name, 'hello');
         }
 

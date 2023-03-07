@@ -6,7 +6,6 @@ import { Logger } from '#self/lib/loggers';
 import { Worker, WorkerMetadata } from './worker';
 import { FunctionProfileManager } from '#self/lib/function_profile';
 import { Config } from '#self/config';
-import { TurfState } from '#self/lib/turf/types';
 import * as root from '#self/proto/root';
 import { ContainerStatus } from '#self/lib/constants';
 import { StatLogger } from './stat_logger';
@@ -168,9 +167,6 @@ export class WorkerStatsSnapshot extends BaseOf(EventEmitter) {
       worker.containerStatus === ContainerStatus.Stopped ||
       worker.containerStatus === ContainerStatus.Unknown
     ) {
-      let state;
-      let emitExceptionMessage;
-
       try {
         await worker.container!.stop();
       } catch (e) {
@@ -180,8 +176,8 @@ export class WorkerStatsSnapshot extends BaseOf(EventEmitter) {
         );
       }
 
-      try {
-        state = (await worker.container!.state()) as TurfState;
+      const state = await worker.container!.terminated;
+      if (state) {
         const stime = state['rusage.stime'] ?? 0;
         const utime = state['rusage.utime'] ?? 0;
         //TODO(yilong.lyl): fix typo @zl131478
@@ -196,27 +192,11 @@ export class WorkerStatsSnapshot extends BaseOf(EventEmitter) {
           rss,
           worker.requestId ?? null
         );
-
-        this.logger.info("%s's last state: %j", worker.name, state);
-      } catch (e) {
-        emitExceptionMessage = 'failed_to_state';
-        this.logger.warn('Failed to state worker [%s]', worker.name, e);
       }
 
+      this.logger.info("%s's last state: %j", worker.name, state);
       broker.removeItemFromStartingPool(worker.name);
-      this.emit('workerStopped', emitExceptionMessage, state, broker, worker);
-
-      try {
-        // 清理 turf 数据
-        await worker.container!.terminated;
-        await worker.container!.delete();
-      } catch (e) {
-        this.logger.warn(
-          'Failed to delete worker [%s] via `.#tryGC()`.',
-          worker.name,
-          e
-        );
-      }
+      this.emit('workerStopped', state, broker, worker);
 
       broker.workers.delete(worker.name);
     }

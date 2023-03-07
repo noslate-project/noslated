@@ -9,31 +9,27 @@ export interface ContainerManager {
   ready(): Promise<void>;
   close(): Promise<void>;
 
-  create(name: string, bundlePath: string, spec: TurfSpec): Promise<Container>;
+  spawn(
+    name: string,
+    bundlePath: string,
+    spec: TurfSpec,
+    options?: ContainerStartOptions
+  ): Promise<Container>;
   getContainer(name: string): Container | null;
   list(): Container[];
   reconcileContainers(): Promise<void>;
 }
 
 export interface Container {
-  start(options?: ContainerStartOptions): Promise<void>;
   stop(): Promise<void>;
   state(): Promise<TurfState>;
-  /**
-   * @deprecated remove delete. The container should be deleted once the status is stopped.
-   */
-  delete(): Promise<void>;
-  /**
-   * @deprecated remove destroy. The container should be deleted once the status is stopped.
-   */
-  destroy(): Promise<void>;
 
   onstatuschanged?: () => void;
 
   readonly pid?: number;
   readonly name: string;
   readonly status: TurfContainerStates;
-  readonly terminated: Promise<void>;
+  readonly terminated: Promise<TurfState | null>;
 }
 
 /**

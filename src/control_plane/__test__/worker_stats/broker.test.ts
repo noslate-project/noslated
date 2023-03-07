@@ -20,10 +20,8 @@ import {
   ControlPlaneEvent,
   TurfStatusEvent,
 } from '#self/lib/constants';
-import sinon from 'sinon';
 import { sleep } from '#self/lib/util';
 import {
-  NoopContainer,
   registerBrokerContainers,
   TestContainerManager,
 } from '../test_container_manager';

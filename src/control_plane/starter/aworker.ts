@@ -118,7 +118,8 @@ export class AworkerStarter extends BaseStarter {
         ].includes(status.state)
       ) {
         needStart = true;
-        await this.seedContainer?.destroy();
+        await this.seedContainer?.stop();
+        await this.seedContainer?.terminated;
         if (this.closed) return;
       }
 
@@ -164,7 +165,7 @@ export class AworkerStarter extends BaseStarter {
     }
 
     try {
-      await this.seedContainer?.destroy();
+      await this.seedContainer?.stop();
     } catch (e) {
       this.logger.warn(e);
     }

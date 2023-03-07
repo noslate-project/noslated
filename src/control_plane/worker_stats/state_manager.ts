@@ -19,6 +19,7 @@ export class StateManager extends Base {
   config: Config;
   functionProfile;
   containerManager;
+  reconciler;
   workerStatsSnapshot: WorkerStatsSnapshot;
 
   constructor(ctx: ControlPlaneDependencyContext) {
@@ -26,6 +27,7 @@ export class StateManager extends Base {
     this.logger = loggers.get('state manager');
     this.functionProfile = ctx.getInstance('functionProfile');
     this.containerManager = ctx.getInstance('containerManager');
+    this.reconciler = ctx.getInstance('containerReconciler');
     this.config = ctx.getInstance('config');
 
     this.workerStatsSnapshot = new WorkerStatsSnapshot(
@@ -36,14 +38,8 @@ export class StateManager extends Base {
 
     this.workerStatsSnapshot.on(
       'workerStopped',
-      (
-        emitExceptionMessage: string | undefined,
-        state: TurfState | null,
-        broker: Broker,
-        worker: Worker
-      ) => {
+      (state: TurfState | null, broker: Broker, worker: Worker) => {
         const event = new WorkerStoppedEvent({
-          emitExceptionMessage,
           state,
           functionName: broker.name,
           runtimeType: broker.data?.runtime!,
@@ -157,7 +153,7 @@ export class StateManager extends Base {
   }
 
   async syncWorkerData(data: root.noslated.data.IBrokerStats[]) {
-    await this.containerManager.reconcileContainers();
+    await this.reconciler.reconcile();
     this.workerStatsSnapshot.sync(data);
     await this.workerStatsSnapshot.correct();
   }

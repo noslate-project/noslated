@@ -76,11 +76,7 @@ export class WorkerTelemetry {
   }
 
   onWorkerStopped = (event: WorkerStoppedEvent) => {
-    const { emitExceptionMessage, state, functionName, runtimeType } =
-      event.data;
-    if (emitExceptionMessage) {
-      return;
-    }
+    const { state, functionName, runtimeType } = event.data;
     if (runtimeType == null) {
       return;
     }

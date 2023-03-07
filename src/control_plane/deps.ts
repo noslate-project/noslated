@@ -11,6 +11,7 @@ import { Meter } from '@opentelemetry/api';
 import { CapacityManager } from './capacity_manager';
 import { CodeManager } from './code_manager';
 import { ContainerManager } from './container/container_manager';
+import { ContainerReconciler } from './container/reconciler';
 import { TurfContainerManager } from './container/turf_container_manager';
 import {
   DefaultController,
@@ -32,6 +33,8 @@ export type ControlPlaneDeps = {
   clock: Clock;
   eventBus: EventBus;
   containerManager: ContainerManager;
+  containerReconciler: ContainerReconciler;
+
   meter: Meter;
   dataPlaneClientManager: DataPlaneClientManager;
   herald: Herald;
@@ -73,6 +76,7 @@ export class ControlPlaneDependencyContext extends DependencyContext<
     );
 
     this.bindInstance('eventBus', new EventBus(events));
+    this.bind('containerReconciler', ContainerReconciler);
     this.bind('herald', Herald);
     this.bind('codeManager', CodeManager);
     this.bind('functionProfile', FunctionProfileManager);

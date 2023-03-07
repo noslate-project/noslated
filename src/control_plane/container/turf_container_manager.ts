@@ -22,6 +22,10 @@ import { DependencyContext } from '#self/lib/dependency_context';
 import { ConfigContext } from '../deps';
 
 const TurfStopRetryableCodes = [TurfCode.EAGAIN];
+const TurfStoppedStates = [
+  TurfContainerStates.stopped,
+  TurfContainerStates.unknown,
+];
 
 export class TurfContainerManager implements ContainerManager {
   private config: Config;
@@ -45,10 +49,11 @@ export class TurfContainerManager implements ContainerManager {
     await this.client.close();
   }
 
-  async create(
+  async spawn(
     name: string,
     bundlePath: string,
-    spec: TurfSpec
+    spec: TurfSpec,
+    options?: ContainerStartOptions
   ): Promise<Container> {
     const runLogDir = this.config.logger.dir;
     const logPath = workerLogPath(runLogDir, name);
@@ -60,12 +65,28 @@ export class TurfContainerManager implements ContainerManager {
       await this.client.create(name, bundlePath);
     });
 
-    const container = new TurfContainer(
-      this.client,
-      logPath,
-      this.logger,
-      name
-    );
+    const startOptions: TurfStartOptions = {
+      stdout: path.join(logPath, 'stdout.log'),
+      stderr: path.join(logPath, 'stderr.log'),
+    };
+    if (options?.seed) startOptions.seed = options.seed;
+
+    this.logger.info('turf start (%s)', name);
+    // TODO: retrieve pid immediately.
+    try {
+      await this.client.start(name, startOptions);
+    } catch (e) {
+      await this.client.delete(name).catch(e => {
+        this.logger.error(
+          'failed to delete container %s when it failed to start',
+          name,
+          e
+        );
+      });
+      throw e;
+    }
+
+    const container = new TurfContainer(this, name);
     this.containers.set(name, container);
     return container;
   }
@@ -124,32 +145,20 @@ export class TurfContainerManager implements ContainerManager {
 }
 
 export class TurfContainer implements Container {
+  private client: Turf;
+  private logger: Logger;
   pid?: number;
   status: TurfContainerStates;
   onstatuschanged?: () => void;
-  terminated: Promise<void>;
-  terminatedDeferred: Deferred<void>;
+  terminated: Promise<TurfState | null>;
+  terminatedDeferred: Deferred<TurfState | null>;
 
-  constructor(
-    private client: Turf,
-    private logPath: string,
-    private logger: Logger,
-    public name: string
-  ) {
+  constructor(private manager: TurfContainerManager, public name: string) {
+    this.client = manager.client;
+    this.logger = manager['logger'];
     this.status = TurfContainerStates.init;
-    this.terminatedDeferred = createDeferred<void>();
+    this.terminatedDeferred = createDeferred();
     this.terminated = this.terminatedDeferred.promise;
-  }
-
-  async start(options?: ContainerStartOptions) {
-    const startOptions: TurfStartOptions = {
-      stdout: path.join(this.logPath, 'stdout.log'),
-      stderr: path.join(this.logPath, 'stderr.log'),
-    };
-    if (options?.seed) startOptions.seed = options.seed;
-    this.logger.info('turf start (%s)', this.name);
-    // TODO: retrieve pid immediately.
-    await this.client.start(this.name, startOptions);
   }
 
   async stop() {
@@ -166,15 +175,6 @@ export class TurfContainer implements Container {
     }
   }
 
-  async delete() {
-    await this.client.delete(this.name);
-  }
-
-  async destroy() {
-    await this.stop();
-    await this.delete();
-  }
-
   async state(): Promise<TurfState> {
     const state = await this.client.state(this.name);
     this.stateUpdate(state);
@@ -186,10 +186,36 @@ export class TurfContainer implements Container {
       return;
     }
     this.status = newStatus;
-    if (this.status === TurfContainerStates.stopped) {
-      this.terminatedDeferred.resolve();
+    if (TurfStoppedStates.includes(newStatus)) {
+      this._onStopped();
     }
-    this.onstatuschanged?.();
+    try {
+      this.onstatuschanged?.();
+    } catch (err) {
+      this.logger.error(
+        'unexpected error on onstatuschanged %s',
+        this.name,
+        err
+      );
+    }
+  }
+
+  private async _onStopped() {
+    let state: TurfState | null = null;
+    try {
+      state = await this.client.state(this.name);
+    } catch (err) {
+      this.logger.error('unexpected error on state %s', this.name, err);
+    }
+
+    try {
+      await this.client.delete(this.name);
+    } catch (err) {
+      this.logger.error('unexpected error on delete %s', this.name, err);
+    }
+
+    this.manager['containers'].delete(this.name);
+    this.terminatedDeferred.resolve(state);
   }
 
   private stateUpdate(report: TurfState) {
