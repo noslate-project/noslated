@@ -9,14 +9,18 @@ export interface ContainerManager {
   ready(): Promise<void>;
   close(): Promise<void>;
 
-  create(name: string, bundlePath: string, spec: TurfSpec): Promise<Container>;
+  spawn(
+    name: string,
+    bundlePath: string,
+    spec: TurfSpec,
+    options?: ContainerStartOptions
+  ): Promise<Container>;
   getContainer(name: string): Container | null;
   list(): Container[];
   reconcileContainers(): Promise<void>;
 }
 
 export interface Container {
-  start(options?: ContainerStartOptions): Promise<void>;
   stop(): Promise<void>;
   state(): Promise<TurfState>;
 

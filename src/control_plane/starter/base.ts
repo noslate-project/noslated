@@ -273,11 +273,13 @@ export abstract class BaseStarter extends Base {
       spec.linux.resources.memory.limit *= 100;
     }
 
-    const [container] = await Promise.all([
-      this.containerManager.create(name, bundlePath, spec),
-      this.resourceManager.makeWorkerDirs(name, options.mkdirs ?? []),
-    ]);
-    await container.start(options);
+    await this.resourceManager.makeWorkerDirs(name, options.mkdirs ?? []);
+    const container = await this.containerManager.spawn(
+      name,
+      bundlePath,
+      spec,
+      options
+    );
     return container;
   }
 

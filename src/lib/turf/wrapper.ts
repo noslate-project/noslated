@@ -122,10 +122,7 @@ export class Turf {
       );
     });
     if (ret.header.code !== 0) {
-      const err = new Error(
-        `Turf response with non-zero code(${ret.header.code})`
-      );
-      err.code = ret.header.code;
+      const err = new TurfError(ret.header.code, args);
       throw err;
     }
   }
@@ -233,5 +230,12 @@ export class Turf {
     }, {} as Record<string, string | number>);
 
     return obj as unknown as TurfState;
+  }
+}
+
+export class TurfError extends Error {
+  name = 'TurfError';
+  constructor(public code: number, public args: string[]) {
+    super(`Turf response with non-zero code(${code})`);
   }
 }

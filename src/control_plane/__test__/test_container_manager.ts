@@ -5,11 +5,7 @@ import {
   TurfSpec,
   TurfState,
 } from '#self/lib/turf/types';
-import {
-  Container,
-  ContainerManager,
-  ContainerStartOptions,
-} from '../container/container_manager';
+import { Container, ContainerManager } from '../container/container_manager';
 import SPEC from '../../lib/json/spec.template.json';
 import { Broker, WorkerStatsSnapshot } from '../worker_stats';
 import { createDeferred, Deferred } from '#self/lib/util';
@@ -33,7 +29,7 @@ export class TestContainerManager implements ContainerManager {
     }
   }
 
-  async create(
+  async spawn(
     name: string,
     bundlePath: string,
     spec: TurfSpec
@@ -79,9 +75,6 @@ export class SimpleContainer implements Container {
   ) {
     this.terminatedDeferred = createDeferred();
     this.terminated = this.terminatedDeferred.promise;
-  }
-
-  async start(options?: ContainerStartOptions): Promise<void> {
     this.pendingStatus = TurfContainerStates.starting;
     this.clock.setTimeout(() => {
       this.pendingStatus = TurfContainerStates.running;
