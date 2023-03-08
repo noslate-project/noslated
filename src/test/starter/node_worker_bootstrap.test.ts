@@ -20,14 +20,11 @@ const cases = [
     },
     input: {
       data: Buffer.from(''),
-      metadata: {
-        timeout: 5000,
-      },
     },
     expect: {
       error: {
         // TODO: 终态为 /Noslated request failed with CanonicalCode::INTERNAL_ERROR/
-        message: /Timeout for waiting worker in 5000ms/,
+        message: /stopped unexpected after start/,
       },
     },
     attachError: {
@@ -69,14 +66,11 @@ const cases = [
     },
     input: {
       data: Buffer.from(''),
-      metadata: {
-        timeout: 5000,
-      },
     },
     expect: {
       error: {
         // TODO: 终态为 /Noslated request failed with CanonicalCode::INTERNAL_ERROR/
-        message: /Timeout for waiting worker in 5000ms/,
+        message: /stopped unexpected after start/,
       },
     },
     attachError: {

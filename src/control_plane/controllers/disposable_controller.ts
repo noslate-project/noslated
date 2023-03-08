@@ -1,6 +1,6 @@
 import { performance } from 'perf_hooks';
 import { Logger, loggers } from '#self/lib/loggers';
-import { ContainerStatus, ContainerStatusReport } from '#self/lib/constants';
+import { WorkerStatus, WorkerStatusReport } from '#self/lib/constants';
 import { WorkerStatusReportEvent } from '../events';
 import { BaseController } from './base_controller';
 import { ControlPlaneDependencyContext } from '../deps';
@@ -39,8 +39,8 @@ export class DisposableController extends BaseController {
     }
 
     if (
-      event === ContainerStatusReport.RequestDrained &&
-      worker.containerStatus === ContainerStatus.Stopped &&
+      event === WorkerStatusReport.RequestDrained &&
+      worker.workerStatus === WorkerStatus.Stopped &&
       worker.disposable
     ) {
       // wait next sync to gc worker data and related resources
@@ -52,14 +52,14 @@ export class DisposableController extends BaseController {
         .then(() => {
           this.logger.info(
             `stop worker [${worker.name}] because container status is [${
-              ContainerStatus[worker.containerStatus]
+              WorkerStatus[worker.workerStatus]
             }] and disposable=true, cost: ${performance.now() - now}.`
           );
         })
         .catch(error => {
           this.logger.error(
             `stop worker [${worker.name}] because container status is [${
-              ContainerStatus[worker.containerStatus]
+              WorkerStatus[worker.workerStatus]
             }] and disposable=true failed, wait sync to gc, cost: ${
               performance.now() - now
             }.`,

@@ -19,7 +19,7 @@ import { Config } from '#self/config';
 import * as root from '#self/proto/root';
 import { kMemoryLimit } from '#self/control_plane/constants';
 import { performance } from 'perf_hooks';
-import { ContainerStatusReport, kDefaultRequestId } from '#self/lib/constants';
+import { WorkerStatusReport, kDefaultRequestId } from '#self/lib/constants';
 import { DataPlaneHost } from './data_plane_host';
 
 export enum RequestQueueStatus {
@@ -421,7 +421,7 @@ export class WorkerBroker extends Base {
       functionName: this.name,
       isInspector: this.options.inspect === true,
       name: worker.name,
-      event: ContainerStatusReport.RequestDrained,
+      event: WorkerStatusReport.RequestDrained,
       requestId,
     });
   }
@@ -623,7 +623,7 @@ export class WorkerBroker extends Base {
         functionName: this.name,
         isInspector: this.options.inspect === true,
         name: worker.name,
-        event: ContainerStatusReport.ContainerInstalled,
+        event: WorkerStatusReport.ContainerInstalled,
       });
     } catch (e: any) {
       this.logger.debug('Unexpected error on invokeing initializer', e.message);

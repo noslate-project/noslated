@@ -9,15 +9,14 @@ import { BaseOptions } from './starter/base';
 import { CodeManager } from './code_manager';
 import { FunctionProfileManager } from '#self/lib/function_profile';
 import { DataPlaneClientManager } from './data_plane_client/manager';
-import { WorkerMetadata, WorkerStatsSnapshot } from './worker_stats';
-import { kMemoryLimit } from './constants';
+import { WorkerMetadata } from './worker_stats/index';
 import { performance } from 'perf_hooks';
 import { ControlPlaneEvent } from '#self/lib/constants';
 import { Priority, TaskQueue } from '#self/lib/task_queue';
 import { Container } from './container/container_manager';
 import { ControlPlaneDependencyContext } from './deps';
 import { CapacityManager } from './capacity_manager';
-import { TurfContainerStates } from '#self/lib/turf';
+import { StateManager } from './worker_stats/state_manager';
 
 export interface WorkerStarter {
   start(
@@ -31,15 +30,15 @@ export interface WorkerStarter {
 }
 
 export class WorkerLauncher extends Base {
-  logger;
-  config;
+  private logger;
+  private config;
   starters;
-  codeManager: CodeManager;
-  functionProfile: FunctionProfileManager;
-  dataPlaneClientManager: DataPlaneClientManager;
-  capacityManager: CapacityManager;
-  snapshot: WorkerStatsSnapshot;
-  launchQueue: TaskQueue<LaunchTask>;
+  private codeManager: CodeManager;
+  private functionProfile: FunctionProfileManager;
+  private dataPlaneClientManager: DataPlaneClientManager;
+  private capacityManager: CapacityManager;
+  private stateManager: StateManager;
+  private launchQueue: TaskQueue<LaunchTask>;
 
   constructor(ctx: ControlPlaneDependencyContext) {
     super();
@@ -47,8 +46,8 @@ export class WorkerLauncher extends Base {
     this.codeManager = ctx.getInstance('codeManager');
     this.functionProfile = ctx.getInstance('functionProfile');
     this.dataPlaneClientManager = ctx.getInstance('dataPlaneClientManager');
-    this.snapshot = ctx.getInstance('stateManager').workerStatsSnapshot;
     this.capacityManager = ctx.getInstance('capacityManager');
+    this.stateManager = ctx.getInstance('stateManager');
 
     this.logger = loggers.get('worker launcher');
 
@@ -154,41 +153,16 @@ export class WorkerLauncher extends Base {
     }
 
     const profile = pprofile.toJSON(true);
-    const credential = naming.credential(funcName);
-    const processName = naming.processName(funcName);
-    const { dataPlaneClientManager, capacityManager } = this;
-    const {
-      worker: { replicaCountLimit },
-    } = profile;
-
-    // get broker / virtualMemoryUsed / virtualMemoryPoolSize, etc.
-    const broker = this.snapshot.getOrCreateBroker(
+    this.capacityManager.assertExpandingAllowed(
       funcName,
       !!options.inspect,
-      profile.worker?.disposable
+      disposable,
+      profile
     );
-    if (!broker) {
-      const err = new Error(
-        `No broker named ${funcName}, ${JSON.stringify(options)}`
-      );
-      err.code = ErrorCode.kNoFunction;
-      throw err;
-    }
 
-    const { virtualMemoryUsed, virtualMemoryPoolSize } = capacityManager;
-    const {
-      name,
-      url,
-      signature,
-      resourceLimit: { memory = kMemoryLimit } = {},
-    } = profile;
-    if (virtualMemoryUsed + memory > virtualMemoryPoolSize) {
-      const err = new Error(
-        `No enough virtual memory (used: ${virtualMemoryUsed} + need: ${memory}) > total: ${virtualMemoryPoolSize}`
-      );
-      err.code = ErrorCode.kNoEnoughVirtualMemoryPoolSize;
-      throw err;
-    }
+    const credential = naming.credential(funcName);
+    const processName = naming.processName(funcName);
+    const { name, url, signature } = profile;
 
     let bundlePath;
     try {
@@ -207,29 +181,13 @@ export class WorkerLauncher extends Base {
       throw err;
     }
 
-    // inspect 模式只开启一个
-    if (broker.workerCount && options.inspect) {
-      const err = new Error(
-        `Replica count exceeded limit in inspect mode (${broker.workerCount} / ${replicaCountLimit})`
-      );
-      err.code = ErrorCode.kReplicaLimitExceeded;
-      throw err;
-    }
-
-    if (broker.workerCount >= replicaCountLimit) {
-      const err = new Error(
-        `Replica count exceeded limit (${broker.workerCount} / ${replicaCountLimit})`
-      );
-      err.code = ErrorCode.kReplicaLimitExceeded;
-      throw err;
-    }
-
-    const dataPlane = await dataPlaneClientManager.registerWorkerCredential({
-      funcName,
-      processName,
-      credential,
-      inspect: !!options.inspect,
-    });
+    const dataPlane =
+      await this.dataPlaneClientManager.registerWorkerCredential({
+        funcName,
+        processName,
+        credential,
+        inspect: !!options.inspect,
+      });
     const serverSockPath = (dataPlane as any).getServerSockPath();
 
     const workerMetadata = new WorkerMetadata(
@@ -242,7 +200,8 @@ export class WorkerLauncher extends Base {
       requestId
     );
 
-    const worker = this.snapshot.register(workerMetadata);
+    const worker =
+      this.stateManager.workerStatsSnapshot.register(workerMetadata);
 
     try {
       const now = performance.now();
@@ -257,7 +216,9 @@ export class WorkerLauncher extends Base {
       worker.setContainer(container);
       worker.logger.start(performance.now() - now);
     } catch (e) {
-      worker.switchTo(TurfContainerStates.unknown);
+      worker.updateWorkerStatusByControlPlaneEvent(
+        ControlPlaneEvent.FailedToSpawn
+      );
       throw e;
     }
 

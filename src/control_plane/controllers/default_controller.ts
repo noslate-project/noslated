@@ -9,20 +9,24 @@ import {
   wrapLaunchErrorObject,
 } from '../worker_launcher_error_code';
 import { BaseController } from './base_controller';
-import { WorkerMetadata } from '../worker_stats';
+import { Broker, Worker, WorkerMetadata } from '../worker_stats/index';
 import { ControlPlaneDependencyContext } from '../deps';
 import { DataPlaneClientManager } from '../data_plane_client/manager';
 import { ReservationController } from './reservation_controller';
+import { Config } from '#self/config';
 
 export class DefaultController extends BaseController {
-  logger: Logger;
-  shrinking: boolean;
+  protected logger: Logger;
+
+  private shrinking: boolean;
+  private _config: Config;
   private _capacityManager: CapacityManager;
   private _reservationController: ReservationController;
   private _dataPlaneClientManager: DataPlaneClientManager;
 
   constructor(ctx: ControlPlaneDependencyContext) {
     super(ctx);
+    this._config = ctx.getInstance('config');
     this._capacityManager = ctx.getInstance('capacityManager');
     this._reservationController = ctx.getInstance('reservationController');
     this._dataPlaneClientManager = ctx.getInstance('dataPlaneClientManager');
@@ -186,7 +190,7 @@ export class DefaultController extends BaseController {
       if (broker.disposable) {
         continue;
       }
-      const workers = broker.shrinkDraw(Math.abs(count));
+      const workers = this.shrinkDraw(broker, Math.abs(count));
       shrinkData.push({
         functionName: broker.name,
         inspector: broker.isInspector,
@@ -216,7 +220,12 @@ export class DefaultController extends BaseController {
           broker.inspector!,
           worker.name!
         );
-        if (realWorker?.credential !== worker.credential) continue;
+        if (realWorker == null) continue;
+        if (realWorker.credential !== worker.credential) continue;
+
+        realWorker.updateWorkerStatusByControlPlaneEvent(
+          ControlPlaneEvent.Shrink
+        );
         up.push(worker.name);
         kill.push(this.stopWorker(worker.name!));
       }
@@ -226,5 +235,113 @@ export class DefaultController extends BaseController {
       up
     );
     await Promise.all(kill);
+  }
+
+  /**
+   * Get the most `what` `N` workers.
+   * @param n The N.
+   * @param compareFn The comparation function.
+   * @return The most idle N workers.
+   */
+  private mostWhatNWorkers(
+    broker: Broker,
+    n: number,
+    compareFn: (a: Worker, b: Worker) => number
+  ): { name: string; credential: string }[] {
+    const workers = Array.from(broker.workers.values()).filter(w =>
+      w.isRunning()
+    );
+    const nWorkers = workers.sort(compareFn).slice(0, n);
+
+    return nWorkers.map(w => ({ name: w.name, credential: w.credential! }));
+  }
+
+  /**
+   * Get the most idle N workers.
+   * @param n The N.
+   * @return The most idle N workers.
+   */
+  mostIdleNWorkers(broker: Broker, n: number) {
+    return this.mostWhatNWorkers(broker, n, (a, b) => {
+      if (a.data?.activeRequestCount! < b.data?.activeRequestCount!) {
+        return -1;
+      } else if (a.data?.activeRequestCount! > b.data?.activeRequestCount!) {
+        return 1;
+      }
+      return a.credential! < b.credential! ? -1 : 1;
+    });
+  }
+
+  /**
+   * Get the newest N workers.
+   * @param n The N.
+   * @return The most idle N workers.
+   */
+  newestNWorkers(broker: Broker, n: number) {
+    return this.mostWhatNWorkers(broker, n, (a, b) => {
+      if (a.registerTime > b.registerTime) {
+        return -1;
+      } else if (a.registerTime < b.registerTime) {
+        return 1;
+      }
+      return a.credential! < b.credential! ? -1 : 1;
+    });
+  }
+
+  /**
+   * Get the oldest N workers.
+   * @param n The N.
+   * @return The most idle N workers.
+   */
+  oldestNWorkers(broker: Broker, n: number) {
+    return this.mostWhatNWorkers(broker, n, (a, b) => {
+      if (a.registerTime < b.registerTime) {
+        return -1;
+      } else if (a.registerTime > b.registerTime) {
+        return 1;
+      }
+      return a.credential! < b.credential! ? -1 : 1;
+    });
+  }
+
+  /**
+   * Do shrink draw, choose chosen workers.
+   * @param countToChoose The count to choose.
+   * @return The chosen workers.
+   */
+  shrinkDraw(broker: Broker, countToChoose: number) {
+    let strategy = this._config.worker.defaultShrinkStrategy;
+
+    /* istanbul ignore else */
+    if (broker.data) {
+      strategy =
+        broker.data.worker?.shrinkStrategy ??
+        this._config.worker.defaultShrinkStrategy;
+    }
+
+    let workers = [];
+
+    switch (strategy) {
+      case 'FILO': {
+        workers = this.newestNWorkers(broker, countToChoose);
+        break;
+      }
+      case 'FIFO': {
+        workers = this.oldestNWorkers(broker, countToChoose);
+        break;
+      }
+      case 'LCC':
+      default: {
+        if (strategy !== 'LCC') {
+          this.logger.warn(
+            `Shrink strategy ${strategy} is not supported, fallback to LCC.`
+          );
+        }
+
+        workers = this.mostIdleNWorkers(broker, countToChoose);
+      }
+    }
+
+    return workers;
   }
 }

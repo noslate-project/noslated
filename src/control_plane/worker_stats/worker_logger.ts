@@ -2,8 +2,8 @@ import loggers from '#self/lib/logger';
 import { WorkerMetadata } from './worker';
 import { Logger, LogLevels } from '#self/lib/loggers';
 import {
-  ContainerStatus,
-  ContainerStatusReport,
+  WorkerStatus,
+  WorkerStatusReport,
   ControlPlaneEvent,
   TurfStatusEvent,
 } from '#self/lib/constants';
@@ -50,10 +50,10 @@ export class WorkerLogger {
     );
   }
 
-  statusSwitchTo(statusTo: ContainerStatus, reason: string, level?: LogLevels) {
+  statusSwitchTo(statusTo: WorkerStatus, reason: string, level?: LogLevels) {
     this.logger[level ?? 'info'](
       'switch worker container status to [%s], because %s.',
-      ContainerStatus[statusTo],
+      WorkerStatus[statusTo],
       reason
     );
   }
@@ -63,16 +63,16 @@ export class WorkerLogger {
   }
 
   updateContainerStatus(
-    to: ContainerStatus,
-    from: ContainerStatus,
-    event: TurfStatusEvent | ContainerStatusReport | ControlPlaneEvent,
+    to: WorkerStatus,
+    from: WorkerStatus,
+    event: TurfStatusEvent | WorkerStatusReport | ControlPlaneEvent,
     level?: LogLevels,
     extra?: string
   ) {
     this.logger[level ?? 'info'](
       'update container status [%s] from [%s] by event [%s]%s',
-      ContainerStatus[to],
-      ContainerStatus[from],
+      WorkerStatus[to],
+      WorkerStatus[from],
       event,
       extra ? extra : '.'
     );

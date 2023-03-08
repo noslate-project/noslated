@@ -2,7 +2,7 @@ import assert from 'assert';
 import _ from 'lodash';
 import * as common from '#self/test/common';
 import { ControlPlane } from '#self/control_plane/index';
-import { ContainerStatus, ContainerStatusReport } from '#self/lib/constants';
+import { WorkerStatus, WorkerStatusReport } from '#self/lib/constants';
 import { StateManager } from '#self/control_plane/worker_stats/state_manager';
 import {
   WorkerStatusReportEvent,
@@ -91,36 +91,36 @@ describe(common.testName(__filename), () => {
           functionName: 'func1',
           name: 'worker1',
           isInspector: false,
-          event: ContainerStatusReport.ContainerInstalled,
+          event: WorkerStatusReport.ContainerInstalled,
           requestId: '',
         })
       );
 
-      assert.strictEqual(worker1.containerStatus, ContainerStatus.Ready);
+      assert.strictEqual(worker1.workerStatus, WorkerStatus.Ready);
 
       stateManager.updateWorkerStatusByReport(
         new WorkerStatusReportEvent({
           functionName: 'func1',
           name: 'worker1',
           isInspector: false,
-          event: ContainerStatusReport.RequestDrained,
+          event: WorkerStatusReport.RequestDrained,
           requestId: '',
         })
       );
 
-      assert.strictEqual(worker1.containerStatus, ContainerStatus.Stopped);
+      assert.strictEqual(worker1.workerStatus, WorkerStatus.Stopped);
 
       stateManager.updateWorkerStatusByReport(
         new WorkerStatusReportEvent({
           functionName: 'func1',
           name: 'worker1',
           isInspector: false,
-          event: ContainerStatusReport.ContainerDisconnected,
+          event: WorkerStatusReport.ContainerDisconnected,
           requestId: '',
         })
       );
 
-      assert.strictEqual(worker1.containerStatus, ContainerStatus.Stopped);
+      assert.strictEqual(worker1.workerStatus, WorkerStatus.Stopped);
 
       stateManager.updateWorkerStatusByReport(
         new WorkerStatusReportEvent({
@@ -132,7 +132,7 @@ describe(common.testName(__filename), () => {
         })
       );
 
-      assert.strictEqual(worker1.containerStatus, ContainerStatus.Stopped);
+      assert.strictEqual(worker1.workerStatus, WorkerStatus.Unknown);
 
       stateManager.updateWorkerStatusByReport(
         new WorkerStatusReportEvent({
@@ -149,12 +149,12 @@ describe(common.testName(__filename), () => {
           functionName: 'func2',
           name: 'worker1',
           isInspector: false,
-          event: ContainerStatusReport.ContainerDisconnected,
+          event: WorkerStatusReport.ContainerDisconnected,
           requestId: '',
         })
       );
 
-      assert.strictEqual(worker2.containerStatus, ContainerStatus.Unknown);
+      assert.strictEqual(worker2.workerStatus, WorkerStatus.Unknown);
     });
 
     it('should not update with illegal ContainerStatusReport order', async () => {
@@ -204,24 +204,24 @@ describe(common.testName(__filename), () => {
           functionName: 'func1',
           name: 'worker1',
           isInspector: false,
-          event: ContainerStatusReport.RequestDrained,
+          event: WorkerStatusReport.RequestDrained,
           requestId: '',
         })
       );
 
-      assert.strictEqual(worker.containerStatus, ContainerStatus.Stopped);
+      assert.strictEqual(worker.workerStatus, WorkerStatus.Stopped);
 
       stateManager.updateWorkerStatusByReport(
         new WorkerStatusReportEvent({
           functionName: 'func1',
           name: 'worker1',
           isInspector: false,
-          event: ContainerStatusReport.ContainerInstalled,
+          event: WorkerStatusReport.ContainerInstalled,
           requestId: '',
         })
       );
 
-      assert.strictEqual(worker.containerStatus, ContainerStatus.Stopped);
+      assert.strictEqual(worker.workerStatus, WorkerStatus.Stopped);
     });
   });
 
@@ -306,7 +306,7 @@ describe(common.testName(__filename), () => {
           name: 'worker1',
           credential: 'id1',
           turfContainerStates: 'running',
-          containerStatus: ContainerStatus.Created,
+          containerStatus: WorkerStatus.Created,
           data: { maxActivateRequests: 10, activeRequestCount: 1 },
         }
       );
@@ -323,11 +323,15 @@ describe(common.testName(__filename), () => {
             name: 'worker2',
             credential: 'id2',
             turfContainerStates: 'running',
-            containerStatus: ContainerStatus.Created,
+            containerStatus: WorkerStatus.Created,
             data: { maxActivateRequests: 10, activeRequestCount: 6 },
           }
         );
 
+        // Suppress worker ready rejection
+        worker2.updateWorkerStatusByReport(
+          WorkerStatusReport.ContainerInstalled
+        );
         await env.containerManager.getContainer('worker2')!.stop();
         await stateManager.syncWorkerData([brokerStat1]);
       }

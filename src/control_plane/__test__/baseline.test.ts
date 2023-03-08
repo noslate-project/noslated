@@ -7,7 +7,7 @@ import { ResourceServer } from '#self/test/baseline/resource-server';
 import { testWorker } from '#self/test/util';
 import { config } from '#self/config';
 import { DefaultEnvironment } from '#self/test/env/environment';
-import { WorkerMetadata } from '../worker_stats';
+import { WorkerMetadata } from '../worker_stats/index';
 import { WorkerStoppedEvent } from '../events';
 
 const sleep = require('#self/lib/util').sleep;

@@ -1,23 +1,29 @@
+import { Config } from '#self/config';
 import { ControlPlane } from '#self/control_plane';
 import { CapacityManager } from '#self/control_plane/capacity_manager';
 import { DefaultController } from '#self/control_plane/controllers';
 import { DataPlaneClientManager } from '#self/control_plane/data_plane_client/manager';
 import { WorkerStatusReportEvent } from '#self/control_plane/events';
 import { WorkerLauncher } from '#self/control_plane/worker_launcher';
+import { Broker } from '#self/control_plane/worker_stats/index';
 import { StateManager } from '#self/control_plane/worker_stats/state_manager';
-import { ContainerStatusReport, ControlPlaneEvent } from '#self/lib/constants';
+import { WorkerStatusReport, ControlPlaneEvent } from '#self/lib/constants';
 import { FunctionProfileManager } from '#self/lib/function_profile';
+import { ShrinkStrategy } from '#self/lib/json/function_profile';
 import { TurfContainerStates } from '#self/lib/turf';
+import { sleep } from '#self/lib/util';
 import * as common from '#self/test/common';
 import assert from 'assert';
 import mm from 'mm';
 import { TestEnvironment } from '../environment';
 import { registerWorkers } from '../util';
+import { funcData } from '../worker_stats/test_data';
 
 describe(common.testName(__filename), () => {
   const env = new TestEnvironment({
     createTestClock: true,
   });
+  let config: Config;
   let controlPlane: ControlPlane;
   let stateManager: StateManager;
   let functionProfile: FunctionProfileManager;
@@ -161,7 +167,7 @@ describe(common.testName(__filename), () => {
             functionName: 'func',
             name: 'hello',
             isInspector: false,
-            event: ContainerStatusReport.ContainerInstalled,
+            event: WorkerStatusReport.ContainerInstalled,
             requestId: '',
           })
         );
@@ -171,7 +177,7 @@ describe(common.testName(__filename), () => {
             functionName: 'func',
             name: 'foo',
             isInspector: false,
-            event: ContainerStatusReport.ContainerInstalled,
+            event: WorkerStatusReport.ContainerInstalled,
             requestId: '',
           })
         );
@@ -181,7 +187,7 @@ describe(common.testName(__filename), () => {
             functionName: 'lambda',
             name: 'coco',
             isInspector: false,
-            event: ContainerStatusReport.ContainerInstalled,
+            event: WorkerStatusReport.ContainerInstalled,
             requestId: '',
           })
         );
@@ -191,7 +197,7 @@ describe(common.testName(__filename), () => {
             functionName: 'lambda',
             name: 'cocos',
             isInspector: false,
-            event: ContainerStatusReport.ContainerInstalled,
+            event: WorkerStatusReport.ContainerInstalled,
             requestId: '',
           })
         );
@@ -201,7 +207,7 @@ describe(common.testName(__filename), () => {
             functionName: 'lambda',
             name: 'alibaba',
             isInspector: false,
-            event: ContainerStatusReport.ContainerInstalled,
+            event: WorkerStatusReport.ContainerInstalled,
 
             requestId: '',
           })
@@ -362,7 +368,7 @@ describe(common.testName(__filename), () => {
           functionName: 'func',
           name: 'hello',
           isInspector: false,
-          event: ContainerStatusReport.ContainerInstalled,
+          event: WorkerStatusReport.ContainerInstalled,
           requestId: '',
         })
       );
@@ -372,7 +378,7 @@ describe(common.testName(__filename), () => {
           functionName: 'func',
           name: 'foo',
           isInspector: false,
-          event: ContainerStatusReport.ContainerInstalled,
+          event: WorkerStatusReport.ContainerInstalled,
           requestId: '',
         })
       );
@@ -382,7 +388,7 @@ describe(common.testName(__filename), () => {
           functionName: 'lambda',
           name: 'coco',
           isInspector: false,
-          event: ContainerStatusReport.ContainerInstalled,
+          event: WorkerStatusReport.ContainerInstalled,
           requestId: '',
         })
       );
@@ -392,7 +398,7 @@ describe(common.testName(__filename), () => {
           functionName: 'lambda',
           name: 'cocos',
           isInspector: false,
-          event: ContainerStatusReport.ContainerInstalled,
+          event: WorkerStatusReport.ContainerInstalled,
           requestId: '',
         })
       );
@@ -402,7 +408,7 @@ describe(common.testName(__filename), () => {
           functionName: 'lambda',
           name: 'alibaba',
           isInspector: false,
-          event: ContainerStatusReport.ContainerInstalled,
+          event: WorkerStatusReport.ContainerInstalled,
           requestId: '',
         })
       );
@@ -553,6 +559,920 @@ describe(common.testName(__filename), () => {
 
       await stateManager.syncWorkerData([brokerData1]);
       await assert.doesNotReject(defaultController['autoScale']());
+    });
+  });
+
+  describe('.mostIdleNWorkers()', () => {
+    beforeEach(async () => {
+      await functionProfile.set(funcData, 'WAIT');
+    });
+
+    it('should get', () => {
+      const broker = new Broker(functionProfile, config, 'func', true, false);
+      registerWorkers(broker, [
+        {
+          processName: 'hello',
+          credential: 'world',
+        },
+        {
+          processName: 'foo',
+          credential: 'bar',
+        },
+      ]);
+
+      broker.sync([
+        {
+          name: 'hello',
+          maxActivateRequests: 10,
+          activeRequestCount: 7,
+        },
+        {
+          name: 'foo',
+          maxActivateRequests: 10,
+          activeRequestCount: 4,
+        },
+      ]);
+
+      // 更新到运行状态
+      broker.workers.forEach(worker => {
+        worker.updateWorkerStatusByReport(
+          WorkerStatusReport.ContainerInstalled
+        );
+      });
+
+      assert.deepStrictEqual(defaultController.mostIdleNWorkers(broker, 1), [
+        { name: 'foo', credential: 'bar' },
+      ]);
+      assert.deepStrictEqual(defaultController.mostIdleNWorkers(broker, 2), [
+        {
+          name: 'foo',
+          credential: 'bar',
+        },
+        {
+          name: 'hello',
+          credential: 'world',
+        },
+      ]);
+      assert.deepStrictEqual(defaultController.mostIdleNWorkers(broker, 3), [
+        {
+          name: 'foo',
+          credential: 'bar',
+        },
+        {
+          name: 'hello',
+          credential: 'world',
+        },
+      ]);
+    });
+
+    it('should run with activeRequestCount order', () => {
+      const broker = new Broker(functionProfile, config, 'func', true, false);
+      registerWorkers(broker, [
+        {
+          processName: 'hello',
+          credential: 'world',
+        },
+        {
+          processName: 'foo',
+          credential: 'bar',
+        },
+      ]);
+
+      // 更新到运行状态
+      broker.workers.forEach(worker => {
+        worker.updateWorkerStatusByReport(
+          WorkerStatusReport.ContainerInstalled
+        );
+      });
+
+      broker.sync([
+        {
+          name: 'hello',
+          maxActivateRequests: 10,
+          activeRequestCount: 4,
+        },
+        {
+          name: 'foo',
+          maxActivateRequests: 10,
+          activeRequestCount: 7,
+        },
+      ]);
+
+      assert.deepStrictEqual(defaultController.mostIdleNWorkers(broker, 1), [
+        { name: 'hello', credential: 'world' },
+      ]);
+      assert.deepStrictEqual(defaultController.mostIdleNWorkers(broker, 2), [
+        {
+          name: 'hello',
+          credential: 'world',
+        },
+        {
+          name: 'foo',
+          credential: 'bar',
+        },
+      ]);
+      assert.deepStrictEqual(defaultController.mostIdleNWorkers(broker, 3), [
+        {
+          name: 'hello',
+          credential: 'world',
+        },
+        {
+          name: 'foo',
+          credential: 'bar',
+        },
+      ]);
+    });
+
+    it('should run with credential order when activeRequestCount is equal (1)', () => {
+      const broker = new Broker(functionProfile, config, 'func', true, false);
+      registerWorkers(broker, [
+        {
+          processName: 'hello',
+          credential: 'world',
+        },
+        {
+          processName: 'foo',
+          credential: 'bar',
+        },
+      ]);
+
+      // 更新到运行状态
+      broker.workers.forEach(worker => {
+        worker.updateWorkerStatusByReport(
+          WorkerStatusReport.ContainerInstalled
+        );
+      });
+
+      broker.sync([
+        {
+          name: 'hello',
+          maxActivateRequests: 10,
+          activeRequestCount: 4,
+        },
+        {
+          name: 'foo',
+          maxActivateRequests: 10,
+          activeRequestCount: 4,
+        },
+      ]);
+
+      assert.deepStrictEqual(defaultController.mostIdleNWorkers(broker, 1), [
+        { name: 'foo', credential: 'bar' },
+      ]);
+      assert.deepStrictEqual(defaultController.mostIdleNWorkers(broker, 2), [
+        {
+          name: 'foo',
+          credential: 'bar',
+        },
+        {
+          name: 'hello',
+          credential: 'world',
+        },
+      ]);
+      assert.deepStrictEqual(defaultController.mostIdleNWorkers(broker, 3), [
+        {
+          name: 'foo',
+          credential: 'bar',
+        },
+        {
+          name: 'hello',
+          credential: 'world',
+        },
+      ]);
+    });
+
+    it('should run with credential order when activeRequestCount is equal (2)', () => {
+      const broker = new Broker(functionProfile, config, 'func', true, false);
+      registerWorkers(broker, [
+        {
+          processName: 'hello',
+          credential: 'world',
+        },
+        {
+          processName: 'foo',
+          credential: 'bar',
+        },
+      ]);
+
+      // 更新到运行状态
+      broker.workers.forEach(worker => {
+        worker.updateWorkerStatusByReport(
+          WorkerStatusReport.ContainerInstalled
+        );
+      });
+
+      broker.sync([
+        {
+          name: 'foo',
+          maxActivateRequests: 10,
+          activeRequestCount: 4,
+        },
+        {
+          name: 'hello',
+          maxActivateRequests: 10,
+          activeRequestCount: 4,
+        },
+      ]);
+
+      assert.deepStrictEqual(defaultController.mostIdleNWorkers(broker, 1), [
+        { name: 'foo', credential: 'bar' },
+      ]);
+      assert.deepStrictEqual(defaultController.mostIdleNWorkers(broker, 2), [
+        {
+          name: 'foo',
+          credential: 'bar',
+        },
+        {
+          name: 'hello',
+          credential: 'world',
+        },
+      ]);
+      assert.deepStrictEqual(defaultController.mostIdleNWorkers(broker, 3), [
+        {
+          name: 'foo',
+          credential: 'bar',
+        },
+        {
+          name: 'hello',
+          credential: 'world',
+        },
+      ]);
+    });
+
+    it('should get when has non-valid', () => {
+      const broker = new Broker(functionProfile, config, 'func', true, false);
+      registerWorkers(broker, [
+        {
+          processName: 'hello',
+          credential: 'world',
+        },
+        {
+          processName: 'foo',
+          credential: 'bar',
+        },
+      ]);
+
+      broker.sync([
+        {
+          name: 'hello',
+          maxActivateRequests: 10,
+          activeRequestCount: 7,
+        },
+        {
+          name: 'foo',
+          maxActivateRequests: 10,
+          activeRequestCount: 4,
+        },
+      ]);
+
+      // 更新到运行状态
+      broker.workers.forEach(worker => {
+        worker.updateWorkerStatusByReport(
+          WorkerStatusReport.ContainerInstalled
+        );
+        if (worker.name === 'foo') {
+          worker.updateWorkerStatusByReport(
+            WorkerStatusReport.ContainerDisconnected
+          );
+        }
+      });
+
+      assert.deepStrictEqual(defaultController.mostIdleNWorkers(broker, 1), [
+        { name: 'hello', credential: 'world' },
+      ]);
+      assert.deepStrictEqual(defaultController.mostIdleNWorkers(broker, 2), [
+        {
+          name: 'hello',
+          credential: 'world',
+        },
+      ]);
+    });
+  });
+
+  describe('.newestNWorkers()', () => {
+    beforeEach(async () => {
+      await functionProfile.set(funcData, 'WAIT');
+    });
+
+    it('should get', async () => {
+      const broker = new Broker(functionProfile, config, 'func', true, false);
+      registerWorkers(broker, [
+        {
+          processName: 'hello',
+          credential: 'world',
+        },
+      ]);
+      await sleep(100);
+      registerWorkers(broker, [
+        {
+          processName: 'foo',
+          credential: 'bar',
+        },
+      ]);
+
+      broker.sync([
+        {
+          name: 'hello',
+          maxActivateRequests: 10,
+          activeRequestCount: 7,
+        },
+        {
+          name: 'foo',
+          maxActivateRequests: 10,
+          activeRequestCount: 4,
+        },
+      ]);
+
+      // 更新到运行状态
+      broker.workers.forEach(worker => {
+        worker.updateWorkerStatusByReport(
+          WorkerStatusReport.ContainerInstalled
+        );
+      });
+
+      assert.deepStrictEqual(defaultController.newestNWorkers(broker, 1), [
+        { name: 'foo', credential: 'bar' },
+      ]);
+      assert.deepStrictEqual(defaultController.newestNWorkers(broker, 2), [
+        {
+          name: 'foo',
+          credential: 'bar',
+        },
+        {
+          name: 'hello',
+          credential: 'world',
+        },
+      ]);
+      assert.deepStrictEqual(defaultController.newestNWorkers(broker, 3), [
+        {
+          name: 'foo',
+          credential: 'bar',
+        },
+        {
+          name: 'hello',
+          credential: 'world',
+        },
+      ]);
+    });
+
+    it('should run with registerTime order', async () => {
+      const broker = new Broker(functionProfile, config, 'func', true, false);
+      registerWorkers(broker, [
+        {
+          processName: 'hello',
+          credential: 'world',
+        },
+      ]);
+
+      await sleep(100);
+      registerWorkers(broker, [
+        {
+          processName: 'foo',
+          credential: 'bar',
+        },
+      ]);
+
+      // 更新到运行状态
+      broker.workers.forEach(worker => {
+        worker.updateWorkerStatusByReport(
+          WorkerStatusReport.ContainerInstalled
+        );
+      });
+
+      broker.sync([
+        {
+          name: 'foo',
+          maxActivateRequests: 10,
+          activeRequestCount: 7,
+        },
+        {
+          name: 'hello',
+          maxActivateRequests: 10,
+          activeRequestCount: 4,
+        },
+      ]);
+
+      assert.deepStrictEqual(defaultController.newestNWorkers(broker, 1), [
+        { name: 'foo', credential: 'bar' },
+      ]);
+      assert.deepStrictEqual(defaultController.newestNWorkers(broker, 2), [
+        {
+          name: 'foo',
+          credential: 'bar',
+        },
+        {
+          name: 'hello',
+          credential: 'world',
+        },
+      ]);
+      assert.deepStrictEqual(defaultController.newestNWorkers(broker, 3), [
+        {
+          name: 'foo',
+          credential: 'bar',
+        },
+        {
+          name: 'hello',
+          credential: 'world',
+        },
+      ]);
+    });
+
+    it('should get when has non-valid', async () => {
+      const broker = new Broker(functionProfile, config, 'func', true, false);
+      registerWorkers(broker, [
+        {
+          processName: 'hello',
+          credential: 'world',
+        },
+      ]);
+      await sleep(100);
+      registerWorkers(broker, [
+        {
+          processName: 'foo',
+          credential: 'bar',
+        },
+      ]);
+
+      broker.sync([
+        {
+          name: 'hello',
+          maxActivateRequests: 10,
+          activeRequestCount: 7,
+        },
+        {
+          name: 'foo',
+          maxActivateRequests: 10,
+          activeRequestCount: 4,
+        },
+      ]);
+
+      // 更新到运行状态
+      broker.workers.forEach(worker => {
+        worker.updateWorkerStatusByReport(
+          WorkerStatusReport.ContainerInstalled
+        );
+        if (worker.name === 'foo') {
+          worker.updateWorkerStatusByReport(
+            WorkerStatusReport.ContainerDisconnected
+          );
+        }
+      });
+
+      assert.deepStrictEqual(defaultController.newestNWorkers(broker, 1), [
+        { name: 'hello', credential: 'world' },
+      ]);
+      assert.deepStrictEqual(defaultController.newestNWorkers(broker, 2), [
+        {
+          name: 'hello',
+          credential: 'world',
+        },
+      ]);
+    });
+  });
+
+  describe('.oldestNWorkers()', () => {
+    beforeEach(async () => {
+      await functionProfile.set(funcData, 'WAIT');
+    });
+
+    it('should get', async () => {
+      const broker = new Broker(functionProfile, config, 'func', true, false);
+      registerWorkers(broker, [
+        {
+          processName: 'hello',
+          credential: 'world',
+        },
+      ]);
+      await sleep(100);
+      registerWorkers(broker, [
+        {
+          processName: 'foo',
+          credential: 'bar',
+        },
+      ]);
+
+      broker.sync([
+        {
+          name: 'hello',
+          maxActivateRequests: 10,
+          activeRequestCount: 7,
+        },
+        {
+          name: 'foo',
+          maxActivateRequests: 10,
+          activeRequestCount: 4,
+        },
+      ]);
+
+      // 更新到运行状态
+      broker.workers.forEach(worker => {
+        worker.updateWorkerStatusByReport(
+          WorkerStatusReport.ContainerInstalled
+        );
+      });
+
+      assert.deepStrictEqual(defaultController.oldestNWorkers(broker, 1), [
+        { name: 'hello', credential: 'world' },
+      ]);
+      assert.deepStrictEqual(defaultController.oldestNWorkers(broker, 2), [
+        {
+          name: 'hello',
+          credential: 'world',
+        },
+        {
+          name: 'foo',
+          credential: 'bar',
+        },
+      ]);
+      assert.deepStrictEqual(defaultController.oldestNWorkers(broker, 3), [
+        {
+          name: 'hello',
+          credential: 'world',
+        },
+        {
+          name: 'foo',
+          credential: 'bar',
+        },
+      ]);
+    });
+
+    it('should run with registerTime order', async () => {
+      const broker = new Broker(functionProfile, config, 'func', true, false);
+      registerWorkers(broker, [
+        {
+          processName: 'hello',
+          credential: 'world',
+        },
+      ]);
+      await sleep(100);
+      registerWorkers(broker, [
+        {
+          processName: 'foo',
+          credential: 'bar',
+        },
+      ]);
+
+      // 更新到运行状态
+      broker.workers.forEach(worker => {
+        worker.updateWorkerStatusByReport(
+          WorkerStatusReport.ContainerInstalled
+        );
+      });
+
+      broker.sync([
+        {
+          name: 'foo',
+          maxActivateRequests: 10,
+          activeRequestCount: 7,
+        },
+        {
+          name: 'hello',
+          maxActivateRequests: 10,
+          activeRequestCount: 4,
+        },
+      ]);
+
+      assert.deepStrictEqual(defaultController.oldestNWorkers(broker, 1), [
+        { name: 'hello', credential: 'world' },
+      ]);
+      assert.deepStrictEqual(defaultController.oldestNWorkers(broker, 2), [
+        {
+          name: 'hello',
+          credential: 'world',
+        },
+        {
+          name: 'foo',
+          credential: 'bar',
+        },
+      ]);
+      assert.deepStrictEqual(defaultController.oldestNWorkers(broker, 3), [
+        {
+          name: 'hello',
+          credential: 'world',
+        },
+        {
+          name: 'foo',
+          credential: 'bar',
+        },
+      ]);
+    });
+
+    it('should get when has non-valid', async () => {
+      const broker = new Broker(functionProfile, config, 'func', true, false);
+      registerWorkers(broker, [
+        {
+          processName: 'hello',
+          credential: 'world',
+        },
+      ]);
+      await sleep(100);
+      registerWorkers(broker, [
+        {
+          processName: 'foo',
+          credential: 'bar',
+        },
+      ]);
+
+      broker.sync([
+        {
+          name: 'hello',
+          maxActivateRequests: 10,
+          activeRequestCount: 7,
+        },
+        {
+          name: 'foo',
+          maxActivateRequests: 10,
+          activeRequestCount: 4,
+        },
+      ]);
+
+      // 更新到运行状态
+      broker.workers.forEach(worker => {
+        worker.updateWorkerStatusByReport(
+          WorkerStatusReport.ContainerInstalled
+        );
+        if (worker.name === 'foo') {
+          worker.updateWorkerStatusByReport(
+            WorkerStatusReport.ContainerDisconnected
+          );
+        }
+      });
+
+      assert.deepStrictEqual(defaultController.oldestNWorkers(broker, 1), [
+        { name: 'hello', credential: 'world' },
+      ]);
+      assert.deepStrictEqual(defaultController.oldestNWorkers(broker, 2), [
+        {
+          name: 'hello',
+          credential: 'world',
+        },
+      ]);
+    });
+  });
+
+  describe('.shrinkDraw()', () => {
+    beforeEach(async () => {
+      await functionProfile.set(funcData, 'WAIT');
+    });
+
+    it('should use default strategy LCC', () => {
+      const broker = new Broker(functionProfile, config, 'func', true, false);
+      registerWorkers(broker, [
+        {
+          processName: 'hello',
+          credential: 'world',
+        },
+        {
+          processName: 'foo',
+          credential: 'bar',
+        },
+      ]);
+      broker.data = null;
+
+      broker
+        .getWorker('hello')
+        ?.updateWorkerStatusByReport(WorkerStatusReport.ContainerInstalled);
+      broker
+        .getWorker('foo')
+        ?.updateWorkerStatusByReport(WorkerStatusReport.ContainerInstalled);
+
+      broker.sync([
+        {
+          name: 'hello',
+          maxActivateRequests: 10,
+          activeRequestCount: 7,
+        },
+        {
+          name: 'foo',
+          maxActivateRequests: 10,
+          activeRequestCount: 1,
+        },
+      ]);
+
+      const workers = defaultController.shrinkDraw(broker, 1);
+
+      assert.strictEqual(workers.length, 1);
+      assert.strictEqual(workers[0].name, 'foo');
+    });
+
+    it('should use default strategy LCC when worker strategy not supported', () => {
+      const broker = new Broker(functionProfile, config, 'func', true, false);
+      registerWorkers(broker, [
+        {
+          processName: 'hello',
+          credential: 'world',
+        },
+        {
+          processName: 'foo',
+          credential: 'bar',
+        },
+      ]);
+
+      broker
+        .getWorker('hello')
+        ?.updateWorkerStatusByReport(WorkerStatusReport.ContainerInstalled);
+      broker
+        .getWorker('foo')
+        ?.updateWorkerStatusByReport(WorkerStatusReport.ContainerInstalled);
+
+      broker.sync([
+        {
+          name: 'hello',
+          maxActivateRequests: 10,
+          activeRequestCount: 1,
+        },
+        {
+          name: 'foo',
+          maxActivateRequests: 10,
+          activeRequestCount: 7,
+        },
+      ]);
+
+      broker.data = {
+        ...funcData[0],
+        worker: {
+          fastFailRequestsOnStarting: false,
+          initializationTimeout: 10000,
+          maxActivateRequests: 10,
+          replicaCountLimit: 10,
+          reservationCount: 0,
+          shrinkStrategy: 'NOTSUPPORTED' as ShrinkStrategy,
+          v8Options: [],
+          execArgv: [],
+        },
+      };
+
+      const workers = defaultController.shrinkDraw(broker, 1);
+
+      assert.strictEqual(workers.length, 1);
+      assert.strictEqual(workers[0].name, 'hello');
+    });
+
+    it('should use default strategy LCC when worker strategy is empty', () => {
+      const broker = new Broker(functionProfile, config, 'func', true, false);
+      registerWorkers(broker, [
+        {
+          processName: 'hello',
+          credential: 'world',
+        },
+        {
+          processName: 'foo',
+          credential: 'bar',
+        },
+      ]);
+
+      broker
+        .getWorker('hello')
+        ?.updateWorkerStatusByReport(WorkerStatusReport.ContainerInstalled);
+      broker
+        .getWorker('foo')
+        ?.updateWorkerStatusByReport(WorkerStatusReport.ContainerInstalled);
+
+      broker.sync([
+        {
+          name: 'hello',
+          maxActivateRequests: 10,
+          activeRequestCount: 1,
+        },
+        {
+          name: 'foo',
+          maxActivateRequests: 10,
+          activeRequestCount: 7,
+        },
+      ]);
+
+      broker.data = {
+        ...funcData[0],
+        worker: {
+          fastFailRequestsOnStarting: false,
+          initializationTimeout: 10000,
+          maxActivateRequests: 10,
+          replicaCountLimit: 10,
+          reservationCount: 0,
+          shrinkStrategy: undefined,
+          v8Options: [],
+          execArgv: [],
+        },
+      };
+
+      const workers = defaultController.shrinkDraw(broker, 1);
+
+      assert.strictEqual(workers.length, 1);
+      assert.strictEqual(workers[0].name, 'hello');
+    });
+
+    it('should use worker strategy FIFO', async () => {
+      const broker = new Broker(functionProfile, config, 'func', true, false);
+
+      registerWorkers(broker, [
+        {
+          processName: 'hello',
+          credential: 'world',
+        },
+      ]);
+      await sleep(100);
+      registerWorkers(broker, [
+        {
+          processName: 'foo',
+          credential: 'bar',
+        },
+      ]);
+
+      broker
+        .getWorker('hello')
+        ?.updateWorkerStatusByReport(WorkerStatusReport.ContainerInstalled);
+      broker
+        .getWorker('foo')
+        ?.updateWorkerStatusByReport(WorkerStatusReport.ContainerInstalled);
+
+      broker.sync([
+        {
+          name: 'hello',
+          maxActivateRequests: 10,
+          activeRequestCount: 7,
+        },
+        {
+          name: 'foo',
+          maxActivateRequests: 10,
+          activeRequestCount: 1,
+        },
+      ]);
+
+      broker.data = {
+        ...funcData[0],
+        worker: {
+          fastFailRequestsOnStarting: false,
+          initializationTimeout: 10000,
+          maxActivateRequests: 10,
+          replicaCountLimit: 10,
+          reservationCount: 0,
+          shrinkStrategy: 'FIFO',
+          v8Options: [],
+          execArgv: [],
+        },
+      };
+
+      const workers = defaultController.shrinkDraw(broker, 1);
+
+      assert.strictEqual(workers.length, 1);
+      assert.strictEqual(workers[0].name, 'hello');
+    });
+
+    it('should use worker strategy FILO', async () => {
+      const broker = new Broker(functionProfile, config, 'func', true, false);
+
+      registerWorkers(broker, [
+        {
+          processName: 'hello',
+          credential: 'world',
+        },
+      ]);
+      await sleep(100);
+      registerWorkers(broker, [
+        {
+          processName: 'foo',
+          credential: 'bar',
+        },
+      ]);
+
+      broker
+        .getWorker('hello')
+        ?.updateWorkerStatusByReport(WorkerStatusReport.ContainerInstalled);
+      broker
+        .getWorker('foo')
+        ?.updateWorkerStatusByReport(WorkerStatusReport.ContainerInstalled);
+
+      broker.sync([
+        {
+          name: 'hello',
+          maxActivateRequests: 10,
+          activeRequestCount: 7,
+        },
+        {
+          name: 'foo',
+          maxActivateRequests: 10,
+          activeRequestCount: 8,
+        },
+      ]);
+
+      broker.data = {
+        ...funcData[0],
+        worker: {
+          fastFailRequestsOnStarting: false,
+          initializationTimeout: 10000,
+          maxActivateRequests: 10,
+          replicaCountLimit: 10,
+          reservationCount: 0,
+          shrinkStrategy: 'FILO',
+          v8Options: [],
+          execArgv: [],
+        },
+      };
+
+      const workers = defaultController.shrinkDraw(broker, 1);
+
+      assert.strictEqual(workers.length, 1);
+      assert.strictEqual(workers[0].name, 'foo');
     });
   });
 });

@@ -2,8 +2,8 @@ import { TurfContainerStates } from '#self/lib/turf/types';
 import type { noslated } from '#self/proto/root';
 import { Config } from '#self/config';
 import {
-  ContainerStatus,
-  ContainerStatusReport,
+  WorkerStatus,
+  WorkerStatusReport,
   TurfStatusEvent,
   ControlPlaneEvent,
 } from '#self/lib/constants';
@@ -54,10 +54,10 @@ class Worker {
    */
   container?: Container;
 
-  #containerStatus: ContainerStatus;
+  #workerStatus: WorkerStatus;
 
-  get containerStatus() {
-    return this.#containerStatus;
+  get workerStatus() {
+    return this.#workerStatus;
   }
 
   /**
@@ -104,7 +104,7 @@ class Worker {
   /**
    * The pid.
    */
-  get pid() {
+  private get pid() {
     return this.#pid;
   }
 
@@ -137,7 +137,7 @@ class Worker {
 
   logger: WorkerLogger;
   requestId: string | undefined;
-  readyTimeout: NodeJS.Timeout | undefined;
+  private readyTimeout: NodeJS.Timeout | undefined;
 
   public disposable = false;
 
@@ -159,7 +159,7 @@ class Worker {
     this.#turfContainerStates = null;
     this.#pid = null;
     this.#data = null;
-    this.#containerStatus = ContainerStatus.Created;
+    this.#workerStatus = WorkerStatus.Created;
 
     this.#registerTime = Date.now();
 
@@ -175,12 +175,10 @@ class Worker {
 
   async ready() {
     // 在 await ready 之前状态已经改变了
-    if (this.#containerStatus >= ContainerStatus.Ready) {
-      this.logger.statusChangedBeforeReady(
-        ContainerStatus[this.#containerStatus]
-      );
+    if (this.#workerStatus >= WorkerStatus.Ready) {
+      this.logger.statusChangedBeforeReady(WorkerStatus[this.#workerStatus]);
 
-      if (this.#containerStatus >= ContainerStatus.PendingStop) {
+      if (this.#workerStatus >= WorkerStatus.PendingStop) {
         this.#readyDeferred.reject();
       }
 
@@ -191,17 +189,16 @@ class Worker {
 
     // +100 等待 dp 先触发超时逻辑同步状态
     this.readyTimeout = setTimeout(() => {
-      if (this.#containerStatus !== ContainerStatus.Ready) {
+      if (this.#workerStatus !== WorkerStatus.Ready) {
         // 状态设为 Stopped，等待 GC 回收
-        this.updateContainerStatus(
-          ContainerStatus.Stopped,
-          ContainerStatusReport.ContainerDisconnected
-        );
-
         this.#readyDeferred.reject(
           new Error(
             `Worker(${this.name}, ${this.credential}) initialization timeout.`
           )
+        );
+        this._updateWorkerStatus(
+          WorkerStatus.Stopped,
+          ControlPlaneEvent.InitializationTimeout
         );
       }
     }, this.#initializationTimeout + 100);
@@ -220,19 +217,19 @@ class Worker {
       if (container.pid) {
         this.#pid = container.pid;
       }
-      this.switchTo(container.status);
+      this._switchTo(container.status);
     };
     if (container.pid) {
       this.#pid = container.pid;
     }
-    this.switchTo(container.status);
+    this._switchTo(container.status);
   }
 
-  setReady() {
+  private _setReady() {
     this.#readyDeferred.resolve();
   }
 
-  setStopped() {
+  private _setStopped() {
     this.#readyDeferred.reject(
       new Error(
         `Worker(${this.name}, ${this.credential}) stopped unexpected after start.`
@@ -247,11 +244,16 @@ class Worker {
       pid: this.pid,
 
       turfContainerStates: this.turfContainerStates,
-      containerStatus: this.#containerStatus,
+      containerStatus: this.#workerStatus,
 
       registerTime: this.registerTime,
 
-      data: JSON.parse(JSON.stringify(this.#data)),
+      data: this.data
+        ? {
+            maxActivateRequests: this.data.maxActivateRequests,
+            activeRequestCount: this.data.activeRequestCount,
+          }
+        : null,
     };
   }
 
@@ -274,7 +276,7 @@ class Worker {
    * Switch worker's status to another via a state machine.
    * @param found The found ps data.
    */
-  switchTo(turfState: TurfContainerStates | null) {
+  private _switchTo(turfState: TurfContainerStates | null) {
     this.#turfContainerStates = turfState;
     switch (turfState) {
       case TurfContainerStates.init:
@@ -283,27 +285,24 @@ class Worker {
       case TurfContainerStates.running: {
         if (
           Date.now() - this.#registerTime > this.#initializationTimeout &&
-          this.#containerStatus === ContainerStatus.Created
+          this.#workerStatus === WorkerStatus.Created
         ) {
-          this.updateContainerStatus(
-            ContainerStatus.Stopped,
-            TurfStatusEvent.ConnectTimeout
+          this._updateWorkerStatus(
+            WorkerStatus.Stopped,
+            ControlPlaneEvent.InitializationTimeout
           );
-          this.logger.statusSwitchTo(
-            ContainerStatus.Stopped,
-            'connect timeout'
-          );
+          this.logger.statusSwitchTo(WorkerStatus.Stopped, 'connect timeout');
         }
         // always be Created, wait dp ContainerInstalled to Ready
         break;
       }
       case TurfContainerStates.unknown: {
-        this.updateContainerStatus(
-          ContainerStatus.Unknown,
+        this._updateWorkerStatus(
+          WorkerStatus.Unknown,
           TurfStatusEvent.StatusUnknown
         );
         this.logger.statusSwitchTo(
-          ContainerStatus.Unknown,
+          WorkerStatus.Unknown,
           'turf state is unknown',
           'error'
         );
@@ -312,11 +311,11 @@ class Worker {
       case TurfContainerStates.stopping:
       case TurfContainerStates.stopped: {
         this.logger.statusSwitchTo(
-          ContainerStatus.Stopped,
+          WorkerStatus.Stopped,
           'turf state is stopped/stopping'
         );
-        this.updateContainerStatus(
-          ContainerStatus.Stopped,
+        this._updateWorkerStatus(
+          WorkerStatus.Stopped,
           TurfStatusEvent.StatusStopped
         );
         break;
@@ -324,13 +323,13 @@ class Worker {
       case null: {
         // 只有 Ready 运行时无法找到的情况视为异常
         // 其他情况不做处理
-        if (this.#containerStatus === ContainerStatus.Ready) {
+        if (this.#workerStatus === WorkerStatus.Ready) {
           this.logger.statusSwitchTo(
-            ContainerStatus.Stopped,
+            WorkerStatus.Stopped,
             'sandbox disappeared'
           );
-          this.updateContainerStatus(
-            ContainerStatus.Stopped,
+          this._updateWorkerStatus(
+            WorkerStatus.Stopped,
             TurfStatusEvent.StatusNull
           );
         }
@@ -344,16 +343,13 @@ class Worker {
 
         if (
           Date.now() - this.#registerTime > this.#initializationTimeout &&
-          this.#containerStatus === ContainerStatus.Created
+          this.#workerStatus === WorkerStatus.Created
         ) {
-          this.updateContainerStatus(
-            ContainerStatus.Stopped,
-            TurfStatusEvent.ConnectTimeout
+          this._updateWorkerStatus(
+            WorkerStatus.Stopped,
+            ControlPlaneEvent.InitializationTimeout
           );
-          this.logger.statusSwitchTo(
-            ContainerStatus.Stopped,
-            'connect timeout'
-          );
+          this.logger.statusSwitchTo(WorkerStatus.Stopped, 'connect timeout');
         }
     }
   }
@@ -363,41 +359,56 @@ class Worker {
    */
   isRunning() {
     return (
-      this.#containerStatus === ContainerStatus.Ready ||
-      this.#containerStatus === ContainerStatus.PendingStop
+      this.#workerStatus === WorkerStatus.Ready ||
+      this.#workerStatus === WorkerStatus.PendingStop
     );
   }
 
   isInitializating() {
-    return this.#containerStatus === ContainerStatus.Created;
+    return this.#workerStatus === WorkerStatus.Created;
   }
 
-  updateContainerStatusByEvent(event: ContainerStatusReport) {
-    let statusTo: ContainerStatus = ContainerStatus.Unknown;
+  updateWorkerStatusByReport(event: WorkerStatusReport) {
+    let statusTo: WorkerStatus = WorkerStatus.Unknown;
 
-    if (event === ContainerStatusReport.ContainerInstalled) {
-      statusTo = ContainerStatus.Ready;
+    if (event === WorkerStatusReport.ContainerInstalled) {
+      statusTo = WorkerStatus.Ready;
     } else if (
-      event === ContainerStatusReport.RequestDrained ||
-      event === ContainerStatusReport.ContainerDisconnected
+      // FIXME: WorkerStatusReport.RequestDrained doesn't represent WorkerStatus.Stopped.
+      event === WorkerStatusReport.RequestDrained ||
+      event === WorkerStatusReport.ContainerDisconnected
     ) {
-      statusTo = ContainerStatus.Stopped;
+      statusTo = WorkerStatus.Stopped;
     } else {
-      statusTo = ContainerStatus.Unknown;
+      statusTo = WorkerStatus.Unknown;
     }
 
-    this.updateContainerStatus(statusTo, event);
+    this._updateWorkerStatus(statusTo, event);
   }
 
-  updateContainerStatus(
-    status: ContainerStatus,
-    event: TurfStatusEvent | ContainerStatusReport | ControlPlaneEvent
+  updateWorkerStatusByControlPlaneEvent(event: ControlPlaneEvent) {
+    let status: WorkerStatus;
+    switch (event) {
+      case ControlPlaneEvent.Shrink:
+        status = WorkerStatus.PendingStop;
+        break;
+      case ControlPlaneEvent.FailedToSpawn:
+        status = WorkerStatus.Unknown;
+        break;
+      default:
+        throw new Error(`Unable to update worker status by event ${event}`);
+    }
+    this._updateWorkerStatus(status, event);
+  }
+
+  private _updateWorkerStatus(
+    status: WorkerStatus,
+    event: TurfStatusEvent | WorkerStatusReport | ControlPlaneEvent
   ) {
-    if (status < this.#containerStatus) {
-      ContainerStatus[ContainerStatus.Created];
+    if (status < this.#workerStatus) {
       this.logger.updateContainerStatus(
         status,
-        this.#containerStatus,
+        this.#workerStatus,
         event,
         'warn',
         ' is illegal.'
@@ -405,11 +416,17 @@ class Worker {
       return;
     }
 
-    const oldStatus = this.#containerStatus;
+    const oldStatus = this.#workerStatus;
 
-    this.#containerStatus = status;
+    this.#workerStatus = status;
 
     this.logger.updateContainerStatus(status, oldStatus, event);
+
+    if (status === WorkerStatus.Stopped) {
+      this._setStopped();
+    } else if (status === WorkerStatus.Ready) {
+      this._setReady();
+    }
   }
 }
 

@@ -1,7 +1,7 @@
 import { ControlPlaneEvent } from '#self/lib/constants';
 import { Logger } from '#self/lib/loggers';
 import { Delta } from '../capacity_manager';
-import { WorkerMetadata } from '../worker_stats';
+import { WorkerMetadata } from '../worker_stats/index';
 import { FunctionProfileManager } from '#self/lib/function_profile';
 import { ContainerManager } from '../container/container_manager';
 import { ControlPlaneDependencyContext } from '../deps';
@@ -9,7 +9,7 @@ import { WorkerLauncher } from '../worker_launcher';
 import { StateManager } from '../worker_stats/state_manager';
 
 export abstract class BaseController {
-  abstract logger: Logger;
+  protected abstract logger: Logger;
   protected _functionProfile: FunctionProfileManager;
   protected _workerLauncher: WorkerLauncher;
   protected _containerManager: ContainerManager;

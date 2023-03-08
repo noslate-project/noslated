@@ -1,20 +1,13 @@
-/**
- * TODO: Rename to WorkerStatus
- */
-export enum ContainerStatus {
+export enum WorkerStatus {
   Created = 1,
   Ready,
   PendingStop,
   Stopped,
-  PendingGC,
   GarbageCollected,
   Unknown,
 }
 
-/**
- * TODO: Rename to WorkerStatusReport
- */
-export enum ContainerStatusReport {
+export enum WorkerStatusReport {
   ContainerInstalled = 'ContainerInstalled',
   RequestDrained = 'RequestDrained',
   ContainerDisconnected = 'ContainerDisconnected',
@@ -24,13 +17,14 @@ export enum ControlPlaneEvent {
   Shrink = 'Shrink',
   Expand = 'Expand',
   RequestQueueExpand = 'RequestQueueExpand',
+  FailedToSpawn = 'FailedToSpawn',
+  InitializationTimeout = 'InitializationTimeout',
 }
 
 export enum TurfStatusEvent {
   StatusNull = 'StatusNull',
   StatusUnknown = 'StatusUnknown',
   StatusStopped = 'StatusStopped',
-  ConnectTimeout = 'ConnectTimeout',
 }
 
 export const kDefaultRequestId = 'unknown';
