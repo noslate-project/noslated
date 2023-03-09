@@ -2,8 +2,6 @@ import assert from 'assert';
 import { performance } from 'perf_hooks';
 
 import _ from 'lodash';
-import mm from 'mm';
-import sinon from 'sinon';
 
 import FakeTimers, { Clock } from '@sinonjs/fake-timers';
 import { Worker, WorkerMetadata } from '#self/control_plane/worker_stats/index';
@@ -12,8 +10,8 @@ import { config } from '#self/config';
 import { FunctionProfileManager as ProfileManager } from '#self/lib/function_profile';
 import { TurfContainerStates } from '#self/lib/turf';
 import {
-  ContainerStatus,
-  ContainerStatusReport,
+  WorkerStatus,
+  WorkerStatusReport,
   ControlPlaneEvent,
 } from '#self/lib/constants';
 import { AworkerFunctionProfile } from '#self/lib/json/function_profile';
@@ -68,7 +66,7 @@ describe(common.testName(__filename), () => {
       assert.deepStrictEqual(_.omit(worker.toJSON(), ['registerTime']), {
         name: 'hello',
         credential: 'world',
-        containerStatus: ContainerStatus.Created,
+        containerStatus: WorkerStatus.Created,
         turfContainerStates: null,
         pid: null,
         data: null,
@@ -88,7 +86,7 @@ describe(common.testName(__filename), () => {
       assert.deepStrictEqual(_.omit(worker.toJSON(), ['registerTime']), {
         name: 'hello',
         credential: null,
-        containerStatus: ContainerStatus.Created,
+        containerStatus: WorkerStatus.Created,
         turfContainerStates: null,
         pid: null,
         data: null,
@@ -110,6 +108,8 @@ describe(common.testName(__filename), () => {
       const worker = new Worker(workerMetadata, config);
       const container = new SimpleContainer('hello');
       worker.setContainer(container);
+      // Suppress ready rejection.
+      worker.updateWorkerStatusByReport(WorkerStatusReport.ContainerInstalled);
       container.updateStatus(TurfContainerStates.stopped);
       worker.sync({
         name: 'hello',
@@ -119,7 +119,7 @@ describe(common.testName(__filename), () => {
       assert.deepStrictEqual(_.omit(worker.toJSON(), ['registerTime']), {
         name: 'hello',
         credential: 'world',
-        containerStatus: ContainerStatus.Stopped,
+        containerStatus: WorkerStatus.Stopped,
         turfContainerStates: TurfContainerStates.stopped,
         pid: container.pid,
         data: {
@@ -146,12 +146,14 @@ describe(common.testName(__filename), () => {
       const worker = new Worker(workerMetadata, config);
       const container = new SimpleContainer('hello');
       worker.setContainer(container);
+      // Suppress ready rejection.
+      worker.updateWorkerStatusByReport(WorkerStatusReport.ContainerInstalled);
       container.updateStatus(TurfContainerStates.stopped);
 
       assert.deepStrictEqual(_.omit(worker.toJSON(), ['registerTime']), {
         name: 'hello',
         credential: 'world',
-        containerStatus: ContainerStatus.Stopped,
+        containerStatus: WorkerStatus.Stopped,
         turfContainerStates: TurfContainerStates.stopped,
         pid: container.pid,
         data: null,
@@ -171,6 +173,8 @@ describe(common.testName(__filename), () => {
       const worker = new Worker(workerMetadata, config);
       const container = new SimpleContainer('hello');
       worker.setContainer(container);
+      // Suppress ready rejection.
+      worker.updateWorkerStatusByReport(WorkerStatusReport.ContainerInstalled);
       container.updateStatus(TurfContainerStates.stopped);
 
       assert.deepStrictEqual(
@@ -178,7 +182,7 @@ describe(common.testName(__filename), () => {
         {
           name: 'hello',
           credential: 'world',
-          containerStatus: ContainerStatus.Stopped,
+          containerStatus: WorkerStatus.Stopped,
           turfContainerStates: TurfContainerStates.stopped,
           pid: container.pid,
           data: null,
@@ -196,7 +200,7 @@ describe(common.testName(__filename), () => {
         {
           name: 'hello',
           credential: 'world',
-          containerStatus: ContainerStatus.Unknown,
+          containerStatus: WorkerStatus.Unknown,
           turfContainerStates: TurfContainerStates.unknown,
           pid: 1,
           data: null,
@@ -215,7 +219,7 @@ describe(common.testName(__filename), () => {
       TurfContainerStates.stopped,
     ];
 
-    it('should get', () => {
+    it('should get', async () => {
       const data = {
         name: 'hello',
         maxActivateRequests: 10,
@@ -233,26 +237,31 @@ describe(common.testName(__filename), () => {
       const container = new SimpleContainer('hello');
 
       worker.sync(data);
-      assert.strictEqual(worker.containerStatus, ContainerStatus.Created);
+      assert.strictEqual(worker.workerStatus, WorkerStatus.Created);
       worker.setContainer(container);
+      const readyFuture = assert.rejects(
+        worker.ready(),
+        /stopped unexpected after start./
+      );
 
       const std = [
-        ContainerStatus.Created,
-        ContainerStatus.Created,
+        WorkerStatus.Created,
+        WorkerStatus.Created,
         // 没有 event 更新为 Ready，所以都是 Created
-        ContainerStatus.Created,
-        ContainerStatus.Stopped,
-        ContainerStatus.Stopped,
+        WorkerStatus.Created,
+        WorkerStatus.Stopped,
+        WorkerStatus.Stopped,
       ];
 
       for (let i = 0; i < statuses.length; i++) {
         container.updateStatus(statuses[i]);
-        assert.strictEqual(worker.containerStatus, std[i]);
+        assert.strictEqual(worker.workerStatus, std[i]);
       }
 
       worker.sync(data);
+      await readyFuture;
       // 已经 Stopped，状态不会变化，不会回退到旧的值，只能进入 Unknown 状态
-      assert.strictEqual(worker.containerStatus, ContainerStatus.Stopped);
+      assert.strictEqual(worker.workerStatus, WorkerStatus.Stopped);
     });
   });
 
@@ -274,32 +283,27 @@ describe(common.testName(__filename), () => {
       const worker = new Worker(workerMetadata, config);
 
       worker.sync(data);
-      assert.strictEqual(worker.containerStatus, ContainerStatus.Created);
+      assert.strictEqual(worker.workerStatus, WorkerStatus.Created);
       assert.strictEqual(worker.isInitializating(), true);
 
       const container = new SimpleContainer('hello');
       worker.setContainer(container);
       container.updateStatus(TurfContainerStates.running);
 
-      assert.strictEqual(worker.containerStatus, ContainerStatus.Created);
+      assert.strictEqual(worker.workerStatus, WorkerStatus.Created);
 
-      worker.updateContainerStatusByEvent(
-        ContainerStatusReport.ContainerInstalled
-      );
+      worker.updateWorkerStatusByReport(WorkerStatusReport.ContainerInstalled);
 
-      assert.strictEqual(worker.containerStatus, ContainerStatus.Ready);
+      assert.strictEqual(worker.workerStatus, WorkerStatus.Ready);
       assert.strictEqual(worker.isRunning(), true);
 
-      worker.updateContainerStatus(
-        ContainerStatus.PendingStop,
-        ControlPlaneEvent.Shrink
-      );
+      worker.updateWorkerStatusByControlPlaneEvent(ControlPlaneEvent.Shrink);
 
-      assert.strictEqual(worker.containerStatus, ContainerStatus.PendingStop);
+      assert.strictEqual(worker.workerStatus, WorkerStatus.PendingStop);
 
-      worker.updateContainerStatusByEvent(ContainerStatusReport.RequestDrained);
+      worker.updateWorkerStatusByReport(WorkerStatusReport.RequestDrained);
 
-      assert.strictEqual(worker.containerStatus, ContainerStatus.Stopped);
+      assert.strictEqual(worker.workerStatus, WorkerStatus.Stopped);
     });
 
     it('should update state by event work, gc', async () => {
@@ -319,27 +323,25 @@ describe(common.testName(__filename), () => {
       const worker = new Worker(workerMetadata, config);
 
       worker.sync(data);
-      assert.strictEqual(worker.containerStatus, ContainerStatus.Created);
+      assert.strictEqual(worker.workerStatus, WorkerStatus.Created);
 
       const container = new SimpleContainer('hello');
       worker.setContainer(container);
       container.updateStatus(TurfContainerStates.forkwait);
-      assert.strictEqual(worker.containerStatus, ContainerStatus.Created);
+      assert.strictEqual(worker.workerStatus, WorkerStatus.Created);
 
       container.updateStatus(TurfContainerStates.running);
-      assert.strictEqual(worker.containerStatus, ContainerStatus.Created);
+      assert.strictEqual(worker.workerStatus, WorkerStatus.Created);
 
-      worker.updateContainerStatusByEvent(
-        ContainerStatusReport.ContainerInstalled
+      worker.updateWorkerStatusByReport(WorkerStatusReport.ContainerInstalled);
+
+      assert.strictEqual(worker.workerStatus, WorkerStatus.Ready);
+
+      worker.updateWorkerStatusByReport(
+        WorkerStatusReport.ContainerDisconnected
       );
 
-      assert.strictEqual(worker.containerStatus, ContainerStatus.Ready);
-
-      worker.updateContainerStatusByEvent(
-        ContainerStatusReport.ContainerDisconnected
-      );
-
-      assert.strictEqual(worker.containerStatus, ContainerStatus.Stopped);
+      assert.strictEqual(worker.workerStatus, WorkerStatus.Stopped);
     });
 
     it('update state has order', async () => {
@@ -359,44 +361,36 @@ describe(common.testName(__filename), () => {
       const worker = new Worker(workerMetadata, config);
 
       worker.sync(data);
-      assert.strictEqual(worker.containerStatus, ContainerStatus.Created);
+      assert.strictEqual(worker.workerStatus, WorkerStatus.Created);
 
-      worker.updateContainerStatusByEvent(
-        ContainerStatusReport.ContainerInstalled
-      );
+      worker.updateWorkerStatusByReport(WorkerStatusReport.ContainerInstalled);
 
-      assert.strictEqual(worker.containerStatus, ContainerStatus.Ready);
+      assert.strictEqual(worker.workerStatus, WorkerStatus.Ready);
 
       const container = new SimpleContainer('hello');
       worker.setContainer(container);
       container.updateStatus(TurfContainerStates.stopped);
-      assert.strictEqual(worker.containerStatus, ContainerStatus.Stopped);
+      assert.strictEqual(worker.workerStatus, WorkerStatus.Stopped);
 
-      worker.updateContainerStatus(
-        ContainerStatus.Created,
-        ControlPlaneEvent.Expand
+      worker.updateWorkerStatusByReport(WorkerStatusReport.ContainerInstalled);
+
+      assert.strictEqual(worker.workerStatus, WorkerStatus.Stopped);
+
+      worker.updateWorkerStatusByControlPlaneEvent(ControlPlaneEvent.Shrink);
+
+      assert.strictEqual(worker.workerStatus, WorkerStatus.Stopped);
+
+      worker.updateWorkerStatusByReport(
+        WorkerStatusReport.ContainerDisconnected
       );
 
-      assert.strictEqual(worker.containerStatus, ContainerStatus.Stopped);
-
-      worker.updateContainerStatus(
-        ContainerStatus.PendingStop,
-        ControlPlaneEvent.Shrink
-      );
-
-      assert.strictEqual(worker.containerStatus, ContainerStatus.Stopped);
-
-      worker.updateContainerStatusByEvent(
-        ContainerStatusReport.ContainerDisconnected
-      );
-
-      assert.strictEqual(worker.containerStatus, ContainerStatus.Stopped);
+      assert.strictEqual(worker.workerStatus, WorkerStatus.Stopped);
 
       container.updateStatus(TurfContainerStates.unknown);
-      assert.strictEqual(worker.containerStatus, ContainerStatus.Unknown);
+      assert.strictEqual(worker.workerStatus, WorkerStatus.Unknown);
 
       container.updateStatus(TurfContainerStates.stopped);
-      assert.strictEqual(worker.containerStatus, ContainerStatus.Unknown);
+      assert.strictEqual(worker.workerStatus, WorkerStatus.Unknown);
     });
 
     it('should state unknown when event unsupported', async () => {
@@ -409,12 +403,10 @@ describe(common.testName(__filename), () => {
         'world'
       );
       const worker = new Worker(workerMetadata, config);
-      assert.strictEqual(worker.containerStatus, ContainerStatus.Created);
+      assert.strictEqual(worker.workerStatus, WorkerStatus.Created);
 
-      worker.updateContainerStatusByEvent(
-        'Unsupported' as ContainerStatusReport
-      );
-      assert.strictEqual(worker.containerStatus, ContainerStatus.Unknown);
+      worker.updateWorkerStatusByReport('Unsupported' as WorkerStatusReport);
+      assert.strictEqual(worker.workerStatus, WorkerStatus.Unknown);
     });
   });
 
@@ -428,54 +420,7 @@ describe(common.testName(__filename), () => {
       clock.uninstall();
     });
 
-    it('with data', () => {
-      const data = {
-        name: 'hello',
-        maxActivateRequests: 10,
-        activeRequestCount: 5,
-      };
-      const workerMetadata = new WorkerMetadata(
-        'func',
-        { inspect: false },
-        false,
-        false,
-        'hello',
-        'world'
-      );
-      const worker = new Worker(workerMetadata, config);
-
-      const container = new SimpleContainer('hello');
-      worker.setContainer(container);
-      container.updateStatus(TurfContainerStates.starting);
-      worker.sync(data);
-
-      assert.strictEqual(
-        worker.turfContainerStates,
-        TurfContainerStates.starting
-      );
-      assert.strictEqual(worker.containerStatus, ContainerStatus.Created);
-
-      clock.tick(config.worker.defaultInitializerTimeout + 1000);
-      const spy = sinon.spy(worker.logger, 'statusSwitchTo');
-
-      container.updateStatus(TurfContainerStates.running);
-      assert.strictEqual(
-        worker.turfContainerStates,
-        TurfContainerStates.running
-      );
-      assert.strictEqual(worker.containerStatus, ContainerStatus.Stopped);
-
-      assert(
-        spy.calledWithMatch(
-          ContainerStatus.Stopped,
-          sinon.match(/connect timeout/)
-        )
-      );
-
-      spy.restore();
-    });
-
-    it('without data', () => {
+    it('without data', async () => {
       const workerMetadata = new WorkerMetadata(
         'func',
         { inspect: false },
@@ -494,30 +439,26 @@ describe(common.testName(__filename), () => {
         worker.turfContainerStates,
         TurfContainerStates.starting
       );
-      assert.strictEqual(worker.containerStatus, ContainerStatus.Created);
+      assert.strictEqual(worker.workerStatus, WorkerStatus.Created);
+
+      const readyFuture = assert.rejects(
+        worker.ready(),
+        /initialization timeout/
+      );
 
       clock.tick(config.worker.defaultInitializerTimeout + 1000);
-      const spy = sinon.spy(worker.logger, 'statusSwitchTo');
-
       container.updateStatus(TurfContainerStates.running);
 
       assert.strictEqual(
         worker.turfContainerStates,
         TurfContainerStates.running
       );
-      assert.strictEqual(worker.containerStatus, ContainerStatus.Stopped);
+      assert.strictEqual(worker.workerStatus, WorkerStatus.Stopped);
 
-      assert(
-        spy.calledWithMatch(
-          ContainerStatus.Stopped,
-          sinon.match(/connect timeout/)
-        )
-      );
-
-      spy.restore();
+      await readyFuture;
     });
 
-    it('created to stop when unsupported state timeout', () => {
+    it('created to stop when unsupported state timeout', async () => {
       const workerMetadata = new WorkerMetadata(
         'func',
         { inspect: false },
@@ -536,55 +477,51 @@ describe(common.testName(__filename), () => {
         worker.turfContainerStates,
         TurfContainerStates.starting
       );
-      assert.strictEqual(worker.containerStatus, ContainerStatus.Created);
+      assert.strictEqual(worker.workerStatus, WorkerStatus.Created);
 
-      clock.tick(config.worker.defaultInitializerTimeout + 1000);
-      const spy = sinon.spy(worker.logger, 'statusSwitchTo');
-
-      container.updateStatus('unsupported' as TurfContainerStates);
-      assert.strictEqual(worker.containerStatus, ContainerStatus.Stopped);
-
-      assert(
-        spy.calledWithMatch(
-          ContainerStatus.Stopped,
-          sinon.match(/connect timeout/)
-        )
-      );
-
-      spy.restore();
-    });
-
-    it('do nothing when unsupported state', () => {
-      const workerMetadata = new WorkerMetadata(
-        'func',
-        { inspect: false },
-        false,
-        false,
-        'hello',
-        'world'
-      );
-      const worker = new Worker(workerMetadata, config);
-
-      const container = new SimpleContainer('hello');
-      worker.setContainer(container);
-      container.updateStatus(TurfContainerStates.running);
-
-      assert.strictEqual(
-        worker.turfContainerStates,
-        TurfContainerStates.running
-      );
-      assert.strictEqual(worker.containerStatus, ContainerStatus.Created);
-
-      worker.updateContainerStatus(
-        ContainerStatus.Ready,
-        ContainerStatusReport.ContainerInstalled
+      const readyFuture = assert.rejects(
+        worker.ready(),
+        /initialization timeout/
       );
 
       clock.tick(config.worker.defaultInitializerTimeout + 1000);
 
       container.updateStatus('unsupported' as TurfContainerStates);
+      assert.strictEqual(worker.workerStatus, WorkerStatus.Stopped);
 
-      assert.strictEqual(worker.containerStatus, ContainerStatus.Ready);
+      await readyFuture;
+    });
+
+    it('do nothing when unsupported state', async () => {
+      const workerMetadata = new WorkerMetadata(
+        'func',
+        { inspect: false },
+        false,
+        false,
+        'hello',
+        'world'
+      );
+      const worker = new Worker(workerMetadata, config);
+
+      const container = new SimpleContainer('hello');
+      worker.setContainer(container);
+      container.updateStatus(TurfContainerStates.running);
+
+      assert.strictEqual(
+        worker.turfContainerStates,
+        TurfContainerStates.running
+      );
+      assert.strictEqual(worker.workerStatus, WorkerStatus.Created);
+      const readyFuture = worker.ready();
+
+      worker.updateWorkerStatusByReport(WorkerStatusReport.ContainerInstalled);
+
+      clock.tick(config.worker.defaultInitializerTimeout + 1000);
+
+      container.updateStatus('unsupported' as TurfContainerStates);
+
+      assert.strictEqual(worker.workerStatus, WorkerStatus.Ready);
+      await readyFuture;
     });
   });
 
@@ -632,7 +569,7 @@ describe(common.testName(__filename), () => {
             functionName: 'func1',
             name: 'worker1',
             isInspector: false,
-            event: ContainerStatusReport.ContainerInstalled,
+            event: WorkerStatusReport.ContainerInstalled,
             requestId: '',
           })
         );
@@ -655,68 +592,50 @@ describe(common.testName(__filename), () => {
     });
 
     it('should throw error when set stopped before ready', async () => {
-      process.on('unhandledRejection', (promise, reason) => {});
-      setTimeout(() => {
-        stateManager.updateWorkerStatusByReport(
-          new WorkerStatusReportEvent({
-            functionName: 'func1',
-            name: 'worker1',
-            isInspector: false,
-            event: ContainerStatusReport.ContainerDisconnected,
-            requestId: '',
-          })
-        );
-      }, 500);
+      const readyFuture = worker.ready();
 
-      await assert.rejects(
-        async () => {
-          await worker.ready();
-        },
-        {
-          message: /stopped unexpected after start/,
-        }
+      stateManager.updateWorkerStatusByReport(
+        new WorkerStatusReportEvent({
+          functionName: 'func1',
+          name: 'worker1',
+          isInspector: false,
+          event: WorkerStatusReport.ContainerDisconnected,
+          requestId: '',
+        })
       );
+
+      await assert.rejects(readyFuture, {
+        message: /stopped unexpected after start/,
+      });
     });
 
     it('should do nothing when emit stopped after ready', async () => {
-      setTimeout(() => {
-        stateManager.updateWorkerStatusByReport(
-          new WorkerStatusReportEvent({
-            functionName: 'func1',
-            name: 'worker1',
-            isInspector: false,
-            event: ContainerStatusReport.ContainerInstalled,
-            requestId: '',
-          })
-        );
-      }, 200);
+      const readyFuture = worker.ready();
 
-      const spy = sinon.spy();
-
-      mm(worker, 'setStopped', async () => {
-        worker.setStopped();
-        spy();
-      });
-
-      await worker.ready();
-
-      worker.updateContainerStatusByEvent(
-        ContainerStatusReport.ContainerDisconnected
+      stateManager.updateWorkerStatusByReport(
+        new WorkerStatusReportEvent({
+          functionName: 'func1',
+          name: 'worker1',
+          isInspector: false,
+          event: WorkerStatusReport.ContainerInstalled,
+          requestId: '',
+        })
+      );
+      worker.updateWorkerStatusByReport(
+        WorkerStatusReport.ContainerDisconnected
       );
 
-      assert(spy.notCalled);
+      await readyFuture;
     });
 
     it('should do nothing when setReady before wait ready', async () => {
-      worker.setReady();
+      worker['_setReady']();
 
-      await assert.doesNotReject(async () => {
-        await worker.ready();
-      });
+      await worker.ready();
     });
 
     it('should do nothing when setStopped before wait ready', async () => {
-      worker.setStopped();
+      worker['_setStopped']();
 
       await assert.rejects(
         async () => {
@@ -726,27 +645,6 @@ describe(common.testName(__filename), () => {
           message: /stopped unexpected after start./,
         }
       );
-    });
-
-    it('should do nothing when timeout but ready', async () => {
-      let called = 0;
-
-      const _setReady = worker.setReady.bind(worker);
-      mm(worker, 'setReady', async () => {
-        called++;
-        _setReady();
-      });
-
-      worker.updateContainerStatus(
-        ContainerStatus.Ready,
-        ContainerStatusReport.ContainerInstalled
-      );
-
-      await assert.doesNotReject(async () => {
-        await worker.ready();
-      });
-
-      assert.ok(called === 0);
     });
   });
 });

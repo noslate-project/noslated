@@ -7,7 +7,7 @@ import {
 } from '#self/lib/turf/types';
 import { Container, ContainerManager } from '../container/container_manager';
 import SPEC from '../../lib/json/spec.template.json';
-import { Broker, WorkerStatsSnapshot } from '../worker_stats';
+import { Broker, WorkerStatsSnapshot } from '../worker_stats/index';
 import { createDeferred, Deferred } from '#self/lib/util';
 
 export class TestContainerManager implements ContainerManager {

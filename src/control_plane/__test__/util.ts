@@ -3,7 +3,7 @@ import {
   Broker,
   WorkerMetadata,
   WorkerStatsSnapshot,
-} from '../worker_stats';
+} from '../worker_stats/index';
 
 type WorkerDesc = {
   processName: string;

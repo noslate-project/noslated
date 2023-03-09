@@ -13,7 +13,7 @@ import { config } from '#self/config';
 import assert from 'assert';
 import { CanonicalCode } from '#self/delegate/index';
 import { sleep } from '#self/lib/util';
-import { ContainerStatus } from '#self/lib/constants';
+import { WorkerStatus } from '#self/lib/constants';
 import sinon, { SinonSpy } from 'sinon';
 import { DefaultEnvironment } from '../env/environment';
 
@@ -890,8 +890,8 @@ const cases = [
         .getInstance('stateManager')
         .getBroker('node_worker_without_disposable_true', false)!;
       assert.deepStrictEqual(broker.workers.size, 1);
-      const worker = broker.workers.values().next().value;
-      assert.deepStrictEqual(worker.containerStatus, ContainerStatus.Ready);
+      const worker = Array.from(broker.workers.values())[0];
+      assert.deepStrictEqual(worker.workerStatus, WorkerStatus.Ready);
       assert.deepStrictEqual(
         worker.turfContainerStates,
         TurfContainerStates.running
@@ -930,8 +930,8 @@ const cases = [
         .getInstance('stateManager')
         .getBroker('node_worker_with_disposable_true', false)!;
       assert.deepStrictEqual(broker.workers.size, 1);
-      const worker = broker.workers.values().next().value;
-      assert.deepStrictEqual(worker.containerStatus, ContainerStatus.Stopped);
+      const worker = Array.from(broker.workers.values())[0];
+      assert.deepStrictEqual(worker.workerStatus, WorkerStatus.Stopped);
       assert.deepStrictEqual(
         worker.turfContainerStates,
         TurfContainerStates.running
@@ -966,8 +966,8 @@ const cases = [
         .getInstance('stateManager')
         .getBroker('aworker_without_disposable_true', false)!;
       assert.deepStrictEqual(broker.workers.size, 1);
-      const worker = broker.workers.values().next().value;
-      assert.deepStrictEqual(worker.containerStatus, ContainerStatus.Ready);
+      const worker = Array.from(broker.workers.values())[0];
+      assert.deepStrictEqual(worker.workerStatus, WorkerStatus.Ready);
       assert.deepStrictEqual(
         worker.turfContainerStates,
         TurfContainerStates.running
@@ -1001,8 +1001,8 @@ const cases = [
         .getInstance('stateManager')
         .getBroker('aworker_with_disposable_true', false)!;
       assert.deepStrictEqual(broker.workers.size, 1);
-      const worker = broker.workers.values().next().value;
-      assert.deepStrictEqual(worker.containerStatus, ContainerStatus.Stopped);
+      const worker = Array.from(broker.workers.values())[0];
+      assert.deepStrictEqual(worker.workerStatus, WorkerStatus.Stopped);
       assert.deepStrictEqual(
         worker.turfContainerStates,
         TurfContainerStates.running

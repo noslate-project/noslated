@@ -28,7 +28,7 @@ import * as root from '#self/proto/root';
 import { RawFunctionProfile } from '#self/lib/json/function_profile';
 import { Readable } from 'stream';
 import { Metadata, TriggerResponse } from '#self/delegate/request_response';
-import { ContainerStatusReport } from '#self/lib/constants';
+import { WorkerStatusReport } from '#self/lib/constants';
 import { DataPlaneHost } from './data_plane_host';
 import { DependencyContext } from '#self/lib/dependency_context';
 import { EventBus } from '#self/lib/event-bus';
@@ -174,7 +174,7 @@ export class DataFlowController extends BaseOf(EventEmitter) {
           functionName: broker.name,
           isInspector: broker.options.inspect === true,
           name: realWorker.name,
-          event: ContainerStatusReport.RequestDrained,
+          event: WorkerStatusReport.RequestDrained,
         });
 
         toBeClosed?.workers?.push(worker);
@@ -271,7 +271,7 @@ export class DataFlowController extends BaseOf(EventEmitter) {
       await (this.host as any).broadcastContainerStatusReport({
         functionName: broker.name,
         name: worker.name,
-        event: ContainerStatusReport.ContainerDisconnected,
+        event: WorkerStatusReport.ContainerDisconnected,
         isInspector: broker.options.inspect === true,
       });
     }

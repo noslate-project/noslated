@@ -14,7 +14,7 @@ import {
   FunctionProfileUpdateEvent,
 } from '#self/lib/function_profile';
 import { TurfContainerStates } from '#self/lib/turf';
-import { ContainerStatus, ContainerStatusReport } from '#self/lib/constants';
+import { WorkerStatus, WorkerStatusReport } from '#self/lib/constants';
 import { AworkerFunctionProfile } from '#self/lib/json/function_profile';
 import { NotNullableInterface } from '#self/lib/interfaces';
 import * as root from '#self/proto/root';
@@ -202,7 +202,7 @@ describe(common.testName(__filename), () => {
           JSON.parse(JSON.stringify(workers.map(worker => worker.toJSON()))),
           [
             {
-              containerStatus: ContainerStatus.Created,
+              containerStatus: WorkerStatus.Created,
               turfContainerStates: null,
               name: 'hello',
               credential: 'world',
@@ -211,7 +211,7 @@ describe(common.testName(__filename), () => {
               data: null,
             },
             {
-              containerStatus: ContainerStatus.Created,
+              containerStatus: WorkerStatus.Created,
               turfContainerStates: null,
               name: 'foooo',
               credential: 'bar',
@@ -305,7 +305,7 @@ describe(common.testName(__filename), () => {
           JSON.parse(JSON.stringify(workers.map(worker => worker.toJSON()))),
           [
             {
-              containerStatus: ContainerStatus.Created,
+              containerStatus: WorkerStatus.Created,
               turfContainerStates: null,
               name: 'hello',
               credential: 'world',
@@ -314,7 +314,7 @@ describe(common.testName(__filename), () => {
               data: null,
             },
             {
-              containerStatus: ContainerStatus.Created,
+              containerStatus: WorkerStatus.Created,
               turfContainerStates: null,
               name: 'foooo',
               credential: 'bar',
@@ -382,7 +382,7 @@ describe(common.testName(__filename), () => {
           JSON.parse(JSON.stringify(workers.map(worker => worker.toJSON()))),
           [
             {
-              containerStatus: ContainerStatus.Created,
+              containerStatus: WorkerStatus.Created,
               turfContainerStates: null,
               name: 'hello',
               credential: 'world',
@@ -391,7 +391,7 @@ describe(common.testName(__filename), () => {
               data: null,
             },
             {
-              containerStatus: ContainerStatus.Created,
+              containerStatus: WorkerStatus.Created,
               turfContainerStates: null,
               name: 'foooo',
               credential: 'bar',
@@ -478,7 +478,7 @@ describe(common.testName(__filename), () => {
             ],
             workers: [
               {
-                containerStatus: ContainerStatus.Created,
+                containerStatus: WorkerStatus.Created,
                 turfContainerStates: null,
                 name: 'hello',
                 credential: 'world',
@@ -507,7 +507,7 @@ describe(common.testName(__filename), () => {
             ],
             workers: [
               {
-                containerStatus: ContainerStatus.Created,
+                containerStatus: WorkerStatus.Created,
                 turfContainerStates: null,
                 name: 'foooo',
                 credential: 'bar',
@@ -553,7 +553,7 @@ describe(common.testName(__filename), () => {
             ],
             workers: [
               {
-                containerStatus: ContainerStatus.Created,
+                containerStatus: WorkerStatus.Created,
                 turfContainerStates: null,
                 name: 'hello',
                 credential: 'world',
@@ -628,9 +628,9 @@ describe(common.testName(__filename), () => {
         const workerNames = ['hello', 'foooo'];
         const workerCredentials = ['world', 'bar'];
         const turfContainerStateses = [null, TurfContainerStates.running];
-        const containerStatus: ContainerStatus[] = [
-          ContainerStatus.Created,
-          ContainerStatus.Created,
+        const containerStatus: WorkerStatus[] = [
+          WorkerStatus.Created,
+          WorkerStatus.Created,
         ];
         const pids = [null, 1];
 
@@ -639,7 +639,7 @@ describe(common.testName(__filename), () => {
           assert.strictEqual(broker.isInspector, inspectors[i]);
           assert.deepStrictEqual(
             broker.data,
-            broker.profiles.get('func')!.toJSON(true)
+            profileManager.get('func')!.toJSON(true)
           );
           assert.strictEqual(broker.workers.size, 1);
           assert.strictEqual(broker.startingPool.size, 1);
@@ -666,7 +666,7 @@ describe(common.testName(__filename), () => {
           functionName: 'func',
           name: 'hello',
           isInspector: true,
-          event: ContainerStatusReport.ContainerInstalled,
+          event: WorkerStatusReport.ContainerInstalled,
           requestId: '',
         });
 
@@ -681,9 +681,9 @@ describe(common.testName(__filename), () => {
           TurfContainerStates.running,
           TurfContainerStates.unknown,
         ];
-        const _containerStatus: ContainerStatus[] = [
-          ContainerStatus.Ready,
-          ContainerStatus.Unknown,
+        const _containerStatus: WorkerStatus[] = [
+          WorkerStatus.Ready,
+          WorkerStatus.Unknown,
         ];
         const _pids = [2, 1];
 
@@ -692,7 +692,7 @@ describe(common.testName(__filename), () => {
           assert.strictEqual(broker.isInspector, inspectors[i]);
           assert.deepStrictEqual(
             broker.data,
-            broker.profiles.get('func')!.toJSON(true)
+            profileManager.get('func')!.toJSON(true)
           );
           assert.strictEqual(broker.workers.size, 1);
           assert.strictEqual(broker.startingPool.size, 0);
@@ -769,7 +769,7 @@ describe(common.testName(__filename), () => {
             JSON.stringify(broker.workers.get(workerNames[i]))
           );
           assert.deepStrictEqual(worker, {
-            containerStatus: ContainerStatus.Created,
+            containerStatus: WorkerStatus.Created,
             turfContainerStates: turfContainerStates[i],
             name: workerNames[i],
             credential: workerCredentials[i],
@@ -783,6 +783,11 @@ describe(common.testName(__filename), () => {
                   ]),
             registerTime: worker.registerTime,
           });
+
+          // Suppress ready rejection.
+          broker
+            .getWorker(workerNames[i])
+            ?.updateWorkerStatusByReport(WorkerStatusReport.ContainerInstalled);
         });
 
         registerContainers(testContainerManager, workerStatsSnapshot, [
@@ -808,7 +813,7 @@ describe(common.testName(__filename), () => {
             JSON.stringify(broker.workers.get(workerNames[i]))
           );
           assert.deepStrictEqual(worker, {
-            containerStatus: ContainerStatus.Stopped,
+            containerStatus: WorkerStatus.Stopped,
             turfContainerStates: _turfContainerStates[i],
             name: workerNames[i],
             credential: workerCredentials[i],
@@ -854,15 +859,23 @@ describe(common.testName(__filename), () => {
         updateWorkerContainerStatus(workerStatsSnapshot, {
           functionName: 'func',
           isInspector: true,
-          event: ContainerStatusReport.ContainerInstalled,
+          event: WorkerStatusReport.ContainerInstalled,
           name: 'hello',
+          requestId: '',
+        });
+        // Suppress ready rejection
+        updateWorkerContainerStatus(workerStatsSnapshot, {
+          functionName: 'func',
+          isInspector: false,
+          event: WorkerStatusReport.ContainerInstalled,
+          name: 'foooo',
           requestId: '',
         });
 
         updateWorkerContainerStatus(workerStatsSnapshot, {
           functionName: 'func',
           isInspector: false,
-          event: ContainerStatusReport.ContainerDisconnected,
+          event: WorkerStatusReport.ContainerDisconnected,
           name: 'foooo',
           requestId: '',
         });
@@ -944,10 +957,10 @@ function updateWorkerContainerStatus(
   const worker = snapshot.getWorker(functionName, isInspector, name);
 
   if (worker) {
-    worker.updateContainerStatusByEvent(event as ContainerStatusReport);
+    worker.updateWorkerStatusByReport(event as WorkerStatusReport);
 
     // 如果已经 ready，则从 starting pool 中移除
-    if (worker.containerStatus === ContainerStatus.Ready) {
+    if (worker.workerStatus === WorkerStatus.Ready) {
       const broker = snapshot.getBroker(functionName, isInspector);
       broker?.removeItemFromStartingPool(worker.name);
     }

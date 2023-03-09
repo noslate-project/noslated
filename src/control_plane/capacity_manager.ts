@@ -2,18 +2,29 @@ import bytes from 'bytes';
 import { Base } from '#self/lib/sdk_base';
 import loggers from '#self/lib/logger';
 import { Logger } from '#self/lib/loggers';
-import { Broker } from './worker_stats';
+import { Broker } from './worker_stats/index';
 import { RequestQueueingEvent } from './events';
 import { ControlPlaneDependencyContext } from './deps';
 import { StateManager } from './worker_stats/state_manager';
+import { kMemoryLimit } from './constants';
+import { RawWithDefaultsFunctionProfile } from '#self/lib/json/function_profile';
+import { ErrorCode } from './worker_launcher_error_code';
+
+enum WaterLevelAction {
+  UNKNOWN = 0,
+  NORMAL = 1,
+  NEED_EXPAND = 2,
+  NEED_SHRINK = 3,
+}
 
 /**
  * CapacityManager
  */
 export class CapacityManager extends Base {
-  virtualMemoryPoolSize: number;
-  logger: Logger;
-  stateManager: StateManager;
+  private _shrinkRedundantTimes: number;
+  private virtualMemoryPoolSize: number;
+  private logger: Logger;
+  private stateManager: StateManager;
 
   constructor(ctx: ControlPlaneDependencyContext) {
     super();
@@ -21,6 +32,7 @@ export class CapacityManager extends Base {
     this.stateManager = ctx.getInstance('stateManager');
 
     this.virtualMemoryPoolSize = bytes(config.virtualMemoryPoolSize);
+    this._shrinkRedundantTimes = config.worker.shrinkRedundantTimes;
     this.logger = loggers.get('capacity manager');
   }
 
@@ -43,7 +55,7 @@ export class CapacityManager extends Base {
         continue;
       }
 
-      let count = broker.evaluateWaterLevel(false);
+      let count = this.evaluateWaterLevel(broker, false);
 
       if (broker.workerCount < broker.reservationCount) {
         // 扩容至预留数
@@ -137,6 +149,145 @@ export class CapacityManager extends Base {
     }
 
     return true;
+  }
+
+  /**
+   * Evaluate the water level.
+   * @param {boolean} [expansionOnly] Whether do the expansion action only or not.
+   * @return {number} How much processes (workers) should be scale. (> 0 means expand, < 0 means shrink)
+   */
+  evaluateWaterLevel(broker: Broker, expansionOnly = false) {
+    if (broker.disposable) {
+      return 0;
+    }
+
+    if (!broker.data) {
+      return expansionOnly ? 0 : -broker.workers.size;
+    }
+
+    if (!broker.workerCount) {
+      return 0;
+    }
+
+    const { activeRequestCount, totalMaxActivateRequests } = broker;
+    const waterLevel = activeRequestCount / totalMaxActivateRequests;
+
+    let waterLevelAction = WaterLevelAction.UNKNOWN;
+
+    // First check is this function still existing
+    if (!expansionOnly) {
+      if (waterLevel <= 0.6 && broker.workerCount > broker.reservationCount) {
+        waterLevelAction = waterLevelAction || WaterLevelAction.NEED_SHRINK;
+      }
+
+      // If only one worker left, and still have request, reserve it
+      if (
+        waterLevelAction === WaterLevelAction.NEED_SHRINK &&
+        broker.workerCount === 1 &&
+        broker.activeRequestCount !== 0
+      ) {
+        waterLevelAction = WaterLevelAction.NORMAL;
+      }
+    }
+
+    if (waterLevel >= 0.8)
+      waterLevelAction = waterLevelAction || WaterLevelAction.NEED_EXPAND;
+    waterLevelAction = waterLevelAction || WaterLevelAction.NORMAL;
+
+    switch (waterLevelAction) {
+      case WaterLevelAction.NEED_SHRINK: {
+        broker.redundantTimes++;
+
+        if (broker.redundantTimes >= this._shrinkRedundantTimes) {
+          // up to shrink
+          const newMaxActivateRequests = activeRequestCount / 0.7;
+          const deltaMaxActivateRequests =
+            totalMaxActivateRequests - newMaxActivateRequests;
+          let deltaInstance = Math.floor(
+            deltaMaxActivateRequests / broker.data.worker!.maxActivateRequests!
+          );
+
+          // reserve at least `this.reservationCount` instances
+          if (broker.workerCount - deltaInstance < broker.reservationCount) {
+            deltaInstance = broker.workerCount - broker.reservationCount;
+          }
+
+          broker.redundantTimes = 0;
+          return -deltaInstance;
+        }
+
+        return 0;
+      }
+
+      case WaterLevelAction.NORMAL:
+      case WaterLevelAction.NEED_EXPAND:
+      default: {
+        broker.redundantTimes = 0;
+        if (waterLevelAction !== WaterLevelAction.NEED_EXPAND) return 0;
+
+        const newMaxActivateRequests = activeRequestCount / 0.7;
+        const deltaMaxActivateRequests =
+          newMaxActivateRequests - totalMaxActivateRequests;
+        let deltaInstanceCount = Math.ceil(
+          deltaMaxActivateRequests / broker.data.worker!.maxActivateRequests!
+        );
+        deltaInstanceCount =
+          broker.data.worker!.replicaCountLimit! <
+          broker.workerCount + deltaInstanceCount
+            ? broker.data.worker!.replicaCountLimit! - broker.workerCount
+            : deltaInstanceCount;
+
+        return Math.max(deltaInstanceCount, 0);
+      }
+    }
+  }
+
+  assertExpandingAllowed(
+    funcName: string,
+    inspect: boolean,
+    disposable: boolean,
+    profile: RawWithDefaultsFunctionProfile
+  ): void {
+    // get broker / virtualMemoryUsed / virtualMemoryPoolSize, etc.
+    const broker = this.stateManager.workerStatsSnapshot.getOrCreateBroker(
+      funcName,
+      inspect,
+      disposable
+    );
+    if (!broker) {
+      const err = new Error(`No broker named ${funcName})}`);
+      err.code = ErrorCode.kNoFunction;
+      throw err;
+    }
+
+    const {
+      worker: { replicaCountLimit },
+      resourceLimit: { memory = kMemoryLimit },
+    } = profile;
+    if (this.virtualMemoryUsed + memory > this.virtualMemoryPoolSize) {
+      const err = new Error(
+        `No enough virtual memory (used: ${this.virtualMemoryUsed} + need: ${memory}) > total: ${this.virtualMemoryPoolSize}`
+      );
+      err.code = ErrorCode.kNoEnoughVirtualMemoryPoolSize;
+      throw err;
+    }
+
+    // inspect 模式只开启一个
+    if (broker.workerCount && inspect) {
+      const err = new Error(
+        `Replica count exceeded limit in inspect mode (${broker.workerCount} / ${replicaCountLimit})`
+      );
+      err.code = ErrorCode.kReplicaLimitExceeded;
+      throw err;
+    }
+
+    if (broker.workerCount >= replicaCountLimit) {
+      const err = new Error(
+        `Replica count exceeded limit (${broker.workerCount} / ${replicaCountLimit})`
+      );
+      err.code = ErrorCode.kReplicaLimitExceeded;
+      throw err;
+    }
   }
 }
 

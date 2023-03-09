@@ -7,7 +7,7 @@ import { Worker, WorkerMetadata } from './worker';
 import { FunctionProfileManager } from '#self/lib/function_profile';
 import { Config } from '#self/config';
 import * as root from '#self/proto/root';
-import { ContainerStatus } from '#self/lib/constants';
+import { WorkerStatus } from '#self/lib/constants';
 import { StatLogger } from './stat_logger';
 
 export class WorkerStatsSnapshot extends BaseOf(EventEmitter) {
@@ -117,32 +117,7 @@ export class WorkerStatsSnapshot extends BaseOf(EventEmitter) {
   }
 
   toProtobufObject(): root.noslated.data.IBrokerStats[] {
-    return [...this.brokers.values()].map(broker => ({
-      name: broker.name,
-      inspector: broker.isInspector,
-      profile: broker.data,
-      redundantTimes: broker.redundantTimes,
-      startingPool: [...broker.startingPool.entries()].map(([key, value]) => ({
-        workerName: key,
-        credential: value.credential,
-        estimateRequestLeft: value.estimateRequestLeft,
-        maxActivateRequests: value.maxActivateRequests,
-      })),
-      workers: [...broker.workers.values()].map(worker => ({
-        name: worker.name,
-        credential: worker.credential,
-        registerTime: worker.registerTime,
-        pid: worker.pid,
-        turfContainerStates: worker.turfContainerStates,
-        containerStatus: worker.containerStatus,
-        data: worker.data
-          ? {
-              maxActivateRequests: worker.data.maxActivateRequests,
-              activeRequestCount: worker.data.activeRequestCount,
-            }
-          : null,
-      })),
-    }));
+    return [...this.brokers.values()].map(broker => broker.toJSON());
   }
 
   /**
@@ -164,8 +139,8 @@ export class WorkerStatsSnapshot extends BaseOf(EventEmitter) {
 
     // 进入该状态，必然要被 GC
     if (
-      worker.containerStatus === ContainerStatus.Stopped ||
-      worker.containerStatus === ContainerStatus.Unknown
+      worker.workerStatus === WorkerStatus.Stopped ||
+      worker.workerStatus === WorkerStatus.Unknown
     ) {
       try {
         await worker.container!.stop();

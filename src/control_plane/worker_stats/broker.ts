@@ -1,20 +1,9 @@
 import { Config } from '#self/config';
-import {
-  ContainerStatus,
-  ContainerStatusReport,
-  ControlPlaneEvent,
-} from '#self/lib/constants';
+import { WorkerStatus } from '#self/lib/constants';
 import { FunctionProfileManager } from '#self/lib/function_profile';
 import { RawFunctionProfile } from '#self/lib/json/function_profile';
 import { PrefixedLogger } from '#self/lib/loggers';
 import { Worker, WorkerMetadata, WorkerStats } from './worker';
-
-enum WaterLevelAction {
-  UNKNOWN = 0,
-  NORMAL = 1,
-  NEED_EXPAND = 2,
-  NEED_SHRINK = 3,
-}
 
 interface StartingPoolItem {
   credential: string;
@@ -23,17 +12,15 @@ interface StartingPoolItem {
 }
 
 class Broker {
-  static WaterLevelAction = WaterLevelAction;
-
   redundantTimes: number;
 
-  config: Config;
+  private config: Config;
 
-  profiles: FunctionProfileManager;
+  private profiles: FunctionProfileManager;
 
   name: string;
 
-  logger: PrefixedLogger;
+  private logger: PrefixedLogger;
 
   isInspector: boolean;
 
@@ -146,101 +133,6 @@ class Broker {
   }
 
   /**
-   * Evaluate the water level.
-   * @param {boolean} [expansionOnly] Whether do the expansion action only or not.
-   * @return {number} How much processes (workers) should be scale. (> 0 means expand, < 0 means shrink)
-   */
-  evaluateWaterLevel(expansionOnly = false) {
-    if (this.disposable) {
-      return 0;
-    }
-
-    if (!this.data) {
-      return expansionOnly ? 0 : -this.workers.size;
-    }
-
-    if (!this.workerCount) {
-      return 0;
-    }
-
-    const { activeRequestCount, totalMaxActivateRequests } = this;
-    const waterLevel = activeRequestCount / totalMaxActivateRequests;
-
-    const { shrinkRedundantTimes } = this.config.worker;
-
-    let waterLevelAction = Broker.WaterLevelAction.UNKNOWN;
-
-    // First check is this function still existing
-    if (!expansionOnly) {
-      if (waterLevel <= 0.6 && this.workerCount > this.reservationCount) {
-        waterLevelAction =
-          waterLevelAction || Broker.WaterLevelAction.NEED_SHRINK;
-      }
-
-      // If only one worker left, and still have request, reserve it
-      if (
-        waterLevelAction === Broker.WaterLevelAction.NEED_SHRINK &&
-        this.workerCount === 1 &&
-        this.activeRequestCount !== 0
-      ) {
-        waterLevelAction = Broker.WaterLevelAction.NORMAL;
-      }
-    }
-
-    if (waterLevel >= 0.8)
-      waterLevelAction =
-        waterLevelAction || Broker.WaterLevelAction.NEED_EXPAND;
-    waterLevelAction = waterLevelAction || Broker.WaterLevelAction.NORMAL;
-
-    switch (waterLevelAction) {
-      case Broker.WaterLevelAction.NEED_SHRINK: {
-        this.redundantTimes++;
-
-        if (this.redundantTimes >= shrinkRedundantTimes) {
-          // up to shrink
-          const newMaxActivateRequests = activeRequestCount / 0.7;
-          const deltaMaxActivateRequests =
-            totalMaxActivateRequests - newMaxActivateRequests;
-          let deltaInstance = Math.floor(
-            deltaMaxActivateRequests / this.data.worker!.maxActivateRequests!
-          );
-
-          // reserve at least `this.reservationCount` instances
-          if (this.workerCount - deltaInstance < this.reservationCount) {
-            deltaInstance = this.workerCount - this.reservationCount;
-          }
-
-          this.redundantTimes = 0;
-          return -deltaInstance;
-        }
-
-        return 0;
-      }
-
-      case Broker.WaterLevelAction.NORMAL:
-      case Broker.WaterLevelAction.NEED_EXPAND:
-      default: {
-        this.redundantTimes = 0;
-        if (waterLevelAction !== Broker.WaterLevelAction.NEED_EXPAND) return 0;
-
-        const newMaxActivateRequests = activeRequestCount / 0.7;
-        const deltaMaxActivateRequests =
-          newMaxActivateRequests - totalMaxActivateRequests;
-        let deltaInstanceCount = Math.ceil(
-          deltaMaxActivateRequests / this.data.worker!.maxActivateRequests!
-        );
-        deltaInstanceCount =
-          this.data.worker!.replicaCountLimit! <
-          this.workerCount + deltaInstanceCount
-            ? this.data.worker!.replicaCountLimit! - this.workerCount
-            : deltaInstanceCount;
-
-        return Math.max(deltaInstanceCount, 0);
-      }
-    }
-  }
-
-  /**
    * @type {number}
    */
   get virtualMemory() {
@@ -284,23 +176,19 @@ class Broker {
     }
 
     // 将已启动完成、失败的从 `startingPool` 中移除
-    for (const startingName of [...this.startingPool.keys()]) {
+    for (const startingName of this.startingPool.keys()) {
       const worker = newMap.get(startingName)!;
       if (!worker.isInitializating()) {
         this.logger.debug(
           '%s removed from starting pool due to status ' + '[%s] - [%s]',
           startingName,
-          ContainerStatus[worker.containerStatus],
+          WorkerStatus[worker.workerStatus],
           worker.turfContainerStates
         );
         this.startingPool.delete(startingName);
       } else if (worker.data) {
         // 同步 startingPool 中的值
-        const item = this.startingPool.get(startingName);
-
-        /** 基本不会发生 */
-        /* istanbul ignore next */
-        if (!item) continue;
+        const item = this.startingPool.get(startingName)!;
 
         item.maxActivateRequests = worker.data.maxActivateRequests!;
         item.estimateRequestLeft =
@@ -372,16 +260,6 @@ class Broker {
     return this.workers.get(processName) || null;
   }
 
-  updateWorkerContainerStatus(
-    workerName: string,
-    status: ContainerStatus,
-    event: ControlPlaneEvent | ContainerStatusReport
-  ) {
-    const worker = this.workers.get(workerName);
-
-    worker?.updateContainerStatus(status, event);
-  }
-
   /**
    * Get the map key by function name and `isInspector`.
    * @param functionName The function name.
@@ -392,125 +270,20 @@ class Broker {
     return `${functionName}:${isInspector ? 'inspector' : 'noinspector'}`;
   }
 
-  /**
-   * Check whether this broker belongs to a function profile.
-   * @return {boolean} Whether it's belongs to a function profile or not.
-   */
-  belongsToFunctionProfile() {
-    return !!this.data;
-  }
-
-  /**
-   * Get the most `what` `N` workers.
-   * @param n The N.
-   * @param compareFn The comparation function.
-   * @return The most idle N workers.
-   */
-  mostWhatNWorkers(
-    n: number,
-    compareFn: (a: Worker, b: Worker) => number
-  ): { name: string; credential: string }[] {
-    const workers = [...this.workers.values()].filter(w => w.isRunning());
-    const nWorkers = workers.sort(compareFn).slice(0, n);
-
-    return nWorkers.map(w => ({ name: w.name, credential: w.credential! }));
-  }
-
-  /**
-   * Get the most idle N workers.
-   * @param n The N.
-   * @return The most idle N workers.
-   */
-  mostIdleNWorkers(n: number) {
-    return this.mostWhatNWorkers(n, (a, b) => {
-      if (a.data?.activeRequestCount! < b.data?.activeRequestCount!) {
-        return -1;
-      } else if (a.data?.activeRequestCount! > b.data?.activeRequestCount!) {
-        return 1;
-      }
-      return a.credential! < b.credential! ? -1 : 1;
-    });
-  }
-
-  /**
-   * Get the newest N workers.
-   * @param n The N.
-   * @return The most idle N workers.
-   */
-  newestNWorkers(n: number) {
-    return this.mostWhatNWorkers(n, (a, b) => {
-      if (a.registerTime > b.registerTime) {
-        return -1;
-      } else if (a.registerTime < b.registerTime) {
-        return 1;
-      }
-      return a.credential! < b.credential! ? -1 : 1;
-    });
-  }
-
-  /**
-   * Get the oldest N workers.
-   * @param n The N.
-   * @return The most idle N workers.
-   */
-  oldestNWorkers(n: number) {
-    return this.mostWhatNWorkers(n, (a, b) => {
-      if (a.registerTime < b.registerTime) {
-        return -1;
-      } else if (a.registerTime > b.registerTime) {
-        return 1;
-      }
-      return a.credential! < b.credential! ? -1 : 1;
-    });
-  }
-
-  /**
-   * Do shrink draw, choose chosen workers.
-   * @param countToChoose The count to choose.
-   * @return The chosen workers.
-   */
-  shrinkDraw(countToChoose: number) {
-    let strategy = this.config.worker.defaultShrinkStrategy;
-
-    /* istanbul ignore else */
-    if (this.data) {
-      strategy =
-        this.data.worker?.shrinkStrategy ||
-        this.config.worker.defaultShrinkStrategy;
-    }
-
-    let workers = [];
-
-    switch (strategy) {
-      case 'FILO': {
-        workers = this.newestNWorkers(countToChoose);
-        break;
-      }
-      case 'FIFO': {
-        workers = this.oldestNWorkers(countToChoose);
-        break;
-      }
-      case 'LCC':
-      default: {
-        if (strategy !== 'LCC') {
-          this.logger.warn(
-            `Shrink strategy ${strategy} is not supported, fallback to LCC.`
-          );
-        }
-
-        workers = this.mostIdleNWorkers(countToChoose);
-      }
-    }
-
-    workers.forEach(worker => {
-      this.updateWorkerContainerStatus(
-        worker.name,
-        ContainerStatus.PendingStop,
-        ControlPlaneEvent.Shrink
-      );
-    });
-
-    return workers;
+  toJSON() {
+    return {
+      name: this.name,
+      inspector: this.isInspector,
+      profile: this.data,
+      redundantTimes: this.redundantTimes,
+      startingPool: [...this.startingPool.entries()].map(([key, value]) => ({
+        workerName: key,
+        credential: value.credential,
+        estimateRequestLeft: value.estimateRequestLeft,
+        maxActivateRequests: value.maxActivateRequests,
+      })),
+      workers: Array.from(this.workers.values()).map(worker => worker.toJSON()),
+    };
   }
 }
 
