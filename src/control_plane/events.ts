@@ -6,6 +6,13 @@ import { TurfState } from '#self/lib/turf/types';
 import * as root from '#self/proto/root';
 import { DataPlaneClient } from './data_plane_client/client';
 
+export class ContainerReconciledEvent extends Event {
+  static type = 'container-reconciled';
+  constructor() {
+    super(ContainerReconciledEvent.type);
+  }
+}
+
 export class FunctionRemovedEvent extends Event {
   static type = 'function-removed';
   constructor(public data: string[]) {
@@ -62,6 +69,7 @@ export class WorkerTrafficStatsEvent extends Event {
 }
 
 export const events = [
+  ContainerReconciledEvent,
   FunctionRemovedEvent,
   FunctionProfileUpdateEvent,
   PlatformEnvironsUpdatedEvent,

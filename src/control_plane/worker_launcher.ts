@@ -9,7 +9,7 @@ import { BaseOptions } from './starter/base';
 import { CodeManager } from './code_manager';
 import { FunctionProfileManager } from '#self/lib/function_profile';
 import { DataPlaneClientManager } from './data_plane_client/manager';
-import { WorkerMetadata } from './worker_stats/index';
+import { WorkerMetadata } from './worker_stats/worker';
 import { performance } from 'perf_hooks';
 import { ControlPlaneEvent } from '#self/lib/constants';
 import { Priority, TaskQueue } from '#self/lib/task_queue';
@@ -156,7 +156,6 @@ export class WorkerLauncher extends Base {
     this.capacityManager.assertExpandingAllowed(
       funcName,
       !!options.inspect,
-      disposable,
       profile
     );
 
@@ -200,8 +199,7 @@ export class WorkerLauncher extends Base {
       requestId
     );
 
-    const worker =
-      this.stateManager.workerStatsSnapshot.register(workerMetadata);
+    const worker = this.stateManager.register(workerMetadata);
 
     try {
       const now = performance.now();

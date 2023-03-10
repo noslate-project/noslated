@@ -13,3 +13,45 @@ export const funcData: AworkerFunctionProfile[] = [
     },
   },
 ];
+
+export const funcDataWithDefault = {
+  ...funcData[0],
+  worker: {
+    fastFailRequestsOnStarting: false,
+    initializationTimeout: 10000,
+    maxActivateRequests: 10,
+    replicaCountLimit: 10,
+    reservationCount: 0,
+    shrinkStrategy: 'LCC',
+    v8Options: [],
+    execArgv: [],
+  },
+};
+
+export const brokerData = [
+  {
+    functionName: 'func',
+    inspector: true,
+    workers: [
+      {
+        name: 'hello',
+        credential: 'world',
+        maxActivateRequests: 10,
+        activeRequestCount: 1,
+      },
+    ],
+  },
+  {
+    functionName: 'func',
+    inspector: false,
+    workers: [
+      {
+        // turf sandbox name min length is 5
+        name: 'foooo',
+        credential: 'bar',
+        maxActivateRequests: 10,
+        activeRequestCount: 6,
+      },
+    ],
+  },
+];

@@ -7,10 +7,9 @@ import { ResourceServer } from '#self/test/baseline/resource-server';
 import { testWorker } from '#self/test/util';
 import { config } from '#self/config';
 import { DefaultEnvironment } from '#self/test/env/environment';
-import { WorkerMetadata } from '../worker_stats/index';
+import { WorkerMetadata } from '../worker_stats/worker';
 import { WorkerStoppedEvent } from '../events';
-
-const sleep = require('#self/lib/util').sleep;
+import { sleep } from '#self/lib/util';
 
 const cases = [
   {
@@ -396,10 +395,7 @@ const cases = [
       const stateManager = control._ctx.getInstance('stateManager');
       const workerMetadata = new WorkerMetadata('aworker_echo');
       await defaultController['tryBatchLaunch'](workerMetadata, 1);
-      const broker = stateManager.workerStatsSnapshot.getBroker(
-        'aworker_echo',
-        false
-      )!;
+      const broker = stateManager.getBroker('aworker_echo', false)!;
       while (true) {
         if (broker.workerCount !== 2) {
           await sleep(10);

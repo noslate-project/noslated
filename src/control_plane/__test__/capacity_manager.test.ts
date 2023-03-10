@@ -15,7 +15,7 @@ import { registerWorkers } from './util';
 import { FunctionProfileManager } from '#self/lib/function_profile';
 import { DataPlaneClientManager } from '../data_plane_client/manager';
 import { mockClientCreatorForManager } from '#self/test/util';
-import { Broker } from '../worker_stats/index';
+import { Broker } from '../worker_stats/broker';
 import { Config } from '#self/config';
 import { funcData } from './worker_stats/test_data';
 
@@ -121,7 +121,7 @@ describe(common.testName(__filename), function () {
         'WAIT'
       );
 
-      registerWorkers(stateManager.workerStatsSnapshot, [
+      registerWorkers(stateManager, [
         {
           funcName: 'func',
           processName: 'hello',
@@ -165,21 +165,17 @@ describe(common.testName(__filename), function () {
         },
       ]);
 
-      registerContainers(
-        testContainerManager,
-        stateManager.workerStatsSnapshot,
-        [
-          { pid: 1, name: 'hello', status: TurfContainerStates.running },
-          { pid: 2, name: 'foo', status: TurfContainerStates.running },
-          { pid: 3, name: 'coco', status: TurfContainerStates.running },
-          { pid: 4, name: 'cocos', status: TurfContainerStates.running },
-          { pid: 5, name: 'alibaba', status: TurfContainerStates.running },
-        ]
-      );
+      registerContainers(testContainerManager, stateManager, [
+        { pid: 1, name: 'hello', status: TurfContainerStates.running },
+        { pid: 2, name: 'foo', status: TurfContainerStates.running },
+        { pid: 3, name: 'coco', status: TurfContainerStates.running },
+        { pid: 4, name: 'cocos', status: TurfContainerStates.running },
+        { pid: 5, name: 'alibaba', status: TurfContainerStates.running },
+      ]);
 
-      await stateManager.syncWorkerData([brokerData1, brokerData2]);
+      await stateManager._syncBrokerData([brokerData1, brokerData2]);
 
-      stateManager.updateWorkerStatusByReport(
+      stateManager._updateWorkerStatusByReport(
         new WorkerStatusReportEvent({
           functionName: 'func',
           name: 'hello',
@@ -189,7 +185,7 @@ describe(common.testName(__filename), function () {
         })
       );
 
-      stateManager.updateWorkerStatusByReport(
+      stateManager._updateWorkerStatusByReport(
         new WorkerStatusReportEvent({
           functionName: 'func',
           name: 'foo',
@@ -199,7 +195,7 @@ describe(common.testName(__filename), function () {
         })
       );
 
-      stateManager.updateWorkerStatusByReport(
+      stateManager._updateWorkerStatusByReport(
         new WorkerStatusReportEvent({
           functionName: 'lambda',
           name: 'coco',
@@ -209,7 +205,7 @@ describe(common.testName(__filename), function () {
         })
       );
 
-      stateManager.updateWorkerStatusByReport(
+      stateManager._updateWorkerStatusByReport(
         new WorkerStatusReportEvent({
           functionName: 'lambda',
           name: 'alibaba',

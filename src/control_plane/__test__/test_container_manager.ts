@@ -7,8 +7,9 @@ import {
 } from '#self/lib/turf/types';
 import { Container, ContainerManager } from '../container/container_manager';
 import SPEC from '../../lib/json/spec.template.json';
-import { Broker, WorkerStatsSnapshot } from '../worker_stats/index';
+import { Broker } from '../worker_stats/broker';
 import { createDeferred, Deferred } from '#self/lib/util';
+import { StateManager } from '../worker_stats/state_manager';
 
 export class TestContainerManager implements ContainerManager {
   containers = new Map<string, TestContainer>();
@@ -179,14 +180,14 @@ export class NoopContainer implements Container {
 
 export function registerContainers(
   testContainerManager: TestContainerManager,
-  workerStatsSnapshot: WorkerStatsSnapshot,
+  stateManager: StateManager,
   list: TurfProcess[]
 ) {
   testContainerManager.list().forEach(it => {
     (it as TestContainer).pendingStatus = TurfContainerStates.unknown;
   });
   testContainerManager.setTestContainers(list);
-  for (const broker of workerStatsSnapshot.brokers.values()) {
+  for (const broker of stateManager._brokers.values()) {
     for (const worker of broker.workers.values()) {
       const container = testContainerManager.getContainer(worker.name);
       if (container) {

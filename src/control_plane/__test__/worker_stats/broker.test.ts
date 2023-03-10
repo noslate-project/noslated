@@ -1,7 +1,7 @@
 import assert from 'assert';
 import _ from 'lodash';
 import mm from 'mm';
-import { Broker } from '#self/control_plane/worker_stats/index';
+import { Broker } from '#self/control_plane/worker_stats/broker';
 import * as common from '#self/test/common';
 import { config } from '#self/config';
 import {
