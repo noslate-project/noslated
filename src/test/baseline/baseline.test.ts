@@ -934,7 +934,7 @@ const cases = [
       assert.deepStrictEqual(worker.workerStatus, WorkerStatus.Stopped);
       assert.deepStrictEqual(
         worker.turfContainerStates,
-        TurfContainerStates.running
+        TurfContainerStates.stopped
       );
       // wait turf kill or sync gc
       // TODO: graceful exit.
@@ -1131,6 +1131,9 @@ describe(common.testName(__filename), function () {
             await env.agent.setFunctionProfile([item.profile]);
             await testWorker(env.agent, item);
             if (item.after) {
+              await env.control._ctx
+                .getInstance('containerReconciler')
+                .reconcile();
               await item.after(env, beforeRet);
             }
           });

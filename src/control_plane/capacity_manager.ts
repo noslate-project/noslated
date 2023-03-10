@@ -2,7 +2,7 @@ import bytes from 'bytes';
 import { Base } from '#self/lib/sdk_base';
 import loggers from '#self/lib/logger';
 import { Logger } from '#self/lib/loggers';
-import { Broker } from './worker_stats/index';
+import { Broker } from './worker_stats/broker';
 import { RequestQueueingEvent } from './events';
 import { ControlPlaneDependencyContext } from './deps';
 import { StateManager } from './worker_stats/state_manager';
@@ -245,15 +245,10 @@ export class CapacityManager extends Base {
   assertExpandingAllowed(
     funcName: string,
     inspect: boolean,
-    disposable: boolean,
     profile: RawWithDefaultsFunctionProfile
   ): void {
     // get broker / virtualMemoryUsed / virtualMemoryPoolSize, etc.
-    const broker = this.stateManager.workerStatsSnapshot.getOrCreateBroker(
-      funcName,
-      inspect,
-      disposable
-    );
+    const broker = this.stateManager.getOrCreateBroker(funcName, inspect);
     if (!broker) {
       const err = new Error(`No broker named ${funcName})}`);
       err.code = ErrorCode.kNoFunction;

@@ -8,17 +8,28 @@ import {
   WorkerStatusReportEvent,
   WorkerStoppedEvent,
 } from '#self/control_plane/events';
-import { registerContainers } from '../test_container_manager';
+import {
+  registerContainers,
+  TestContainerManager,
+} from '../test_container_manager';
 import { TurfContainerStates } from '#self/lib/turf';
 import { TestEnvironment } from '../environment';
 import { registerWorkers } from '../util';
 import { FunctionProfileManager } from '#self/lib/function_profile';
 import { EventBus } from '#self/lib/event-bus';
+import { Broker } from '#self/control_plane/worker_stats/broker';
+import { Worker } from '#self/control_plane/worker_stats/worker';
+import { NotNullableInterface } from '#self/lib/interfaces';
+import * as root from '#self/proto/root';
+import { brokerData, funcData, funcDataWithDefault } from './test_data';
+import { ContainerReconciler } from '#self/control_plane/container/reconciler';
 
 describe(common.testName(__filename), () => {
   let eventBus: EventBus;
   let stateManager: StateManager;
   let functionProfile: FunctionProfileManager;
+  let testContainerManager: TestContainerManager;
+  let containerReconciler: ContainerReconciler;
 
   const env = new TestEnvironment({
     createTestClock: true,
@@ -27,12 +38,14 @@ describe(common.testName(__filename), () => {
 
   beforeEach(async () => {
     controlPlane = env.control;
+    testContainerManager = env.containerManager;
     eventBus = controlPlane._ctx.getInstance('eventBus');
     stateManager = controlPlane._ctx.getInstance('stateManager');
     functionProfile = controlPlane._ctx.getInstance('functionProfile');
+    containerReconciler = controlPlane._ctx.getInstance('containerReconciler');
   });
 
-  describe('updateContainerStatusByReport()', () => {
+  describe('_updateWorkerStatusByReport()', () => {
     it('should update regularly', async () => {
       await functionProfile.set(
         [
@@ -53,7 +66,7 @@ describe(common.testName(__filename), () => {
         ],
         'WAIT'
       );
-      registerWorkers(stateManager.workerStatsSnapshot, [
+      registerWorkers(stateManager, [
         {
           funcName: 'func1',
           processName: 'worker1',
@@ -72,21 +85,13 @@ describe(common.testName(__filename), () => {
         },
       ]);
 
-      const worker1 = stateManager.workerStatsSnapshot.getWorker(
-        'func1',
-        false,
-        'worker1'
-      );
-      const worker2 = stateManager.workerStatsSnapshot.getWorker(
-        'func2',
-        false,
-        'worker1'
-      );
+      const worker1 = stateManager.getWorker('func1', false, 'worker1');
+      const worker2 = stateManager.getWorker('func2', false, 'worker1');
 
       assert(worker1);
       assert(worker2);
 
-      stateManager.updateWorkerStatusByReport(
+      stateManager._updateWorkerStatusByReport(
         new WorkerStatusReportEvent({
           functionName: 'func1',
           name: 'worker1',
@@ -98,7 +103,7 @@ describe(common.testName(__filename), () => {
 
       assert.strictEqual(worker1.workerStatus, WorkerStatus.Ready);
 
-      stateManager.updateWorkerStatusByReport(
+      stateManager._updateWorkerStatusByReport(
         new WorkerStatusReportEvent({
           functionName: 'func1',
           name: 'worker1',
@@ -110,7 +115,7 @@ describe(common.testName(__filename), () => {
 
       assert.strictEqual(worker1.workerStatus, WorkerStatus.Stopped);
 
-      stateManager.updateWorkerStatusByReport(
+      stateManager._updateWorkerStatusByReport(
         new WorkerStatusReportEvent({
           functionName: 'func1',
           name: 'worker1',
@@ -122,7 +127,7 @@ describe(common.testName(__filename), () => {
 
       assert.strictEqual(worker1.workerStatus, WorkerStatus.Stopped);
 
-      stateManager.updateWorkerStatusByReport(
+      stateManager._updateWorkerStatusByReport(
         new WorkerStatusReportEvent({
           functionName: 'func1',
           name: 'worker1',
@@ -134,7 +139,7 @@ describe(common.testName(__filename), () => {
 
       assert.strictEqual(worker1.workerStatus, WorkerStatus.Unknown);
 
-      stateManager.updateWorkerStatusByReport(
+      stateManager._updateWorkerStatusByReport(
         new WorkerStatusReportEvent({
           functionName: 'func2',
           name: 'worker1',
@@ -144,7 +149,7 @@ describe(common.testName(__filename), () => {
         })
       );
 
-      stateManager.updateWorkerStatusByReport(
+      stateManager._updateWorkerStatusByReport(
         new WorkerStatusReportEvent({
           functionName: 'func2',
           name: 'worker1',
@@ -157,7 +162,7 @@ describe(common.testName(__filename), () => {
       assert.strictEqual(worker2.workerStatus, WorkerStatus.Unknown);
     });
 
-    it('should not update with illegal ContainerStatusReport order', async () => {
+    it('should not update with illegal WorkerStatusReport order', async () => {
       await functionProfile.set(
         [
           {
@@ -171,7 +176,7 @@ describe(common.testName(__filename), () => {
         'WAIT'
       );
 
-      registerWorkers(stateManager.workerStatsSnapshot, [
+      registerWorkers(stateManager, [
         {
           funcName: 'func1',
           processName: 'worker1',
@@ -182,11 +187,7 @@ describe(common.testName(__filename), () => {
         },
       ]);
 
-      const worker = stateManager.workerStatsSnapshot.getWorker(
-        'func1',
-        false,
-        'worker1'
-      );
+      const worker = stateManager.getWorker('func1', false, 'worker1');
 
       assert(worker);
 
@@ -199,7 +200,7 @@ describe(common.testName(__filename), () => {
         }
       );
 
-      stateManager.updateWorkerStatusByReport(
+      stateManager._updateWorkerStatusByReport(
         new WorkerStatusReportEvent({
           functionName: 'func1',
           name: 'worker1',
@@ -211,7 +212,7 @@ describe(common.testName(__filename), () => {
 
       assert.strictEqual(worker.workerStatus, WorkerStatus.Stopped);
 
-      stateManager.updateWorkerStatusByReport(
+      stateManager._updateWorkerStatusByReport(
         new WorkerStatusReportEvent({
           functionName: 'func1',
           name: 'worker1',
@@ -225,7 +226,7 @@ describe(common.testName(__filename), () => {
     });
   });
 
-  describe('syncWorkerData()', () => {
+  describe('_syncWorkerData()', () => {
     it('should sync', async () => {
       await functionProfile.set(
         [
@@ -257,7 +258,7 @@ describe(common.testName(__filename), () => {
         ],
       };
 
-      registerWorkers(stateManager.workerStatsSnapshot, [
+      registerWorkers(stateManager, [
         {
           funcName: 'func1',
           processName: 'worker1',
@@ -276,34 +277,30 @@ describe(common.testName(__filename), () => {
         },
       ]);
 
-      registerContainers(
-        env.containerManager,
-        stateManager.workerStatsSnapshot,
-        [
-          { name: 'worker1', status: TurfContainerStates.running, pid: 123 },
-          { name: 'worker2', status: TurfContainerStates.running, pid: 124 },
-        ]
-      );
-      await stateManager.syncWorkerData([brokerStat1]);
+      registerContainers(env.containerManager, stateManager, [
+        { name: 'worker1', status: TurfContainerStates.running, pid: 123 },
+        { name: 'worker2', status: TurfContainerStates.running, pid: 124 },
+      ]);
+      await containerReconciler.reconcile();
+      await stateManager._syncBrokerData([brokerStat1]);
 
-      assert.strictEqual(stateManager.workerStatsSnapshot.brokers.size, 1);
+      assert.strictEqual(stateManager['_brokers'].size, 1);
       assert.strictEqual(
-        stateManager.workerStatsSnapshot.getBroker('func1', false)!.workers
-          .size,
+        stateManager.getBroker('func1', false)!.workers.size,
         2
       );
 
       assert.deepStrictEqual(
         _.omit(
-          stateManager.workerStatsSnapshot
+          stateManager
             .getBroker('func1', false)!
             .getWorker('worker1')!
             .toJSON(),
-          'pid',
           'registerTime'
         ),
         {
           name: 'worker1',
+          pid: 123,
           credential: 'id1',
           turfContainerStates: 'running',
           containerStatus: WorkerStatus.Created,
@@ -311,98 +308,871 @@ describe(common.testName(__filename), () => {
         }
       );
 
+      const worker2 = stateManager
+        .getBroker('func1', false)!
+        .getWorker('worker2');
+      assert(worker2);
+      assert.deepStrictEqual(_.omit(worker2.toJSON(), 'registerTime'), {
+        name: 'worker2',
+        pid: 124,
+        credential: 'id2',
+        turfContainerStates: 'running',
+        containerStatus: WorkerStatus.Created,
+        data: { maxActivateRequests: 10, activeRequestCount: 6 },
+      });
+
+      // Suppress worker ready rejection
+      worker2.updateWorkerStatusByReport(WorkerStatusReport.ContainerInstalled);
+
       const workerStoppedFuture = eventBus.once(WorkerStoppedEvent);
-      {
-        const worker2 = stateManager.workerStatsSnapshot
-          .getBroker('func1', false)!
-          .getWorker('worker2');
-        assert(worker2);
-        assert.deepStrictEqual(
-          _.omit(worker2.toJSON(), 'pid', 'registerTime'),
-          {
-            name: 'worker2',
-            credential: 'id2',
-            turfContainerStates: 'running',
-            containerStatus: WorkerStatus.Created,
-            data: { maxActivateRequests: 10, activeRequestCount: 6 },
-          }
-        );
-
-        // Suppress worker ready rejection
-        worker2.updateWorkerStatusByReport(
-          WorkerStatusReport.ContainerInstalled
-        );
-        await env.containerManager.getContainer('worker2')!.stop();
-        await stateManager.syncWorkerData([brokerStat1]);
-      }
-
-      assert.strictEqual(stateManager.workerStatsSnapshot.brokers.size, 1);
-      assert.strictEqual(
-        stateManager.workerStatsSnapshot.getBroker('func1', false)!.workers
-          .size,
-        1
-      );
-      assert.deepStrictEqual(
-        stateManager.workerStatsSnapshot
-          .getBroker('func1', false)!
-          .getWorker('worker2'),
-        null
-      );
+      await env.containerManager.getContainer('worker2')!.stop();
 
       const event = await workerStoppedFuture;
       assert.strictEqual(event.data.workerName, 'worker2');
+
+      await stateManager._syncBrokerData([brokerStat1]);
+
+      assert.strictEqual(stateManager['_brokers'].size, 1);
+      assert.strictEqual(
+        stateManager.getBroker('func1', false)!.workers.size,
+        1
+      );
+      assert.deepStrictEqual(
+        stateManager.getBroker('func1', false)!.getWorker('worker2'),
+        null
+      );
+    });
+  });
+
+  describe('.register()', () => {
+    beforeEach(async () => {
+      await functionProfile.set(funcData, 'WAIT');
     });
 
-    it('should not sync with empty psData', async () => {
-      await functionProfile.set(
-        [
-          {
-            name: 'func1',
-            url: `file://${__dirname}`,
-            runtime: 'aworker',
-            signature: 'xxx',
-            sourceFile: 'index.js',
-          },
-        ],
-        'WAIT'
-      );
-
-      const brokerStat1 = {
-        functionName: 'func1',
-        inspector: false,
-        workers: [
-          {
-            name: 'worerk1',
-            maxActivateRequests: 10,
-            activeRequestCount: 1,
-          },
-        ],
-      };
-
-      registerWorkers(stateManager.workerStatsSnapshot, [
+    it('should register', () => {
+      registerWorkers(stateManager, [
         {
-          funcName: 'func1',
-          processName: 'worker1',
-          credential: 'id1',
+          funcName: 'func',
+          processName: 'hello',
+          credential: 'world',
+          options: { inspect: true },
+          disposable: false,
+          toReserve: false,
+        },
+        {
+          funcName: 'func',
+          processName: 'foooo',
+          credential: 'bar',
           options: { inspect: false },
           disposable: false,
           toReserve: false,
         },
       ]);
 
-      const beforeSync = stateManager.workerStatsSnapshot
-        .getBroker('func1', false)!
-        .getWorker('worker1')!
-        .toJSON();
+      assert.strictEqual(stateManager._brokers.size, 2);
+      const brokerKeys = [...stateManager._brokers.keys()].sort();
+      const brokers = [...stateManager._brokers.values()].sort((a, b) => {
+        return a.name === b.name
+          ? a.isInspector
+            ? -1
+            : 1
+          : a.name < b.name
+          ? -1
+          : 1;
+      });
+      assert.deepStrictEqual(brokerKeys, [
+        'func:inspector',
+        'func:noinspector',
+      ]);
+      brokers.forEach(b => assert(b instanceof Broker));
 
-      await stateManager.syncWorkerData([brokerStat1]);
+      const names = ['func', 'func'];
+      const inspectors = [true, false];
+      const datas = [funcDataWithDefault, funcDataWithDefault];
+      assert.deepStrictEqual(
+        brokers.map(b => b.name),
+        names
+      );
+      assert.deepStrictEqual(
+        brokers.map(b => b.isInspector),
+        inspectors
+      );
+      assert.deepStrictEqual(
+        brokers.map(b => b.data),
+        datas
+      );
+      const startingPoolsName = ['hello', 'foooo'];
+      brokers.forEach((broker, i) => {
+        assert.strictEqual(broker.startingPool.size, 1);
+        const sp = broker.startingPool.get(startingPoolsName[i]);
+        assert.deepStrictEqual(sp, {
+          credential: i === 0 ? 'world' : 'bar',
+          maxActivateRequests: 10,
+          estimateRequestLeft: 10,
+        });
+      });
+      const workerNames = ['hello', 'foooo'];
+      const workers: Worker[] = brokers.map(
+        (b, i) => b.workers.get(workerNames[i])!
+      );
+      workers.forEach(w => assert(w instanceof Worker));
+      assert.deepStrictEqual(
+        JSON.parse(JSON.stringify(workers.map(worker => worker.toJSON()))),
+        [
+          {
+            containerStatus: WorkerStatus.Created,
+            turfContainerStates: null,
+            name: 'hello',
+            credential: 'world',
+            registerTime: workers[0].registerTime,
+            pid: null,
+            data: null,
+          },
+          {
+            containerStatus: WorkerStatus.Created,
+            turfContainerStates: null,
+            name: 'foooo',
+            credential: 'bar',
+            registerTime: workers[1].registerTime,
+            pid: null,
+            data: null,
+          },
+        ]
+      );
+    });
 
-      const afterSync = stateManager.workerStatsSnapshot
-        .getBroker('func1', false)!
-        .getWorker('worker1')!
-        .toJSON();
+    it('should throw on unrecognizable function', () => {
+      assert.throws(
+        () => {
+          registerWorkers(stateManager, [
+            {
+              funcName: 'non-exists',
+              processName: 'aha',
+              credential: 'oho',
+              options: { inspect: true },
+              disposable: false,
+              toReserve: false,
+            },
+          ]);
+        },
+        {
+          message: /No function named non-exists in function profile\./,
+        }
+      );
+    });
+  });
 
-      assert.deepStrictEqual(beforeSync, afterSync);
+  describe('.getBroker()', () => {
+    beforeEach(async () => {
+      await functionProfile.set(funcData, 'WAIT');
+    });
+
+    it('should get broker', () => {
+      registerWorkers(stateManager, [
+        {
+          funcName: 'func',
+          processName: 'hello',
+          credential: 'world',
+          options: { inspect: true },
+          disposable: false,
+          toReserve: false,
+        },
+        {
+          funcName: 'func',
+          processName: 'foooo',
+          credential: 'bar',
+          options: { inspect: false },
+          disposable: false,
+          toReserve: false,
+        },
+      ]);
+
+      const brokers = [
+        stateManager.getBroker('func', true)!,
+        stateManager.getBroker('func', false)!,
+      ];
+      brokers.forEach(b => assert(b instanceof Broker));
+
+      const names = ['func', 'func'];
+      const inspectors = [true, false];
+      const datas = [funcDataWithDefault, funcDataWithDefault];
+      assert.deepStrictEqual(
+        brokers.map(b => b.name),
+        names
+      );
+      assert.deepStrictEqual(
+        brokers.map(b => b.isInspector),
+        inspectors
+      );
+      assert.deepStrictEqual(
+        brokers.map(b => b.data),
+        datas
+      );
+      const startingPoolsName = ['hello', 'foooo'];
+      brokers.forEach((broker, i) => {
+        assert.strictEqual(broker.startingPool.size, 1);
+        const sp = broker.startingPool.get(startingPoolsName[i]);
+        assert.deepStrictEqual(sp, {
+          credential: i === 0 ? 'world' : 'bar',
+          maxActivateRequests: 10,
+          estimateRequestLeft: 10,
+        });
+      });
+      const workerNames = ['hello', 'foooo'];
+      const workers: Worker[] = brokers.map(
+        (b, i) => b.workers.get(workerNames[i])!
+      );
+      workers.forEach(w => assert(w instanceof Worker));
+      assert.deepStrictEqual(
+        JSON.parse(JSON.stringify(workers.map(worker => worker.toJSON()))),
+        [
+          {
+            containerStatus: WorkerStatus.Created,
+            turfContainerStates: null,
+            name: 'hello',
+            credential: 'world',
+            registerTime: workers[0].registerTime,
+            pid: null,
+            data: null,
+          },
+          {
+            containerStatus: WorkerStatus.Created,
+            turfContainerStates: null,
+            name: 'foooo',
+            credential: 'bar',
+            registerTime: workers[1].registerTime,
+            pid: null,
+            data: null,
+          },
+        ]
+      );
+    });
+
+    it('should not get broker', () => {
+      registerWorkers(stateManager, [
+        {
+          funcName: 'func',
+          processName: 'hello',
+          credential: 'world',
+          options: { inspect: true },
+          disposable: false,
+          toReserve: false,
+        },
+        {
+          funcName: 'func',
+          processName: 'foooo',
+          credential: 'bar',
+          options: { inspect: false },
+          disposable: false,
+          toReserve: false,
+        },
+      ]);
+      assert.strictEqual(stateManager.getBroker('non-exists', true), null);
+    });
+  });
+
+  describe('.getWorker()', () => {
+    beforeEach(async () => {
+      await functionProfile.set(funcData, 'WAIT');
+    });
+
+    it('should get worker', () => {
+      registerWorkers(stateManager, [
+        {
+          funcName: 'func',
+          processName: 'hello',
+          credential: 'world',
+          options: { inspect: true },
+          disposable: false,
+          toReserve: false,
+        },
+        {
+          funcName: 'func',
+          processName: 'foooo',
+          credential: 'bar',
+          options: { inspect: false },
+          disposable: false,
+          toReserve: false,
+        },
+      ]);
+
+      const workers: Worker[] = [
+        stateManager.getWorker('func', true, 'hello')!,
+        stateManager.getWorker('func', false, 'foooo')!,
+      ];
+      workers.forEach(w => assert(w instanceof Worker));
+      assert.deepStrictEqual(
+        JSON.parse(JSON.stringify(workers.map(worker => worker.toJSON()))),
+        [
+          {
+            containerStatus: WorkerStatus.Created,
+            turfContainerStates: null,
+            name: 'hello',
+            credential: 'world',
+            registerTime: workers[0].registerTime,
+            pid: null,
+            data: null,
+          },
+          {
+            containerStatus: WorkerStatus.Created,
+            turfContainerStates: null,
+            name: 'foooo',
+            credential: 'bar',
+            registerTime: workers[1].registerTime,
+            pid: null,
+            data: null,
+          },
+        ]
+      );
+    });
+
+    it('should not get worker', () => {
+      registerWorkers(stateManager, [
+        {
+          funcName: 'func',
+          processName: 'hello',
+          credential: 'world',
+          options: { inspect: true },
+          disposable: false,
+          toReserve: false,
+        },
+        {
+          funcName: 'func',
+          processName: 'foooo',
+          credential: 'bar',
+          options: { inspect: false },
+          disposable: false,
+          toReserve: false,
+        },
+      ]);
+
+      assert.strictEqual(stateManager.getWorker('func', false, 'hello'), null);
+      assert.strictEqual(stateManager.getWorker('func', true, 'bar'), null);
+    });
+
+    it('should not get worker when broker is non-exist', () => {
+      assert.strictEqual(
+        stateManager.getWorker('non-exist', false, 'hello'),
+        null
+      );
+    });
+  });
+
+  describe('.getSnapshot()', () => {
+    beforeEach(async () => {
+      await functionProfile.set(funcData, 'WAIT');
+    });
+
+    it('should to protobuf object', () => {
+      registerWorkers(stateManager, [
+        {
+          funcName: 'func',
+          processName: 'hello',
+          credential: 'world',
+          options: { inspect: true },
+          disposable: false,
+          toReserve: false,
+        },
+        {
+          funcName: 'func',
+          processName: 'foooo',
+          credential: 'bar',
+          options: { inspect: false },
+          disposable: false,
+          toReserve: false,
+        },
+      ]);
+
+      assert.deepStrictEqual(stateManager.getSnapshot(), [
+        {
+          name: 'func',
+          inspector: true,
+          profile: funcDataWithDefault,
+          redundantTimes: 0,
+          startingPool: [
+            {
+              credential: 'world',
+              estimateRequestLeft: 10,
+              maxActivateRequests: 10,
+              workerName: 'hello',
+            },
+          ],
+          workers: [
+            {
+              containerStatus: WorkerStatus.Created,
+              turfContainerStates: null,
+              name: 'hello',
+              credential: 'world',
+              data: null,
+              pid: null,
+              registerTime: stateManager.getWorker('func', true, 'hello')!
+                .registerTime,
+            },
+          ],
+        },
+        {
+          name: 'func',
+          inspector: false,
+          profile: funcDataWithDefault,
+          redundantTimes: 0,
+          startingPool: [
+            {
+              credential: 'bar',
+              estimateRequestLeft: 10,
+              maxActivateRequests: 10,
+              workerName: 'foooo',
+            },
+          ],
+          workers: [
+            {
+              containerStatus: WorkerStatus.Created,
+              turfContainerStates: null,
+              name: 'foooo',
+              credential: 'bar',
+              data: null,
+              pid: null,
+              registerTime: stateManager.getWorker('func', false, 'foooo')!
+                .registerTime,
+            },
+          ],
+        },
+      ]);
+    });
+
+    it('should to protobuf object with worker data', () => {
+      registerWorkers(stateManager, [
+        {
+          funcName: 'func',
+          processName: 'hello',
+          credential: 'world',
+          options: { inspect: true },
+          disposable: false,
+          toReserve: false,
+        },
+      ]);
+      stateManager._syncBrokerData(brokerData);
+
+      assert.deepStrictEqual(stateManager.getSnapshot(), [
+        {
+          name: 'func',
+          inspector: true,
+          profile: funcDataWithDefault,
+          redundantTimes: 0,
+          startingPool: [
+            {
+              credential: 'world',
+              estimateRequestLeft: 9,
+              maxActivateRequests: 10,
+              workerName: 'hello',
+            },
+          ],
+          workers: [
+            {
+              containerStatus: WorkerStatus.Created,
+              turfContainerStates: null,
+              name: 'hello',
+              credential: 'world',
+              data: {
+                maxActivateRequests: 10,
+                activeRequestCount: 1,
+              },
+              pid: null,
+              registerTime: stateManager.getWorker('func', true, 'hello')!
+                .registerTime,
+            },
+          ],
+        },
+      ]);
+    });
+  });
+
+  describe('.sync()', () => {
+    beforeEach(async () => {
+      await functionProfile.set(funcData, 'WAIT');
+    });
+
+    it('should sync', async () => {
+      registerWorkers(stateManager, [
+        {
+          funcName: 'func',
+          processName: 'hello',
+          credential: 'world',
+          options: { inspect: true },
+          disposable: false,
+          toReserve: false,
+        },
+        {
+          funcName: 'func',
+          processName: 'foooo',
+          credential: 'bar',
+          options: { inspect: false },
+          disposable: false,
+          toReserve: false,
+        },
+      ]);
+
+      registerContainers(testContainerManager, stateManager, [
+        { pid: 1, name: 'foooo', status: TurfContainerStates.running },
+      ]);
+      await testContainerManager.reconcileContainers();
+
+      stateManager._syncBrokerData([
+        ...brokerData,
+        {
+          functionName: 'hoho',
+          inspector: false,
+          workers: [
+            {
+              name: 'aho',
+              credential: 'aha',
+              maxActivateRequests: 10,
+              activeRequestCount: 6,
+            },
+          ],
+        },
+      ]);
+
+      // hoho should be ignored
+      assert.strictEqual(stateManager._brokers.size, 2);
+
+      const brokers = [
+        stateManager.getBroker('func', true)!,
+        stateManager.getBroker('func', false)!,
+      ];
+
+      const inspectors = [true, false];
+      const workerNames = ['hello', 'foooo'];
+      const workerCredentials = ['world', 'bar'];
+      const turfContainerStateses = [null, TurfContainerStates.running];
+      const containerStatus: WorkerStatus[] = [
+        WorkerStatus.Created,
+        WorkerStatus.Created,
+      ];
+      const pids = [null, 1];
+
+      brokers.forEach((broker, i) => {
+        assert.strictEqual(broker.name, 'func');
+        assert.strictEqual(broker.isInspector, inspectors[i]);
+        assert.deepStrictEqual(
+          broker.data,
+          functionProfile.get('func')!.toJSON(true)
+        );
+        assert.strictEqual(broker.workers.size, 1);
+        assert.strictEqual(broker.startingPool.size, 1);
+
+        const worker: Partial<Worker> = JSON.parse(
+          JSON.stringify(broker.workers.get(workerNames[i]))
+        );
+        assert.deepStrictEqual(worker, {
+          containerStatus: containerStatus[i],
+          turfContainerStates: turfContainerStateses[i],
+          name: workerNames[i],
+          credential: workerCredentials[i],
+          pid: pids[i],
+          data: _.pick(JSON.parse(JSON.stringify(brokerData[i].workers[0])), [
+            'activeRequestCount',
+            'maxActivateRequests',
+          ]),
+          registerTime: worker.registerTime,
+        });
+      });
+
+      // 事件更新，container ready
+      updateWorkerContainerStatus(stateManager, {
+        functionName: 'func',
+        name: 'hello',
+        isInspector: true,
+        event: WorkerStatusReport.ContainerInstalled,
+        requestId: '',
+      });
+
+      registerContainers(testContainerManager, stateManager, [
+        /** foooo has been disappeared */
+        { pid: 2, name: 'hello', status: TurfContainerStates.running },
+      ]);
+      await testContainerManager.reconcileContainers();
+      stateManager._syncBrokerData(brokerData);
+
+      const _turfContainerStateses = [
+        TurfContainerStates.running,
+        TurfContainerStates.unknown,
+      ];
+      const _containerStatus: WorkerStatus[] = [
+        WorkerStatus.Ready,
+        WorkerStatus.Unknown,
+      ];
+      const _pids = [2, 1];
+
+      brokers.forEach((broker, i) => {
+        assert.strictEqual(broker.name, 'func');
+        assert.strictEqual(broker.isInspector, inspectors[i]);
+        assert.deepStrictEqual(
+          broker.data,
+          functionProfile.get('func')!.toJSON(true)
+        );
+        assert.strictEqual(broker.workers.size, 1);
+        assert.strictEqual(broker.startingPool.size, 0);
+
+        const worker: Partial<Worker> = JSON.parse(
+          JSON.stringify(broker.workers.get(workerNames[i]))
+        );
+        assert.deepStrictEqual(worker, {
+          containerStatus: _containerStatus[i],
+          turfContainerStates: _turfContainerStateses[i],
+          name: workerNames[i],
+          credential: workerCredentials[i],
+          pid: _pids[i],
+          data: _.pick(JSON.parse(JSON.stringify(brokerData[i].workers[0])), [
+            'activeRequestCount',
+            'maxActivateRequests',
+          ]),
+          registerTime: worker.registerTime,
+        });
+      });
+    });
+
+    it('should sync that not in profile', async () => {
+      registerWorkers(stateManager, [
+        {
+          funcName: 'func',
+          processName: 'hello',
+          credential: 'world',
+          options: { inspect: true },
+          disposable: false,
+          toReserve: false,
+        },
+        {
+          funcName: 'func',
+          processName: 'foooo',
+          credential: 'bar',
+          options: { inspect: false },
+          disposable: false,
+          toReserve: false,
+        },
+      ]);
+
+      await functionProfile.set([], 'WAIT');
+
+      registerContainers(testContainerManager, stateManager, [
+        { pid: 1, name: 'foooo', status: TurfContainerStates.running },
+        { pid: 2, name: 'hello', status: TurfContainerStates.starting },
+      ]);
+      await testContainerManager.reconcileContainers();
+
+      stateManager._syncBrokerData([brokerData[1]]);
+
+      const brokers = [
+        stateManager.getBroker('func', true)!,
+        stateManager.getBroker('func', false)!,
+      ];
+      const inspectors = [true, false];
+      const workerNames = ['hello', 'foooo'];
+      const workerCredentials = ['world', 'bar'];
+      const turfContainerStates = [
+        TurfContainerStates.starting,
+        TurfContainerStates.running,
+      ];
+      const pids = [2, 1];
+
+      brokers.forEach((broker, i) => {
+        assert.strictEqual(broker.name, 'func');
+        assert.strictEqual(broker.isInspector, inspectors[i]);
+        assert.strictEqual(broker.data, null);
+        assert.strictEqual(broker.workers.size, 1);
+        assert.strictEqual(broker.startingPool.size, 1);
+
+        const worker = JSON.parse(
+          JSON.stringify(broker.workers.get(workerNames[i]))
+        );
+        assert.deepStrictEqual(worker, {
+          containerStatus: WorkerStatus.Created,
+          turfContainerStates: turfContainerStates[i],
+          name: workerNames[i],
+          credential: workerCredentials[i],
+          pid: pids[i],
+          data:
+            i === 0
+              ? null
+              : _.pick(JSON.parse(JSON.stringify(brokerData[i].workers[0])), [
+                  'activeRequestCount',
+                  'maxActivateRequests',
+                ]),
+          registerTime: worker.registerTime,
+        });
+
+        // Suppress ready rejection.
+        broker
+          .getWorker(workerNames[i])
+          ?.updateWorkerStatusByReport(WorkerStatusReport.ContainerInstalled);
+      });
+
+      registerContainers(testContainerManager, stateManager, [
+        { pid: 1, name: 'foooo', status: TurfContainerStates.stopped },
+        { pid: 2, name: 'hello', status: TurfContainerStates.stopping },
+      ]);
+      await testContainerManager.reconcileContainers();
+      stateManager._syncBrokerData([brokerData[1]]);
+
+      const _turfContainerStates = [
+        TurfContainerStates.stopping,
+        TurfContainerStates.stopped,
+      ];
+
+      brokers.forEach((broker, i) => {
+        assert.strictEqual(broker.name, 'func');
+        assert.strictEqual(broker.isInspector, inspectors[i]);
+        assert.strictEqual(broker.data, null);
+        assert.strictEqual(broker.workers.size, 1);
+        assert.strictEqual(broker.startingPool.size, 0);
+
+        const worker: Partial<Worker> = JSON.parse(
+          JSON.stringify(broker.workers.get(workerNames[i]))
+        );
+        assert.deepStrictEqual(worker, {
+          containerStatus: WorkerStatus.Stopped,
+          turfContainerStates: _turfContainerStates[i],
+          name: workerNames[i],
+          credential: workerCredentials[i],
+          pid: pids[i],
+          data:
+            i === 0
+              ? null
+              : _.pick(JSON.parse(JSON.stringify(brokerData[i].workers[0])), [
+                  'activeRequestCount',
+                  'maxActivateRequests',
+                ]),
+          registerTime: worker.registerTime,
+        });
+      });
+    });
+  });
+
+  describe('.correct()', () => {
+    beforeEach(async () => {
+      await functionProfile.set(funcData, 'WAIT');
+    });
+
+    it('should correct gc stopped and unknown container', async () => {
+      registerWorkers(stateManager, [
+        {
+          funcName: 'func',
+          processName: 'hello',
+          credential: 'world',
+          options: { inspect: true },
+          disposable: false,
+          toReserve: false,
+        },
+        {
+          funcName: 'func',
+          processName: 'foooo',
+          credential: 'bar',
+          options: { inspect: false },
+          disposable: false,
+          toReserve: false,
+        },
+      ]);
+      registerContainers(testContainerManager, stateManager, [
+        { name: 'hello', pid: 1, status: TurfContainerStates.running },
+        { name: 'foooo', pid: 1, status: TurfContainerStates.running },
+      ]);
+
+      updateWorkerContainerStatus(stateManager, {
+        functionName: 'func',
+        isInspector: true,
+        event: WorkerStatusReport.ContainerInstalled,
+        name: 'hello',
+        requestId: '',
+      });
+      // Suppress ready rejection
+      updateWorkerContainerStatus(stateManager, {
+        functionName: 'func',
+        isInspector: false,
+        event: WorkerStatusReport.ContainerInstalled,
+        name: 'foooo',
+        requestId: '',
+      });
+
+      updateWorkerContainerStatus(stateManager, {
+        functionName: 'func',
+        isInspector: false,
+        event: WorkerStatusReport.ContainerDisconnected,
+        name: 'foooo',
+        requestId: '',
+      });
+
+      assert.strictEqual(stateManager.getBroker('func', true)!.workers.size, 1);
+      assert.strictEqual(
+        stateManager.getBroker('func', false)!.workers.size,
+        1
+      );
+
+      let workerStoppedFuture = eventBus.once(WorkerStoppedEvent);
+      // 回收 Stopped
+      await stateManager._correct();
+
+      assert.strictEqual(stateManager.getBroker('func', true)!.workers.size, 1);
+      assert.strictEqual(
+        stateManager.getBroker('func', false)!.workers.size,
+        0
+      );
+      assert(testContainerManager.getContainer('foooo') == null);
+
+      {
+        const event = await workerStoppedFuture;
+        assert.strictEqual(event.data.workerName, 'foooo');
+      }
+
+      registerContainers(testContainerManager, stateManager, [
+        { pid: 2, name: 'hello', status: TurfContainerStates.unknown },
+      ]);
+      await testContainerManager.reconcileContainers();
+      stateManager._syncBrokerData(brokerData);
+
+      workerStoppedFuture = eventBus.once(WorkerStoppedEvent);
+      // 回收 Unknown
+      await stateManager._correct();
+
+      assert.strictEqual(stateManager.getBroker('func', true)!.workers.size, 0);
+      assert.strictEqual(
+        stateManager.getBroker('func', false)!.workers.size,
+        0
+      );
+
+      assert(testContainerManager.getContainer('hello') == null);
+
+      {
+        const event = await workerStoppedFuture;
+        assert.strictEqual(event.data.workerName, 'hello');
+      }
+
+      await functionProfile.set([], 'WAIT');
+
+      stateManager._syncBrokerData([]);
+
+      // 配置更新后，回收无用 broker
+      await stateManager._correct();
+
+      assert.strictEqual(stateManager.getBroker('func', true), null);
+      assert.strictEqual(stateManager.getBroker('func', false), null);
     });
   });
 });
+
+function updateWorkerContainerStatus(
+  stateManager: StateManager,
+  report: NotNullableInterface<root.noslated.data.IContainerStatusReport>
+) {
+  const { functionName, isInspector, name, event } = report;
+
+  const worker = stateManager.getWorker(functionName, isInspector, name);
+
+  if (worker) {
+    worker.updateWorkerStatusByReport(event as WorkerStatusReport);
+
+    // 如果已经 ready，则从 starting pool 中移除
+    if (worker.workerStatus === WorkerStatus.Ready) {
+      const broker = stateManager.getBroker(functionName, isInspector);
+      broker?.removeItemFromStartingPool(worker.name);
+    }
+  }
+}

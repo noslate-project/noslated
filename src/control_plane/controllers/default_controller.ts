@@ -9,7 +9,8 @@ import {
   wrapLaunchErrorObject,
 } from '../worker_launcher_error_code';
 import { BaseController } from './base_controller';
-import { Broker, Worker, WorkerMetadata } from '../worker_stats/index';
+import { Broker } from '../worker_stats/broker';
+import { Worker, WorkerMetadata } from '../worker_stats/worker';
 import { ControlPlaneDependencyContext } from '../deps';
 import { DataPlaneClientManager } from '../data_plane_client/manager';
 import { ReservationController } from './reservation_controller';
@@ -113,7 +114,7 @@ export class DefaultController extends BaseController {
     // update current workers data
     try {
       if (brokers) {
-        await this._stateManager.syncWorkerData(brokers);
+        await this._stateManager._syncBrokerData(brokers);
       }
     } catch (e) {
       this.logger.warn('Failed to sync data.', e);

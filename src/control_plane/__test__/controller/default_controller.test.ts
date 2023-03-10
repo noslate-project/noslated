@@ -5,7 +5,7 @@ import { DefaultController } from '#self/control_plane/controllers';
 import { DataPlaneClientManager } from '#self/control_plane/data_plane_client/manager';
 import { WorkerStatusReportEvent } from '#self/control_plane/events';
 import { WorkerLauncher } from '#self/control_plane/worker_launcher';
-import { Broker } from '#self/control_plane/worker_stats/index';
+import { Broker } from '#self/control_plane/worker_stats/broker';
 import { StateManager } from '#self/control_plane/worker_stats/state_manager';
 import { WorkerStatusReport, ControlPlaneEvent } from '#self/lib/constants';
 import { FunctionProfileManager } from '#self/lib/function_profile';
@@ -116,7 +116,7 @@ describe(common.testName(__filename), () => {
           { pid: 5, name: 'alibaba', status: TurfContainerStates.running },
         ]);
 
-        registerWorkers(stateManager.workerStatsSnapshot, [
+        registerWorkers(stateManager, [
           {
             funcName: 'func',
             processName: 'hello',
@@ -162,7 +162,7 @@ describe(common.testName(__filename), () => {
         if (id === 0)
           mm(capacityManager, 'virtualMemoryPoolSize', 512 * 1024 * 1024 * 6);
 
-        stateManager.updateWorkerStatusByReport(
+        stateManager._updateWorkerStatusByReport(
           new WorkerStatusReportEvent({
             functionName: 'func',
             name: 'hello',
@@ -172,7 +172,7 @@ describe(common.testName(__filename), () => {
           })
         );
 
-        stateManager.updateWorkerStatusByReport(
+        stateManager._updateWorkerStatusByReport(
           new WorkerStatusReportEvent({
             functionName: 'func',
             name: 'foo',
@@ -182,7 +182,7 @@ describe(common.testName(__filename), () => {
           })
         );
 
-        stateManager.updateWorkerStatusByReport(
+        stateManager._updateWorkerStatusByReport(
           new WorkerStatusReportEvent({
             functionName: 'lambda',
             name: 'coco',
@@ -192,7 +192,7 @@ describe(common.testName(__filename), () => {
           })
         );
 
-        stateManager.updateWorkerStatusByReport(
+        stateManager._updateWorkerStatusByReport(
           new WorkerStatusReportEvent({
             functionName: 'lambda',
             name: 'cocos',
@@ -202,7 +202,7 @@ describe(common.testName(__filename), () => {
           })
         );
 
-        stateManager.updateWorkerStatusByReport(
+        stateManager._updateWorkerStatusByReport(
           new WorkerStatusReportEvent({
             functionName: 'lambda',
             name: 'alibaba',
@@ -213,37 +213,34 @@ describe(common.testName(__filename), () => {
           })
         );
 
-        await stateManager.syncWorkerData([brokerData1, brokerData2]);
+        await stateManager._syncBrokerData([brokerData1, brokerData2]);
 
-        stateManager.workerStatsSnapshot!.getWorker(
+        stateManager.getWorker(
           'func',
           false,
           'hello'
         )!.data!.activeRequestCount = 10;
-        stateManager.workerStatsSnapshot!.getWorker(
+        stateManager.getWorker(
           'func',
           false,
           'foo'
         )!.data!.activeRequestCount = 10;
-        stateManager.workerStatsSnapshot!.getWorker(
+        stateManager.getWorker(
           'lambda',
           false,
           'coco'
         )!.data!.activeRequestCount = 3;
-        stateManager.workerStatsSnapshot!.getWorker(
+        stateManager.getWorker(
           'lambda',
           false,
           'cocos'
         )!.data!.activeRequestCount = 1;
-        stateManager.workerStatsSnapshot!.getWorker(
+        stateManager.getWorker(
           'lambda',
           false,
           'alibaba'
         )!.data!.activeRequestCount = 2;
-        stateManager.workerStatsSnapshot!.getBroker(
-          'lambda',
-          false
-        )!.redundantTimes = 60;
+        stateManager.getBroker('lambda', false)!.redundantTimes = 60;
 
         let tryLaunchCalled = 0;
         let reduceCapacityCalled = 0;
@@ -318,7 +315,7 @@ describe(common.testName(__filename), () => {
         { pid: 5, name: 'alibaba', status: TurfContainerStates.running },
       ]);
 
-      registerWorkers(stateManager.workerStatsSnapshot, [
+      registerWorkers(stateManager, [
         {
           funcName: 'func',
           processName: 'hello',
@@ -363,7 +360,7 @@ describe(common.testName(__filename), () => {
 
       await functionProfile.set([], 'WAIT');
 
-      stateManager.updateWorkerStatusByReport(
+      stateManager._updateWorkerStatusByReport(
         new WorkerStatusReportEvent({
           functionName: 'func',
           name: 'hello',
@@ -373,7 +370,7 @@ describe(common.testName(__filename), () => {
         })
       );
 
-      stateManager.updateWorkerStatusByReport(
+      stateManager._updateWorkerStatusByReport(
         new WorkerStatusReportEvent({
           functionName: 'func',
           name: 'foo',
@@ -383,7 +380,7 @@ describe(common.testName(__filename), () => {
         })
       );
 
-      stateManager.updateWorkerStatusByReport(
+      stateManager._updateWorkerStatusByReport(
         new WorkerStatusReportEvent({
           functionName: 'lambda',
           name: 'coco',
@@ -393,7 +390,7 @@ describe(common.testName(__filename), () => {
         })
       );
 
-      stateManager.updateWorkerStatusByReport(
+      stateManager._updateWorkerStatusByReport(
         new WorkerStatusReportEvent({
           functionName: 'lambda',
           name: 'cocos',
@@ -403,7 +400,7 @@ describe(common.testName(__filename), () => {
         })
       );
 
-      stateManager.updateWorkerStatusByReport(
+      stateManager._updateWorkerStatusByReport(
         new WorkerStatusReportEvent({
           functionName: 'lambda',
           name: 'alibaba',
@@ -413,40 +410,34 @@ describe(common.testName(__filename), () => {
         })
       );
 
-      await stateManager.syncWorkerData([brokerData1, brokerData2]);
-      stateManager.workerStatsSnapshot!.getWorker(
+      await stateManager._syncBrokerData([brokerData1, brokerData2]);
+      stateManager.getWorker(
         'func',
         false,
         'hello'
       )!.data!.activeRequestCount = 10;
-      stateManager.workerStatsSnapshot!.getWorker(
+      stateManager.getWorker(
         'func',
         false,
         'foo'
       )!.data!.activeRequestCount = 10;
-      stateManager.workerStatsSnapshot!.getBroker(
-        'func',
-        false
-      )!.redundantTimes = 60;
-      stateManager.workerStatsSnapshot!.getWorker(
+      stateManager.getBroker('func', false)!.redundantTimes = 60;
+      stateManager.getWorker(
         'lambda',
         false,
         'coco'
       )!.data!.activeRequestCount = 3;
-      stateManager.workerStatsSnapshot!.getWorker(
+      stateManager.getWorker(
         'lambda',
         false,
         'cocos'
       )!.data!.activeRequestCount = 1;
-      stateManager.workerStatsSnapshot!.getWorker(
+      stateManager.getWorker(
         'lambda',
         false,
         'alibaba'
       )!.data!.activeRequestCount = 2;
-      stateManager.workerStatsSnapshot!.getBroker(
-        'lambda',
-        false
-      )!.redundantTimes = 60;
+      stateManager.getBroker('lambda', false)!.redundantTimes = 60;
 
       let tryLaunchCalled = 0;
       let reduceCapacityCalled = 0;
@@ -528,7 +519,7 @@ describe(common.testName(__filename), () => {
         'WAIT'
       );
 
-      registerWorkers(stateManager.workerStatsSnapshot, [
+      registerWorkers(stateManager, [
         {
           funcName: 'func',
           processName: 'hello',
@@ -557,7 +548,7 @@ describe(common.testName(__filename), () => {
       });
       mm(capacityManager, 'virtualMemoryPoolSize', 1024 * 1024 * 1024);
 
-      await stateManager.syncWorkerData([brokerData1]);
+      await stateManager._syncBrokerData([brokerData1]);
       await assert.doesNotReject(defaultController['autoScale']());
     });
   });

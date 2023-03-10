@@ -4,7 +4,10 @@ import { performance } from 'perf_hooks';
 import _ from 'lodash';
 
 import FakeTimers, { Clock } from '@sinonjs/fake-timers';
-import { Worker, WorkerMetadata } from '#self/control_plane/worker_stats/index';
+import {
+  Worker,
+  WorkerMetadata,
+} from '#self/control_plane/worker_stats/worker';
 import * as common from '#self/test/common';
 import { config } from '#self/config';
 import { FunctionProfileManager as ProfileManager } from '#self/lib/function_profile';
@@ -19,7 +22,6 @@ import { StateManager } from '#self/control_plane/worker_stats/state_manager';
 import { NoslatedClient } from '#self/sdk';
 import { DefaultEnvironment } from '#self/test/env/environment';
 import { SimpleContainer } from '../test_container_manager';
-import { WorkerStatusReportEvent } from '#self/control_plane/events';
 import { registerWorkers } from '../util';
 
 describe(common.testName(__filename), () => {
@@ -543,7 +545,7 @@ describe(common.testName(__filename), () => {
         ],
         'WAIT'
       );
-      registerWorkers(stateManager.workerStatsSnapshot, [
+      registerWorkers(stateManager, [
         {
           funcName: 'func1',
           processName: 'worker1',
@@ -553,25 +555,15 @@ describe(common.testName(__filename), () => {
           toReserve: false,
         },
       ]);
-      worker = stateManager.workerStatsSnapshot.getWorker(
-        'func1',
-        false,
-        'worker1'
-      )!;
+      worker = stateManager.getWorker('func1', false, 'worker1')!;
     });
 
     it('should worker ready after initializer handler success', async () => {
       const now = performance.now();
 
       setTimeout(() => {
-        stateManager.updateWorkerStatusByReport(
-          new WorkerStatusReportEvent({
-            functionName: 'func1',
-            name: 'worker1',
-            isInspector: false,
-            event: WorkerStatusReport.ContainerInstalled,
-            requestId: '',
-          })
+        worker.updateWorkerStatusByReport(
+          WorkerStatusReport.ContainerInstalled
         );
       }, 500 + 10);
 
@@ -593,15 +585,8 @@ describe(common.testName(__filename), () => {
 
     it('should throw error when set stopped before ready', async () => {
       const readyFuture = worker.ready();
-
-      stateManager.updateWorkerStatusByReport(
-        new WorkerStatusReportEvent({
-          functionName: 'func1',
-          name: 'worker1',
-          isInspector: false,
-          event: WorkerStatusReport.ContainerDisconnected,
-          requestId: '',
-        })
+      worker.updateWorkerStatusByReport(
+        WorkerStatusReport.ContainerDisconnected
       );
 
       await assert.rejects(readyFuture, {
@@ -612,15 +597,7 @@ describe(common.testName(__filename), () => {
     it('should do nothing when emit stopped after ready', async () => {
       const readyFuture = worker.ready();
 
-      stateManager.updateWorkerStatusByReport(
-        new WorkerStatusReportEvent({
-          functionName: 'func1',
-          name: 'worker1',
-          isInspector: false,
-          event: WorkerStatusReport.ContainerInstalled,
-          requestId: '',
-        })
-      );
+      worker.updateWorkerStatusByReport(WorkerStatusReport.ContainerInstalled);
       worker.updateWorkerStatusByReport(
         WorkerStatusReport.ContainerDisconnected
       );

@@ -10,6 +10,7 @@ import * as common from '#self/test/common';
 import { killWorker } from './util';
 import { config } from '#self/config';
 import { DefaultEnvironment } from '../env/environment';
+import { WorkerStoppedEvent } from '#self/control_plane/events';
 
 const codeDir = path.join(FIXTURES_DIR, 'worker-integrated');
 
@@ -99,11 +100,7 @@ describe(common.testName(__filename), function () {
         }
 
         await killWorker(env, item.name);
-
-        await once(
-          env.control._ctx.getInstance('stateManager').workerStatsSnapshot,
-          'workerStopped'
-        );
+        await env.control._ctx.getInstance('eventBus').once(WorkerStoppedEvent);
 
         let second;
         {

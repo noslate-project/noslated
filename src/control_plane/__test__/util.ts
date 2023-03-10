@@ -1,9 +1,6 @@
-import {
-  Worker,
-  Broker,
-  WorkerMetadata,
-  WorkerStatsSnapshot,
-} from '../worker_stats/index';
+import { Broker } from '../worker_stats/broker';
+import { StateManager } from '../worker_stats/state_manager';
+import { WorkerMetadata, Worker } from '../worker_stats/worker';
 
 type WorkerDesc = {
   processName: string;
@@ -11,25 +8,25 @@ type WorkerDesc = {
 } & Partial<WorkerMetadata>;
 
 export function registerWorkers(
-  brokerOrSnapshot: Broker | WorkerStatsSnapshot,
+  brokerOrManager: Broker | StateManager,
   workerMetadatas: WorkerDesc[]
 ) {
   const workers: Worker[] = [];
 
   for (const data of workerMetadatas) {
-    if (brokerOrSnapshot instanceof Broker) {
+    if (brokerOrManager instanceof Broker) {
       const workerMetadata = new WorkerMetadata(
-        data.funcName ?? brokerOrSnapshot.name,
+        data.funcName ?? brokerOrManager.name,
         {
-          inspect: data.options?.inspect ?? brokerOrSnapshot.isInspector,
+          inspect: data.options?.inspect ?? brokerOrManager.isInspector,
         },
-        data.disposable ?? brokerOrSnapshot.disposable,
+        data.disposable ?? brokerOrManager.disposable,
         data.toReserve ?? false,
         data.processName!,
         data.credential!
       );
-      workers.push(brokerOrSnapshot.register(workerMetadata));
-    } else if (brokerOrSnapshot instanceof WorkerStatsSnapshot) {
+      workers.push(brokerOrManager.register(workerMetadata));
+    } else if (brokerOrManager instanceof StateManager) {
       const workerMetadata = new WorkerMetadata(
         data.funcName!,
         {
@@ -40,7 +37,7 @@ export function registerWorkers(
         data.processName!,
         data.credential!
       );
-      workers.push(brokerOrSnapshot.register(workerMetadata));
+      workers.push(brokerOrManager.register(workerMetadata));
     }
   }
   return workers;

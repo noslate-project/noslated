@@ -17,6 +17,8 @@ import {
 } from '#self/test/telemetry-util';
 import { DefaultEnvironment } from '#self/test/env/environment';
 import { StateManager } from '../worker_stats/state_manager';
+import { EventBus } from '#self/lib/event-bus';
+import { WorkerStoppedEvent } from '../events';
 
 describe(common.testName(__filename), function () {
   // Debug version of Node.js may take longer time to bootstrap.
@@ -25,6 +27,7 @@ describe(common.testName(__filename), function () {
   let meterProvider: MeterProvider;
   let metricReader: TestMetricReader;
   let stateManager: StateManager;
+  let eventBus: EventBus;
 
   beforeEach(async () => {
     metricReader = new TestMetricReader();
@@ -40,6 +43,7 @@ describe(common.testName(__filename), function () {
   const env = new DefaultEnvironment();
   beforeEach(() => {
     stateManager = env.control._ctx.getInstance('stateManager');
+    eventBus = env.control._ctx.getInstance('eventBus');
   });
 
   it('should collect replica metrics', async () => {
@@ -84,7 +88,7 @@ describe(common.testName(__filename), function () {
         process.kill(it.pid, 'SIGKILL');
       });
 
-    await once(stateManager.workerStatsSnapshot, 'workerStopped');
+    await eventBus.once(WorkerStoppedEvent);
 
     const result = await metricReader!.collect();
     {

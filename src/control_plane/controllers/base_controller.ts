@@ -1,7 +1,7 @@
 import { ControlPlaneEvent } from '#self/lib/constants';
 import { Logger } from '#self/lib/loggers';
 import { Delta } from '../capacity_manager';
-import { WorkerMetadata } from '../worker_stats/index';
+import { WorkerMetadata } from '../worker_stats/worker';
 import { FunctionProfileManager } from '#self/lib/function_profile';
 import { ContainerManager } from '../container/container_manager';
 import { ControlPlaneDependencyContext } from '../deps';
