@@ -179,10 +179,14 @@ class Worker {
       this.logger.statusChangedBeforeReady(WorkerStatus[this.#workerStatus]);
 
       if (this.#workerStatus >= WorkerStatus.PendingStop) {
-        this.#readyDeferred.reject();
+        this.#readyDeferred.reject(
+          new Error(
+            `Worker(${this.name}, ${this.credential}) stopped before ready.`
+          )
+        );
+      } else {
+        this.#readyDeferred.resolve();
       }
-
-      this.#readyDeferred.resolve();
 
       return this.#readyDeferred.promise;
     }
@@ -190,14 +194,14 @@ class Worker {
     // +100 等待 dp 先触发超时逻辑同步状态
     this.readyTimeout = setTimeout(() => {
       if (this.#workerStatus !== WorkerStatus.Ready) {
-        // 状态设为 Stopped，等待 GC 回收
+        // 状态设为 PendingStop, GC 回收
         this.#readyDeferred.reject(
           new Error(
             `Worker(${this.name}, ${this.credential}) initialization timeout.`
           )
         );
         this._updateWorkerStatus(
-          WorkerStatus.Stopped,
+          WorkerStatus.PendingStop,
           ControlPlaneEvent.InitializationTimeout
         );
       }
@@ -288,10 +292,13 @@ class Worker {
           this.#workerStatus === WorkerStatus.Created
         ) {
           this._updateWorkerStatus(
-            WorkerStatus.Stopped,
+            WorkerStatus.PendingStop,
             ControlPlaneEvent.InitializationTimeout
           );
-          this.logger.statusSwitchTo(WorkerStatus.Stopped, 'connect timeout');
+          this.logger.statusSwitchTo(
+            WorkerStatus.PendingStop,
+            'connect timeout'
+          );
         }
         // always be Created, wait dp ContainerInstalled to Ready
         break;
@@ -346,25 +353,25 @@ class Worker {
           this.#workerStatus === WorkerStatus.Created
         ) {
           this._updateWorkerStatus(
-            WorkerStatus.Stopped,
+            WorkerStatus.PendingStop,
             ControlPlaneEvent.InitializationTimeout
           );
-          this.logger.statusSwitchTo(WorkerStatus.Stopped, 'connect timeout');
+          this.logger.statusSwitchTo(
+            WorkerStatus.PendingStop,
+            'connect timeout'
+          );
         }
     }
   }
 
   /**
-   * Whether this worker is running.
+   * Worker is active for processing requests.
    */
-  isRunning() {
-    return (
-      this.#workerStatus === WorkerStatus.Ready ||
-      this.#workerStatus === WorkerStatus.PendingStop
-    );
+  isActive() {
+    return this.#workerStatus === WorkerStatus.Ready;
   }
 
-  isInitializating() {
+  isInitializing() {
     return this.#workerStatus === WorkerStatus.Created;
   }
 
@@ -374,11 +381,10 @@ class Worker {
     if (event === WorkerStatusReport.ContainerInstalled) {
       statusTo = WorkerStatus.Ready;
     } else if (
-      // FIXME: WorkerStatusReport.RequestDrained doesn't represent WorkerStatus.Stopped.
       event === WorkerStatusReport.RequestDrained ||
       event === WorkerStatusReport.ContainerDisconnected
     ) {
-      statusTo = WorkerStatus.Stopped;
+      statusTo = WorkerStatus.PendingStop;
     } else {
       statusTo = WorkerStatus.Unknown;
     }
@@ -395,6 +401,12 @@ class Worker {
       case ControlPlaneEvent.FailedToSpawn:
         status = WorkerStatus.Unknown;
         break;
+      case ControlPlaneEvent.Stopping:
+        status = WorkerStatus.Stopping;
+        break;
+      case ControlPlaneEvent.Terminated:
+        status = WorkerStatus.Stopped;
+        break;
       default:
         throw new Error(`Unable to update worker status by event ${event}`);
     }
@@ -406,12 +418,12 @@ class Worker {
     event: TurfStatusEvent | WorkerStatusReport | ControlPlaneEvent
   ) {
     if (status < this.#workerStatus) {
-      this.logger.updateContainerStatus(
+      this.logger.updateWorkerStatus(
         status,
         this.#workerStatus,
         event,
         'warn',
-        ' is illegal.'
+        ' is ignored.'
       );
       return;
     }
@@ -420,7 +432,7 @@ class Worker {
 
     this.#workerStatus = status;
 
-    this.logger.updateContainerStatus(status, oldStatus, event);
+    this.logger.updateWorkerStatus(status, oldStatus, event);
 
     if (status === WorkerStatus.Stopped) {
       this._setStopped();

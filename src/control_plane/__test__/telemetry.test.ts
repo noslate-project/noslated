@@ -1,5 +1,4 @@
 import assert from 'assert';
-import { once } from 'events';
 import { metrics } from '@opentelemetry/api';
 import { MeterProvider } from '@opentelemetry/sdk-metrics';
 import { bufferFromStream } from '#self/lib/util';

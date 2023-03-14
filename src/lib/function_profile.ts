@@ -13,7 +13,7 @@ import type {
   AworkerFunctionProfile,
 } from './json/function_profile';
 import { Config } from '#self/config';
-import { EventBus } from './event-bus';
+import { Event, EventBus } from './event-bus';
 import { DependencyContext } from './dependency_context';
 
 const logger = loggers.get('function_profile');

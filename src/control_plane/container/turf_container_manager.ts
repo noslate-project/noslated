@@ -170,7 +170,7 @@ export class TurfContainer implements Container {
         throw e;
       }
       this.logger.info('%s stop failed, force stopping after 3s', this.name);
-      await sleep(3000);
+      await sleep(this.manager['config'].turf.gracefulExitPeriodMs);
       await this.client.stop(this.name, true);
     }
   }

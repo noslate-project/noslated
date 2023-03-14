@@ -250,7 +250,7 @@ export class DefaultController extends BaseController {
     compareFn: (a: Worker, b: Worker) => number
   ): { name: string; credential: string }[] {
     const workers = Array.from(broker.workers.values()).filter(w =>
-      w.isRunning()
+      w.isActive()
     );
     const nWorkers = workers.sort(compareFn).slice(0, n);
 

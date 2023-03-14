@@ -1,5 +1,4 @@
 import assert from 'assert';
-import { once } from 'events';
 import mm from 'mm';
 import path from 'path';
 

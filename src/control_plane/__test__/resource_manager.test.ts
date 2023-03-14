@@ -40,6 +40,7 @@ describe(testName(__filename), () => {
     await ctx.getInstance('eventBus').publish(
       new WorkerStoppedEvent({
         state: null,
+        registerTime: 0,
         runtimeType: 'aworker',
         functionName: 'foobar',
         workerName: 'worker-foobar',

@@ -16,6 +16,7 @@ import { sleep } from '#self/lib/util';
 import { WorkerStatus } from '#self/lib/constants';
 import sinon, { SinonSpy } from 'sinon';
 import { DefaultEnvironment } from '../env/environment';
+import { WorkerStoppedEvent } from '#self/control_plane/events';
 
 const cases = [
   {
@@ -903,8 +904,8 @@ const cases = [
     profile: {
       name: 'node_worker_with_disposable_true',
       runtime: 'nodejs',
-      url: `file://${baselineDir}/node_worker_dapr`,
-      handler: 'invoke.handler',
+      url: `file://${baselineDir}/node_worker_disposable`,
+      handler: 'index.handler',
       signature: 'md5:234234',
       worker: {
         disposable: true,
@@ -916,14 +917,7 @@ const cases = [
       metadata: {},
     },
     expect: {
-      data: JSON.stringify({
-        status: 200,
-        text: JSON.stringify({
-          appId: 'hello-world',
-          methodName: 'echo',
-          data: 'foobar',
-        }),
-      }),
+      data: Buffer.from('hello-world'),
     },
     after: async (env: DefaultEnvironment) => {
       const broker = env.control._ctx
@@ -931,14 +925,21 @@ const cases = [
         .getBroker('node_worker_with_disposable_true', false)!;
       assert.deepStrictEqual(broker.workers.size, 1);
       const worker = Array.from(broker.workers.values())[0];
+      // wait turf kill or sync gc
+      const stoppedEvent = await env.control._ctx
+        .getInstance('eventBus')
+        .once(WorkerStoppedEvent);
+      assert.ok(
+        stoppedEvent.timestamp - stoppedEvent.data.registerTime >
+          config.turf.gracefulExitPeriodMs,
+        'stopped with graceful period'
+      );
+
       assert.deepStrictEqual(worker.workerStatus, WorkerStatus.Stopped);
       assert.deepStrictEqual(
         worker.turfContainerStates,
         TurfContainerStates.stopped
       );
-      // wait turf kill or sync gc
-      // TODO: graceful exit.
-      await sleep(5000);
       assert.deepStrictEqual(broker.workers.size, 0);
     },
   },
@@ -979,8 +980,8 @@ const cases = [
     profile: {
       name: 'aworker_with_disposable_true',
       runtime: 'aworker',
-      url: `file://${baselineDir}/aworker_dapr`,
-      sourceFile: 'invoke.js',
+      url: `file://${baselineDir}/aworker_disposable`,
+      sourceFile: 'index.js',
       signature: 'md5:234234',
       worker: {
         disposable: true,
@@ -992,9 +993,7 @@ const cases = [
       metadata: {},
     },
     expect: {
-      data: Buffer.from(
-        '{"appId":"hello-world","methodName":"echo","data":"foobar"}'
-      ),
+      data: Buffer.from('hello-world'),
     },
     after: async (env: DefaultEnvironment) => {
       const broker = env.control._ctx
@@ -1002,14 +1001,21 @@ const cases = [
         .getBroker('aworker_with_disposable_true', false)!;
       assert.deepStrictEqual(broker.workers.size, 1);
       const worker = Array.from(broker.workers.values())[0];
+      // wait turf kill or sync gc
+      const stoppedEvent = await env.control._ctx
+        .getInstance('eventBus')
+        .once(WorkerStoppedEvent);
+      assert.ok(
+        stoppedEvent.timestamp - stoppedEvent.data.registerTime >
+          config.turf.gracefulExitPeriodMs,
+        'stopped with graceful period'
+      );
+
       assert.deepStrictEqual(worker.workerStatus, WorkerStatus.Stopped);
       assert.deepStrictEqual(
         worker.turfContainerStates,
-        TurfContainerStates.running
+        TurfContainerStates.stopped
       );
-      // wait turf kill or sync gc
-      // TODO: graceful exit.
-      await sleep(5000);
       assert.deepStrictEqual(broker.workers.size, 0);
     },
   },

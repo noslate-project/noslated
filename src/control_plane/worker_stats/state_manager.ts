@@ -1,5 +1,9 @@
 import * as root from '#self/proto/root';
-import { WorkerStatus, WorkerStatusReport } from '#self/lib/constants';
+import {
+  ControlPlaneEvent,
+  WorkerStatus,
+  WorkerStatusReport,
+} from '#self/lib/constants';
 import { Logger, loggers } from '#self/lib/loggers';
 import {
   ContainerReconciledEvent,
@@ -201,9 +205,11 @@ export class StateManager extends Base {
 
     // 进入该状态，必然要被 GC
     if (
-      worker.workerStatus === WorkerStatus.Stopped ||
+      worker.workerStatus === WorkerStatus.PendingStop ||
       worker.workerStatus === WorkerStatus.Unknown
     ) {
+      worker.updateWorkerStatusByControlPlaneEvent(ControlPlaneEvent.Stopping);
+
       try {
         await worker.container!.stop();
       } catch (e) {
@@ -213,38 +219,48 @@ export class StateManager extends Base {
         );
       }
 
-      const state = await worker.container!.terminated;
-      if (state) {
-        const stime = state['rusage.stime'] ?? 0;
-        const utime = state['rusage.utime'] ?? 0;
-        //TODO(yilong.lyl): fix typo @zl131478
-        const rss = state['rusage.masrss'];
-
-        this._statLogger.exit(
-          state.name,
-          state.pid,
-          state.exitcode ?? null,
-          state['killed.signal'] ?? null,
-          stime + utime,
-          rss,
-          worker.requestId ?? null
-        );
-      }
-
-      this._logger.info("%s's last state: %j", worker.name, state);
-      broker.removeItemFromStartingPool(worker.name);
-      const event = new WorkerStoppedEvent({
-        state,
-        functionName: broker.name,
-        runtimeType: broker.data?.runtime!,
-        workerName: worker.name,
-      });
-      this._eventBus.publish(event).catch(e => {
-        this._logger.error('unexpected error on worker stopped event', e);
-      });
-
-      broker.workers.delete(worker.name);
+      this._workerStopped(broker, worker);
+    } else if (worker.workerStatus === WorkerStatus.Stopped) {
+      // If the worker is already stopped, clean it up.
+      this._workerStopped(broker, worker);
     }
+  }
+
+  async _workerStopped(broker: Broker, worker: Worker) {
+    const state = (await worker.container?.terminated) ?? null;
+    if (state) {
+      const stime = state['rusage.stime'] ?? 0;
+      const utime = state['rusage.utime'] ?? 0;
+      //TODO(yilong.lyl): fix typo @zl131478
+      const rss = state['rusage.masrss'];
+
+      this._statLogger.exit(
+        state.name,
+        state.pid,
+        state.exitcode ?? null,
+        state['killed.signal'] ?? null,
+        stime + utime,
+        rss,
+        worker.requestId ?? null
+      );
+    }
+
+    worker.updateWorkerStatusByControlPlaneEvent(ControlPlaneEvent.Terminated);
+
+    this._logger.info("%s's last state: %j", worker.name, state);
+    broker.removeItemFromStartingPool(worker.name);
+    broker.workers.delete(worker.name);
+
+    const event = new WorkerStoppedEvent({
+      state,
+      registerTime: worker.registerTime,
+      functionName: broker.name,
+      runtimeType: broker.data?.runtime!,
+      workerName: worker.name,
+    });
+    this._eventBus.publish(event).catch(e => {
+      this._logger.error('unexpected error on worker stopped event', e);
+    });
   }
 
   /**

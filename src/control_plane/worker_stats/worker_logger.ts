@@ -52,7 +52,7 @@ export class WorkerLogger {
 
   statusSwitchTo(statusTo: WorkerStatus, reason: string, level?: LogLevels) {
     this.logger[level ?? 'info'](
-      'switch worker container status to [%s], because %s.',
+      'switch worker status to [%s], because %s.',
       WorkerStatus[statusTo],
       reason
     );
@@ -62,7 +62,7 @@ export class WorkerLogger {
     this.logger.info('found turf state %s.', state);
   }
 
-  updateContainerStatus(
+  updateWorkerStatus(
     to: WorkerStatus,
     from: WorkerStatus,
     event: TurfStatusEvent | WorkerStatusReport | ControlPlaneEvent,
@@ -70,7 +70,7 @@ export class WorkerLogger {
     extra?: string
   ) {
     this.logger[level ?? 'info'](
-      'update container status [%s] from [%s] by event [%s]%s',
+      'update worker status [%s] from [%s] by event [%s]%s',
       WorkerStatus[to],
       WorkerStatus[from],
       event,
