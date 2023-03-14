@@ -86,7 +86,7 @@ describe(common.testName(__filename), () => {
         ]);
 
         assert.strictEqual(broker.workers.size, 1);
-        assert.strictEqual(broker.startingPool.size, 1);
+        assert.strictEqual(broker['startingPool'].size, 1);
 
         const worker = JSON.parse(JSON.stringify(broker.getWorker('foo')));
         assert.deepStrictEqual(worker, {
@@ -98,7 +98,7 @@ describe(common.testName(__filename), () => {
           data: null,
           registerTime: worker.registerTime,
         });
-        assert.deepStrictEqual(broker.startingPool.get('foo'), {
+        assert.deepStrictEqual(broker['startingPool'].get('foo'), {
           credential: 'bar',
           estimateRequestLeft: 10,
           maxActivateRequests: 10,
@@ -137,7 +137,7 @@ describe(common.testName(__filename), () => {
         broker.removeItemFromStartingPool('foo');
 
         assert.strictEqual(broker.workers.size, 1);
-        assert.strictEqual(broker.startingPool.size, 0);
+        assert.strictEqual(broker['startingPool'].size, 0);
       });
     });
 
@@ -588,8 +588,8 @@ describe(common.testName(__filename), () => {
           },
         ]);
 
-        assert.strictEqual(broker.startingPool.size, 1);
-        assert.deepStrictEqual(broker.startingPool.get('foo'), {
+        assert.strictEqual(broker['startingPool'].size, 2);
+        assert.deepStrictEqual(broker['startingPool'].get('foo'), {
           credential: 'bar',
           estimateRequestLeft: 10,
           maxActivateRequests: 10,
@@ -670,8 +670,8 @@ describe(common.testName(__filename), () => {
           },
         ]);
 
-        assert.strictEqual(broker.startingPool.size, 1);
-        assert.deepStrictEqual(broker.startingPool.get('foo'), {
+        assert.strictEqual(broker['startingPool'].size, 2);
+        assert.deepStrictEqual(broker['startingPool'].get('foo'), {
           credential: 'bar',
           estimateRequestLeft: 10,
           maxActivateRequests: 10,

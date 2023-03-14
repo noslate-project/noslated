@@ -50,6 +50,7 @@ interface WorkerStoppedData {
   state: TurfState | null;
   runtimeType: RuntimeType;
   functionName: string;
+  registerTime: number;
   workerName: string;
 }
 export class WorkerStoppedEvent extends Event {

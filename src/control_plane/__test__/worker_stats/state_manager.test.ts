@@ -113,7 +113,7 @@ describe(common.testName(__filename), () => {
         })
       );
 
-      assert.strictEqual(worker1.workerStatus, WorkerStatus.Stopped);
+      assert.strictEqual(worker1.workerStatus, WorkerStatus.PendingStop);
 
       stateManager._updateWorkerStatusByReport(
         new WorkerStatusReportEvent({
@@ -125,7 +125,7 @@ describe(common.testName(__filename), () => {
         })
       );
 
-      assert.strictEqual(worker1.workerStatus, WorkerStatus.Stopped);
+      assert.strictEqual(worker1.workerStatus, WorkerStatus.PendingStop);
 
       stateManager._updateWorkerStatusByReport(
         new WorkerStatusReportEvent({
@@ -162,7 +162,10 @@ describe(common.testName(__filename), () => {
       assert.strictEqual(worker2.workerStatus, WorkerStatus.Unknown);
     });
 
-    it('should not update with illegal WorkerStatusReport order', async () => {
+    it('should not update with illegal WorkerStatusReport order', async function () {
+      // TODO: create worker with clocks.
+      this.timeout(30_000);
+
       await functionProfile.set(
         [
           {
@@ -191,12 +194,12 @@ describe(common.testName(__filename), () => {
 
       assert(worker);
 
-      assert.rejects(
+      await assert.rejects(
         async () => {
           await worker.ready();
         },
         {
-          message: /stopped unexpected after start./,
+          message: /initialization timeout./,
         }
       );
 
@@ -210,7 +213,7 @@ describe(common.testName(__filename), () => {
         })
       );
 
-      assert.strictEqual(worker.workerStatus, WorkerStatus.Stopped);
+      assert.strictEqual(worker.workerStatus, WorkerStatus.PendingStop);
 
       stateManager._updateWorkerStatusByReport(
         new WorkerStatusReportEvent({
@@ -222,7 +225,7 @@ describe(common.testName(__filename), () => {
         })
       );
 
-      assert.strictEqual(worker.workerStatus, WorkerStatus.Stopped);
+      assert.strictEqual(worker.workerStatus, WorkerStatus.PendingStop);
     });
   });
 
@@ -403,8 +406,8 @@ describe(common.testName(__filename), () => {
       );
       const startingPoolsName = ['hello', 'foooo'];
       brokers.forEach((broker, i) => {
-        assert.strictEqual(broker.startingPool.size, 1);
-        const sp = broker.startingPool.get(startingPoolsName[i]);
+        assert.strictEqual(broker['startingPool'].size, 1);
+        const sp = broker['startingPool'].get(startingPoolsName[i]);
         assert.deepStrictEqual(sp, {
           credential: i === 0 ? 'world' : 'bar',
           maxActivateRequests: 10,
@@ -510,8 +513,8 @@ describe(common.testName(__filename), () => {
       );
       const startingPoolsName = ['hello', 'foooo'];
       brokers.forEach((broker, i) => {
-        assert.strictEqual(broker.startingPool.size, 1);
-        const sp = broker.startingPool.get(startingPoolsName[i]);
+        assert.strictEqual(broker['startingPool'].size, 1);
+        const sp = broker['startingPool'].get(startingPoolsName[i]);
         assert.deepStrictEqual(sp, {
           credential: i === 0 ? 'world' : 'bar',
           maxActivateRequests: 10,
@@ -858,7 +861,7 @@ describe(common.testName(__filename), () => {
           functionProfile.get('func')!.toJSON(true)
         );
         assert.strictEqual(broker.workers.size, 1);
-        assert.strictEqual(broker.startingPool.size, 1);
+        assert.strictEqual(broker['startingPool'].size, 1);
 
         const worker: Partial<Worker> = JSON.parse(
           JSON.stringify(broker.workers.get(workerNames[i]))
@@ -902,6 +905,7 @@ describe(common.testName(__filename), () => {
         WorkerStatus.Unknown,
       ];
       const _pids = [2, 1];
+      const _startingPoolSize = [0, 1];
 
       brokers.forEach((broker, i) => {
         assert.strictEqual(broker.name, 'func');
@@ -911,7 +915,7 @@ describe(common.testName(__filename), () => {
           functionProfile.get('func')!.toJSON(true)
         );
         assert.strictEqual(broker.workers.size, 1);
-        assert.strictEqual(broker.startingPool.size, 0);
+        assert.strictEqual(broker['startingPool'].size, _startingPoolSize[i]);
 
         const worker: Partial<Worker> = JSON.parse(
           JSON.stringify(broker.workers.get(workerNames[i]))
@@ -979,7 +983,7 @@ describe(common.testName(__filename), () => {
         assert.strictEqual(broker.isInspector, inspectors[i]);
         assert.strictEqual(broker.data, null);
         assert.strictEqual(broker.workers.size, 1);
-        assert.strictEqual(broker.startingPool.size, 1);
+        assert.strictEqual(broker['startingPool'].size, 1);
 
         const worker = JSON.parse(
           JSON.stringify(broker.workers.get(workerNames[i]))
@@ -1023,7 +1027,7 @@ describe(common.testName(__filename), () => {
         assert.strictEqual(broker.isInspector, inspectors[i]);
         assert.strictEqual(broker.data, null);
         assert.strictEqual(broker.workers.size, 1);
-        assert.strictEqual(broker.startingPool.size, 0);
+        assert.strictEqual(broker['startingPool'].size, 1);
 
         const worker: Partial<Worker> = JSON.parse(
           JSON.stringify(broker.workers.get(workerNames[i]))
@@ -1107,19 +1111,19 @@ describe(common.testName(__filename), () => {
       );
 
       let workerStoppedFuture = eventBus.once(WorkerStoppedEvent);
-      // 回收 Stopped
+      // 回收 PendingStop
       await stateManager._correct();
 
       assert.strictEqual(stateManager.getBroker('func', true)!.workers.size, 1);
       assert.strictEqual(
         stateManager.getBroker('func', false)!.workers.size,
-        0
+        1
       );
-      assert(testContainerManager.getContainer('foooo') == null);
 
       {
         const event = await workerStoppedFuture;
         assert.strictEqual(event.data.workerName, 'foooo');
+        assert(testContainerManager.getContainer('foooo') == null);
       }
 
       registerContainers(testContainerManager, stateManager, [

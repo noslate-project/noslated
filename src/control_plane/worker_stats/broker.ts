@@ -1,5 +1,4 @@
 import { Config } from '#self/config';
-import { WorkerStatus } from '#self/lib/constants';
 import { FunctionProfileManager } from '#self/lib/function_profile';
 import { RawFunctionProfile } from '#self/lib/json/function_profile';
 import { PrefixedLogger } from '#self/lib/loggers';
@@ -28,7 +27,7 @@ class Broker {
 
   workers: Map<string, Worker>;
 
-  startingPool: Map<string, StartingPoolItem>;
+  private startingPool: Map<string, StartingPoolItem>;
 
   /**
    * Constructor
@@ -178,15 +177,7 @@ class Broker {
     // 将已启动完成、失败的从 `startingPool` 中移除
     for (const startingName of this.startingPool.keys()) {
       const worker = newMap.get(startingName)!;
-      if (!worker.isInitializating()) {
-        this.logger.debug(
-          '%s removed from starting pool due to status ' + '[%s] - [%s]',
-          startingName,
-          WorkerStatus[worker.workerStatus],
-          worker.turfContainerStates
-        );
-        this.startingPool.delete(startingName);
-      } else if (worker.data) {
+      if (worker.data) {
         // 同步 startingPool 中的值
         const item = this.startingPool.get(startingName)!;
 
@@ -205,7 +196,7 @@ class Broker {
   get workerCount() {
     let value = 0;
     for (const worker of this.workers.values()) {
-      if (worker.isRunning()) {
+      if (worker.isActive()) {
         value++;
       }
     }
@@ -220,7 +211,7 @@ class Broker {
   get totalMaxActivateRequests() {
     let m = 0;
     for (const worker of this.workers.values()) {
-      if (!worker.isRunning()) continue;
+      if (!worker.isActive()) continue;
       m += worker.data?.maxActivateRequests! || 0;
     }
 
@@ -235,7 +226,7 @@ class Broker {
   get activeRequestCount() {
     let a = 0;
     for (const worker of this.workers.values()) {
-      if (!worker.isRunning()) continue;
+      if (!worker.isActive()) continue;
       a += worker.data?.activeRequestCount || 0;
     }
 

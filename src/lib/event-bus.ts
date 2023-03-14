@@ -3,7 +3,7 @@ import { createDeferred } from './util';
 
 export class Event {
   // TODO: default global clock.
-  timeStamp = systemClock.now();
+  timestamp = systemClock.now();
   constructor(public readonly type: string) {}
 }
 

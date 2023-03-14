@@ -286,7 +286,7 @@ describe(common.testName(__filename), () => {
 
       worker.sync(data);
       assert.strictEqual(worker.workerStatus, WorkerStatus.Created);
-      assert.strictEqual(worker.isInitializating(), true);
+      assert.strictEqual(worker.isInitializing(), true);
 
       const container = new SimpleContainer('hello');
       worker.setContainer(container);
@@ -297,7 +297,7 @@ describe(common.testName(__filename), () => {
       worker.updateWorkerStatusByReport(WorkerStatusReport.ContainerInstalled);
 
       assert.strictEqual(worker.workerStatus, WorkerStatus.Ready);
-      assert.strictEqual(worker.isRunning(), true);
+      assert.strictEqual(worker.isActive(), true);
 
       worker.updateWorkerStatusByControlPlaneEvent(ControlPlaneEvent.Shrink);
 
@@ -305,7 +305,7 @@ describe(common.testName(__filename), () => {
 
       worker.updateWorkerStatusByReport(WorkerStatusReport.RequestDrained);
 
-      assert.strictEqual(worker.workerStatus, WorkerStatus.Stopped);
+      assert.strictEqual(worker.workerStatus, WorkerStatus.PendingStop);
     });
 
     it('should update state by event work, gc', async () => {
@@ -343,7 +343,7 @@ describe(common.testName(__filename), () => {
         WorkerStatusReport.ContainerDisconnected
       );
 
-      assert.strictEqual(worker.workerStatus, WorkerStatus.Stopped);
+      assert.strictEqual(worker.workerStatus, WorkerStatus.PendingStop);
     });
 
     it('update state has order', async () => {
@@ -455,7 +455,7 @@ describe(common.testName(__filename), () => {
         worker.turfContainerStates,
         TurfContainerStates.running
       );
-      assert.strictEqual(worker.workerStatus, WorkerStatus.Stopped);
+      assert.strictEqual(worker.workerStatus, WorkerStatus.PendingStop);
 
       await readyFuture;
     });
@@ -489,7 +489,7 @@ describe(common.testName(__filename), () => {
       clock.tick(config.worker.defaultInitializerTimeout + 1000);
 
       container.updateStatus('unsupported' as TurfContainerStates);
-      assert.strictEqual(worker.workerStatus, WorkerStatus.Stopped);
+      assert.strictEqual(worker.workerStatus, WorkerStatus.PendingStop);
 
       await readyFuture;
     });
