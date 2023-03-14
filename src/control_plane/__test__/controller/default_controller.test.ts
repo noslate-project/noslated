@@ -7,7 +7,11 @@ import { WorkerStatusReportEvent } from '#self/control_plane/events';
 import { WorkerLauncher } from '#self/control_plane/worker_launcher';
 import { Broker } from '#self/control_plane/worker_stats/broker';
 import { StateManager } from '#self/control_plane/worker_stats/state_manager';
-import { WorkerStatusReport, ControlPlaneEvent } from '#self/lib/constants';
+import {
+  WorkerStatusReport,
+  ControlPlaneEvent,
+  WorkerStatus,
+} from '#self/lib/constants';
 import { FunctionProfileManager } from '#self/lib/function_profile';
 import { ShrinkStrategy } from '#self/lib/json/function_profile';
 import { TurfContainerStates } from '#self/lib/turf';
@@ -244,7 +248,6 @@ describe(common.testName(__filename), () => {
 
         let tryLaunchCalled = 0;
         let reduceCapacityCalled = 0;
-        let stopWorkerCalled = 0;
         mm(
           workerLauncher,
           'tryLaunch',
@@ -273,16 +276,15 @@ describe(common.testName(__filename), () => {
             return ret.brokers;
           }
         );
-        mm(defaultController, 'stopWorker', async (name: any) => {
-          assert.strictEqual(name, 'cocos');
-          stopWorkerCalled++;
-        });
 
         await defaultController['autoScale']();
 
         assert.strictEqual(tryLaunchCalled, id === 0 ? 1 : 0);
         assert.strictEqual(reduceCapacityCalled, 1);
-        assert.strictEqual(stopWorkerCalled, 1);
+        assert.strictEqual(
+          stateManager.getWorker('lambda', false, 'cocos')?.workerStatus,
+          WorkerStatus.PendingStop
+        );
       });
     }
 
@@ -441,7 +443,6 @@ describe(common.testName(__filename), () => {
 
       let tryLaunchCalled = 0;
       let reduceCapacityCalled = 0;
-      let stopWorkerCalled = 0;
       mm(workerLauncher, 'tryLaunch', async () => {
         tryLaunchCalled++;
       });
@@ -471,18 +472,16 @@ describe(common.testName(__filename), () => {
           return data.brokers;
         }
       );
-      let left = ['cocos', 'coco', 'alibaba', 'foo', 'hello'];
-      mm(defaultController, 'stopWorker', async (name: string) => {
-        assert(left.includes(name));
-        left = left.filter(n => name !== n);
-        stopWorkerCalled++;
-      });
 
       await defaultController['autoScale']();
 
       assert.strictEqual(tryLaunchCalled, 0);
       assert.strictEqual(reduceCapacityCalled, 1);
-      assert.strictEqual(stopWorkerCalled, 5);
+      const workers = Array.from(stateManager.workers());
+      assert.strictEqual(workers.length, 5);
+      workers.forEach(it => {
+        assert.strictEqual(it.workerStatus, WorkerStatus.PendingStop);
+      });
     });
 
     it('a wrong situation of worker count infinitely increasing', async () => {

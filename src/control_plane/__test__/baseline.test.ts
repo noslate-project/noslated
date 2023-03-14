@@ -10,6 +10,7 @@ import { DefaultEnvironment } from '#self/test/env/environment';
 import { WorkerMetadata } from '../worker_stats/worker';
 import { WorkerStoppedEvent } from '../events';
 import { sleep } from '#self/lib/util';
+import { WorkerStatus } from '#self/lib/constants';
 
 const cases = [
   {
@@ -350,22 +351,20 @@ const cases = [
 
       await sleep(2000); // wait for data plane sync
 
-      const idx = _.random(0, 1, false);
       const names = [...broker.workers.keys()];
 
-      mm(broker.workers.get(names[idx])!.data, 'activeRequestCount', 4);
-      mm(
-        broker.workers.get(names[idx === 0 ? 1 : 0])!.data,
-        'activeRequestCount',
-        2
-      );
+      mm(broker.workers.get(names[0])!.data, 'activeRequestCount', 4);
+      mm(broker.workers.get(names[1])!.data, 'activeRequestCount', 2);
       mm(broker, 'redundantTimes', 60);
 
       await defaultController['autoScale']();
 
       // shrink and leave `names[idx]` because LCC
-      assert.strictEqual(broker.workers.size, 1);
-      assert.notStrictEqual(broker.workers.get(names[idx]), undefined);
+      assert.strictEqual(broker.workers.size, 2);
+      assert.strictEqual(
+        broker.workers.get(names[1])?.workerStatus,
+        WorkerStatus.PendingStop
+      );
     },
     expect: {
       data: Buffer.from('echo'),
@@ -406,28 +405,19 @@ const cases = [
 
       await sleep(2000); // wait for data plane sync
 
-      const idx = _.random(0, 1, false);
       const names = [...broker.workers.keys()];
-      const workers = [
-        broker.workers.get(names[0])!,
-        broker.workers.get(names[1])!,
-      ].sort((a, b) => {
-        return a.registerTime < b.registerTime ? -1 : 1;
-      });
-
-      mm(broker.workers.get(names[idx])!.data, 'activeRequestCount', 4);
-      mm(
-        broker.workers.get(names[idx === 0 ? 1 : 0])!.data,
-        'activeRequestCount',
-        2
-      );
+      mm(broker.workers.get(names[0])!.data, 'activeRequestCount', 4);
+      mm(broker.workers.get(names[1])!.data, 'activeRequestCount', 2);
       mm(broker, 'redundantTimes', 60);
 
       await defaultController['autoScale']();
 
       // shrink and leave `names[idx]` because FILO
-      assert.strictEqual(broker.workers.size, 1);
-      assert.notStrictEqual(broker.workers.get(workers[0].name), undefined);
+      assert.strictEqual(broker.workers.size, 2);
+      assert.strictEqual(
+        broker.workers.get(names[1])?.workerStatus,
+        WorkerStatus.PendingStop
+      );
     },
     expect: {
       data: Buffer.from('echo'),
@@ -468,31 +458,75 @@ const cases = [
 
       await sleep(2000); // wait for data plane sync
 
-      const idx = _.random(0, 1, false);
       const names = [...broker.workers.keys()];
-      const workers = [
-        broker.workers.get(names[0])!,
-        broker.workers.get(names[1])!,
-      ].sort((a, b) => {
-        return a.registerTime < b.registerTime ? -1 : 1;
-      });
 
-      mm(broker.workers.get(names[idx])!.data, 'activeRequestCount', 4);
-      mm(
-        broker.workers.get(names[idx === 0 ? 1 : 0])!.data,
-        'activeRequestCount',
-        2
-      );
+      mm(broker.workers.get(names[0])!.data, 'activeRequestCount', 4);
+      mm(broker.workers.get(names[1])!.data, 'activeRequestCount', 2);
       mm(broker, 'redundantTimes', 60);
 
       await defaultController['autoScale']();
 
       // shrink and leave `names[idx]` because FIFO
-      assert.strictEqual(broker.workers.size, 1);
-      assert.notStrictEqual(broker.workers.get(workers[1].name), undefined);
+      assert.strictEqual(broker.workers.size, 2);
+      assert.strictEqual(
+        broker.workers.get(names[0])?.workerStatus,
+        WorkerStatus.PendingStop
+      );
     },
     expect: {
       data: Buffer.from('echo'),
+    },
+  },
+  {
+    name: 'aworker_graceful_exit',
+    profile: {
+      name: 'aworker_graceful_exit',
+      runtime: 'aworker',
+      url: `file://${baselineDir}/aworker_graceful_exit`,
+      sourceFile: 'index.js',
+      signature: 'md5:234234',
+      worker: {
+        reservationCount: 0,
+      },
+    },
+    input: {
+      data: Buffer.from('echo'),
+      metadata: {
+        method: 'POST',
+      },
+    },
+    after: async ({ control }: DefaultEnvironment) => {
+      const defaultController = control._ctx.getInstance('defaultController');
+      const stateManager = control._ctx.getInstance('stateManager');
+      const broker = stateManager.getBroker('aworker_graceful_exit', false);
+      assert(broker);
+
+      assert.strictEqual(broker.workers.size, 1);
+      const worker = Array.from(broker.workers.values())[0];
+      assert.strictEqual(worker.workerStatus, WorkerStatus.Ready);
+
+      mm(worker, 'data', { maxActivateRequests: 10 });
+      mm(broker, 'redundantTimes', 60);
+      await defaultController['autoScale']();
+
+      // shrink and leave `names[idx]` because FIFO
+      assert.strictEqual(broker.workers.size, 1);
+      assert.strictEqual(worker.workerStatus, WorkerStatus.PendingStop);
+
+      // wait turf kill or sync gc
+      const stoppedEvent = await control._ctx
+        .getInstance('eventBus')
+        .once(WorkerStoppedEvent);
+      assert.ok(
+        stoppedEvent.timestamp - stoppedEvent.data.registerTime >
+          config.turf.gracefulExitPeriodMs,
+        'stopped with graceful period'
+      );
+
+      assert.strictEqual(broker.workers.size, 0);
+    },
+    expect: {
+      data: Buffer.from('hello-world'),
     },
   },
 ];

@@ -125,7 +125,7 @@ export class DefaultController extends BaseController {
   private async autoScale() {
     const brokers = [...this._stateManager.brokers()];
     const { expandDeltas, shrinkDeltas } =
-      this._capacityManager.evaluteScaleDeltas(brokers);
+      this._capacityManager.evaluateScaleDeltas(brokers);
 
     const { true: reservationDeltas = [], false: regularDeltas = [] } =
       _.groupBy(
@@ -212,8 +212,6 @@ export class DefaultController extends BaseController {
     if (!ensured || !ensured.length) {
       return;
     }
-    const kill = [];
-    const up = [];
     for (const broker of ensured) {
       for (const worker of broker?.workers || []) {
         const realWorker = this._stateManager.getWorker(
@@ -227,15 +225,8 @@ export class DefaultController extends BaseController {
         realWorker.updateWorkerStatusByControlPlaneEvent(
           ControlPlaneEvent.Shrink
         );
-        up.push(worker.name);
-        kill.push(this.stopWorker(worker.name!));
       }
     }
-    this.logger.info(
-      'Up to do shrink destroy after asking for data plane.',
-      up
-    );
-    await Promise.all(kill);
   }
 
   /**
