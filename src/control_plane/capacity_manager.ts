@@ -41,7 +41,7 @@ export class CapacityManager extends Base {
    * @param {Broker[]} brokers
    * @returns
    */
-  evaluteScaleDeltas(brokers: Broker[]): {
+  evaluateScaleDeltas(brokers: Broker[]): {
     expandDeltas: Delta[];
     shrinkDeltas: Delta[];
   } {

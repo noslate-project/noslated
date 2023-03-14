@@ -904,7 +904,7 @@ const cases = [
     profile: {
       name: 'node_worker_with_disposable_true',
       runtime: 'nodejs',
-      url: `file://${baselineDir}/node_worker_disposable`,
+      url: `file://${baselineDir}/node_worker_graceful_exit`,
       handler: 'index.handler',
       signature: 'md5:234234',
       worker: {
@@ -980,7 +980,7 @@ const cases = [
     profile: {
       name: 'aworker_with_disposable_true',
       runtime: 'aworker',
-      url: `file://${baselineDir}/aworker_disposable`,
+      url: `file://${baselineDir}/aworker_graceful_exit`,
       sourceFile: 'index.js',
       signature: 'md5:234234',
       worker: {
