@@ -208,7 +208,7 @@ export class PushServerImpl implements IPushServer {
       },
     });
 
-    // time for first byte
+    // time to first byte
     const ttfb = Date.now();
 
     const deferred = createDeferred<PipeResult>();
