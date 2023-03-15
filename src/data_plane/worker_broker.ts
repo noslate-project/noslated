@@ -17,12 +17,12 @@ import { DataFlowController } from './data_flow_controller';
 import { FunctionProfileManager } from '#self/lib/function_profile';
 import { Config } from '#self/config';
 import * as root from '#self/proto/root';
-import { kMemoryLimit } from '#self/control_plane/constants';
 import { performance } from 'perf_hooks';
 import { WorkerStatusReport, kDefaultRequestId } from '#self/lib/constants';
 import { DataPlaneHost } from './data_plane_host';
+import { List } from '#self/lib/list';
 
-export enum RequestQueueStatus {
+enum RequestQueueStatus {
   PASS_THROUGH = 0,
   QUEUEING = 1,
 }
@@ -43,12 +43,6 @@ export class PendingRequest extends EventEmitter {
   timer: NodeJS.Timeout | undefined;
   requestId: string;
 
-  /**
-   * Constructor
-   * @param {Readable|Buffer} inputStream The input stream.
-   * @param {import('#self/delegate/request_response').Metadata|object} metadata The metadata.
-   * @param {number} timeout The pending timeout.
-   */
   constructor(
     inputStream: Readable | Buffer,
     public metadata: Metadata,
@@ -78,7 +72,6 @@ export class PendingRequest extends EventEmitter {
 
   /**
    * The promise that may response.
-   * @type {Promise<import('#self/delegate/request_response').TriggerResponse>}
    */
   get promise(): Promise<TriggerResponse> {
     return this.deferred.promise;
@@ -86,7 +79,6 @@ export class PendingRequest extends EventEmitter {
 
   /**
    * Resolve the `promise`.
-   * @type {(ret: import('#self/delegate/request_response').TriggerResponse) => void}
    */
   get resolve(): (ret: TriggerResponse) => void {
     return this.deferred.resolve;
@@ -94,7 +86,6 @@ export class PendingRequest extends EventEmitter {
 
   /**
    * Reject the `promise`.
-   * @type {(err: Error) => void}
    */
   get reject(): (err: Error) => void {
     return this.deferred.reject;
@@ -107,14 +98,6 @@ export class Worker extends EventEmitter {
   logger: PrefixedLogger;
   trafficOff: boolean;
 
-  /**
-   * Constructor
-   * @param {WorkerBroker} broker The parent worker broker object.
-   * @param {NoslatedDelegateService} delegate The noslated delegate object.
-   * @param {string} name The worker's name.
-   * @param {string} credential The worker's credential.
-   * @param {number} maxActivateRequests Max activate request count for this worker.
-   */
   constructor(
     public broker: WorkerBroker,
     public delegate: NoslatedDelegateService,
@@ -134,7 +117,6 @@ export class Worker extends EventEmitter {
 
   /**
    * Close this worker's traffic.
-   * @return {Promise<boolean>} Whether the traffic really closed successfully.
    */
   async closeTraffic() {
     this.trafficOff = true;
@@ -143,7 +125,7 @@ export class Worker extends EventEmitter {
       return Promise.resolve(true);
     }
 
-    const { promise, resolve } = utils.createDeferred();
+    const { promise, resolve } = utils.createDeferred<boolean>();
     const downToZero: (...args: any[]) => void = () => {
       resolve(true);
     };
@@ -155,9 +137,6 @@ export class Worker extends EventEmitter {
 
   /**
    * Pipe input stream to worker process and get response.
-   * @param {Readable|Buffer} inputStream The input stream.
-   * @param {import('#self/delegate/request_response').Metadata|object} metadata The metadata object.
-   * @return {Promise<import('#self/delegate/request_response').TriggerResponse>} The response.
    */
   async pipe(
     inputStream: Readable | Buffer | PendingRequest,
@@ -165,13 +144,15 @@ export class Worker extends EventEmitter {
   ): Promise<TriggerResponse> {
     let waitMs = 0;
 
-    let requestId = metadata?.requestId;
+    let requestId: string | undefined;
 
     if (inputStream instanceof PendingRequest) {
       metadata = inputStream.metadata;
       requestId = metadata.requestId;
       waitMs = Date.now() - inputStream.startEpoch;
       inputStream = inputStream.input;
+    } else {
+      requestId = metadata?.requestId;
     }
 
     requestId = requestId ?? kDefaultRequestId;
@@ -181,9 +162,8 @@ export class Worker extends EventEmitter {
       `[${requestId}] Event dispatched, activeRequestCount: ${this.activeRequestCount}, wait: ${waitMs}ms.`
     );
 
-    let ret;
     try {
-      ret = await this.delegate.trigger(
+      const ret = await this.delegate.trigger(
         this.credential,
         'invoke',
         inputStream,
@@ -192,8 +172,8 @@ export class Worker extends EventEmitter {
 
       ret.queueing = waitMs;
       ret.workerName = this.name;
+      return ret;
     } catch (e: unknown) {
-
       if (e instanceof Error) {
         e['queueing'] = waitMs;
         e['workerName'] = this.name;
@@ -208,8 +188,6 @@ export class Worker extends EventEmitter {
 
       this.continueConsumeQueue();
     }
-
-    return ret;
   }
 
   continueConsumeQueue() {
@@ -226,8 +204,8 @@ interface BrokerOptions {
   inspect?: boolean;
 }
 
-interface PendingCredentials {
-  credential: string;
+interface CredentialItem {
+  status: CredentialStatus;
   name: string;
 }
 
@@ -235,23 +213,19 @@ interface PendingCredentials {
  * A container that brokers same function's workers.
  */
 export class WorkerBroker extends Base {
-  profileManager: FunctionProfileManager;
-  delegate: NoslatedDelegateService;
-  host: DataPlaneHost;
-  config: Config;
-  logger: PrefixedLogger;
-  requestQueue: PendingRequest[];
-  requestQueueStatus: RequestQueueStatus;
+  private profileManager: FunctionProfileManager;
+  private delegate: NoslatedDelegateService;
+  private host: DataPlaneHost;
+  private config: Config;
+  private logger: PrefixedLogger;
+  requestQueue: List<PendingRequest>;
+  private requestQueueStatus: RequestQueueStatus;
   workers: Worker[];
-  pendingCredentials: PendingCredentials[];
-  credentialStatusMap: Map<string, CredentialStatus>;
-  tokenBucket: TokenBucket | undefined = undefined;
+  private credentialStatusMap: Map<string, CredentialItem>;
+  private tokenBucket: TokenBucket | undefined = undefined;
 
   /**
    * TODO(chengzhong.wcz): dependency review;
-   * @param {import('./data_flow_controller').DataFlowController} dataFlowController The data flow controller object.
-   * @param {string} name The serverless function name.
-   * @param {{ inspect?: boolean }} options The broker's options.
    */
   constructor(
     public dataFlowController: DataFlowController,
@@ -269,24 +243,10 @@ export class WorkerBroker extends Base {
       'worker broker',
       `${name}${options.inspect ? ':inspect' : ''}`
     );
-    /**
-     * @type {PendingRequest[]}
-     */
-    this.requestQueue = [];
+    this.requestQueue = new List();
     this.requestQueueStatus = RequestQueueStatus.PASS_THROUGH;
 
-    /**
-     * @type {Worker[]}
-     */
     this.workers = [];
-    /**
-     * @type {{ credential: string, name: string }[]}
-     */
-    this.pendingCredentials = [];
-
-    /**
-     * @type {Map<string, CredentialStatus>}
-     */
     this.credentialStatusMap = new Map();
 
     const rateLimit = this.rateLimit;
@@ -308,12 +268,10 @@ export class WorkerBroker extends Base {
       }
     }
 
-    const idx = _.findIndex(this.pendingCredentials, [
-      'credential',
-      credential,
-    ]);
-
-    if (idx !== undefined) {
+    if (
+      this.credentialStatusMap.get(credential)?.status ===
+      CredentialStatus.PENDING
+    ) {
       return credential;
     }
 
@@ -332,12 +290,10 @@ export class WorkerBroker extends Base {
       }
     }
 
-    const idx = _.findIndex(this.pendingCredentials, [
-      'credential',
-      credential,
-    ]);
-
-    if (idx !== undefined) {
+    if (
+      this.credentialStatusMap.get(credential)?.status ===
+      CredentialStatus.PENDING
+    ) {
       return true;
     }
 
@@ -349,9 +305,6 @@ export class WorkerBroker extends Base {
    * @param {string} credential The worker's credential.
    */
   removeWorker(credential: string) {
-    this.pendingCredentials = this.pendingCredentials.filter(
-      c => credential !== c.credential
-    );
     this.workers = this.workers.filter(w => w.credential !== credential);
     this.credentialStatusMap.delete(credential);
   }
@@ -370,7 +323,7 @@ export class WorkerBroker extends Base {
     ) {
       if (notThatBusyWorker.trafficOff) break;
 
-      const request: PendingRequest | undefined = this.requestQueue.shift();
+      const request = this.requestQueue.shift();
 
       if (!request) continue;
 
@@ -415,7 +368,7 @@ export class WorkerBroker extends Base {
     }
   }
 
-  async afterDisposableInvoke(
+  private async afterDisposableInvoke(
     worker: Worker,
     response: TriggerResponse | undefined,
     requestId?: string
@@ -442,14 +395,11 @@ export class WorkerBroker extends Base {
    * @param {string} credential The worker credential.
    * @return {{ credential: string, name: string }|false} The pending credential or false if not exists.
    */
-  isCredentialPending(credential: string) {
-    for (const c of this.pendingCredentials) {
-      if (c.credential === credential) {
-        return c;
-      }
-    }
-
-    return false;
+  private isCredentialPending(credential: string) {
+    return (
+      this.credentialStatusMap.get(credential)?.status ===
+      CredentialStatus.PENDING
+    );
   }
 
   /**
@@ -463,8 +413,10 @@ export class WorkerBroker extends Base {
         `Credential ${credential} already exists in ${this.name}.`
       );
     }
-    this.pendingCredentials.push({ credential, name });
-    this.credentialStatusMap.set(credential, CredentialStatus.PENDING);
+    this.credentialStatusMap.set(credential, {
+      status: CredentialStatus.PENDING,
+      name,
+    });
   }
 
   get disposable() {
@@ -481,7 +433,7 @@ export class WorkerBroker extends Base {
    * Max activate requests count per worker of this broker.
    * @type {number}
    */
-  get maxActivateRequests() {
+  private get maxActivateRequests() {
     const profile = this.profileManager.get(this.name);
     if (!profile) {
       return this.config.worker.maxActivateRequests;
@@ -494,55 +446,6 @@ export class WorkerBroker extends Base {
     return (
       profile.worker?.maxActivateRequests ||
       this.config.worker.maxActivateRequests
-    );
-  }
-
-  /**
-   * replica count limit of this broker.
-   * @type {number}
-   */
-  get replicaCountLimit() {
-    const profile = this.profileManager.get(this.name);
-    if (!profile) {
-      return this.config.worker.replicaCountLimit;
-    }
-
-    return (
-      profile.worker?.replicaCountLimit || this.config.worker.replicaCountLimit
-    );
-  }
-
-  /**
-   * memory limit per worker of this broker.
-   * @type {number}
-   */
-  get memoryLimit() {
-    const profile = this.profileManager.get(this.name);
-    if (!profile) {
-      // /lib/json/spec.template.json
-      return kMemoryLimit;
-    }
-
-    return profile.resourceLimit?.memory || kMemoryLimit;
-  }
-
-  /**
-   * Reservation count of this broker.
-   * @type {number}
-   */
-  get reservationCount() {
-    const profile = this.profileManager.get(this.name);
-    if (!profile) {
-      return this.config.worker.reservationCountPerFunction;
-    }
-
-    if (this.disposable) {
-      return 0;
-    }
-
-    return (
-      profile.worker?.reservationCount ||
-      this.config.worker.reservationCountPerFunction
     );
   }
 
@@ -596,22 +499,18 @@ export class WorkerBroker extends Base {
       );
     }
 
-    const status = this.credentialStatusMap.get(credential);
-    if (status !== CredentialStatus.PENDING) {
+    const item = this.credentialStatusMap.get(credential);
+    if (item == null || item.status !== CredentialStatus.PENDING) {
       this.logger.error(`Duplicated worker with credential ${credential}`);
       return;
     }
-
-    this.pendingCredentials = this.pendingCredentials.filter(c => {
-      return c.credential !== credential;
-    });
 
     const { profile } = this;
     const worker = new Worker(
       this,
       this.delegate,
-      c.name,
-      c.credential,
+      item.name,
+      credential,
       this.maxActivateRequests,
       this.disposable
     );
@@ -626,7 +525,7 @@ export class WorkerBroker extends Base {
       });
       this.logger.info(
         'worker(%s) initialization cost: %sms.',
-        credential,
+        item.name,
         performance.now() - now
       );
       // 同步 Container 状态
@@ -644,7 +543,18 @@ export class WorkerBroker extends Base {
 
     this.workers.push(worker);
 
-    this.credentialStatusMap.set(credential, CredentialStatus.BOUND);
+    const tag = worker
+      ? (worker as Worker).name || `{${credential}}`
+      : `{${credential}}`;
+
+    this.logger.info(
+      `Worker ${tag} for ${this.name} attached, draining request queue.`
+    );
+
+    this.credentialStatusMap.set(credential, {
+      status: CredentialStatus.BOUND,
+      name: item.name,
+    });
 
     this.tryConsumeQueue(worker);
   }
@@ -673,9 +583,10 @@ export class WorkerBroker extends Base {
    * @param {import('#self/delegate/request_response').Metadata|object} metadata The metadata.
    * @return {PendingRequest} The created pending request.
    */
-  createPendingRequest(input: Readable | Buffer, metadata: Metadata) {
+  private createPendingRequest(input: Readable | Buffer, metadata: Metadata) {
     this.logger.info('create pending request(%s).', metadata.requestId);
     const request = new PendingRequest(input, metadata, metadata.timeout);
+    const node = this.requestQueue.push(request);
     this.dataFlowController.queuedRequestCounter.add(1, {
       [PlaneMetricAttributes.FUNCTION_NAME]: this.name,
     });
@@ -683,7 +594,7 @@ export class WorkerBroker extends Base {
     // TODO(kaidi.zkd): 统一计时器定时批量处理超时
     request.once('timeout', () => {
       this.logger.debug('A request wait timeout.');
-      this.requestQueue = this.requestQueue.filter(r => r !== request);
+      this.requestQueue.remove(node);
       request.reject(
         new Error(
           `Timeout for waiting worker in ${metadata.timeout}ms, request(${request.requestId}).`
@@ -727,10 +638,10 @@ export class WorkerBroker extends Base {
   fastFailAllPendingsDueToStartError(
     startWorkerFastFailRequest: root.noslated.data.IStartWorkerFastFailRequest
   ) {
-    const { requestQueue } = this;
-    this.requestQueue = [];
-    const err = new Error(startWorkerFastFailRequest.displayMessage as string);
-    for (const pendingRequest of requestQueue) {
+    const requestQueue = this.requestQueue;
+    this.requestQueue = new List();
+    const err = new Error(startWorkerFastFailRequest.displayMessage!);
+    for (const pendingRequest of requestQueue.values()) {
       pendingRequest.stopTimer();
       pendingRequest.reject(err);
       this.dataFlowController.queuedRequestDurationHistogram.record(
@@ -744,9 +655,6 @@ export class WorkerBroker extends Base {
 
   /**
    * Invoke to an available worker if possible and response.
-   * @param {Reaable|Buffer} inputStream The input stream.
-   * @param {import('#self/delegate/request_response').Metadata|object} metadata The metadata.
-   * @return {Promise<import('#self/delegate/request_response').TriggerResponse>} The response.
    */
   async invoke(inputStream: Readable | Buffer, metadata: Metadata) {
     await this.ready();
@@ -760,7 +668,6 @@ export class WorkerBroker extends Base {
     switch (this.requestQueueStatus) {
       case RequestQueueStatus.QUEUEING: {
         const request = this.createPendingRequest(inputStream, metadata);
-        this.requestQueue.push(request);
         return request.promise;
       }
 
@@ -771,7 +678,6 @@ export class WorkerBroker extends Base {
 
           this.requestQueueStatus = RequestQueueStatus.QUEUEING;
           const request = this.createPendingRequest(inputStream, metadata);
-          this.requestQueue.push(request);
           return request.promise;
         }
 

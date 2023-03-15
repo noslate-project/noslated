@@ -20,18 +20,16 @@ import {
 } from '#self/lib/turf/types';
 import { DependencyContext } from '#self/lib/dependency_context';
 import { ConfigContext } from '../deps';
+import { TaskQueue } from '#self/lib/task_queue';
 
 const TurfStopRetryableCodes = [TurfCode.EAGAIN];
-const TurfStoppedStates = [
-  TurfContainerStates.stopped,
-  TurfContainerStates.unknown,
-];
 
 export class TurfContainerManager implements ContainerManager {
   private config: Config;
   private bundlePathLock = new Map<string, Promise<void>>();
   private logger: Logger;
   private containers = new Map<string, TurfContainer>();
+  cleanupQueue: TaskQueue<TurfContainer>;
 
   client: Turf;
 
@@ -39,6 +37,10 @@ export class TurfContainerManager implements ContainerManager {
     this.config = ctx.getInstance('config');
     this.client = new Turf(this.config.turf.bin, this.config.turf.socketPath);
     this.logger = loggers.get('turf-manager');
+
+    this.cleanupQueue = new TaskQueue(this._cleanup, {
+      concurrency: 1,
+    });
   }
 
   async ready() {
@@ -106,18 +108,20 @@ export class TurfContainerManager implements ContainerManager {
       psMap.set(item.name, item);
     }
 
-    const newMemo = new Map<string, TurfContainer>();
+    const unknownNames = [];
     for (const item of this.containers.values()) {
       const pi = psMap.get(item.name);
       if (pi == null) {
         item.updateStatus(TurfContainerStates.unknown);
+        unknownNames.push(item.name);
         continue;
       }
       item.pid = pi.pid;
       item.updateStatus(pi.status);
-      newMemo.set(item.name, item);
     }
-    this.containers = newMemo;
+    for (const name of unknownNames) {
+      this.containers.delete(name);
+    }
   }
 
   private async _bundlePathLock<T>(bundlePath: string, fn: () => T) {
@@ -142,6 +146,10 @@ export class TurfContainerManager implements ContainerManager {
       resolve();
     }
   }
+
+  private _cleanup = (container: TurfContainer) => {
+    return container._onStopped();
+  };
 }
 
 export class TurfContainer implements Container {
@@ -149,7 +157,7 @@ export class TurfContainer implements Container {
   private logger: Logger;
   pid?: number;
   status: TurfContainerStates;
-  onstatuschanged?: () => void;
+  onstatuschanged = () => {};
   terminated: Promise<TurfState | null>;
   terminatedDeferred: Deferred<TurfState | null>;
 
@@ -186,11 +194,11 @@ export class TurfContainer implements Container {
       return;
     }
     this.status = newStatus;
-    if (TurfStoppedStates.includes(newStatus)) {
-      this._onStopped();
+    if (newStatus >= TurfContainerStates.stopped) {
+      this.manager.cleanupQueue.enqueue(this);
     }
     try {
-      this.onstatuschanged?.();
+      this.onstatuschanged();
     } catch (err) {
       this.logger.error(
         'unexpected error on onstatuschanged %s',
@@ -200,7 +208,7 @@ export class TurfContainer implements Container {
     }
   }
 
-  private async _onStopped() {
+  async _onStopped() {
     let state: TurfState | null = null;
     try {
       state = await this.client.state(this.name);

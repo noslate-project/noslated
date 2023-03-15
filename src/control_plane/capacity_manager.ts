@@ -88,7 +88,7 @@ export class CapacityManager extends Base {
    */
   regulateDeltas(deltas: Delta[]) {
     const memoUsed = this.virtualMemoryUsed;
-    const needMemo = deltas.reduce((memo, delta, i) => {
+    const needMemo = deltas.reduce((memo, delta) => {
       const broker: Broker = delta.broker;
       return delta.count > 0 ? memo + delta.count * broker.memoryLimit : memo;
     }, 0);
@@ -138,12 +138,13 @@ export class CapacityManager extends Base {
 
     const broker = this.stateManager.getBroker(name, isInspect);
 
-    if (broker && broker.prerequestStartingPool() && !broker.disposable) {
+    if (broker && !broker.disposable && broker.prerequestStartingPool()) {
       this.logger.info(
-        'Request(%s) queueing for func(%s, inspect %s) will not expand because StartingPool is still enough.',
+        'Request(%s) queueing for func(%s, inspect %s, disposable %s) will not expand because StartingPool is still enough.',
         requestId,
         name,
-        isInspect
+        isInspect,
+        broker.disposable
       );
       return false;
     }

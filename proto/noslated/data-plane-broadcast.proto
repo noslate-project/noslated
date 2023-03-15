@@ -30,6 +30,7 @@ message RequestQueueingBroadcast {
   WorkerTrafficStatsSnapshot stats = 3;
   int32 queuedRequestCount = 4;
   string requestId = 5;
+  double timestamp = 6;
 }
 
 message ContainerStatusReport {

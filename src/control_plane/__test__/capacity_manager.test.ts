@@ -228,7 +228,7 @@ describe(common.testName(__filename), function () {
     });
 
     it('should evaluate when some worker stopped (low)', () => {
-      const broker = new Broker(functionProfile, config, 'func', false, false);
+      const broker = new Broker(functionProfile, config, 'func', false);
       registerWorkers(broker, [
         {
           processName: 'hello',
@@ -269,7 +269,7 @@ describe(common.testName(__filename), function () {
     });
 
     it('should evaluate when some worker stopped (high)', () => {
-      const broker = new Broker(functionProfile, config, 'func', false, false);
+      const broker = new Broker(functionProfile, config, 'func', false);
       registerWorkers(broker, [
         {
           processName: 'hello',
@@ -308,7 +308,7 @@ describe(common.testName(__filename), function () {
     });
 
     it('should evaluate with starting pool, ignore in start pool', () => {
-      const broker = new Broker(functionProfile, config, 'func', false, false);
+      const broker = new Broker(functionProfile, config, 'func', false);
       registerWorkers(broker, [
         {
           processName: 'hello',
@@ -336,7 +336,7 @@ describe(common.testName(__filename), function () {
     });
 
     it('should evaluate with starting pool (high)', () => {
-      const broker = new Broker(functionProfile, config, 'func', false, false);
+      const broker = new Broker(functionProfile, config, 'func', false);
       registerWorkers(broker, [
         {
           processName: 'hello',
@@ -367,12 +367,12 @@ describe(common.testName(__filename), function () {
     });
 
     it('should evaluate water level', () => {
-      const broker = new Broker(functionProfile, config, 'func', false, false);
+      const broker = new Broker(functionProfile, config, 'func', false);
       assert.strictEqual(capacityManager.evaluateWaterLevel(broker), 0);
     });
 
     it('should evaluate water level without broker data', () => {
-      const broker = new Broker(functionProfile, config, 'func', false, false);
+      const broker = new Broker(functionProfile, config, 'func', false);
 
       registerWorkers(broker, [
         {
@@ -385,7 +385,7 @@ describe(common.testName(__filename), function () {
     });
 
     it('should evaluate water level without broker data and expansionOnly = true', () => {
-      const broker = new Broker(functionProfile, config, 'func', false, false);
+      const broker = new Broker(functionProfile, config, 'func', false);
 
       registerWorkers(broker, [
         {
@@ -398,7 +398,7 @@ describe(common.testName(__filename), function () {
     });
 
     it('should evaluate water level with one worker left', () => {
-      const broker = new Broker(functionProfile, config, 'func', false, false);
+      const broker = new Broker(functionProfile, config, 'func', false);
 
       registerWorkers(broker, [
         {
@@ -423,7 +423,7 @@ describe(common.testName(__filename), function () {
     });
 
     it('should evaluate water level (still redundant, high)', () => {
-      const broker = new Broker(functionProfile, config, 'func', false, false);
+      const broker = new Broker(functionProfile, config, 'func', false);
       registerWorkers(broker, [
         {
           processName: 'hello',
@@ -458,7 +458,7 @@ describe(common.testName(__filename), function () {
     });
 
     it('should evaluate water level (still redundant, low)', () => {
-      const broker = new Broker(functionProfile, config, 'func', false, false);
+      const broker = new Broker(functionProfile, config, 'func', false);
       registerWorkers(broker, [
         {
           processName: 'hello',
@@ -497,7 +497,7 @@ describe(common.testName(__filename), function () {
         [{ ...funcData[0], worker: { reservationCount: 1 } }],
         'WAIT'
       );
-      const broker = new Broker(functionProfile, config, 'func', false, false);
+      const broker = new Broker(functionProfile, config, 'func', false);
       registerWorkers(broker, [
         {
           processName: 'hello',
@@ -537,7 +537,7 @@ describe(common.testName(__filename), function () {
         [{ ...funcData[0], worker: { reservationCount: 1 } }],
         'WAIT'
       );
-      const broker = new Broker(functionProfile, config, 'func', false, false);
+      const broker = new Broker(functionProfile, config, 'func', false);
       registerWorkers(broker, [
         {
           processName: 'hello',
@@ -574,7 +574,7 @@ describe(common.testName(__filename), function () {
     });
 
     it('should evaluate water level (low 1, no reservation)', () => {
-      const broker = new Broker(functionProfile, config, 'func', false, false);
+      const broker = new Broker(functionProfile, config, 'func', false);
       registerWorkers(broker, [
         {
           processName: 'hello',
@@ -610,7 +610,7 @@ describe(common.testName(__filename), function () {
     });
 
     it('should evaluate water level (low 2, no reservation)', () => {
-      const broker = new Broker(functionProfile, config, 'func', false, false);
+      const broker = new Broker(functionProfile, config, 'func', false);
       registerWorkers(broker, [
         {
           processName: 'hello',
@@ -646,7 +646,7 @@ describe(common.testName(__filename), function () {
     });
 
     it('should evaluate water level (low, expansionOnly)', () => {
-      const broker = new Broker(functionProfile, config, 'func', false, false);
+      const broker = new Broker(functionProfile, config, 'func', false);
       registerWorkers(broker, [
         {
           processName: 'hello',
@@ -682,7 +682,7 @@ describe(common.testName(__filename), function () {
     });
 
     it('should reset redundantTimes', () => {
-      const broker = new Broker(functionProfile, config, 'func', false, false);
+      const broker = new Broker(functionProfile, config, 'func', false);
       registerWorkers(broker, [
         {
           processName: 'hello',
@@ -724,7 +724,7 @@ describe(common.testName(__filename), function () {
         [{ ...funcData[0], worker: { replicaCountLimit: 50 } }] as any,
         'WAIT'
       );
-      const broker = new Broker(functionProfile, config, 'func', false, false);
+      const broker = new Broker(functionProfile, config, 'func', false);
       const mocked = [];
       for (let i = 0; i < 20; i++) {
         mocked.push({
@@ -753,7 +753,7 @@ describe(common.testName(__filename), function () {
         [{ ...funcData[0], worker: { replicaCountLimit: 25 } }] as any,
         'WAIT'
       );
-      const broker = new Broker(functionProfile, config, 'func', false, false);
+      const broker = new Broker(functionProfile, config, 'func', false);
       const mocked = [];
       for (let i = 0; i < 20; i++) {
         mocked.push({

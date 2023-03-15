@@ -28,6 +28,7 @@ class Broker {
   workers: Map<string, Worker>;
 
   private startingPool: Map<string, StartingPoolItem>;
+  public disposable: boolean;
 
   /**
    * Constructor
@@ -40,8 +41,7 @@ class Broker {
     profiles: FunctionProfileManager,
     config: Config,
     funcName: string,
-    isInspector: boolean,
-    public disposable: boolean = false
+    isInspector: boolean
   ) {
     this.config = config;
     this.logger = new PrefixedLogger(
@@ -53,6 +53,7 @@ class Broker {
     this.profiles = profiles;
     this.isInspector = !!isInspector;
     this.data = profiles?.get(funcName)?.toJSON(true) || null;
+    this.disposable = this.data?.worker?.disposable ?? false;
 
     this.workers = new Map();
     this.startingPool = new Map();
@@ -177,7 +178,7 @@ class Broker {
     // 将已启动完成、失败的从 `startingPool` 中移除
     for (const startingName of this.startingPool.keys()) {
       const worker = newMap.get(startingName)!;
-      if (worker.data) {
+      if (worker && worker.data) {
         // 同步 startingPool 中的值
         const item = this.startingPool.get(startingName)!;
 

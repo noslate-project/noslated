@@ -85,7 +85,7 @@ export class StateManager extends Base {
       const reservationCount = profile?.worker?.reservationCount;
       if (reservationCount === 0) continue;
       if (reservationCount || reservationCountPerFunction) {
-        this.getOrCreateBroker(profile.name, false, profile.worker?.disposable);
+        this.getOrCreateBroker(profile.name, false);
       }
     }
   }
@@ -93,7 +93,6 @@ export class StateManager extends Base {
   async _syncBrokerData(data: root.noslated.data.IBrokerStats[]) {
     const newMap: Map<string, Broker> = new Map();
     for (const item of data) {
-      const key = Broker.getKey(item.functionName!, item.inspector!);
       const broker = this.getBroker(item.functionName!, item.inspector!);
       if (!broker) {
         // 一切以 Control Plane 已存在数据为准
@@ -101,6 +100,7 @@ export class StateManager extends Base {
       }
 
       broker.sync(item.workers!);
+      const key = Broker.getKey(item.functionName!, item.inspector!);
       newMap.set(key, broker);
       this._brokers.delete(key);
     }
@@ -120,11 +120,7 @@ export class StateManager extends Base {
   /**
    * Get or create broker by function name and `isInspector`.
    */
-  getOrCreateBroker(
-    functionName: string,
-    isInspector: boolean,
-    disposable = false
-  ): Broker | null {
+  getOrCreateBroker(functionName: string, isInspector: boolean): Broker | null {
     let broker = this.getBroker(functionName, isInspector);
     if (broker) return broker;
     if (!this._functionProfile.get(functionName)) return null;
@@ -132,8 +128,7 @@ export class StateManager extends Base {
       this._functionProfile,
       this._config,
       functionName,
-      isInspector,
-      disposable
+      isInspector
     );
     this._brokers.set(Broker.getKey(functionName, isInspector), broker);
     return broker;
@@ -161,8 +156,7 @@ export class StateManager extends Base {
   register(workerMetadata: WorkerMetadata): Worker {
     const broker = this.getOrCreateBroker(
       workerMetadata.funcName,
-      workerMetadata.options.inspect,
-      workerMetadata.disposable
+      workerMetadata.options.inspect
     );
     if (!broker) {
       throw new Error(
@@ -208,6 +202,7 @@ export class StateManager extends Base {
       worker.workerStatus === WorkerStatus.PendingStop ||
       worker.workerStatus === WorkerStatus.Unknown
     ) {
+      broker.removeItemFromStartingPool(worker.name);
       worker.updateWorkerStatusByControlPlaneEvent(ControlPlaneEvent.Stopping);
 
       try {
@@ -249,7 +244,6 @@ export class StateManager extends Base {
     worker.updateWorkerStatusByControlPlaneEvent(ControlPlaneEvent.Terminated);
 
     this._logger.info("%s's last state: %j", worker.name, state);
-    broker.removeItemFromStartingPool(worker.name);
     broker.workers.delete(worker.name);
 
     const event = new WorkerStoppedEvent({

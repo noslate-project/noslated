@@ -20,14 +20,16 @@ export class StatLogger {
     cpuUsage: number,
     rss: number,
     // will >=0 if given
-    exitCode: number = -1,
+    exitCode = -1,
     // will >=0 if given
-    exitSignal: number = -1,
+    exitSignal = -1,
     requestId: string = kDefaultRequestId
   ) {
     // logTime, dataPlanePid, requestId, functionName, workerName, exitCode, exitSignal, cpuUsage, rss
     this.exitLogger.write(
-      `${dayjs().format(this.timestampFormat)} ${pid} ${requestId} ${funcName} ${workerName} ${exitCode} ${exitSignal} ${cpuUsage} ${rss}`
+      `${dayjs().format(
+        this.timestampFormat
+      )} ${pid} ${requestId} ${funcName} ${workerName} ${exitCode} ${exitSignal} ${cpuUsage} ${rss}`
     );
   }
 }

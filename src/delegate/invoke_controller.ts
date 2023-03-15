@@ -474,7 +474,7 @@ export class InvokeController {
 
     let receivedMetadata = false;
     let errorsBeforeMetadata;
-    let response;
+    let response: TriggerResponse;
 
     const ret = this.#sharedState.server!.trigger(
       this.#sessionId,

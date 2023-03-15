@@ -1,23 +1,20 @@
-/**
- * @enum
- */
 export enum TurfContainerStates {
   // 刚创建的沙盒，未曾运行过
-  init = 'init',
+  init = 0,
   // 正在启动
-  starting = 'starting',
+  starting,
   // 正在运行
-  running = 'running',
-  // 正在退出
-  stopping = 'stopping',
-  // 已经退出
-  stopped = 'stopped',
+  running,
   // 等待 Warmfork
-  forkwait = 'forkwait',
+  forkwait,
   // 正在 Fork
-  cloning = 'cloning',
+  cloning,
+  // 正在退出
+  stopping,
+  // 已经退出
+  stopped,
   // 异常状态，识别非法用途
-  unknown = 'unknown',
+  unknown,
 }
 
 interface TurfCode {

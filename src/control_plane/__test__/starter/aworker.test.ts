@@ -72,7 +72,7 @@ describe(common.testName(__filename), function () {
           ]),
           {
             name: Aworker.SEED_CONTAINER_NAME,
-            state: 'forkwait',
+            state: TurfContainerStates.forkwait,
             status: '0',
           }
         );

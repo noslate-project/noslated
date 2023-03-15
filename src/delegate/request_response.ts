@@ -1,5 +1,9 @@
 import { Readable, ReadableOptions } from 'stream';
-import { kDefaultRequestId, kDefaultWorkerName, kDefaultQueueingTime } from '#self/lib/constants';
+import {
+  kDefaultRequestId,
+  kDefaultWorkerName,
+  kDefaultQueueingTime,
+} from '#self/lib/constants';
 import { createDeferred } from '#self/lib/util';
 
 interface MetadataInit {

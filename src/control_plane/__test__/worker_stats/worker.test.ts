@@ -395,7 +395,7 @@ describe(common.testName(__filename), () => {
       assert.strictEqual(worker.workerStatus, WorkerStatus.Unknown);
     });
 
-    it('should state unknown when event unsupported', async () => {
+    it('should throw when event unrecognized', async () => {
       const workerMetadata = new WorkerMetadata(
         'func',
         { inspect: false },
@@ -407,8 +407,10 @@ describe(common.testName(__filename), () => {
       const worker = new Worker(workerMetadata, config);
       assert.strictEqual(worker.workerStatus, WorkerStatus.Created);
 
-      worker.updateWorkerStatusByReport('Unsupported' as WorkerStatusReport);
-      assert.strictEqual(worker.workerStatus, WorkerStatus.Unknown);
+      assert.throws(() => {
+        worker.updateWorkerStatusByReport('Unsupported' as WorkerStatusReport);
+      }, /Unrecognizable WorkerStatusReport/);
+      assert.strictEqual(worker.workerStatus, WorkerStatus.Created);
     });
   });
 
@@ -488,8 +490,8 @@ describe(common.testName(__filename), () => {
 
       clock.tick(config.worker.defaultInitializerTimeout + 1000);
 
-      container.updateStatus('unsupported' as TurfContainerStates);
-      assert.strictEqual(worker.workerStatus, WorkerStatus.PendingStop);
+      container.updateStatus(TurfContainerStates.unknown);
+      assert.strictEqual(worker.workerStatus, WorkerStatus.Unknown);
 
       await readyFuture;
     });
@@ -514,16 +516,15 @@ describe(common.testName(__filename), () => {
         TurfContainerStates.running
       );
       assert.strictEqual(worker.workerStatus, WorkerStatus.Created);
+
       const readyFuture = worker.ready();
-
       worker.updateWorkerStatusByReport(WorkerStatusReport.ContainerInstalled);
-
       clock.tick(config.worker.defaultInitializerTimeout + 1000);
-
-      container.updateStatus('unsupported' as TurfContainerStates);
-
-      assert.strictEqual(worker.workerStatus, WorkerStatus.Ready);
       await readyFuture;
+
+      container.updateStatus(TurfContainerStates.unknown);
+
+      assert.strictEqual(worker.workerStatus, WorkerStatus.Unknown);
     });
   });
 
@@ -603,25 +604,6 @@ describe(common.testName(__filename), () => {
       );
 
       await readyFuture;
-    });
-
-    it('should do nothing when setReady before wait ready', async () => {
-      worker['_setReady']();
-
-      await worker.ready();
-    });
-
-    it('should do nothing when setStopped before wait ready', async () => {
-      worker['_setStopped']();
-
-      await assert.rejects(
-        async () => {
-          await worker.ready();
-        },
-        {
-          message: /stopped unexpected after start./,
-        }
-      );
     });
   });
 });

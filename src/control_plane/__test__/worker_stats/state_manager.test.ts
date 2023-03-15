@@ -127,28 +127,20 @@ describe(common.testName(__filename), () => {
 
       assert.strictEqual(worker1.workerStatus, WorkerStatus.PendingStop);
 
-      stateManager._updateWorkerStatusByReport(
-        new WorkerStatusReportEvent({
-          functionName: 'func1',
-          name: 'worker1',
-          isInspector: false,
-          event: 'Unknown state',
-          requestId: '',
-        })
-      );
+      assert.throws(() => {
+        stateManager._updateWorkerStatusByReport(
+          new WorkerStatusReportEvent({
+            functionName: 'func1',
+            name: 'worker1',
+            isInspector: false,
+            event: 'Unknown state',
+            requestId: '',
+          })
+        );
+      }, /Unrecognizable WorkerStatusReport/);
+      assert.strictEqual(worker1.workerStatus, WorkerStatus.PendingStop);
 
-      assert.strictEqual(worker1.workerStatus, WorkerStatus.Unknown);
-
-      stateManager._updateWorkerStatusByReport(
-        new WorkerStatusReportEvent({
-          functionName: 'func2',
-          name: 'worker1',
-          isInspector: false,
-          event: 'Unknown state',
-          requestId: '',
-        })
-      );
-
+      const readyFuture = worker2.ready();
       stateManager._updateWorkerStatusByReport(
         new WorkerStatusReportEvent({
           functionName: 'func2',
@@ -159,7 +151,8 @@ describe(common.testName(__filename), () => {
         })
       );
 
-      assert.strictEqual(worker2.workerStatus, WorkerStatus.Unknown);
+      assert.strictEqual(worker2.workerStatus, WorkerStatus.PendingStop);
+      await assert.rejects(readyFuture, /stopped unexpected after start./);
     });
 
     it('should not update with illegal WorkerStatusReport order', async function () {
@@ -305,7 +298,7 @@ describe(common.testName(__filename), () => {
           name: 'worker1',
           pid: 123,
           credential: 'id1',
-          turfContainerStates: 'running',
+          turfContainerStates: TurfContainerStates.running,
           containerStatus: WorkerStatus.Created,
           data: { maxActivateRequests: 10, activeRequestCount: 1 },
         }
@@ -319,7 +312,7 @@ describe(common.testName(__filename), () => {
         name: 'worker2',
         pid: 124,
         credential: 'id2',
-        turfContainerStates: 'running',
+        turfContainerStates: TurfContainerStates.running,
         containerStatus: WorkerStatus.Created,
         data: { maxActivateRequests: 10, activeRequestCount: 6 },
       });
@@ -893,6 +886,9 @@ describe(common.testName(__filename), () => {
         /** foooo has been disappeared */
         { pid: 2, name: 'hello', status: TurfContainerStates.running },
       ]);
+      const readyFuture = stateManager
+        .getWorker('func', false, 'foooo')!
+        .ready();
       await testContainerManager.reconcileContainers();
       stateManager._syncBrokerData(brokerData);
 
@@ -933,6 +929,8 @@ describe(common.testName(__filename), () => {
           registerTime: worker.registerTime,
         });
       });
+
+      await assert.rejects(readyFuture, /stopped unexpected after start/);
     });
 
     it('should sync that not in profile', async () => {

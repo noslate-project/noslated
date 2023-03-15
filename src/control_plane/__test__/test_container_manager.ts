@@ -139,12 +139,12 @@ export class SimpleContainer implements Container {
       this._onStopped();
       this.terminatedDeferred.resolve(this.state());
     }
-    this.onstatuschanged?.();
+    this.onstatuschanged();
   }
 
   _onStopped() {}
 
-  onstatuschanged?: () => void;
+  onstatuschanged = () => {};
 }
 
 export class TestContainer extends SimpleContainer {
@@ -171,7 +171,7 @@ export class NoopContainer implements Container {
   async delete(): Promise<void> {}
   async destroy(): Promise<void> {}
 
-  onstatuschanged?: () => void;
+  onstatuschanged = () => {};
 
   readonly name = 'noop_container';
   readonly status = TurfContainerStates.unknown;

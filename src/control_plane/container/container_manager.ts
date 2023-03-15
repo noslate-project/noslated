@@ -24,7 +24,7 @@ export interface Container {
   stop(): Promise<void>;
   state(): Promise<TurfState>;
 
-  onstatuschanged?: () => void;
+  onstatuschanged: () => void;
 
   readonly pid?: number;
   readonly name: string;
