@@ -185,8 +185,8 @@ export class PushServerImpl implements IPushServer {
       let queueing = kDefaultQueueingTime;
 
       if (e instanceof Error) {
-        workerName = e['workerName'];
-        queueing = e['queueing'];
+        workerName = e['workerName'] ?? kDefaultWorkerName;
+        queueing = e['queueing'] ?? kDefaultQueueingTime;
       }
 
       return {
