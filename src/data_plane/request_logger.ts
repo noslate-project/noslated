@@ -1,7 +1,7 @@
 import { Metadata } from '#self/delegate/request_response';
 import loggers from '#self/lib/logger';
 import { IMidwayLogger } from '@midwayjs/logger';
-import { kDefaultRequestId } from '#self/lib/constants';
+import { kDefaultRequestId, kDefaultWorkerName } from '#self/lib/constants';
 import { Config } from '#self/config';
 import dayjs from 'dayjs';
 
@@ -14,7 +14,12 @@ export class RequestLogger {
     this.errorLogger = loggers.getPrettySink('error.log');
   }
 
-  error(funcName: string, workerName: string, err: Error, requestId: string) {
+  error(
+    funcName: string,
+    workerName: string = kDefaultWorkerName,
+    err: Error,
+    requestId: string = kDefaultRequestId
+  ) {
     // logTime, dataPlanePid, requestId, functionName, workerName, error
     this.errorLogger.write(
       `${dayjs().format(this.config.logger.timestampFormat)} ${process.pid} ${requestId} ${funcName} ${workerName} - `,
@@ -24,7 +29,7 @@ export class RequestLogger {
 
   access(
     funcName: string,
-    workerName: string,
+    workerName: string = kDefaultWorkerName,
     metadata: Metadata,
     start: number,
     end: number,
