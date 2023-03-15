@@ -6,9 +6,11 @@ import { kDefaultRequestId } from '#self/lib/constants';
 
 export class StatLogger {
   private exitLogger: IMidwayLogger;
+  private timestampFormat: string;
 
   constructor(public config: Config) {
     this.exitLogger = loggers.getPrettySink('resource_usage.log');
+    this.timestampFormat = this.config.logger.timestampFormat;
   }
 
   exit(
@@ -25,7 +27,7 @@ export class StatLogger {
   ) {
     // logTime, dataPlanePid, requestId, functionName, workerName, exitCode, exitSignal, cpuUsage, rss
     this.exitLogger.write(
-      `${dayjs().format(this.config.logger.timestampFormat)} ${pid} ${requestId} ${funcName} ${workerName} ${exitCode} ${exitSignal} ${cpuUsage} ${rss}`
+      `${dayjs().format(this.timestampFormat)} ${pid} ${requestId} ${funcName} ${workerName} ${exitCode} ${exitSignal} ${cpuUsage} ${rss}`
     );
   }
 }
