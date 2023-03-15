@@ -78,6 +78,10 @@ export default {
     level: 'info',
     dir: path.join(projectRoot, '.code/logs'),
     enableConsole: false,
+    // keep in touch with @midwayjs/logger default
+    // only influence on access/error/resource log now
+    // TODO: set to @midwayjs/logger instance when support
+    timestampFormat: 'YYYY-MM-DD HH:mm:ss.SSS'
   },
 
   dispatchStrategy: {

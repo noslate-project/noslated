@@ -1,5 +1,5 @@
 import loggers from '#self/lib/logger';
-import { RequestLogger } from '../request_logger';
+import { RequestLogger, RequestPerformance } from '../request_logger';
 import { createDeferred } from '#self/lib/util';
 import { Metadata, TriggerResponse } from '#self/delegate/request_response';
 import { tuplesToPairs, pairsToTuples } from '#self/lib/rpc/key_value_pair';
@@ -11,6 +11,7 @@ import * as root from '#self/proto/root';
 import { NotNullableInterface } from '#self/lib/interfaces';
 import { Readable } from 'stream';
 import { IPushServer } from '#self/lib/interfaces/push_server';
+import { kDefaultQueueingTime, kDefaultWorkerName } from '#self/lib/constants';
 
 interface InvokeRequest extends Readable {
   /** InvokeRequest name */
@@ -33,6 +34,8 @@ interface PipeResult {
   bytesSent: number;
   status: number;
   error?: unknown;
+  workerName: string;
+  performance: RequestPerformance;
 }
 
 export class PushServerImpl implements IPushServer {
@@ -44,7 +47,7 @@ export class PushServerImpl implements IPushServer {
     public config: Config
   ) {
     this.logger = loggers.get('push server');
-    this.requestLogger = new RequestLogger();
+    this.requestLogger = new RequestLogger(this.config);
   }
 
   async #invoke(
@@ -77,17 +80,22 @@ export class PushServerImpl implements IPushServer {
     const end = Date.now();
     this.requestLogger.access(
       req.name,
+      pipeResult.workerName,
       metadata,
-      end - start,
+      start,
+      end,
       String(pipeResult.status),
       pipeResult.bytesSent,
-      req.requestId
+      req.requestId,
+      pipeResult.performance,
     );
+
     if (pipeResult.error) {
       this.requestLogger.error(
         req.name,
+        pipeResult.workerName,
         pipeResult.error as Error,
-        req.requestId
+        req.requestId,
       );
     }
   }
@@ -168,14 +176,28 @@ export class PushServerImpl implements IPushServer {
     let res: TriggerResponse;
     try {
       res = await resFuture;
-    } catch (e) {
+    } catch (e: unknown) {
       call.write({
         error: e as root.noslated.data.IInvokeErrorResponse,
       });
+
+      let workerName = kDefaultWorkerName;
+      let queueing = kDefaultQueueingTime;
+
+      if (e instanceof Error) {
+        workerName = e['workerName'];
+        queueing = e['queueing'];
+      }
+
       return {
         status: 0,
         bytesSent: 0,
         error: e,
+        workerName,
+        performance: {
+          ttfb: Date.now(),
+          queueing,
+        }
       };
     }
 
@@ -185,6 +207,9 @@ export class PushServerImpl implements IPushServer {
         headers: tuplesToPairs(res.metadata.headers ?? []),
       },
     });
+
+    // time to first byte
+    const ttfb = Date.now();
 
     const deferred = createDeferred<PipeResult>();
     let bytesSent = 0;
@@ -201,6 +226,11 @@ export class PushServerImpl implements IPushServer {
       deferred.resolve({
         status: res.status,
         bytesSent,
+        workerName: res.workerName,
+        performance: {
+          ttfb,
+          queueing: res.queueing
+        }
       });
     });
     res.on('error', e => {
@@ -212,6 +242,11 @@ export class PushServerImpl implements IPushServer {
         status: res.status,
         bytesSent,
         error: e,
+        workerName: res.workerName,
+        performance: {
+          ttfb,
+          queueing: res.queueing
+        }
       });
     });
 

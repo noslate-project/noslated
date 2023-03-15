@@ -189,6 +189,17 @@ export class Worker extends EventEmitter {
         inputStream,
         metadata || { requestId }
       );
+
+      ret.queueing = waitMs;
+      ret.workerName = this.name;
+    } catch (e: unknown) {
+
+      if (e instanceof Error) {
+        e['queueing'] = waitMs;
+        e['workerName'] = this.name;
+      }
+
+      throw e;
     } finally {
       this.activeRequestCount--;
       if (this.activeRequestCount === 0) {

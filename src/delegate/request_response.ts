@@ -1,5 +1,5 @@
 import { Readable, ReadableOptions } from 'stream';
-import { kDefaultRequestId } from '#self/lib/constants';
+import { kDefaultRequestId, kDefaultWorkerName, kDefaultQueueingTime } from '#self/lib/constants';
 import { createDeferred } from '#self/lib/util';
 
 interface MetadataInit {
@@ -75,6 +75,9 @@ class TriggerResponse extends Readable {
   #status;
   #metadata;
   #finishDeferred;
+  // time for request wait to be invoked
+  #queueing: number;
+  #workerName: string;
 
   constructor(init?: TriggerResponseInit) {
     super({
@@ -87,6 +90,8 @@ class TriggerResponse extends Readable {
       metadata = new Metadata(metadata);
     }
     this.#metadata = metadata;
+    this.#queueing = kDefaultQueueingTime;
+    this.#workerName = kDefaultWorkerName;
     this.#finishDeferred = createDeferred<boolean>();
 
     this.once('close', () => {
@@ -112,6 +117,22 @@ class TriggerResponse extends Readable {
       throw new TypeError('expect a Metadata');
     }
     this.#metadata = val;
+  }
+
+  set queueing(cost: number) {
+    this.#queueing = cost;
+  }
+
+  get queueing(): number {
+    return this.#queueing;
+  }
+
+  set workerName(name: string) {
+    this.#workerName = name;
+  }
+
+  get workerName(): string {
+    return this.#workerName;
   }
 
   async finish(): Promise<boolean> {

@@ -30,7 +30,7 @@ function getPrettySink(filename: string) {
     dir: config.logger.dir,
     enableConsole: config.logger.enableConsole,
     // no need to pipe errors to a different file.
-    disableError: true,
+    enableError: false,
     // keep after rotater
     maxFiles: 3,
   });
