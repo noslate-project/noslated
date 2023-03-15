@@ -48,3 +48,5 @@ export enum TurfStatusEvent {
 }
 
 export const kDefaultRequestId = 'unknown';
+export const kDefaultWorkerName = 'unknown';
+export const kDefaultQueueingTime = -1;

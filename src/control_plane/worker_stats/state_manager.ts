@@ -52,7 +52,7 @@ export class StateManager extends Base {
       },
     });
 
-    this._statLogger = new StatLogger();
+    this._statLogger = new StatLogger(this._config);
   }
 
   _updateWorkerStatusByReport(eve: WorkerStatusReportEvent) {
@@ -236,12 +236,13 @@ export class StateManager extends Base {
 
       this._statLogger.exit(
         state.name,
+        worker.name,
         state.pid,
-        state.exitcode ?? null,
-        state['killed.signal'] ?? null,
         stime + utime,
         rss,
-        worker.requestId ?? null
+        state.exitcode,
+        state['killed.signal'],
+        worker.requestId
       );
     }
 
