@@ -1,6 +1,6 @@
 import { EventEmitter } from 'events';
 
-import { LinkList } from './linklist';
+import { List } from './list';
 import { Validator as JSONValidator } from 'jsonschema';
 import loggers from './logger';
 import * as utils from './util';
@@ -137,18 +137,18 @@ export type FunctionProfileManagerContext = {
 export class FunctionProfileManager extends EventEmitter {
   private _eventBus: EventBus;
   private _config: Config;
-  setQueue;
-  setQueueRunning;
+  private setQueue;
+  private setQueueRunning;
   profile: PerFunctionProfile[];
-  jsonValidator;
-  internal;
+  private jsonValidator;
+  private internal;
 
   constructor(ctx: DependencyContext<FunctionProfileManagerContext>) {
     super();
     this._eventBus = ctx.getInstance('eventBus');
     this._config = ctx.getInstance('config');
 
-    this.setQueue = new LinkList<QueueItem>();
+    this.setQueue = new List<QueueItem>();
     this.setQueueRunning = false;
 
     this.profile = [];
@@ -185,7 +185,7 @@ export class FunctionProfileManager extends EventEmitter {
 
       async WAIT(this: FunctionProfileManager, profile: RawFunctionProfile[]) {
         const deferred = utils.createDeferred<void>();
-        this.setQueue.pushBack({
+        this.setQueue.push({
           profile,
           immediatelyInterrupted: false,
           deferred,
@@ -245,7 +245,7 @@ export class FunctionProfileManager extends EventEmitter {
    * @return {Promise<void>} void
    */
   async _runSetQueue() {
-    const { profile, deferred } = this.setQueue.valueAt(0)!;
+    const { profile, deferred } = this.setQueue.at(0)!;
 
     const stringified = JSON.stringify(profile);
     logger.debug('Updating code relation.', stringified);
@@ -265,7 +265,7 @@ export class FunctionProfileManager extends EventEmitter {
     }
 
     if (!errored) {
-      if (!this.setQueue.valueAt(0)!.immediatelyInterrupted) {
+      if (!this.setQueue.at(0)!.immediatelyInterrupted) {
         this.profile = PerFunctionProfile.fromJSONArray(profile, this._config);
         logger.debug('Code relation has been delayed-updated', stringified);
         this.emit('changed', this.profile, false);
@@ -278,7 +278,7 @@ export class FunctionProfileManager extends EventEmitter {
       deferred.reject(error);
     }
 
-    this.setQueue.popFront();
+    this.setQueue.shift();
     if (this.setQueue.length) {
       this._runSetQueue();
     } else {

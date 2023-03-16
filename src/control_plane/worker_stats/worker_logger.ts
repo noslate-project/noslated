@@ -7,7 +7,6 @@ import {
   ControlPlaneEvent,
   TurfStatusEvent,
 } from '#self/lib/constants';
-import { TurfContainerStates } from '#self/lib/turf';
 
 export class WorkerLogger {
   private logger: Logger;
@@ -22,7 +21,7 @@ export class WorkerLogger {
     this.logger.info(
       'worker(%s, %s, inspect %s, disposable %s) started, cost: %s, related request(%s)',
       this.workerMetadata.funcName,
-      this.workerMetadata.credential,
+      this.workerMetadata.processName,
       this.workerMetadata.options.inspect,
       this.workerMetadata.disposable,
       cost.toFixed(3),
@@ -34,7 +33,7 @@ export class WorkerLogger {
     this.logger.info(
       'worker(%s, %s, inspect %s, disposable %s) ready, cost: %s, related request(%s)',
       this.workerMetadata.funcName,
-      this.workerMetadata.credential,
+      this.workerMetadata.processName,
       this.workerMetadata.options.inspect,
       this.workerMetadata.disposable,
       cost.toFixed(3),
@@ -45,21 +44,9 @@ export class WorkerLogger {
   statusChangedBeforeReady(status: string) {
     this.logger.info(
       'Worker(%s) status settle to [%s] before pending ready.',
-      this.workerMetadata.credential,
+      this.workerMetadata.processName,
       status
     );
-  }
-
-  statusSwitchTo(statusTo: WorkerStatus, reason: string, level?: LogLevels) {
-    this.logger[level ?? 'info'](
-      'switch worker status to [%s], because %s.',
-      WorkerStatus[statusTo],
-      reason
-    );
-  }
-
-  foundTurfState(state: TurfContainerStates) {
-    this.logger.info('found turf state %s.', state);
   }
 
   updateWorkerStatus(

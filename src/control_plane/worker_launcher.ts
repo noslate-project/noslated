@@ -56,7 +56,7 @@ export class WorkerLauncher extends Base {
       aworker: new starters.Aworker(ctx),
     };
 
-    this.launchQueue = new TaskQueue(this.doLauchTask, {
+    this.launchQueue = new TaskQueue(this.doLaunchTask, {
       concurrency: this.config.controlPlane.expandConcurrency,
       clock: ctx.getInstance('clock'),
     });
@@ -133,7 +133,7 @@ export class WorkerLauncher extends Base {
   /**
    * Try launch worker process via turf
    */
-  doLauchTask = async (task: LaunchTask) => {
+  doLaunchTask = async (task: LaunchTask) => {
     const { event, requestId, funcName, disposable, options, toReserve } = task;
 
     this.logger.info(

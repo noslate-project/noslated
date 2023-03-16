@@ -28,11 +28,12 @@ export class DataPlaneSubscription {
     requestQueueingRequest: NotNullableInterface<root.noslated.data.IRequestQueueingBroadcast>
   ) {
     this.logger.info(
-      'received request queueing event (requestId: %s) for func(%s, inspect %s) with request count %d',
+      'received request queueing event (requestId: %s) for func(%s, inspect %s) with request count %d gap(%d)',
       requestQueueingRequest.requestId,
       requestQueueingRequest.name,
       requestQueueingRequest.isInspect,
-      requestQueueingRequest.queuedRequestCount
+      requestQueueingRequest.queuedRequestCount,
+      Date.now() - requestQueueingRequest.timestamp
     );
 
     const event = new RequestQueueingEvent(requestQueueingRequest, this.client);

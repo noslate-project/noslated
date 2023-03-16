@@ -51,6 +51,7 @@ export class DataPlaneHost extends Host {
         },
         queuedRequestCount: workerBroker.requestQueue.length,
         requestId,
+        timestamp: Date.now(),
       }
     );
   }

@@ -50,7 +50,7 @@ describe(common.testName(__filename), () => {
   describe('Broker', () => {
     describe('constructor', () => {
       it('should constructor', () => {
-        const broker = new Broker(profileManager, config, 'foo', true, false);
+        const broker = new Broker(profileManager, config, 'foo', true);
         assert.ok(broker instanceof Broker);
         assert.strictEqual(broker.redundantTimes, 0);
         assert.strictEqual(broker.name, 'foo');
@@ -62,7 +62,7 @@ describe(common.testName(__filename), () => {
 
     describe('.getWorker()', () => {
       it('should get worker', () => {
-        const broker = new Broker(profileManager, config, 'func', true, false);
+        const broker = new Broker(profileManager, config, 'func', true);
         registerWorkers(broker, [
           {
             processName: 'hello',
@@ -77,7 +77,7 @@ describe(common.testName(__filename), () => {
 
     describe('.register()', () => {
       it('should register', () => {
-        const broker = new Broker(profileManager, config, 'func', true, false);
+        const broker = new Broker(profileManager, config, 'func', true);
         registerWorkers(broker, [
           {
             processName: 'foo',
@@ -106,7 +106,7 @@ describe(common.testName(__filename), () => {
       });
 
       it('should not register', () => {
-        const broker = new Broker(profileManager, config, 'foo', true, false);
+        const broker = new Broker(profileManager, config, 'foo', true);
 
         assert.throws(
           () => {
@@ -126,7 +126,7 @@ describe(common.testName(__filename), () => {
 
     describe('.removeItemFromStartingPool()', () => {
       it('should removeItemFromStartingPool', () => {
-        const broker = new Broker(profileManager, config, 'func', true, false);
+        const broker = new Broker(profileManager, config, 'func', true);
 
         registerWorkers(broker, [
           {
@@ -143,12 +143,12 @@ describe(common.testName(__filename), () => {
 
     describe('.prerequestStartingPool()', () => {
       it('should return false when startingPool is empty', () => {
-        const broker = new Broker(profileManager, config, 'func', true, false);
+        const broker = new Broker(profileManager, config, 'func', true);
         assert.strictEqual(broker.prerequestStartingPool(), false);
       });
 
       it('should return true when idle and false when busy', () => {
-        const broker = new Broker(profileManager, config, 'func', true, false);
+        const broker = new Broker(profileManager, config, 'func', true);
 
         registerWorkers(broker, [
           {
@@ -162,7 +162,7 @@ describe(common.testName(__filename), () => {
       });
 
       it('should return true when idle and false when busy with two items', () => {
-        const broker = new Broker(profileManager, config, 'func', true, false);
+        const broker = new Broker(profileManager, config, 'func', true);
 
         registerWorkers(broker, [
           {
@@ -183,7 +183,7 @@ describe(common.testName(__filename), () => {
     describe('getters', () => {
       let broker: Broker;
       beforeEach(() => {
-        broker = new Broker(profileManager, config, 'func', false, false);
+        broker = new Broker(profileManager, config, 'func', false);
         registerWorkers(broker, [
           {
             processName: 'hello',
@@ -444,13 +444,13 @@ describe(common.testName(__filename), () => {
 
       describe('get reservationCount', () => {
         it('should get 1 when isInspector is true', () => {
-          broker = new Broker(profileManager, config, 'func', true, false);
+          broker = new Broker(profileManager, config, 'func', true);
 
           assert.strictEqual(broker.reservationCount, 1);
         });
 
         it('should get from worker config', () => {
-          broker = new Broker(profileManager, config, 'func', false, false);
+          broker = new Broker(profileManager, config, 'func', false);
 
           broker.data = {
             ...funcData[0],
@@ -470,7 +470,7 @@ describe(common.testName(__filename), () => {
         });
 
         it('should get 0 when worker not config', () => {
-          broker = new Broker(profileManager, config, 'func', false, false);
+          broker = new Broker(profileManager, config, 'func', false);
 
           broker.data = {
             ...funcData[0],
@@ -499,7 +499,7 @@ describe(common.testName(__filename), () => {
 
       describe('get memoryLimit', () => {
         it('should get from worker config', () => {
-          broker = new Broker(profileManager, config, 'func', false, false);
+          broker = new Broker(profileManager, config, 'func', false);
 
           broker.data = {
             ...funcData[0],
@@ -522,7 +522,7 @@ describe(common.testName(__filename), () => {
         });
 
         it('should get 0 when worker not config', () => {
-          broker = new Broker(profileManager, config, 'func', false, false);
+          broker = new Broker(profileManager, config, 'func', false);
 
           broker.data = {
             ...funcData[0],
@@ -554,7 +554,7 @@ describe(common.testName(__filename), () => {
     describe('.sync()', () => {
       it('should sync', () => {
         const testContainerManager = new TestContainerManager();
-        const broker = new Broker(profileManager, config, 'func', true, false);
+        const broker = new Broker(profileManager, config, 'func', true);
         registerWorkers(broker, [
           {
             processName: 'hello',
@@ -634,7 +634,7 @@ describe(common.testName(__filename), () => {
 
       it('should sync with no function profile', async () => {
         const testContainerManager = new TestContainerManager();
-        const broker = new Broker(profileManager, config, 'func', true, false);
+        const broker = new Broker(profileManager, config, 'func', true);
         registerWorkers(broker, [
           {
             processName: 'hello',

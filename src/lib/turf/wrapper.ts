@@ -10,6 +10,7 @@ import {
   TurfProcess,
   TurfState,
   TurfCode,
+  TurfContainerStates,
 } from './types';
 
 const logger = Logger.get('turf/wrapper');
@@ -194,7 +195,7 @@ export class Turf {
         }
         const [, /** match */ name, pid, status] = match;
         return {
-          status,
+          status: TurfContainerStates[status] ?? TurfContainerStates.unknown,
           pid: Number.parseInt(pid),
           name,
         } as TurfProcess;
@@ -228,6 +229,7 @@ export class Turf {
       }
       return obj;
     }, {} as Record<string, string | number>);
+    obj.state = TurfContainerStates[obj.state] ?? TurfContainerStates.unknown;
 
     return obj as unknown as TurfState;
   }

@@ -611,7 +611,11 @@ const cases = [
         if (!worker) continue;
         const ps = await env.turf.ps();
         for (const p of ps) {
-          if (p.status === 'running' && p.name === worker.name) return;
+          if (
+            p.status === TurfContainerStates.running &&
+            p.name === worker.name
+          )
+            return;
         }
       } while (true);
     },

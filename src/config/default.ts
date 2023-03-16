@@ -13,9 +13,7 @@ export default {
 
   controlPlane: {
     // worker launcher 扩容并发度
-    expandConcurrency: 2,
-    // worker launcher 扩容队列消费间隔
-    expandInterval: 0,
+    expandConcurrency: 4,
   },
 
   dataPlane: {
@@ -81,7 +79,7 @@ export default {
     // keep in touch with @midwayjs/logger default
     // only influence on access/error/resource log now
     // TODO: set to @midwayjs/logger instance when support
-    timestampFormat: 'YYYY-MM-DD HH:mm:ss.SSS'
+    timestampFormat: 'YYYY-MM-DD HH:mm:ss.SSS',
   },
 
   dispatchStrategy: {

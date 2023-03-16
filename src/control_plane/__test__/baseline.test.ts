@@ -1,5 +1,4 @@
 import assert from 'assert';
-import _ from 'lodash';
 import mm from 'mm';
 import * as common from '#self/test/common';
 import { baselineDir } from '#self/test/common';
@@ -11,6 +10,7 @@ import { WorkerMetadata } from '../worker_stats/worker';
 import { WorkerStoppedEvent } from '../events';
 import { sleep } from '#self/lib/util';
 import { WorkerStatus } from '#self/lib/constants';
+import { TurfContainerStates } from '#self/lib/turf';
 
 const cases = [
   {
@@ -35,7 +35,7 @@ const cases = [
       const ps = await turf.ps();
       assert(ps.length > 0);
       for (const item of ps) {
-        if (item.status === 'running') {
+        if (item.status === TurfContainerStates.running) {
           await turf.stop(item.name, true);
         }
       }

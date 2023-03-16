@@ -2,7 +2,7 @@ export enum WorkerStatus {
   /**
    * Worker is created, initialization is not done.
    */
-  Created = 1,
+  Created,
   /**
    * Worker is actively processing requests.
    */
@@ -42,7 +42,6 @@ export enum ControlPlaneEvent {
 }
 
 export enum TurfStatusEvent {
-  StatusNull = 'StatusNull',
   StatusUnknown = 'StatusUnknown',
   StatusStopped = 'StatusStopped',
 }

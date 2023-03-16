@@ -24,7 +24,9 @@ export class RequestLogger {
   ) {
     // logTime, dataPlanePid, requestId, functionName, workerName, error
     this.errorLogger.write(
-      `${dayjs().format(this.timestampFormat)} ${process.pid} ${requestId} ${funcName} ${workerName} - `,
+      `${dayjs().format(this.timestampFormat)} ${
+        process.pid
+      } ${requestId} ${funcName} ${workerName} - `,
       err
     );
   }
@@ -38,15 +40,19 @@ export class RequestLogger {
     status: string,
     bytesSent: number,
     requestId: string = kDefaultRequestId,
-    performance: RequestPerformance,
+    performance: RequestPerformance
   ) {
     // logTime, dataPlanePid, requestId, functionName, workerName, method, url, invokeSuccess, timeToFirstByte, timeForQueueing, rt, statusCode, responseSize
     const { method = '-', url = '-' } = metadata;
     const { ttfb, queueing } = performance;
 
     this.accessLogger.write(
-      `${dayjs().format(this.timestampFormat)} ${requestId} ${process.pid} ${funcName} ${workerName} ${method} ${url} ` +
-      `${`${status}` === '200'} ${ttfb - start} ${queueing} ${end - start} ${status} ${bytesSent}`
+      `${dayjs().format(this.timestampFormat)} ${requestId} ${
+        process.pid
+      } ${funcName} ${workerName} ${method} ${url} ` +
+        `${`${status}` === '200'} ${ttfb - start} ${queueing} ${
+          end - start
+        } ${status} ${bytesSent}`
     );
   }
 }

@@ -299,13 +299,6 @@ export class DataFlowController extends BaseOf(EventEmitter) {
       this.emit('attachError', e);
       return;
     }
-
-    const worker = broker.getWorkerByOnlyCredential(credential);
-    const tag = worker
-      ? (worker as Worker).name || `{${credential}}`
-      : `{${credential}}`;
-
-    logger.info(`Worker ${tag} for ${broker.name} attached.`);
   };
 
   /**

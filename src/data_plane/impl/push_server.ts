@@ -87,7 +87,7 @@ export class PushServerImpl implements IPushServer {
       String(pipeResult.status),
       pipeResult.bytesSent,
       req.requestId,
-      pipeResult.performance,
+      pipeResult.performance
     );
 
     if (pipeResult.error) {
@@ -95,7 +95,7 @@ export class PushServerImpl implements IPushServer {
         req.name,
         pipeResult.workerName,
         pipeResult.error as Error,
-        req.requestId,
+        req.requestId
       );
     }
   }
@@ -197,7 +197,7 @@ export class PushServerImpl implements IPushServer {
         performance: {
           ttfb: Date.now(),
           queueing,
-        }
+        },
       };
     }
 
@@ -229,8 +229,8 @@ export class PushServerImpl implements IPushServer {
         workerName: res.workerName,
         performance: {
           ttfb,
-          queueing: res.queueing
-        }
+          queueing: res.queueing,
+        },
       });
     });
     res.on('error', e => {
@@ -245,8 +245,8 @@ export class PushServerImpl implements IPushServer {
         workerName: res.workerName,
         performance: {
           ttfb,
-          queueing: res.queueing
-        }
+          queueing: res.queueing,
+        },
       });
     });
 

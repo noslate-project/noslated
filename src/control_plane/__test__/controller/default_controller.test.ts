@@ -558,7 +558,7 @@ describe(common.testName(__filename), () => {
     });
 
     it('should get', () => {
-      const broker = new Broker(functionProfile, config, 'func', true, false);
+      const broker = new Broker(functionProfile, config, 'func', true);
       registerWorkers(broker, [
         {
           processName: 'hello',
@@ -616,7 +616,7 @@ describe(common.testName(__filename), () => {
     });
 
     it('should run with activeRequestCount order', () => {
-      const broker = new Broker(functionProfile, config, 'func', true, false);
+      const broker = new Broker(functionProfile, config, 'func', true);
       registerWorkers(broker, [
         {
           processName: 'hello',
@@ -674,7 +674,7 @@ describe(common.testName(__filename), () => {
     });
 
     it('should run with credential order when activeRequestCount is equal (1)', () => {
-      const broker = new Broker(functionProfile, config, 'func', true, false);
+      const broker = new Broker(functionProfile, config, 'func', true);
       registerWorkers(broker, [
         {
           processName: 'hello',
@@ -732,7 +732,7 @@ describe(common.testName(__filename), () => {
     });
 
     it('should run with credential order when activeRequestCount is equal (2)', () => {
-      const broker = new Broker(functionProfile, config, 'func', true, false);
+      const broker = new Broker(functionProfile, config, 'func', true);
       registerWorkers(broker, [
         {
           processName: 'hello',
@@ -790,7 +790,7 @@ describe(common.testName(__filename), () => {
     });
 
     it('should get when has non-valid', () => {
-      const broker = new Broker(functionProfile, config, 'func', true, false);
+      const broker = new Broker(functionProfile, config, 'func', true);
       registerWorkers(broker, [
         {
           processName: 'hello',
@@ -845,7 +845,7 @@ describe(common.testName(__filename), () => {
     });
 
     it('should get', async () => {
-      const broker = new Broker(functionProfile, config, 'func', true, false);
+      const broker = new Broker(functionProfile, config, 'func', true);
       registerWorkers(broker, [
         {
           processName: 'hello',
@@ -906,7 +906,7 @@ describe(common.testName(__filename), () => {
     });
 
     it('should run with registerTime order', async () => {
-      const broker = new Broker(functionProfile, config, 'func', true, false);
+      const broker = new Broker(functionProfile, config, 'func', true);
       registerWorkers(broker, [
         {
           processName: 'hello',
@@ -968,7 +968,7 @@ describe(common.testName(__filename), () => {
     });
 
     it('should get when has non-valid', async () => {
-      const broker = new Broker(functionProfile, config, 'func', true, false);
+      const broker = new Broker(functionProfile, config, 'func', true);
       registerWorkers(broker, [
         {
           processName: 'hello',
@@ -1026,7 +1026,7 @@ describe(common.testName(__filename), () => {
     });
 
     it('should get', async () => {
-      const broker = new Broker(functionProfile, config, 'func', true, false);
+      const broker = new Broker(functionProfile, config, 'func', true);
       registerWorkers(broker, [
         {
           processName: 'hello',
@@ -1087,7 +1087,7 @@ describe(common.testName(__filename), () => {
     });
 
     it('should run with registerTime order', async () => {
-      const broker = new Broker(functionProfile, config, 'func', true, false);
+      const broker = new Broker(functionProfile, config, 'func', true);
       registerWorkers(broker, [
         {
           processName: 'hello',
@@ -1148,7 +1148,7 @@ describe(common.testName(__filename), () => {
     });
 
     it('should get when has non-valid', async () => {
-      const broker = new Broker(functionProfile, config, 'func', true, false);
+      const broker = new Broker(functionProfile, config, 'func', true);
       registerWorkers(broker, [
         {
           processName: 'hello',
@@ -1206,7 +1206,7 @@ describe(common.testName(__filename), () => {
     });
 
     it('should use default strategy LCC', () => {
-      const broker = new Broker(functionProfile, config, 'func', true, false);
+      const broker = new Broker(functionProfile, config, 'func', true);
       registerWorkers(broker, [
         {
           processName: 'hello',
@@ -1246,7 +1246,7 @@ describe(common.testName(__filename), () => {
     });
 
     it('should use default strategy LCC when worker strategy not supported', () => {
-      const broker = new Broker(functionProfile, config, 'func', true, false);
+      const broker = new Broker(functionProfile, config, 'func', true);
       registerWorkers(broker, [
         {
           processName: 'hello',
@@ -1299,7 +1299,7 @@ describe(common.testName(__filename), () => {
     });
 
     it('should use default strategy LCC when worker strategy is empty', () => {
-      const broker = new Broker(functionProfile, config, 'func', true, false);
+      const broker = new Broker(functionProfile, config, 'func', true);
       registerWorkers(broker, [
         {
           processName: 'hello',
@@ -1352,7 +1352,7 @@ describe(common.testName(__filename), () => {
     });
 
     it('should use worker strategy FIFO', async () => {
-      const broker = new Broker(functionProfile, config, 'func', true, false);
+      const broker = new Broker(functionProfile, config, 'func', true);
 
       registerWorkers(broker, [
         {
@@ -1409,7 +1409,7 @@ describe(common.testName(__filename), () => {
     });
 
     it('should use worker strategy FILO', async () => {
-      const broker = new Broker(functionProfile, config, 'func', true, false);
+      const broker = new Broker(functionProfile, config, 'func', true);
 
       registerWorkers(broker, [
         {

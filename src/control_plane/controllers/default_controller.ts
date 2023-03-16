@@ -81,8 +81,6 @@ export class DefaultController extends BaseController {
     );
 
     try {
-      const now = performance.now();
-
       await this._workerLauncher.tryLaunch(
         ControlPlaneEvent.RequestQueueExpand,
         workerMetadata
@@ -92,7 +90,7 @@ export class DefaultController extends BaseController {
         requestId,
         name,
         isInspect,
-        performance.now() - now
+        Date.now() - event.data.timestamp
       );
     } catch (e) {
       this.logger.warn(

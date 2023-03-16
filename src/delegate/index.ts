@@ -380,8 +380,8 @@ export class NoslatedDelegateService extends EventEmitter {
     metadataInit: MetadataInit | Metadata
   ) {
     this.#triggerPreamble(credential);
-    const reg = this.#credentialsMap.get(credential);
-    return reg?.invokeController?.trigger(method, data, metadataInit);
+    const reg = this.#credentialsMap.get(credential)!;
+    return reg.invokeController!.trigger(method, data, metadataInit);
   }
 
   async collectMetrics(credential: string) {
