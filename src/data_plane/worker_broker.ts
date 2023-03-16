@@ -420,7 +420,7 @@ export class WorkerBroker extends Base {
   }
 
   get disposable() {
-    const profile = this.profileManager.get(this.name);
+    const profile = this.profileManager.getProfile(this.name);
 
     if (!profile) {
       return false;
@@ -434,7 +434,7 @@ export class WorkerBroker extends Base {
    * @type {number}
    */
   private get maxActivateRequests() {
-    const profile = this.profileManager.get(this.name);
+    const profile = this.profileManager.getProfile(this.name);
     if (!profile) {
       return this.config.worker.maxActivateRequests;
     }
@@ -443,10 +443,7 @@ export class WorkerBroker extends Base {
       return 1;
     }
 
-    return (
-      profile.worker?.maxActivateRequests ||
-      this.config.worker.maxActivateRequests
-    );
+    return profile.worker.maxActivateRequests;
   }
 
   /**
@@ -454,7 +451,7 @@ export class WorkerBroker extends Base {
    * @type {any}
    */
   get rateLimit() {
-    const profile = this.profileManager.get(this.name);
+    const profile = this.profileManager.getProfile(this.name);
     if (!profile) {
       return null;
     }
@@ -462,8 +459,8 @@ export class WorkerBroker extends Base {
     return profile.rateLimit;
   }
 
-  get profile() {
-    const profile = this.profileManager.get(this.name);
+  private get profile() {
+    const profile = this.profileManager.getProfile(this.name);
     if (!profile) {
       throw new Error(
         `Function '${this.name}' is no more existing in profile manager.`
@@ -473,7 +470,7 @@ export class WorkerBroker extends Base {
   }
 
   get namespace() {
-    const profile = this.profileManager.get(this.name);
+    const profile = this.profileManager.getProfile(this.name);
     if (!profile) {
       return null;
     }

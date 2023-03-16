@@ -14,20 +14,17 @@ import { Worker, WorkerMetadata } from '../worker_stats/worker';
 import { ControlPlaneDependencyContext } from '../deps';
 import { DataPlaneClientManager } from '../data_plane_client/manager';
 import { ReservationController } from './reservation_controller';
-import { Config } from '#self/config';
 
 export class DefaultController extends BaseController {
   protected logger: Logger;
 
   private shrinking: boolean;
-  private _config: Config;
   private _capacityManager: CapacityManager;
   private _reservationController: ReservationController;
   private _dataPlaneClientManager: DataPlaneClientManager;
 
   constructor(ctx: ControlPlaneDependencyContext) {
     super(ctx);
-    this._config = ctx.getInstance('config');
     this._capacityManager = ctx.getInstance('capacityManager');
     this._reservationController = ctx.getInstance('reservationController');
     this._dataPlaneClientManager = ctx.getInstance('dataPlaneClientManager');
@@ -66,7 +63,7 @@ export class DefaultController extends BaseController {
       return;
     }
 
-    const profile = this._functionProfile.get(name);
+    const profile = this._functionProfile.getProfile(name);
     if (!profile) {
       const err = new Error(`No function named ${name}.`);
       err.code = ErrorCode.kNoFunction;
@@ -76,7 +73,6 @@ export class DefaultController extends BaseController {
     const workerMetadata = new WorkerMetadata(
       profile.name,
       { inspect: false },
-      !!profile.worker?.disposable,
       false
     );
 
@@ -198,9 +194,7 @@ export class DefaultController extends BaseController {
       this.logger.info(
         `[Auto Scale] Up to shrink ${workers.length} workers in ${broker.name}. ` +
           `waterlevel: ${broker.activeRequestCount}/${broker.totalMaxActivateRequests}, ` +
-          `existing: ${!!broker.data}, reservation: ${
-            broker.reservationCount
-          }, current: ${broker.workerCount}.`
+          `reservation: ${broker.reservationCount}, current: ${broker.workerCount}.`
       );
     }
     if (!shrinkData.length) return; // To avoid unneccessary logic below.
@@ -300,14 +294,7 @@ export class DefaultController extends BaseController {
    * @return The chosen workers.
    */
   shrinkDraw(broker: Broker, countToChoose: number) {
-    let strategy = this._config.worker.defaultShrinkStrategy;
-
-    /* istanbul ignore else */
-    if (broker.data) {
-      strategy =
-        broker.data.worker?.shrinkStrategy ??
-        this._config.worker.defaultShrinkStrategy;
-    }
+    const strategy = broker.profile.worker.shrinkStrategy;
 
     let workers = [];
 

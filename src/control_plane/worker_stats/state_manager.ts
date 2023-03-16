@@ -18,6 +18,8 @@ import { Worker, WorkerMetadata } from './worker';
 import { ControlPlaneDependencyContext } from '../deps';
 import { StatLogger } from './stat_logger';
 import { EventBus } from '#self/lib/event-bus';
+import { RawWithDefaultsFunctionProfile } from '#self/lib/json/function_profile';
+import { FunctionsRemovedEvent } from '#self/lib/function_profile';
 
 export class StateManager extends Base {
   private _logger: Logger;
@@ -51,6 +53,11 @@ export class StateManager extends Base {
         this._correct();
       },
     });
+    this._eventBus.subscribe(FunctionsRemovedEvent, {
+      next: async event => {
+        await this._removeFunctionProfile(event.data);
+      },
+    });
 
     this._statLogger = new StatLogger(this._config);
   }
@@ -78,16 +85,41 @@ export class StateManager extends Base {
     worker.updateWorkerStatusByReport(event as WorkerStatusReport);
   }
 
-  updateFunctionProfile() {
-    // 创建 brokers
-    const { reservationCountPerFunction } = this._config.worker;
-    for (const profile of this._functionProfile.profile) {
-      const reservationCount = profile?.worker?.reservationCount;
-      if (reservationCount === 0) continue;
-      if (reservationCount || reservationCountPerFunction) {
-        this.getOrCreateBroker(profile.name, false);
-      }
+  updateFunctionProfile(profiles: RawWithDefaultsFunctionProfile[]) {
+    for (const profile of profiles) {
+      const brokers = [
+        this.getBroker(profile.name, false),
+        this.getBroker(profile.name, true),
+      ];
+      brokers.forEach(it => {
+        if (it == null) {
+          return;
+        }
+        it.updateProfile(profile);
+      });
     }
+  }
+
+  _removeFunctionProfile(names: string[]) {
+    let promises: Promise<void>[] = [];
+    for (const name of names) {
+      const brokers = [this.getBroker(name, false), this.getBroker(name, true)];
+      promises = promises.concat(
+        brokers.flatMap(broker => {
+          if (broker == null) {
+            return Promise.resolve();
+          }
+          return Array.from(broker.workers.values()).map(worker => {
+            worker.updateWorkerStatusByControlPlaneEvent(
+              ControlPlaneEvent.FunctionRemoved
+            );
+            return this._tryGC(broker, worker);
+          });
+        })
+      );
+    }
+
+    return Promise.all(promises);
   }
 
   async _syncBrokerData(data: root.noslated.data.IBrokerStats[]) {
@@ -123,13 +155,9 @@ export class StateManager extends Base {
   getOrCreateBroker(functionName: string, isInspector: boolean): Broker | null {
     let broker = this.getBroker(functionName, isInspector);
     if (broker) return broker;
-    if (!this._functionProfile.get(functionName)) return null;
-    broker = new Broker(
-      this._functionProfile,
-      this._config,
-      functionName,
-      isInspector
-    );
+    const profile = this._functionProfile.getProfile(functionName);
+    if (profile == null) return null;
+    broker = new Broker(profile, isInspector);
     this._brokers.set(Broker.getKey(functionName, isInspector), broker);
     return broker;
   }
@@ -188,15 +216,6 @@ export class StateManager extends Base {
    * @return {Promise<void>} The result.
    */
   private async _tryGC(broker: Broker, worker: Worker) {
-    if (!broker.getWorker(worker.name)) {
-      throw new Error(
-        `Worker ${worker.name} not belongs to broker ${Broker.getKey(
-          broker.name,
-          broker.isInspector
-        )}`
-      );
-    }
-
     // 进入该状态，必然要被 GC
     if (
       worker.workerStatus === WorkerStatus.PendingStop ||
@@ -214,10 +233,10 @@ export class StateManager extends Base {
         );
       }
 
-      this._workerStopped(broker, worker);
+      await this._workerStopped(broker, worker);
     } else if (worker.workerStatus === WorkerStatus.Stopped) {
       // If the worker is already stopped, clean it up.
-      this._workerStopped(broker, worker);
+      await this._workerStopped(broker, worker);
     }
   }
 
@@ -250,10 +269,10 @@ export class StateManager extends Base {
       state,
       registerTime: worker.registerTime,
       functionName: broker.name,
-      runtimeType: broker.data?.runtime!,
+      runtimeType: broker.runtime,
       workerName: worker.name,
     });
-    this._eventBus.publish(event).catch(e => {
+    await this._eventBus.publish(event).catch(e => {
       this._logger.error('unexpected error on worker stopped event', e);
     });
   }
@@ -277,8 +296,9 @@ export class StateManager extends Base {
       }
     }
 
+    // TODO: remove obsolete brokers with function profile.
     for (const broker of [...this._brokers.values()]) {
-      if (!broker.workers.size && !broker.data) {
+      if (!broker.workers.size) {
         this._brokers.delete(Broker.getKey(broker.name, broker.isInspector));
       }
     }

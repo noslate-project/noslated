@@ -1,11 +1,10 @@
-import * as _ from 'lodash';
 import loggers from '#self/lib/logger';
 import { pairsToMap, KVPairs } from '#self/lib/rpc/key_value_pair';
 import * as root from '#self/proto/root';
 import { ServerWritableStream } from '@grpc/grpc-js';
 import { RawFunctionProfile } from '#self/lib/json/function_profile';
-import { FunctionProfileManager, Mode } from '#self/lib/function_profile';
-import { FunctionRemovedEvent, PlatformEnvironsUpdatedEvent } from '../events';
+import { FunctionProfileManager } from '#self/lib/function_profile';
+import { PlatformEnvironsUpdatedEvent } from '../events';
 import { ControlPlaneDependencyContext } from '../deps';
 import { EventBus } from '#self/lib/event-bus';
 import { WorkerLauncher } from '../worker_launcher';
@@ -89,7 +88,6 @@ export class HeraldImpl {
       root.noslated.SetFunctionProfileResponse
     >
   ): Promise<root.noslated.ISetFunctionProfileResponse> {
-    const orig = this._functionProfile.profile.map(p => p.toJSON());
     const { profiles = [], mode } = call.request;
     this.logger.info(
       'Setting function profiles with %s, count: %d',
@@ -99,7 +97,6 @@ export class HeraldImpl {
 
     // 验证 worker v8options
     try {
-      await this._workerLauncher.ready();
       this.checkV8Options(profiles);
     } catch (e) {
       this.logger.warn(
@@ -110,76 +107,19 @@ export class HeraldImpl {
       return { set: false };
     }
 
-    let error;
-    let dataSet = false;
     try {
-      await this._functionProfile.set(
+      await this._functionProfile.setProfiles(profiles as RawFunctionProfile[]);
+      await this._dataPlaneClientManager.setFunctionProfile(
         profiles as RawFunctionProfile[],
-        mode as Mode
+        'IMMEDIATELY'
       );
-      await this._dataPlaneClientManager.ready();
-      const results = await this._dataPlaneClientManager.setFunctionProfile(
-        profiles as RawFunctionProfile[],
-        mode as Mode
-      );
-      if (!results.length) dataSet = true;
-      else {
-        dataSet = results.reduce<boolean>((ans, item) => {
-          return ans || item.set;
-        }, dataSet);
-      }
     } catch (e) {
-      error = e;
-      this.logger.warn(
+      this.logger.error(
         'Setting function profile fail: %o, profile: %j',
         e,
         profiles
       );
     }
-
-    if (error || !dataSet) {
-      try {
-        await this._functionProfile.set(orig, 'IMMEDIATELY');
-      } catch (e) {
-        this.logger.warn('Failed to rollback function profile.', e);
-      }
-      return { set: false };
-    }
-
-    // compare current to original profiles, kill updated containers.
-    // TODO(kaidi.zkd): reduce comparation `for`. e.g. sort first.
-    const killArray: string[] = [];
-    for (const item of profiles) {
-      const origItem = _.find(orig, o => o.name === item.name);
-      if (origItem === undefined) continue;
-
-      // keys below are effected keys
-      const keys = [
-        'runtime',
-        'url',
-        'signature',
-        'sourceFile',
-        'handler',
-        'initializer',
-        'resourceLimit.cpu',
-        'resourceLimit.memory',
-      ];
-      let shouldKill = false;
-      for (const key of keys) {
-        const a = _.get(item, key);
-        const b = _.get(origItem, key);
-        if (a !== b) {
-          shouldKill = true;
-          break;
-        }
-      }
-
-      if (shouldKill) killArray.push(item.name as string);
-    }
-
-    // Do kill all workers in brokers.
-    const event = new FunctionRemovedEvent(killArray);
-    await this._eventBus.publish(event);
 
     return {
       set: true,
@@ -188,7 +128,7 @@ export class HeraldImpl {
 
   async getFunctionProfile() {
     return {
-      profiles: this._functionProfile.profile,
+      profiles: this._functionProfile.getProfiles(),
     };
   }
 

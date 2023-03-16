@@ -64,13 +64,11 @@ export class DataPlaneImpl implements IDataPlane {
     call: ServerUnaryCall<root.noslated.ISetFunctionProfileRequest>
   ): Promise<root.noslated.ISetFunctionProfileResponse> {
     const profiles = (call.request.profiles ?? []) as RawFunctionProfile[];
-    const mode = call.request.mode ?? 'WAIT';
-    rpcAssert(mode === 'IMMEDIATELY' || mode === 'WAIT');
 
     try {
-      await this.dataFlowController.setFunctionProfile(profiles, mode);
+      await this.dataFlowController.setFunctionProfile(profiles);
     } catch (e) {
-      logger.error(e);
+      logger.error('unexpected error on set function profile', e);
       return { set: false };
     }
 

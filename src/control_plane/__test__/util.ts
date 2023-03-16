@@ -20,7 +20,6 @@ export function registerWorkers(
         {
           inspect: data.options?.inspect ?? brokerOrManager.isInspector,
         },
-        data.disposable ?? brokerOrManager.disposable,
         data.toReserve ?? false,
         data.processName!,
         data.credential!
@@ -32,7 +31,6 @@ export function registerWorkers(
         {
           inspect: data.options?.inspect ?? false,
         },
-        data.disposable ?? false,
         data.toReserve ?? false,
         data.processName!,
         data.credential!

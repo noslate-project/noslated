@@ -1,6 +1,5 @@
 import { TurfContainerStates } from '#self/lib/turf/types';
 import type { noslated } from '#self/proto/root';
-import { Config } from '#self/config';
 import {
   WorkerStatus,
   WorkerStatusReport,
@@ -36,7 +35,6 @@ class WorkerMetadata {
     readonly funcName: string,
 
     readonly options: WorkerOption = { inspect: false },
-    readonly disposable = false,
     readonly toReserve = false,
 
     _processName?: string,
@@ -139,20 +137,13 @@ class Worker {
   requestId: string | undefined;
   private readyTimeout: NodeJS.Timeout | undefined;
 
-  public disposable = false;
-
   /**
    * Constructor
    * @param config The global configure.
    * @param name The worker name (replica name).
    * @param credential The credential.
    */
-  constructor(
-    workerMetadata: WorkerMetadata,
-    config: Config,
-    initializationTimeout?: number
-  ) {
-    this.disposable = workerMetadata.disposable;
+  constructor(workerMetadata: WorkerMetadata, initializationTimeout: number) {
     this.#name = workerMetadata.processName!;
     this.#credential = workerMetadata.credential ?? null;
 
@@ -163,9 +154,7 @@ class Worker {
 
     this.#registerTime = Date.now();
 
-    this.#initializationTimeout =
-      initializationTimeout ?? config.worker.defaultInitializerTimeout;
-
+    this.#initializationTimeout = initializationTimeout;
     this.requestId = undefined;
 
     this.#readyDeferred = createDeferred<void>();
@@ -318,6 +307,7 @@ class Worker {
   updateWorkerStatusByControlPlaneEvent(event: ControlPlaneEvent) {
     let status: WorkerStatus;
     switch (event) {
+      case ControlPlaneEvent.FunctionRemoved:
       case ControlPlaneEvent.Shrink:
         status = WorkerStatus.PendingStop;
         break;

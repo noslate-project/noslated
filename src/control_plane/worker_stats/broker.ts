@@ -1,7 +1,7 @@
-import { Config } from '#self/config';
-import { FunctionProfileManager } from '#self/lib/function_profile';
-import { RawFunctionProfile } from '#self/lib/json/function_profile';
-import { PrefixedLogger } from '#self/lib/loggers';
+import {
+  RawWithDefaultsFunctionProfile,
+  ReadonlyProfile,
+} from '#self/lib/json/function_profile';
 import { Worker, WorkerMetadata, WorkerStats } from './worker';
 
 interface StartingPoolItem {
@@ -13,52 +13,29 @@ interface StartingPoolItem {
 class Broker {
   redundantTimes: number;
 
-  private config: Config;
-
-  private profiles: FunctionProfileManager;
-
-  name: string;
-
-  private logger: PrefixedLogger;
-
-  isInspector: boolean;
-
-  data: RawFunctionProfile | null;
+  readonly name: string;
+  readonly isInspector: boolean;
+  #profile: RawWithDefaultsFunctionProfile;
 
   workers: Map<string, Worker>;
 
   private startingPool: Map<string, StartingPoolItem>;
-  public disposable: boolean;
+  public disposable!: boolean;
 
-  /**
-   * Constructor
-   * @param profiles The profile manager.
-   * @param config The global config object.
-   * @param funcName The function name of this broker.
-   * @param isInspector Whether it's using inspector or not.
-   */
-  constructor(
-    profiles: FunctionProfileManager,
-    config: Config,
-    funcName: string,
-    isInspector: boolean
-  ) {
-    this.config = config;
-    this.logger = new PrefixedLogger(
-      'worker_stats_snapshot broker',
-      Broker.getKey(funcName, isInspector)
-    );
-
-    this.name = funcName;
-    this.profiles = profiles;
+  constructor(profile: RawWithDefaultsFunctionProfile, isInspector: boolean) {
+    this.#profile = profile;
+    this.name = this.#profile.name;
+    this.updateProfile(profile);
     this.isInspector = !!isInspector;
-    this.data = profiles?.get(funcName)?.toJSON(true) || null;
-    this.disposable = this.data?.worker?.disposable ?? false;
 
     this.workers = new Map();
     this.startingPool = new Map();
 
     this.redundantTimes = 0;
+  }
+
+  get runtime() {
+    return this.#profile.runtime;
   }
 
   /**
@@ -74,14 +51,15 @@ class Broker {
       return 0;
     }
 
-    return this.data?.worker?.reservationCount || 0;
+    return this.#profile.worker.reservationCount;
   }
 
   get initializationTimeout() {
-    return (
-      this.data?.worker?.initializationTimeout ||
-      this.config.worker.defaultInitializerTimeout
-    );
+    return this.#profile.worker.initializationTimeout;
+  }
+
+  get profile(): ReadonlyProfile {
+    return this.#profile;
   }
 
   /**
@@ -90,21 +68,14 @@ class Broker {
    * @param credential The credential.
    */
   register(workerMetadata: WorkerMetadata): Worker {
-    if (!this.data) {
-      throw new Error(`No function profile named ${this.name}.`);
-    }
-    const worker = new Worker(
-      workerMetadata,
-      this.config,
-      this.initializationTimeout
-    );
+    const worker = new Worker(workerMetadata, this.initializationTimeout);
 
     this.workers.set(workerMetadata.processName!, worker);
 
     this.startingPool.set(workerMetadata.processName!, {
       credential: workerMetadata.credential!,
-      estimateRequestLeft: this.data.worker?.maxActivateRequests,
-      maxActivateRequests: this.data.worker?.maxActivateRequests,
+      estimateRequestLeft: this.#profile.worker.maxActivateRequests,
+      maxActivateRequests: this.#profile.worker.maxActivateRequests,
     });
 
     return worker;
@@ -139,11 +110,16 @@ class Broker {
     return this.workerCount * this.memoryLimit;
   }
 
-  /**
-   * @type {number}
-   */
-  get memoryLimit() {
-    return this.data?.resourceLimit?.memory || 0;
+  get memoryLimit(): number {
+    return this.#profile.resourceLimit.memory;
+  }
+
+  updateProfile(profile: RawWithDefaultsFunctionProfile) {
+    if (profile.name !== this.name) {
+      throw new Error(`Unexpected profile with name "${profile.name}"`);
+    }
+    this.#profile = profile;
+    this.disposable = this.#profile.worker.disposable;
   }
 
   /**
@@ -151,8 +127,6 @@ class Broker {
    * @param workers The workers.
    */
   sync(workers: WorkerStats[]) {
-    this.data = this.profiles.get(this.name)?.toJSON(true) || null;
-
     const newMap: Map<string, Worker> = new Map();
     for (const item of workers) {
       const name = item.name;
@@ -266,7 +240,7 @@ class Broker {
     return {
       name: this.name,
       inspector: this.isInspector,
-      profile: this.data,
+      profile: this.#profile,
       redundantTimes: this.redundantTimes,
       startingPool: [...this.startingPool.entries()].map(([key, value]) => ({
         workerName: key,

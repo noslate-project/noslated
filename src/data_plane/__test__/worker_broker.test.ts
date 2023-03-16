@@ -5,7 +5,7 @@ import { findResponseHeaderValue } from '#self/test/util';
 import {
   FunctionProfileManager,
   FunctionProfileManagerContext,
-  FunctionProfileUpdateEvent,
+  FunctionProfileManagerEvents,
 } from '#self/lib/function_profile';
 import { PendingRequest, WorkerBroker } from '../worker_broker';
 import { kMegaBytes } from '#self/control_plane/constants';
@@ -58,9 +58,12 @@ describe(common.testName(__filename), () => {
     beforeEach(async () => {
       const ctx = new DependencyContext<FunctionProfileManagerContext>();
       ctx.bindInstance('config', config);
-      ctx.bindInstance('eventBus', new EventBus([FunctionProfileUpdateEvent]));
+      ctx.bindInstance(
+        'eventBus',
+        new EventBus([...FunctionProfileManagerEvents])
+      );
       profileManager = new FunctionProfileManager(ctx);
-      await profileManager.set(PROFILES as any, 'IMMEDIATELY');
+      await profileManager.setProfiles(PROFILES as any);
     });
 
     it('all default', async () => {
@@ -75,7 +78,7 @@ describe(common.testName(__filename), () => {
 
       const profiles = JSON.parse(JSON.stringify(PROFILES));
       delete profiles[0].worker;
-      await profileManager.set(profiles, 'IMMEDIATELY');
+      await profileManager.setProfiles(profiles);
       const broker = new WorkerBroker(
         {
           profileManager,
@@ -114,7 +117,7 @@ describe(common.testName(__filename), () => {
 
       const profiles = JSON.parse(JSON.stringify(PROFILES));
       delete profiles[0].worker.initializationTimeout;
-      await profileManager.set(profiles, 'IMMEDIATELY');
+      await profileManager.setProfiles(profiles);
       const broker = new WorkerBroker(
         {
           profileManager,
@@ -153,7 +156,7 @@ describe(common.testName(__filename), () => {
 
       const profiles = JSON.parse(JSON.stringify(PROFILES));
       delete profiles[0].worker.maxActivateRequests;
-      await profileManager.set(profiles, 'IMMEDIATELY');
+      await profileManager.setProfiles(profiles);
       const broker = new WorkerBroker(
         {
           profileManager,
@@ -194,9 +197,12 @@ describe(common.testName(__filename), () => {
     beforeEach(async () => {
       const ctx = new DependencyContext<FunctionProfileManagerContext>();
       ctx.bindInstance('config', config);
-      ctx.bindInstance('eventBus', new EventBus([FunctionProfileUpdateEvent]));
+      ctx.bindInstance(
+        'eventBus',
+        new EventBus([...FunctionProfileManagerEvents])
+      );
       profileManager = new FunctionProfileManager(ctx);
-      await profileManager.set(PROFILES as any, 'IMMEDIATELY');
+      await profileManager.setProfiles(PROFILES as any);
     });
 
     it('no worker', async () => {

@@ -116,7 +116,7 @@ export class TaskQueue<T> {
     this._concurrency = options?.concurrency ?? 1;
     this._compare = options?.compare;
     this._processor = processor;
-    this._queue = new PriorityQueue<TaskItem<T>>(this.#taskCompare);
+    this._queue = new PriorityQueue(this.#taskCompare);
   }
 
   enqueue(value: T, options?: TaskOptions) {
@@ -151,7 +151,11 @@ export class TaskQueue<T> {
   }
 
   clear() {
-    this._queue.clear();
+    const queue = this._queue.toArray();
+    this._queue = new PriorityQueue(this.#taskCompare);
+    queue.forEach(it => {
+      it.deferred.reject(new AbortError('Queue is cleared'));
+    });
   }
 
   close() {

@@ -1,4 +1,4 @@
-import { DeepRequired } from '../util';
+import { DeepRequired, DeepReadonly } from '../util';
 
 export type RuntimeType = 'nodejs' | 'aworker';
 export type ShrinkStrategy = 'FILO' | 'FIFO' | 'LCC';
@@ -62,3 +62,4 @@ interface AworkerFunctionProfile
 
 export type RawFunctionProfile = NodejsFunctionProfile | AworkerFunctionProfile;
 export type RawWithDefaultsFunctionProfile = DeepRequired<RawFunctionProfile>;
+export type ReadonlyProfile = DeepReadonly<RawWithDefaultsFunctionProfile>;
