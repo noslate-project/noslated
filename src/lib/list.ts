@@ -161,7 +161,7 @@ export class List<T> {
   remove(node: ReadonlyNode<T>) {
     const myNode = node as Node<T>;
     if (myNode._list !== this) {
-      throw new Error('Node is not owned by this list');
+      return;
     }
     const prev = myNode.prev;
     const next = myNode.next;
