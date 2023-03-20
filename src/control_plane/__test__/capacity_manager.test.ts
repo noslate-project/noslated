@@ -16,7 +16,6 @@ import { FunctionProfileManager } from '#self/lib/function_profile';
 import { DataPlaneClientManager } from '../data_plane_client/manager';
 import { mockClientCreatorForManager } from '#self/test/util';
 import { Broker } from '../worker_stats/broker';
-import { Config } from '#self/config';
 import { funcData } from './worker_stats/test_data';
 
 describe(common.testName(__filename), function () {
@@ -65,7 +64,6 @@ describe(common.testName(__filename), function () {
   let control: ControlPlane;
   let testContainerManager: TestContainerManager;
 
-  let config: Config;
   let capacityManager: CapacityManager;
   let stateManager: StateManager;
   let functionProfile: FunctionProfileManager;
@@ -81,7 +79,6 @@ describe(common.testName(__filename), function () {
       containerManager: testContainerManager,
     });
     await control.ready();
-    config = control._ctx.getInstance('config');
     capacityManager = control._ctx.getInstance('capacityManager');
     functionProfile = control._ctx.getInstance('functionProfile');
     stateManager = control._ctx.getInstance('stateManager');
@@ -95,31 +92,28 @@ describe(common.testName(__filename), function () {
 
   describe('get #virtualMemoryUsed()', () => {
     it('should get virtual memory used', async () => {
-      await functionProfile.set(
-        [
-          {
-            name: 'func',
-            url: `file://${__dirname}`,
-            runtime: 'aworker',
-            signature: 'xxx',
-            sourceFile: 'index.js',
-            resourceLimit: {
-              memory: 512000000,
-            },
+      await functionProfile.setProfiles([
+        {
+          name: 'func',
+          url: `file://${__dirname}`,
+          runtime: 'aworker',
+          signature: 'xxx',
+          sourceFile: 'index.js',
+          resourceLimit: {
+            memory: 512000000,
           },
-          {
-            name: 'lambda',
-            url: `file://${__dirname}`,
-            runtime: 'aworker',
-            signature: 'xxx',
-            sourceFile: 'index.js',
-            resourceLimit: {
-              memory: 128000000,
-            },
+        },
+        {
+          name: 'lambda',
+          url: `file://${__dirname}`,
+          runtime: 'aworker',
+          signature: 'xxx',
+          sourceFile: 'index.js',
+          resourceLimit: {
+            memory: 128000000,
           },
-        ],
-        'WAIT'
-      );
+        },
+      ]);
 
       registerWorkers(stateManager, [
         {
@@ -127,7 +121,6 @@ describe(common.testName(__filename), function () {
           processName: 'hello',
           credential: 'world',
           options: { inspect: false },
-          disposable: false,
           toReserve: false,
         },
         {
@@ -135,7 +128,6 @@ describe(common.testName(__filename), function () {
           processName: 'foo',
           credential: 'barworld',
           options: { inspect: false },
-          disposable: false,
           toReserve: false,
         },
         {
@@ -143,7 +135,6 @@ describe(common.testName(__filename), function () {
           processName: 'coco',
           credential: 'nut',
           options: { inspect: false },
-          disposable: false,
           toReserve: false,
         },
         {
@@ -152,7 +143,6 @@ describe(common.testName(__filename), function () {
           processName: 'cocos',
           credential: '2d',
           options: { inspect: false },
-          disposable: false,
           toReserve: false,
         },
         {
@@ -160,7 +150,6 @@ describe(common.testName(__filename), function () {
           processName: 'alibaba',
           credential: 'seed of hope',
           options: { inspect: false },
-          disposable: false,
           toReserve: false,
         },
       ]);
@@ -224,11 +213,11 @@ describe(common.testName(__filename), function () {
 
   describe('.evaluateWaterLevel()', () => {
     beforeEach(async () => {
-      await functionProfile.set(funcData, 'WAIT');
+      await functionProfile.setProfiles(funcData);
     });
 
     it('should evaluate when some worker stopped (low)', () => {
-      const broker = new Broker(functionProfile, config, 'func', false);
+      const broker = new Broker(functionProfile.getProfile('func')!, false);
       registerWorkers(broker, [
         {
           processName: 'hello',
@@ -269,7 +258,7 @@ describe(common.testName(__filename), function () {
     });
 
     it('should evaluate when some worker stopped (high)', () => {
-      const broker = new Broker(functionProfile, config, 'func', false);
+      const broker = new Broker(functionProfile.getProfile('func')!, false);
       registerWorkers(broker, [
         {
           processName: 'hello',
@@ -308,7 +297,7 @@ describe(common.testName(__filename), function () {
     });
 
     it('should evaluate with starting pool, ignore in start pool', () => {
-      const broker = new Broker(functionProfile, config, 'func', false);
+      const broker = new Broker(functionProfile.getProfile('func')!, false);
       registerWorkers(broker, [
         {
           processName: 'hello',
@@ -336,7 +325,7 @@ describe(common.testName(__filename), function () {
     });
 
     it('should evaluate with starting pool (high)', () => {
-      const broker = new Broker(functionProfile, config, 'func', false);
+      const broker = new Broker(functionProfile.getProfile('func')!, false);
       registerWorkers(broker, [
         {
           processName: 'hello',
@@ -367,38 +356,12 @@ describe(common.testName(__filename), function () {
     });
 
     it('should evaluate water level', () => {
-      const broker = new Broker(functionProfile, config, 'func', false);
+      const broker = new Broker(functionProfile.getProfile('func')!, false);
       assert.strictEqual(capacityManager.evaluateWaterLevel(broker), 0);
     });
 
-    it('should evaluate water level without broker data', () => {
-      const broker = new Broker(functionProfile, config, 'func', false);
-
-      registerWorkers(broker, [
-        {
-          processName: 'hello',
-          credential: 'world',
-        },
-      ]);
-      broker.data = null;
-      assert.strictEqual(capacityManager.evaluateWaterLevel(broker), -1);
-    });
-
-    it('should evaluate water level without broker data and expansionOnly = true', () => {
-      const broker = new Broker(functionProfile, config, 'func', false);
-
-      registerWorkers(broker, [
-        {
-          processName: 'hello',
-          credential: 'world',
-        },
-      ]);
-      broker.data = null;
-      assert.strictEqual(capacityManager.evaluateWaterLevel(broker, true), 0);
-    });
-
     it('should evaluate water level with one worker left', () => {
-      const broker = new Broker(functionProfile, config, 'func', false);
+      const broker = new Broker(functionProfile.getProfile('func')!, false);
 
       registerWorkers(broker, [
         {
@@ -423,7 +386,7 @@ describe(common.testName(__filename), function () {
     });
 
     it('should evaluate water level (still redundant, high)', () => {
-      const broker = new Broker(functionProfile, config, 'func', false);
+      const broker = new Broker(functionProfile.getProfile('func')!, false);
       registerWorkers(broker, [
         {
           processName: 'hello',
@@ -458,7 +421,7 @@ describe(common.testName(__filename), function () {
     });
 
     it('should evaluate water level (still redundant, low)', () => {
-      const broker = new Broker(functionProfile, config, 'func', false);
+      const broker = new Broker(functionProfile.getProfile('func')!, false);
       registerWorkers(broker, [
         {
           processName: 'hello',
@@ -493,11 +456,10 @@ describe(common.testName(__filename), function () {
     });
 
     it('should evaluate water level (low 1)', async () => {
-      await functionProfile.set(
-        [{ ...funcData[0], worker: { reservationCount: 1 } }],
-        'WAIT'
-      );
-      const broker = new Broker(functionProfile, config, 'func', false);
+      await functionProfile.setProfiles([
+        { ...funcData[0], worker: { reservationCount: 1 } },
+      ]);
+      const broker = new Broker(functionProfile.getProfile('func')!, false);
       registerWorkers(broker, [
         {
           processName: 'hello',
@@ -533,11 +495,10 @@ describe(common.testName(__filename), function () {
     });
 
     it('should evaluate water level (low 2)', async () => {
-      await functionProfile.set(
-        [{ ...funcData[0], worker: { reservationCount: 1 } }],
-        'WAIT'
-      );
-      const broker = new Broker(functionProfile, config, 'func', false);
+      await functionProfile.setProfiles([
+        { ...funcData[0], worker: { reservationCount: 1 } },
+      ]);
+      const broker = new Broker(functionProfile.getProfile('func')!, false);
       registerWorkers(broker, [
         {
           processName: 'hello',
@@ -574,7 +535,7 @@ describe(common.testName(__filename), function () {
     });
 
     it('should evaluate water level (low 1, no reservation)', () => {
-      const broker = new Broker(functionProfile, config, 'func', false);
+      const broker = new Broker(functionProfile.getProfile('func')!, false);
       registerWorkers(broker, [
         {
           processName: 'hello',
@@ -610,7 +571,7 @@ describe(common.testName(__filename), function () {
     });
 
     it('should evaluate water level (low 2, no reservation)', () => {
-      const broker = new Broker(functionProfile, config, 'func', false);
+      const broker = new Broker(functionProfile.getProfile('func')!, false);
       registerWorkers(broker, [
         {
           processName: 'hello',
@@ -646,7 +607,7 @@ describe(common.testName(__filename), function () {
     });
 
     it('should evaluate water level (low, expansionOnly)', () => {
-      const broker = new Broker(functionProfile, config, 'func', false);
+      const broker = new Broker(functionProfile.getProfile('func')!, false);
       registerWorkers(broker, [
         {
           processName: 'hello',
@@ -682,7 +643,7 @@ describe(common.testName(__filename), function () {
     });
 
     it('should reset redundantTimes', () => {
-      const broker = new Broker(functionProfile, config, 'func', false);
+      const broker = new Broker(functionProfile.getProfile('func')!, false);
       registerWorkers(broker, [
         {
           processName: 'hello',
@@ -720,11 +681,10 @@ describe(common.testName(__filename), function () {
     });
 
     it('should evaluate (high with several workers)', async () => {
-      await functionProfile.set(
-        [{ ...funcData[0], worker: { replicaCountLimit: 50 } }] as any,
-        'WAIT'
-      );
-      const broker = new Broker(functionProfile, config, 'func', false);
+      await functionProfile.setProfiles([
+        { ...funcData[0], worker: { replicaCountLimit: 50 } },
+      ] as any);
+      const broker = new Broker(functionProfile.getProfile('func')!, false);
       const mocked = [];
       for (let i = 0; i < 20; i++) {
         mocked.push({
@@ -749,11 +709,10 @@ describe(common.testName(__filename), function () {
     });
 
     it('should evaluate (high with several workers, up to replicaCountLimit)', async () => {
-      await functionProfile.set(
-        [{ ...funcData[0], worker: { replicaCountLimit: 25 } }] as any,
-        'WAIT'
-      );
-      const broker = new Broker(functionProfile, config, 'func', false);
+      await functionProfile.setProfiles([
+        { ...funcData[0], worker: { replicaCountLimit: 25 } },
+      ] as any);
+      const broker = new Broker(functionProfile.getProfile('func')!, false);
       const mocked = [];
       for (let i = 0; i < 20; i++) {
         mocked.push({

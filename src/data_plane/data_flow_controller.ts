@@ -7,7 +7,6 @@ import { FunctionConfigBag } from './function_config';
 import {
   FunctionProfileManager,
   FunctionProfileManagerContext,
-  Mode,
 } from '#self/lib/function_profile';
 import { getCurrentPlaneId, setDifference } from '#self/lib/util';
 import { InspectorAgent } from '#self/diagnostics/inspector_agent';
@@ -110,13 +109,7 @@ export class DataFlowController extends BaseOf(EventEmitter) {
 
     // TODO: there is no way to cleanup unused configs.
     this.functionConfigBag = new FunctionConfigBag();
-    /**
-     * @type Map<string, WorkerBroker>
-     */
     this.brokers = new Map();
-    /**
-     * @type Map<string, WorkerBroker>
-     */
     this.credentialBrokerMap = new Map();
     this.circuitBreaker = new SystemCircuitBreaker(
       this,
@@ -137,13 +130,17 @@ export class DataFlowController extends BaseOf(EventEmitter) {
     const credentials = Array.from(this.credentialBrokerMap.entries());
     return credentials
       .map(([credential, broker]) => {
+        const worker = broker.getWorkerByOnlyCredential(credential);
+        if (worker == null || worker === true) {
+          return null;
+        }
         const usage = this.delegate.getResourceUsage(credential);
         if (usage == null) {
           return null;
         }
         return {
-          workerName: broker.name,
-          functionName: broker.profile.name,
+          workerName: worker.name,
+          functionName: broker.name,
           ...usage,
         };
       })
@@ -377,7 +374,10 @@ export class DataFlowController extends BaseOf(EventEmitter) {
   cleanOrphanBrokers = async () => {
     const cleanedKeys = [];
     for (const [key, broker] of this.brokers.entries()) {
-      if (!this.profileManager.get(broker.name) && !broker.workers.length) {
+      if (
+        !this.profileManager.getProfile(broker.name) &&
+        !broker.workers.length
+      ) {
         cleanedKeys.push(key);
         broker.close();
       }
@@ -429,13 +429,8 @@ export class DataFlowController extends BaseOf(EventEmitter) {
 
   /**
    * Set function profile
-   * @param {import('#self/lib/json/function_profile').RawFunctionProfile[]} profile The function profile
-   * @param {'IMMEDIATELY' | 'WAIT'} mode the mode
    */
-  async setFunctionProfile(
-    profile: RawFunctionProfile[],
-    mode: Mode = 'IMMEDIATELY'
-  ) {
+  async setFunctionProfile(profile: RawFunctionProfile[]) {
     // 获取前后 namespace 差异
     const { toAdd, toRemove } = this.compareSharedNamespaces(profile);
 
@@ -444,7 +439,7 @@ export class DataFlowController extends BaseOf(EventEmitter) {
       this.namespaceResolver.register(ns);
     });
 
-    await this.profileManager.set(profile, mode);
+    await this.profileManager.setProfiles(profile);
 
     // 过期的 namespace 延后移除
     toRemove.forEach(ns => {
@@ -501,7 +496,7 @@ export class DataFlowController extends BaseOf(EventEmitter) {
         code: RpcStatus.FAILED_PRECONDITION,
       });
     }
-    const funcProfile = this.profileManager.get(name);
+    const funcProfile = this.profileManager.getProfile(name);
 
     if (funcProfile == null) {
       throw new RpcError(`No function named ${name} registered in this node.`, {

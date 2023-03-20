@@ -19,11 +19,10 @@ export class WorkerLogger {
 
   start(cost: number) {
     this.logger.info(
-      'worker(%s, %s, inspect %s, disposable %s) started, cost: %s, related request(%s)',
+      'worker(%s, %s, inspect %s) started, cost: %s, related request(%s)',
       this.workerMetadata.funcName,
       this.workerMetadata.processName,
       this.workerMetadata.options.inspect,
-      this.workerMetadata.disposable,
       cost.toFixed(3),
       this.workerMetadata.requestId
     );
@@ -31,11 +30,10 @@ export class WorkerLogger {
 
   ready(cost: number) {
     this.logger.info(
-      'worker(%s, %s, inspect %s, disposable %s) ready, cost: %s, related request(%s)',
+      'worker(%s, %s, inspect %s) ready, cost: %s, related request(%s)',
       this.workerMetadata.funcName,
       this.workerMetadata.processName,
       this.workerMetadata.options.inspect,
-      this.workerMetadata.disposable,
       cost.toFixed(3),
       this.workerMetadata.requestId
     );

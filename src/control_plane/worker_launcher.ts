@@ -4,7 +4,10 @@ import loggers from '#self/lib/logger';
 import * as naming from '#self/lib/naming';
 import * as starters from './starter';
 import { ErrorCode } from './worker_launcher_error_code';
-import { RawFunctionProfile } from '#self/lib/json/function_profile';
+import {
+  RawFunctionProfile,
+  RawWithDefaultsFunctionProfile,
+} from '#self/lib/json/function_profile';
 import { BaseOptions } from './starter/base';
 import { CodeManager } from './code_manager';
 import { FunctionProfileManager } from '#self/lib/function_profile';
@@ -107,21 +110,26 @@ export class WorkerLauncher extends Base {
    * @return {Promise<void>} The result.
    */
   async tryLaunch(event: ControlPlaneEvent, workerMetadata: WorkerMetadata) {
-    const { funcName, disposable, options, requestId, toReserve } =
-      workerMetadata;
+    const { funcName, options, requestId, toReserve } = workerMetadata;
 
+    const profile = this.functionProfile.getProfile(funcName);
+    if (profile == null) {
+      const err = new Error(`No function named ${funcName}.`);
+      err.code = ErrorCode.kNoFunction;
+      throw err;
+    }
     return this.launchQueue.enqueue(
       {
         event,
         funcName,
         timestamp: Date.now(),
-        disposable,
         options,
+        profile,
         toReserve,
         requestId,
       },
       {
-        priority: disposable
+        priority: profile.worker.disposable
           ? Priority.kHigh
           : toReserve
           ? Priority.kLow
@@ -134,25 +142,16 @@ export class WorkerLauncher extends Base {
    * Try launch worker process via turf
    */
   doLaunchTask = async (task: LaunchTask) => {
-    const { event, requestId, funcName, disposable, options, toReserve } = task;
+    const { event, requestId, funcName, options, profile, toReserve } = task;
 
     this.logger.info(
-      'process launch event(%s), request(%s) func(%s), disposable(%s), priority(%s).',
+      'process launch event(%s), request(%s) func(%s), disposable(%s).',
       event,
       requestId,
       funcName,
-      disposable,
-      disposable ? Priority.kHigh : toReserve ? Priority.kLow : Priority.kNormal
+      profile.worker.disposable
     );
 
-    const pprofile = this.functionProfile.get(funcName);
-    if (!pprofile) {
-      const err = new Error(`No function named ${funcName}.`);
-      err.code = ErrorCode.kNoFunction;
-      throw err;
-    }
-
-    const profile = pprofile.toJSON(true);
     this.capacityManager.assertExpandingAllowed(
       funcName,
       !!options.inspect,
@@ -192,7 +191,6 @@ export class WorkerLauncher extends Base {
     const workerMetadata = new WorkerMetadata(
       funcName,
       { inspect: !!options.inspect },
-      disposable,
       !!toReserve,
       processName,
       credential,
@@ -235,7 +233,7 @@ interface LaunchTask {
   event: ControlPlaneEvent;
   timestamp: number;
   funcName: string;
-  disposable: boolean;
+  profile: RawWithDefaultsFunctionProfile;
   options: BaseOptions;
   requestId?: string;
   toReserve?: boolean;

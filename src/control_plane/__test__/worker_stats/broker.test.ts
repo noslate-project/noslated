@@ -7,7 +7,7 @@ import { config } from '#self/config';
 import {
   FunctionProfileManager as ProfileManager,
   FunctionProfileManagerContext,
-  FunctionProfileUpdateEvent,
+  FunctionProfileManagerEvents,
 } from '#self/lib/function_profile';
 import { TurfContainerStates } from '#self/lib/turf';
 import { WorkerStatus, WorkerStatusReport } from '#self/lib/constants';
@@ -19,6 +19,7 @@ import { registerWorkers } from '../util';
 import { DependencyContext } from '#self/lib/dependency_context';
 import { EventBus } from '#self/lib/event-bus';
 import { funcData } from './test_data';
+import sinon from 'sinon';
 
 describe(common.testName(__filename), () => {
   const funcDataWithDefault = {
@@ -33,15 +34,19 @@ describe(common.testName(__filename), () => {
       v8Options: [],
       execArgv: [],
     },
+    environments: [],
   };
 
   let profileManager: ProfileManager;
   beforeEach(async () => {
     const ctx = new DependencyContext<FunctionProfileManagerContext>();
     ctx.bindInstance('config', config);
-    ctx.bindInstance('eventBus', new EventBus([FunctionProfileUpdateEvent]));
+    ctx.bindInstance(
+      'eventBus',
+      new EventBus([...FunctionProfileManagerEvents])
+    );
     profileManager = new ProfileManager(ctx);
-    await profileManager.set(funcData, 'WAIT');
+    await profileManager.setProfiles(funcData);
   });
   afterEach(() => {
     mm.restore();
@@ -50,19 +55,18 @@ describe(common.testName(__filename), () => {
   describe('Broker', () => {
     describe('constructor', () => {
       it('should constructor', () => {
-        const broker = new Broker(profileManager, config, 'foo', true);
+        const broker = new Broker(profileManager.getProfile('func')!, true);
         assert.ok(broker instanceof Broker);
         assert.strictEqual(broker.redundantTimes, 0);
-        assert.strictEqual(broker.name, 'foo');
+        assert.strictEqual(broker.name, 'func');
         assert.strictEqual(broker.isInspector, true);
-        assert.strictEqual(broker.data, null);
         assert.strictEqual(broker.workers.size, 0);
       });
     });
 
     describe('.getWorker()', () => {
       it('should get worker', () => {
-        const broker = new Broker(profileManager, config, 'func', true);
+        const broker = new Broker(profileManager.getProfile('func')!, true);
         registerWorkers(broker, [
           {
             processName: 'hello',
@@ -77,7 +81,7 @@ describe(common.testName(__filename), () => {
 
     describe('.register()', () => {
       it('should register', () => {
-        const broker = new Broker(profileManager, config, 'func', true);
+        const broker = new Broker(profileManager.getProfile('func')!, true);
         registerWorkers(broker, [
           {
             processName: 'foo',
@@ -104,29 +108,11 @@ describe(common.testName(__filename), () => {
           maxActivateRequests: 10,
         });
       });
-
-      it('should not register', () => {
-        const broker = new Broker(profileManager, config, 'foo', true);
-
-        assert.throws(
-          () => {
-            registerWorkers(broker, [
-              {
-                processName: 'foo',
-                credential: 'bar',
-              },
-            ]);
-          },
-          {
-            message: /No function profile named foo\./,
-          }
-        );
-      });
     });
 
     describe('.removeItemFromStartingPool()', () => {
       it('should removeItemFromStartingPool', () => {
-        const broker = new Broker(profileManager, config, 'func', true);
+        const broker = new Broker(profileManager.getProfile('func')!, true);
 
         registerWorkers(broker, [
           {
@@ -143,12 +129,12 @@ describe(common.testName(__filename), () => {
 
     describe('.prerequestStartingPool()', () => {
       it('should return false when startingPool is empty', () => {
-        const broker = new Broker(profileManager, config, 'func', true);
+        const broker = new Broker(profileManager.getProfile('func')!, true);
         assert.strictEqual(broker.prerequestStartingPool(), false);
       });
 
       it('should return true when idle and false when busy', () => {
-        const broker = new Broker(profileManager, config, 'func', true);
+        const broker = new Broker(profileManager.getProfile('func')!, true);
 
         registerWorkers(broker, [
           {
@@ -162,7 +148,7 @@ describe(common.testName(__filename), () => {
       });
 
       it('should return true when idle and false when busy with two items', () => {
-        const broker = new Broker(profileManager, config, 'func', true);
+        const broker = new Broker(profileManager.getProfile('func')!, true);
 
         registerWorkers(broker, [
           {
@@ -183,7 +169,7 @@ describe(common.testName(__filename), () => {
     describe('getters', () => {
       let broker: Broker;
       beforeEach(() => {
-        broker = new Broker(profileManager, config, 'func', false);
+        broker = new Broker(profileManager.getProfile('func')!, false);
         registerWorkers(broker, [
           {
             processName: 'hello',
@@ -444,109 +430,27 @@ describe(common.testName(__filename), () => {
 
       describe('get reservationCount', () => {
         it('should get 1 when isInspector is true', () => {
-          broker = new Broker(profileManager, config, 'func', true);
+          broker = new Broker(profileManager.getProfile('func')!, true);
 
           assert.strictEqual(broker.reservationCount, 1);
         });
 
         it('should get from worker config', () => {
-          broker = new Broker(profileManager, config, 'func', false);
+          broker = new Broker(profileManager.getProfile('func')!, false);
 
-          broker.data = {
-            ...funcData[0],
-            worker: {
-              fastFailRequestsOnStarting: false,
-              initializationTimeout: 10000,
-              maxActivateRequests: 10,
-              replicaCountLimit: 10,
-              reservationCount: 10,
-              shrinkStrategy: 'LCC',
-              v8Options: [],
-              execArgv: [],
-            },
-          };
+          sinon.stub(broker.profile.worker, 'reservationCount').value(10);
 
           assert.strictEqual(broker.reservationCount, 10);
-        });
-
-        it('should get 0 when worker not config', () => {
-          broker = new Broker(profileManager, config, 'func', false);
-
-          broker.data = {
-            ...funcData[0],
-            worker: {
-              fastFailRequestsOnStarting: false,
-              initializationTimeout: 10000,
-              maxActivateRequests: 10,
-              replicaCountLimit: 10,
-              shrinkStrategy: 'LCC',
-              v8Options: [],
-              execArgv: [],
-            },
-          };
-
-          assert.strictEqual(broker.reservationCount, 0);
-
-          broker.data = funcData[0];
-
-          assert.strictEqual(broker.reservationCount, 0);
-
-          broker.data = null;
-
-          assert.strictEqual(broker.reservationCount, 0);
         });
       });
 
       describe('get memoryLimit', () => {
         it('should get from worker config', () => {
-          broker = new Broker(profileManager, config, 'func', false);
+          broker = new Broker(profileManager.getProfile('func')!, false);
 
-          broker.data = {
-            ...funcData[0],
-            worker: {
-              fastFailRequestsOnStarting: false,
-              initializationTimeout: 10000,
-              maxActivateRequests: 10,
-              replicaCountLimit: 10,
-              reservationCount: 10,
-              shrinkStrategy: 'LCC',
-              v8Options: [],
-              execArgv: [],
-            },
-            resourceLimit: {
-              memory: 100,
-            },
-          };
+          sinon.stub(broker.profile.resourceLimit, 'memory').value(100);
 
           assert.strictEqual(broker.memoryLimit, 100);
-        });
-
-        it('should get 0 when worker not config', () => {
-          broker = new Broker(profileManager, config, 'func', false);
-
-          broker.data = {
-            ...funcData[0],
-            worker: {
-              fastFailRequestsOnStarting: false,
-              initializationTimeout: 10000,
-              maxActivateRequests: 10,
-              replicaCountLimit: 10,
-              shrinkStrategy: 'LCC',
-              v8Options: [],
-              execArgv: [],
-            },
-            resourceLimit: {},
-          };
-
-          assert.strictEqual(broker.memoryLimit, 0);
-
-          delete broker.data.resourceLimit;
-
-          assert.strictEqual(broker.memoryLimit, 0);
-
-          broker.data = null;
-
-          assert.strictEqual(broker.memoryLimit, 0);
         });
       });
     });
@@ -554,7 +458,7 @@ describe(common.testName(__filename), () => {
     describe('.sync()', () => {
       it('should sync', () => {
         const testContainerManager = new TestContainerManager();
-        const broker = new Broker(profileManager, config, 'func', true);
+        const broker = new Broker(profileManager.getProfile('func')!, true);
         registerWorkers(broker, [
           {
             processName: 'hello',
@@ -596,7 +500,7 @@ describe(common.testName(__filename), () => {
         });
 
         assert.strictEqual(broker.workers.size, 2);
-        assert.deepStrictEqual(broker.data, funcDataWithDefault);
+        assert.deepStrictEqual(broker.profile, funcDataWithDefault);
         const workers = [
           {
             containerStatus: WorkerStatus.Ready,
@@ -627,86 +531,6 @@ describe(common.testName(__filename), () => {
             _.omit(JSON.parse(JSON.stringify(realWorkers[i])), [
               'registerTime',
             ]),
-            workers[i]
-          );
-        }
-      });
-
-      it('should sync with no function profile', async () => {
-        const testContainerManager = new TestContainerManager();
-        const broker = new Broker(profileManager, config, 'func', true);
-        registerWorkers(broker, [
-          {
-            processName: 'hello',
-            credential: 'world',
-          },
-          {
-            processName: 'foo',
-            credential: 'bar',
-          },
-        ]);
-
-        broker
-          .getWorker('hello')
-          ?.updateWorkerStatusByReport(WorkerStatusReport.ContainerInstalled);
-
-        await profileManager.set([], 'WAIT');
-
-        registerBrokerContainers(testContainerManager, broker, [
-          { pid: 1, name: 'foo', status: TurfContainerStates.running },
-          { pid: 2, name: 'hello', status: TurfContainerStates.running },
-        ]);
-        testContainerManager.reconcileContainers();
-        broker.sync([
-          {
-            name: 'hello',
-            maxActivateRequests: 10,
-            activeRequestCount: 7,
-          },
-          {
-            name: 'non-exists',
-            maxActivateRequests: 10,
-            activeRequestCount: 1,
-          },
-        ]);
-
-        assert.strictEqual(broker['startingPool'].size, 2);
-        assert.deepStrictEqual(broker['startingPool'].get('foo'), {
-          credential: 'bar',
-          estimateRequestLeft: 10,
-          maxActivateRequests: 10,
-        });
-
-        assert.strictEqual(broker.workers.size, 2);
-        assert.deepStrictEqual(broker.data, null);
-        const workers = [
-          {
-            containerStatus: WorkerStatus.Ready,
-            turfContainerStates: TurfContainerStates.running,
-            name: 'hello',
-            credential: 'world',
-            pid: 2,
-            data: {
-              maxActivateRequests: 10,
-              activeRequestCount: 7,
-            },
-          },
-          {
-            containerStatus: WorkerStatus.Created,
-            turfContainerStates: TurfContainerStates.running,
-            name: 'foo',
-            credential: 'bar',
-            pid: 1,
-            data: null,
-          },
-        ];
-        const realWorkers = [
-          broker.getWorker('hello')!,
-          broker.getWorker('foo')!,
-        ];
-        for (let i = 0; i < workers.length; i++) {
-          assert.deepStrictEqual(
-            _.omit(realWorkers[i].toJSON(), ['registerTime']),
             workers[i]
           );
         }

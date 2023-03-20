@@ -96,10 +96,7 @@ export class WorkerTelemetry {
     await Promise.all(
       Array.from(this.#stateManager.brokers()).flatMap(broker => {
         const functionName = broker.name;
-        const runtimeType = broker.data?.runtime;
-        if (runtimeType == null) {
-          return [];
-        }
+        const runtimeType = broker.runtime;
 
         const totalCount = broker.workers.size;
         batchObservableResult.observe(

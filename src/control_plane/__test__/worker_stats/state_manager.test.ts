@@ -47,32 +47,28 @@ describe(common.testName(__filename), () => {
 
   describe('_updateWorkerStatusByReport()', () => {
     it('should update regularly', async () => {
-      await functionProfile.set(
-        [
-          {
-            name: 'func1',
-            url: `file://${__dirname}`,
-            runtime: 'aworker',
-            signature: 'xxx',
-            sourceFile: 'index.js',
-          },
-          {
-            name: 'func2',
-            url: `file://${__dirname}`,
-            runtime: 'aworker',
-            signature: 'xxx',
-            sourceFile: 'index.js',
-          },
-        ],
-        'WAIT'
-      );
+      await functionProfile.setProfiles([
+        {
+          name: 'func1',
+          url: `file://${__dirname}`,
+          runtime: 'aworker',
+          signature: 'xxx',
+          sourceFile: 'index.js',
+        },
+        {
+          name: 'func2',
+          url: `file://${__dirname}`,
+          runtime: 'aworker',
+          signature: 'xxx',
+          sourceFile: 'index.js',
+        },
+      ]);
       registerWorkers(stateManager, [
         {
           funcName: 'func1',
           processName: 'worker1',
           credential: 'cred1',
           options: { inspect: false },
-          disposable: false,
           toReserve: false,
         },
         {
@@ -80,7 +76,6 @@ describe(common.testName(__filename), () => {
           processName: 'worker1',
           credential: 'cred1',
           options: { inspect: false },
-          disposable: false,
           toReserve: false,
         },
       ]);
@@ -159,18 +154,15 @@ describe(common.testName(__filename), () => {
       // TODO: create worker with clocks.
       this.timeout(30_000);
 
-      await functionProfile.set(
-        [
-          {
-            name: 'func1',
-            url: `file://${__dirname}`,
-            runtime: 'aworker',
-            signature: 'xxx',
-            sourceFile: 'index.js',
-          },
-        ],
-        'WAIT'
-      );
+      await functionProfile.setProfiles([
+        {
+          name: 'func1',
+          url: `file://${__dirname}`,
+          runtime: 'aworker',
+          signature: 'xxx',
+          sourceFile: 'index.js',
+        },
+      ]);
 
       registerWorkers(stateManager, [
         {
@@ -178,7 +170,6 @@ describe(common.testName(__filename), () => {
           processName: 'worker1',
           credential: 'cred1',
           options: { inspect: false },
-          disposable: false,
           toReserve: false,
         },
       ]);
@@ -224,18 +215,15 @@ describe(common.testName(__filename), () => {
 
   describe('_syncWorkerData()', () => {
     it('should sync', async () => {
-      await functionProfile.set(
-        [
-          {
-            name: 'func1',
-            url: `file://${__dirname}`,
-            runtime: 'aworker',
-            signature: 'xxx',
-            sourceFile: 'index.js',
-          },
-        ],
-        'WAIT'
-      );
+      await functionProfile.setProfiles([
+        {
+          name: 'func1',
+          url: `file://${__dirname}`,
+          runtime: 'aworker',
+          signature: 'xxx',
+          sourceFile: 'index.js',
+        },
+      ]);
 
       const brokerStat1 = {
         functionName: 'func1',
@@ -260,7 +248,6 @@ describe(common.testName(__filename), () => {
           processName: 'worker1',
           credential: 'id1',
           options: { inspect: false },
-          disposable: false,
           toReserve: false,
         },
         {
@@ -268,7 +255,6 @@ describe(common.testName(__filename), () => {
           processName: 'worker2',
           credential: 'id2',
           options: { inspect: false },
-          disposable: false,
           toReserve: false,
         },
       ]);
@@ -342,7 +328,7 @@ describe(common.testName(__filename), () => {
 
   describe('.register()', () => {
     beforeEach(async () => {
-      await functionProfile.set(funcData, 'WAIT');
+      await functionProfile.setProfiles(funcData);
     });
 
     it('should register', () => {
@@ -352,7 +338,6 @@ describe(common.testName(__filename), () => {
           processName: 'hello',
           credential: 'world',
           options: { inspect: true },
-          disposable: false,
           toReserve: false,
         },
         {
@@ -360,7 +345,6 @@ describe(common.testName(__filename), () => {
           processName: 'foooo',
           credential: 'bar',
           options: { inspect: false },
-          disposable: false,
           toReserve: false,
         },
       ]);
@@ -384,7 +368,7 @@ describe(common.testName(__filename), () => {
 
       const names = ['func', 'func'];
       const inspectors = [true, false];
-      const datas = [funcDataWithDefault, funcDataWithDefault];
+      const profiles = [funcDataWithDefault, funcDataWithDefault];
       assert.deepStrictEqual(
         brokers.map(b => b.name),
         names
@@ -394,8 +378,8 @@ describe(common.testName(__filename), () => {
         inspectors
       );
       assert.deepStrictEqual(
-        brokers.map(b => b.data),
-        datas
+        brokers.map(b => b.profile),
+        profiles
       );
       const startingPoolsName = ['hello', 'foooo'];
       brokers.forEach((broker, i) => {
@@ -446,7 +430,6 @@ describe(common.testName(__filename), () => {
               processName: 'aha',
               credential: 'oho',
               options: { inspect: true },
-              disposable: false,
               toReserve: false,
             },
           ]);
@@ -460,7 +443,7 @@ describe(common.testName(__filename), () => {
 
   describe('.getBroker()', () => {
     beforeEach(async () => {
-      await functionProfile.set(funcData, 'WAIT');
+      await functionProfile.setProfiles(funcData);
     });
 
     it('should get broker', () => {
@@ -470,7 +453,6 @@ describe(common.testName(__filename), () => {
           processName: 'hello',
           credential: 'world',
           options: { inspect: true },
-          disposable: false,
           toReserve: false,
         },
         {
@@ -478,7 +460,6 @@ describe(common.testName(__filename), () => {
           processName: 'foooo',
           credential: 'bar',
           options: { inspect: false },
-          disposable: false,
           toReserve: false,
         },
       ]);
@@ -491,7 +472,7 @@ describe(common.testName(__filename), () => {
 
       const names = ['func', 'func'];
       const inspectors = [true, false];
-      const datas = [funcDataWithDefault, funcDataWithDefault];
+      const profiles = [funcDataWithDefault, funcDataWithDefault];
       assert.deepStrictEqual(
         brokers.map(b => b.name),
         names
@@ -501,8 +482,8 @@ describe(common.testName(__filename), () => {
         inspectors
       );
       assert.deepStrictEqual(
-        brokers.map(b => b.data),
-        datas
+        brokers.map(b => b.profile),
+        profiles
       );
       const startingPoolsName = ['hello', 'foooo'];
       brokers.forEach((broker, i) => {
@@ -551,7 +532,6 @@ describe(common.testName(__filename), () => {
           processName: 'hello',
           credential: 'world',
           options: { inspect: true },
-          disposable: false,
           toReserve: false,
         },
         {
@@ -559,7 +539,6 @@ describe(common.testName(__filename), () => {
           processName: 'foooo',
           credential: 'bar',
           options: { inspect: false },
-          disposable: false,
           toReserve: false,
         },
       ]);
@@ -569,7 +548,7 @@ describe(common.testName(__filename), () => {
 
   describe('.getWorker()', () => {
     beforeEach(async () => {
-      await functionProfile.set(funcData, 'WAIT');
+      await functionProfile.setProfiles(funcData);
     });
 
     it('should get worker', () => {
@@ -579,7 +558,6 @@ describe(common.testName(__filename), () => {
           processName: 'hello',
           credential: 'world',
           options: { inspect: true },
-          disposable: false,
           toReserve: false,
         },
         {
@@ -587,7 +565,6 @@ describe(common.testName(__filename), () => {
           processName: 'foooo',
           credential: 'bar',
           options: { inspect: false },
-          disposable: false,
           toReserve: false,
         },
       ]);
@@ -629,7 +606,6 @@ describe(common.testName(__filename), () => {
           processName: 'hello',
           credential: 'world',
           options: { inspect: true },
-          disposable: false,
           toReserve: false,
         },
         {
@@ -637,7 +613,6 @@ describe(common.testName(__filename), () => {
           processName: 'foooo',
           credential: 'bar',
           options: { inspect: false },
-          disposable: false,
           toReserve: false,
         },
       ]);
@@ -656,7 +631,7 @@ describe(common.testName(__filename), () => {
 
   describe('.getSnapshot()', () => {
     beforeEach(async () => {
-      await functionProfile.set(funcData, 'WAIT');
+      await functionProfile.setProfiles(funcData);
     });
 
     it('should to protobuf object', () => {
@@ -666,7 +641,6 @@ describe(common.testName(__filename), () => {
           processName: 'hello',
           credential: 'world',
           options: { inspect: true },
-          disposable: false,
           toReserve: false,
         },
         {
@@ -674,7 +648,6 @@ describe(common.testName(__filename), () => {
           processName: 'foooo',
           credential: 'bar',
           options: { inspect: false },
-          disposable: false,
           toReserve: false,
         },
       ]);
@@ -742,7 +715,6 @@ describe(common.testName(__filename), () => {
           processName: 'hello',
           credential: 'world',
           options: { inspect: true },
-          disposable: false,
           toReserve: false,
         },
       ]);
@@ -784,7 +756,7 @@ describe(common.testName(__filename), () => {
 
   describe('.sync()', () => {
     beforeEach(async () => {
-      await functionProfile.set(funcData, 'WAIT');
+      await functionProfile.setProfiles(funcData);
     });
 
     it('should sync', async () => {
@@ -794,7 +766,6 @@ describe(common.testName(__filename), () => {
           processName: 'hello',
           credential: 'world',
           options: { inspect: true },
-          disposable: false,
           toReserve: false,
         },
         {
@@ -802,7 +773,6 @@ describe(common.testName(__filename), () => {
           processName: 'foooo',
           credential: 'bar',
           options: { inspect: false },
-          disposable: false,
           toReserve: false,
         },
       ]);
@@ -850,8 +820,8 @@ describe(common.testName(__filename), () => {
         assert.strictEqual(broker.name, 'func');
         assert.strictEqual(broker.isInspector, inspectors[i]);
         assert.deepStrictEqual(
-          broker.data,
-          functionProfile.get('func')!.toJSON(true)
+          broker.profile,
+          functionProfile.getProfile('func')
         );
         assert.strictEqual(broker.workers.size, 1);
         assert.strictEqual(broker['startingPool'].size, 1);
@@ -907,8 +877,8 @@ describe(common.testName(__filename), () => {
         assert.strictEqual(broker.name, 'func');
         assert.strictEqual(broker.isInspector, inspectors[i]);
         assert.deepStrictEqual(
-          broker.data,
-          functionProfile.get('func')!.toJSON(true)
+          broker.profile,
+          functionProfile.getProfile('func')
         );
         assert.strictEqual(broker.workers.size, 1);
         assert.strictEqual(broker['startingPool'].size, _startingPoolSize[i]);
@@ -932,126 +902,11 @@ describe(common.testName(__filename), () => {
 
       await assert.rejects(readyFuture, /stopped unexpected after start/);
     });
-
-    it('should sync that not in profile', async () => {
-      registerWorkers(stateManager, [
-        {
-          funcName: 'func',
-          processName: 'hello',
-          credential: 'world',
-          options: { inspect: true },
-          disposable: false,
-          toReserve: false,
-        },
-        {
-          funcName: 'func',
-          processName: 'foooo',
-          credential: 'bar',
-          options: { inspect: false },
-          disposable: false,
-          toReserve: false,
-        },
-      ]);
-
-      await functionProfile.set([], 'WAIT');
-
-      registerContainers(testContainerManager, stateManager, [
-        { pid: 1, name: 'foooo', status: TurfContainerStates.running },
-        { pid: 2, name: 'hello', status: TurfContainerStates.starting },
-      ]);
-      await testContainerManager.reconcileContainers();
-
-      stateManager._syncBrokerData([brokerData[1]]);
-
-      const brokers = [
-        stateManager.getBroker('func', true)!,
-        stateManager.getBroker('func', false)!,
-      ];
-      const inspectors = [true, false];
-      const workerNames = ['hello', 'foooo'];
-      const workerCredentials = ['world', 'bar'];
-      const turfContainerStates = [
-        TurfContainerStates.starting,
-        TurfContainerStates.running,
-      ];
-      const pids = [2, 1];
-
-      brokers.forEach((broker, i) => {
-        assert.strictEqual(broker.name, 'func');
-        assert.strictEqual(broker.isInspector, inspectors[i]);
-        assert.strictEqual(broker.data, null);
-        assert.strictEqual(broker.workers.size, 1);
-        assert.strictEqual(broker['startingPool'].size, 1);
-
-        const worker = JSON.parse(
-          JSON.stringify(broker.workers.get(workerNames[i]))
-        );
-        assert.deepStrictEqual(worker, {
-          containerStatus: WorkerStatus.Created,
-          turfContainerStates: turfContainerStates[i],
-          name: workerNames[i],
-          credential: workerCredentials[i],
-          pid: pids[i],
-          data:
-            i === 0
-              ? null
-              : _.pick(JSON.parse(JSON.stringify(brokerData[i].workers[0])), [
-                  'activeRequestCount',
-                  'maxActivateRequests',
-                ]),
-          registerTime: worker.registerTime,
-        });
-
-        // Suppress ready rejection.
-        broker
-          .getWorker(workerNames[i])
-          ?.updateWorkerStatusByReport(WorkerStatusReport.ContainerInstalled);
-      });
-
-      registerContainers(testContainerManager, stateManager, [
-        { pid: 1, name: 'foooo', status: TurfContainerStates.stopped },
-        { pid: 2, name: 'hello', status: TurfContainerStates.stopping },
-      ]);
-      await testContainerManager.reconcileContainers();
-      stateManager._syncBrokerData([brokerData[1]]);
-
-      const _turfContainerStates = [
-        TurfContainerStates.stopping,
-        TurfContainerStates.stopped,
-      ];
-
-      brokers.forEach((broker, i) => {
-        assert.strictEqual(broker.name, 'func');
-        assert.strictEqual(broker.isInspector, inspectors[i]);
-        assert.strictEqual(broker.data, null);
-        assert.strictEqual(broker.workers.size, 1);
-        assert.strictEqual(broker['startingPool'].size, 1);
-
-        const worker: Partial<Worker> = JSON.parse(
-          JSON.stringify(broker.workers.get(workerNames[i]))
-        );
-        assert.deepStrictEqual(worker, {
-          containerStatus: WorkerStatus.Stopped,
-          turfContainerStates: _turfContainerStates[i],
-          name: workerNames[i],
-          credential: workerCredentials[i],
-          pid: pids[i],
-          data:
-            i === 0
-              ? null
-              : _.pick(JSON.parse(JSON.stringify(brokerData[i].workers[0])), [
-                  'activeRequestCount',
-                  'maxActivateRequests',
-                ]),
-          registerTime: worker.registerTime,
-        });
-      });
-    });
   });
 
   describe('.correct()', () => {
     beforeEach(async () => {
-      await functionProfile.set(funcData, 'WAIT');
+      await functionProfile.setProfiles(funcData);
     });
 
     it('should correct gc stopped and unknown container', async () => {
@@ -1061,7 +916,6 @@ describe(common.testName(__filename), () => {
           processName: 'hello',
           credential: 'world',
           options: { inspect: true },
-          disposable: false,
           toReserve: false,
         },
         {
@@ -1069,7 +923,6 @@ describe(common.testName(__filename), () => {
           processName: 'foooo',
           credential: 'bar',
           options: { inspect: false },
-          disposable: false,
           toReserve: false,
         },
       ]);
@@ -1108,7 +961,7 @@ describe(common.testName(__filename), () => {
         1
       );
 
-      let workerStoppedFuture = eventBus.once(WorkerStoppedEvent);
+      const workerStoppedFuture = eventBus.once(WorkerStoppedEvent);
       // 回收 PendingStop
       await stateManager._correct();
 
@@ -1130,26 +983,10 @@ describe(common.testName(__filename), () => {
       await testContainerManager.reconcileContainers();
       stateManager._syncBrokerData(brokerData);
 
-      workerStoppedFuture = eventBus.once(WorkerStoppedEvent);
-      // 回收 Unknown
-      await stateManager._correct();
-
-      assert.strictEqual(stateManager.getBroker('func', true)!.workers.size, 0);
-      assert.strictEqual(
-        stateManager.getBroker('func', false)!.workers.size,
-        0
-      );
-
-      assert(testContainerManager.getContainer('hello') == null);
-
       {
-        const event = await workerStoppedFuture;
+        const event = await eventBus.once(WorkerStoppedEvent);
         assert.strictEqual(event.data.workerName, 'hello');
       }
-
-      await functionProfile.set([], 'WAIT');
-
-      stateManager._syncBrokerData([]);
 
       // 配置更新后，回收无用 broker
       await stateManager._correct();
