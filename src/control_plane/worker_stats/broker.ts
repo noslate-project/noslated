@@ -20,12 +20,10 @@ class Broker {
   workers: Map<string, Worker>;
 
   private startingPool: Map<string, StartingPoolItem>;
-  public disposable!: boolean;
 
   constructor(profile: RawWithDefaultsFunctionProfile, isInspector: boolean) {
     this.#profile = profile;
     this.name = this.#profile.name;
-    this.updateProfile(profile);
     this.isInspector = !!isInspector;
 
     this.workers = new Map();
@@ -114,12 +112,15 @@ class Broker {
     return this.#profile.resourceLimit.memory;
   }
 
+  get disposable(): boolean {
+    return this.#profile.worker.disposable;
+  }
+
   updateProfile(profile: RawWithDefaultsFunctionProfile) {
     if (profile.name !== this.name) {
       throw new Error(`Unexpected profile with name "${profile.name}"`);
     }
     this.#profile = profile;
-    this.disposable = this.#profile.worker.disposable;
   }
 
   /**
