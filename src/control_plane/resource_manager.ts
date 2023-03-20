@@ -2,12 +2,12 @@ import { promises as fs } from 'fs';
 import { Config } from '#self/config';
 import { Clock } from '#self/lib/clock';
 import { Base } from '#self/lib/sdk_base';
-import { TaskQueue } from '#self/lib/task_queue';
 import { workerLogPath } from './container/container_manager';
 import { Logger, loggers } from '#self/lib/loggers';
 import { WorkerStoppedEvent } from './events';
 import { EventBus } from '#self/lib/event-bus';
 import { DependencyContext } from '#self/lib/dependency_context';
+import { Queue } from '#self/lib/queue';
 
 export type ResourceManagerContext = {
   config: Config;
@@ -20,7 +20,7 @@ export class ResourceManager extends Base {
   private config: Config;
   private clock: Clock;
   private logger: Logger;
-  private gcQueue: TaskQueue<string>;
+  private gcQueue: Queue<string>;
 
   constructor(ctx: DependencyContext<ResourceManagerContext>) {
     super();
@@ -28,8 +28,10 @@ export class ResourceManager extends Base {
     this.clock = ctx.getInstance('clock');
 
     this.logger = loggers.get('resource manager');
-    this.gcQueue = new TaskQueue(this.#gcLog, {
+    this.gcQueue = new Queue(this.#gcLog, {
       clock: this.clock,
+      delay: this.config.worker.gcLogDelay,
+      highWaterMark: this.config.worker.gcLogHighWaterMark,
     });
 
     const eventBus = ctx.getInstance('eventBus');
@@ -50,9 +52,7 @@ export class ResourceManager extends Base {
 
   #onWorkerStopped = (event: WorkerStoppedEvent) => {
     // 清理 log 文件
-    this.gcQueue.enqueue(event.data.workerName, {
-      delay: this.config.worker.gcLogDelay,
-    });
+    this.gcQueue.enqueue(event.data.workerName);
   };
 
   #gcLog = async (workerName: string) => {

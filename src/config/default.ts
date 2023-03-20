@@ -31,6 +31,7 @@ export default {
   worker: {
     defaultShrinkStrategy: 'LCC',
     gcLogDelay: 5 * 1000 * 60,
+    gcLogHighWaterMark: 100,
     reservationCountPerFunction: 0,
     maxActivateRequests: 10,
     defaultInitializerTimeout: 10_000,

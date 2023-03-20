@@ -20,7 +20,7 @@ import {
 } from '#self/lib/turf/types';
 import { DependencyContext } from '#self/lib/dependency_context';
 import { ConfigContext } from '../deps';
-import { TaskQueue } from '#self/lib/task_queue';
+import { Queue } from '#self/lib/queue';
 
 const TurfStopRetryableCodes = [TurfCode.EAGAIN];
 
@@ -29,7 +29,7 @@ export class TurfContainerManager implements ContainerManager {
   private bundlePathLock = new Map<string, Promise<void>>();
   private logger: Logger;
   private containers = new Map<string, TurfContainer>();
-  cleanupQueue: TaskQueue<TurfContainer>;
+  cleanupQueue: Queue<TurfContainer>;
 
   client: Turf;
 
@@ -38,7 +38,7 @@ export class TurfContainerManager implements ContainerManager {
     this.client = new Turf(this.config.turf.bin, this.config.turf.socketPath);
     this.logger = loggers.get('turf-manager');
 
-    this.cleanupQueue = new TaskQueue(this._cleanup, {
+    this.cleanupQueue = new Queue(this._cleanup, {
       concurrency: 1,
     });
   }

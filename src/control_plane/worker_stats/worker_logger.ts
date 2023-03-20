@@ -14,7 +14,7 @@ export class WorkerLogger {
 
   constructor(_workerMetadata: WorkerMetadata) {
     this.workerMetadata = _workerMetadata;
-    this.logger = loggers.get(`worker ${this.workerMetadata.processName}`);
+    this.logger = loggers.get('worker');
   }
 
   start(cost: number) {
