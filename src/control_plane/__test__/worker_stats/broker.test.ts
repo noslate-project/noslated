@@ -34,6 +34,7 @@ describe(common.testName(__filename), () => {
       v8Options: [],
       execArgv: [],
     },
+    environments: [],
   };
 
   let profileManager: ProfileManager;

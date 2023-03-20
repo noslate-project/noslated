@@ -233,10 +233,12 @@ export class StateManager extends Base {
         );
       }
 
-      await this._workerStopped(broker, worker);
+      // Do not await as terminating may end up more than seconds.
+      this._workerStopped(broker, worker);
     } else if (worker.workerStatus === WorkerStatus.Stopped) {
       // If the worker is already stopped, clean it up.
-      await this._workerStopped(broker, worker);
+      // Do not await as terminating may end up more than seconds.
+      this._workerStopped(broker, worker);
     }
   }
 

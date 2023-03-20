@@ -6,7 +6,7 @@ export type ShrinkStrategy = 'FILO' | 'FIFO' | 'LCC';
 /**
  * Options needed to start a process
  */
-interface ProcessFunctionProfile {
+export interface ProcessFunctionProfile {
   resourceLimit?: {
     memory?: number;
     cpu?: number;
@@ -45,7 +45,7 @@ interface BaseFunctionProfile {
   signature: string;
 }
 
-interface NodejsFunctionProfile
+export interface NodejsFunctionProfile
   extends BaseFunctionProfile,
     ProcessFunctionProfile {
   runtime: 'nodejs';
@@ -53,7 +53,7 @@ interface NodejsFunctionProfile
   initializer?: string;
 }
 
-interface AworkerFunctionProfile
+export interface AworkerFunctionProfile
   extends BaseFunctionProfile,
     ProcessFunctionProfile {
   runtime: 'aworker';
@@ -61,5 +61,12 @@ interface AworkerFunctionProfile
 }
 
 export type RawFunctionProfile = NodejsFunctionProfile | AworkerFunctionProfile;
-export type RawWithDefaultsFunctionProfile = DeepRequired<RawFunctionProfile>;
+
+export const optionalKeys = ['rateLimit', 'namespace'] as const;
+type OptionalKeys = (typeof optionalKeys)[number];
+export type RawWithDefaultsFunctionProfile = DeepRequired<
+  Omit<RawFunctionProfile, OptionalKeys>
+> &
+  Pick<RawFunctionProfile, OptionalKeys> &
+  RawFunctionProfile;
 export type ReadonlyProfile = DeepReadonly<RawWithDefaultsFunctionProfile>;

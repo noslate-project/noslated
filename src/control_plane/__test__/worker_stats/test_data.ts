@@ -26,6 +26,7 @@ export const funcDataWithDefault = {
     v8Options: [],
     execArgv: [],
   },
+  environments: [],
 };
 
 export const brokerData = [

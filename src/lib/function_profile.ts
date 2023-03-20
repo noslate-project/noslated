@@ -2,11 +2,12 @@ import { Validator as JSONValidator } from 'jsonschema';
 import loggers from './logger';
 import SCHEMA_JSON from './json/function_profile_schema.json';
 import SPEC_JSON from './json/spec.template.json';
-import type {
+import {
   NodejsFunctionProfile,
   RawFunctionProfile,
   RawWithDefaultsFunctionProfile,
   AworkerFunctionProfile,
+  optionalKeys,
 } from './json/function_profile';
 import { Config } from '#self/config';
 import { Event, EventBus } from './event-bus';
@@ -36,7 +37,7 @@ function buildProfile(
   json: RawFunctionProfile,
   config: Config
 ): RawWithDefaultsFunctionProfile {
-  const profile = {
+  const profile: any = {
     resourceLimit: {
       memory: SPEC_JSON.linux.resources.memory.limit,
       ...json.resourceLimit,
@@ -53,17 +54,23 @@ function buildProfile(
       ...(json.worker ?? {}),
     },
     environments: json.environments ?? [],
-    rateLimit: json.rateLimit,
-    namespace: json.namespace,
     name: json.name,
     url: json.url,
     signature: json.signature,
     runtime: json.runtime,
-    handler: (json as NodejsFunctionProfile).handler,
-    initializer: (json as NodejsFunctionProfile).initializer,
-    sourceFile: (json as AworkerFunctionProfile).sourceFile,
   };
-  return profile as unknown as RawWithDefaultsFunctionProfile;
+  if (json.runtime === 'nodejs') {
+    profile.handler = (json as NodejsFunctionProfile).handler;
+    profile.initializer = (json as NodejsFunctionProfile).initializer;
+  } else {
+    profile.sourceFile = (json as AworkerFunctionProfile).sourceFile;
+  }
+  for (const key of optionalKeys) {
+    if (json[key]) {
+      profile[key] = json[key];
+    }
+  }
+  return profile as RawWithDefaultsFunctionProfile;
 }
 
 interface QueueItem {

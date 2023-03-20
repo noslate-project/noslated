@@ -15,7 +15,6 @@ import { NoslatedDelegateService } from '#self/delegate';
 import { PrefixedLogger } from '#self/lib/loggers';
 import { DataFlowController } from './data_flow_controller';
 import { FunctionProfileManager } from '#self/lib/function_profile';
-import { Config } from '#self/config';
 import * as root from '#self/proto/root';
 import { performance } from 'perf_hooks';
 import { WorkerStatusReport, kDefaultRequestId } from '#self/lib/constants';
@@ -216,7 +215,6 @@ export class WorkerBroker extends Base {
   private profileManager: FunctionProfileManager;
   private delegate: NoslatedDelegateService;
   private host: DataPlaneHost;
-  private config: Config;
   private logger: PrefixedLogger;
   requestQueue: List<PendingRequest>;
   private requestQueueStatus: RequestQueueStatus;
@@ -237,7 +235,6 @@ export class WorkerBroker extends Base {
     this.profileManager = dataFlowController.profileManager;
     this.delegate = dataFlowController.delegate;
     this.host = dataFlowController.host;
-    this.config = dataFlowController.config;
 
     this.logger = new PrefixedLogger(
       'worker broker',
@@ -436,7 +433,7 @@ export class WorkerBroker extends Base {
   private get maxActivateRequests() {
     const profile = this.profileManager.getProfile(this.name);
     if (!profile) {
-      return this.config.worker.maxActivateRequests;
+      return 0;
     }
 
     if (this.disposable) {
@@ -515,10 +512,7 @@ export class WorkerBroker extends Base {
     try {
       const now = performance.now();
       await this.delegate.trigger(credential, 'init', null, {
-        timeout:
-          profile.worker?.initializationTimeout !== undefined
-            ? profile.worker.initializationTimeout
-            : this.config.worker.defaultInitializerTimeout,
+        timeout: profile.worker.initializationTimeout,
       });
       this.logger.info(
         'worker(%s) initialization cost: %sms.',

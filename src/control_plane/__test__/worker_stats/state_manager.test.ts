@@ -961,7 +961,7 @@ describe(common.testName(__filename), () => {
         1
       );
 
-      let workerStoppedFuture = eventBus.once(WorkerStoppedEvent);
+      const workerStoppedFuture = eventBus.once(WorkerStoppedEvent);
       // 回收 PendingStop
       await stateManager._correct();
 
@@ -983,24 +983,10 @@ describe(common.testName(__filename), () => {
       await testContainerManager.reconcileContainers();
       stateManager._syncBrokerData(brokerData);
 
-      workerStoppedFuture = eventBus.once(WorkerStoppedEvent);
-      // 回收 Unknown
-      await stateManager._correct();
-
-      assert.strictEqual(stateManager.getBroker('func', true)!.workers.size, 0);
-      assert.strictEqual(
-        stateManager.getBroker('func', false)!.workers.size,
-        0
-      );
-
-      assert(testContainerManager.getContainer('hello') == null);
-
       {
-        const event = await workerStoppedFuture;
+        const event = await eventBus.once(WorkerStoppedEvent);
         assert.strictEqual(event.data.workerName, 'hello');
       }
-
-      stateManager._syncBrokerData([]);
 
       // 配置更新后，回收无用 broker
       await stateManager._correct();

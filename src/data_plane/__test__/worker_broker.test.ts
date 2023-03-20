@@ -70,7 +70,9 @@ describe(common.testName(__filename), () => {
       let triggerCalled = false;
       const delegate = {
         async trigger(credential: any, method: any, data: any, metadata: any) {
-          assert.deepStrictEqual(metadata, { timeout: 5000 });
+          assert.deepStrictEqual(metadata, {
+            timeout: config.worker.defaultInitializerTimeout,
+          });
           triggerCalled = true;
         },
         resetPeer() {},
@@ -83,12 +85,6 @@ describe(common.testName(__filename), () => {
         {
           profileManager,
           delegate,
-          config: {
-            worker: {
-              maxActivateRequests: 10,
-              defaultInitializerTimeout: 5000,
-            },
-          },
           host: mockHost,
         } as unknown as DataFlowController,
         'node-http-demo',
@@ -101,7 +97,10 @@ describe(common.testName(__filename), () => {
       assert.strictEqual(broker.workers.length, 1);
       const worker = broker.workers[0];
 
-      assert.strictEqual(worker.maxActivateRequests, 10);
+      assert.strictEqual(
+        worker.maxActivateRequests,
+        config.worker.maxActivateRequests
+      );
       assert(triggerCalled);
     });
 
@@ -109,7 +108,9 @@ describe(common.testName(__filename), () => {
       let triggerCalled = false;
       const delegate = {
         async trigger(credential: any, method: any, data: any, metadata: any) {
-          assert.deepStrictEqual(metadata, { timeout: 5000 });
+          assert.deepStrictEqual(metadata, {
+            timeout: config.worker.defaultInitializerTimeout,
+          });
           triggerCalled = true;
         },
         resetPeer() {},
@@ -122,12 +123,6 @@ describe(common.testName(__filename), () => {
         {
           profileManager,
           delegate,
-          config: {
-            worker: {
-              maxActivateRequests: 10,
-              defaultInitializerTimeout: 5000,
-            },
-          },
           host: mockHost,
         } as unknown as DataFlowController,
         'node-http-demo',
@@ -161,12 +156,6 @@ describe(common.testName(__filename), () => {
         {
           profileManager,
           delegate,
-          config: {
-            worker: {
-              maxActivateRequests: 10,
-              defaultInitializerTimeout: 5000,
-            },
-          },
           host: mockHost,
         } as unknown as DataFlowController,
         'node-http-demo',
@@ -210,7 +199,6 @@ describe(common.testName(__filename), () => {
         {
           profileManager,
           delegate: dummyDelegate,
-          config: require('#self/config'),
           host: mockHost,
         } as unknown as DataFlowController,
         'node-http-demo',
@@ -224,7 +212,6 @@ describe(common.testName(__filename), () => {
         {
           profileManager,
           delegate: dummyDelegate,
-          config: require('#self/config'),
           host: mockHost,
         } as unknown as DataFlowController,
         'node-http-demo',
@@ -246,7 +233,6 @@ describe(common.testName(__filename), () => {
         {
           profileManager,
           delegate: dummyDelegate,
-          config: require('#self/config'),
           host: mockHost,
         } as unknown as DataFlowController,
         'node-http-demo',
@@ -274,7 +260,6 @@ describe(common.testName(__filename), () => {
         {
           profileManager,
           delegate: dummyDelegate,
-          config: require('#self/config'),
           host: mockHost,
         } as unknown as DataFlowController,
         'node-http-demo',
