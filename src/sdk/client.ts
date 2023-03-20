@@ -20,7 +20,7 @@ import { ControlPlaneClientManager } from './control_plane_client_manager';
 import kServiceProfileSchema from '../lib/json/service_profile_schema.json';
 import { Logger } from '#self/lib/loggers';
 import { RawFunctionProfile } from '#self/lib/json/function_profile';
-import { Mode } from '#self/lib/function_profile';
+import { FunctionProfileManager, Mode } from '#self/lib/function_profile';
 import { ServiceProfileItem } from '#self/data_plane/service_selector';
 import * as root from '#self/proto/root';
 import { kDefaultRequestId } from '#self/lib/constants';
@@ -189,6 +189,7 @@ export class NoslatedClient extends EventEmitter {
     profiles: RawFunctionProfile[],
     mode: Mode = 'IMMEDIATELY'
   ) {
+    FunctionProfileManager.validate(profiles);
     const client = this.controlPlaneClientManager.sample();
     profiles = JSON.parse(JSON.stringify(profiles));
 
