@@ -15,7 +15,7 @@ import { DataPlaneClientManager } from './data_plane_client/manager';
 import { WorkerMetadata } from './worker_stats/worker';
 import { performance } from 'perf_hooks';
 import { ControlPlaneEvent } from '#self/lib/constants';
-import { Priority, TaskQueue } from '#self/lib/task_queue';
+import { Priority, PriorityTaskQueue } from '#self/lib/priority_task_queue';
 import { Container } from './container/container_manager';
 import { ControlPlaneDependencyContext } from './deps';
 import { CapacityManager } from './capacity_manager';
@@ -41,7 +41,7 @@ export class WorkerLauncher extends Base {
   private dataPlaneClientManager: DataPlaneClientManager;
   private capacityManager: CapacityManager;
   private stateManager: StateManager;
-  private launchQueue: TaskQueue<LaunchTask>;
+  private launchQueue: PriorityTaskQueue<LaunchTask>;
 
   constructor(ctx: ControlPlaneDependencyContext) {
     super();
@@ -59,7 +59,7 @@ export class WorkerLauncher extends Base {
       aworker: new starters.Aworker(ctx),
     };
 
-    this.launchQueue = new TaskQueue(this.doLaunchTask, {
+    this.launchQueue = new PriorityTaskQueue(this.doLaunchTask, {
       concurrency: this.config.controlPlane.expandConcurrency,
       clock: ctx.getInstance('clock'),
     });
