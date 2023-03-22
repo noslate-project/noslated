@@ -1,21 +1,17 @@
 import * as common from '#self/test/common';
-import { Priority, TaskQueue } from '#self/lib/task_queue';
+import { TaskQueue } from '#self/lib/task_queue';
 import assert from 'assert';
 
 describe(common.testName(__filename), () => {
-  const compare = (lhs: number, rhs: number) => {
-    return lhs - rhs;
-  };
   const clock = common.createTestClock();
 
   it('should drain tasks', async () => {
     const result: number[] = [];
-    const taskQueue = new TaskQueue(
+    const taskQueue = new TaskQueue<number>(
       async item => {
         result.push(item);
       },
       {
-        compare,
         clock,
       }
     );
@@ -29,7 +25,7 @@ describe(common.testName(__filename), () => {
 
   it('should drain tasks with rejections', async () => {
     const result: number[] = [];
-    const taskQueue = new TaskQueue(
+    const taskQueue = new TaskQueue<number>(
       async item => {
         if (item === 2) {
           throw new Error('foobar');
@@ -37,7 +33,6 @@ describe(common.testName(__filename), () => {
         result.push(item);
       },
       {
-        compare,
         clock,
       }
     );
@@ -53,94 +48,73 @@ describe(common.testName(__filename), () => {
     assert.deepStrictEqual(result, [1, 3]);
   });
 
-  it('should drain tasks with priority', async () => {
-    const result: number[] = [];
-    const taskQueue = new TaskQueue(
-      async item => {
-        result.push(item);
-      },
-      {
-        compare,
-        clock,
-      }
-    );
-
-    const p3 = taskQueue.enqueue(3, { priority: Priority.kLow });
-    taskQueue.enqueue(2, { priority: Priority.kNormal });
-    taskQueue.enqueue(1, { priority: Priority.kHigh });
-
-    await p3;
-    assert.deepStrictEqual(result, [1, 2, 3]);
-  });
-
   it('should drain tasks with delay', async () => {
     const result: number[] = [];
-    const taskQueue = new TaskQueue(
+    const taskQueue = new TaskQueue<number>(
       async item => {
         result.push(item);
       },
       {
-        compare,
+        delay: 5,
         clock,
       }
     );
 
-    const p4 = taskQueue.enqueue(4, { delay: 4 });
-    const p3 = taskQueue.enqueue(3, { delay: 1 });
-    taskQueue.enqueue(1, { delay: 0 });
-    const p2 = taskQueue.enqueue(2, { delay: 0 });
+    taskQueue.enqueue(1);
+    taskQueue.enqueue(2);
 
-    await p2;
+    await clock.tickAsync(1);
+    assert.deepStrictEqual(result, []);
+    taskQueue.enqueue(3);
+
+    await clock.tickAsync(4);
     assert.deepStrictEqual(result, [1, 2]);
 
-    await clock.tickAsync(1);
-    await p3;
+    await clock.tickAsync(5);
     assert.deepStrictEqual(result, [1, 2, 3]);
 
-    await clock.tickAsync(1);
-    assert.deepStrictEqual(result, [1, 2, 3]);
-
-    await clock.tickAsync(3);
-    await p4;
+    taskQueue.enqueue(4);
+    await clock.tickAsync(5);
     assert.deepStrictEqual(result, [1, 2, 3, 4]);
   });
 
-  it('should drain tasks with delay and priority', async () => {
+  it('should drain tasks when queue item count reached high water mark', async () => {
     const result: number[] = [];
-    const taskQueue = new TaskQueue(
+    const taskQueue = new TaskQueue<number>(
       async item => {
         result.push(item);
       },
       {
-        compare,
+        delay: 5,
+        highWaterMark: 3,
         clock,
       }
     );
 
-    taskQueue.enqueue(2, { delay: 20 });
-    taskQueue.enqueue(3, { delay: 30 });
+    taskQueue.enqueue(1);
+    taskQueue.enqueue(2);
+    taskQueue.enqueue(3);
+    taskQueue.enqueue(4);
+    taskQueue.enqueue(5);
 
-    await clock.tickAsync(10);
-    const p1 = taskQueue.enqueue(1, { delay: 10, priority: Priority.kHigh });
-
-    await clock.tickAsync(10);
-    await p1;
+    await clock.tickAsync(1);
     assert.deepStrictEqual(result, [1, 2]);
 
-    const p4 = taskQueue.enqueue(4, { delay: 10, priority: Priority.kLow });
-    await clock.tickAsync(10);
-    await p4;
-    assert.deepStrictEqual(result, [1, 2, 3, 4]);
+    taskQueue.enqueue(6);
+    await clock.tickAsync(1);
+    assert.deepStrictEqual(result, [1, 2, 3]);
+
+    await clock.tickAsync(5);
+    assert.deepStrictEqual(result, [1, 2, 3, 4, 5, 6]);
   });
 
   it('should abort task with abortsignal', async () => {
     const result: number[] = [];
-    const taskQueue = new TaskQueue(
+    const taskQueue = new TaskQueue<number>(
       async item => {
         result.push(item);
       },
       {
-        compare,
         clock,
       }
     );
@@ -161,12 +135,11 @@ describe(common.testName(__filename), () => {
 
   it('should abort tasks when queue is closed', async () => {
     const result: number[] = [];
-    const taskQueue = new TaskQueue(
+    const taskQueue = new TaskQueue<number>(
       async item => {
         result.push(item);
       },
       {
-        compare,
         clock,
       }
     );

@@ -13,7 +13,7 @@ import { Config } from '#self/config';
 import { Event, EventBus } from './event-bus';
 import { DependencyContext } from './dependency_context';
 import _ from 'lodash';
-import { Queue } from './queue';
+import { TaskQueue } from './task_queue';
 
 const logger = loggers.get('function_profile');
 
@@ -115,14 +115,14 @@ export class FunctionProfileManager {
   private _eventBus: EventBus;
   private _config: Config;
 
-  private _taskQueue: Queue<QueueItem>;
+  private _taskQueue: TaskQueue<QueueItem>;
   private _profiles = new Map<string, RawWithDefaultsFunctionProfile>();
 
   constructor(ctx: DependencyContext<FunctionProfileManagerContext>) {
     this._eventBus = ctx.getInstance('eventBus');
     this._config = ctx.getInstance('config');
 
-    this._taskQueue = new Queue(this._applyProfiles, {
+    this._taskQueue = new TaskQueue(this._applyProfiles, {
       concurrency: 1,
     });
   }

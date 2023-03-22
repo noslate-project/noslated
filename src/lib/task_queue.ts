@@ -1,10 +1,9 @@
-import { ICompare, PriorityQueue } from '@datastructures-js/priority-queue';
 import { Clock, systemClock, TimerHandle } from './clock';
 import { createDeferred, Deferred } from './util';
-import { inspect, InspectOptions } from 'util';
 import { AbortError } from './errors/abort_error';
+import { List } from './list';
 
-export interface TaskQueueOptions<T> {
+export interface TaskQueueOptions {
   /**
    * @default systemClock
    */
@@ -13,110 +12,40 @@ export interface TaskQueueOptions<T> {
    * @default 1
    */
   concurrency?: number;
-  compare?: ICompare<T>;
+  delay?: number;
+  highWaterMark?: number;
 }
 
 export interface TaskOptions {
-  delay?: number;
-  priority?: Priority;
   abortSignal?: AbortSignal;
 }
-interface TaskItem<T> {
+
+export interface TaskItem<T> {
   deadline: number;
-  priority: Priority;
   abortSignal?: AbortSignal;
   deferred: Deferred<void>;
   value: T;
 }
 
-export class TaskQueue<T> {
-  private readonly _concurrency: number;
-  private readonly _compare?: ICompare<T>;
-  private readonly _processor: Processor<T>;
+export class TaskQueue<T> implements Queue<T> {
+  readonly _concurrency: number;
+  readonly _processor: Processor<T>;
+  readonly _highWaterMark: number;
+  readonly _clock: Clock;
+  _runningCount = 0;
+  _timerHandle: TimerHandle | null = null;
 
-  private _queue: PriorityQueue<TaskItem<T>>;
-  private _runningCount = 0;
-
-  private _clock: Clock;
-  private _timerHandle: TimerHandle | null = null;
-
+  private readonly _delay: number;
+  private _queue: List<TaskItem<T>>;
   private _closed = false;
 
-  #process = () => {
-    const now = this._clock.now();
-    while (!this._queue.isEmpty()) {
-      if (this._runningCount >= this._concurrency) {
-        // break current session of drain.
-        break;
-      }
-
-      const task = this._queue.front();
-      if (task.abortSignal?.aborted) {
-        // if it's already aborted, skip and drain queue.
-        this._queue.dequeue();
-        continue;
-      }
-
-      const delay = task.deadline === Infinity ? 0 : task.deadline - now;
-      if (delay > 0) {
-        this._clock.clearTimeout(this._timerHandle);
-        this._timerHandle = this._clock.setTimeout(this.#process, delay);
-        break;
-      }
-
-      // remove from queue.
-      this._queue.dequeue();
-
-      this._runningCount++;
-      this._processor(task.value).then(
-        () => {
-          task.deferred.resolve();
-          this._runningCount--;
-          // drain queue;
-          this.#process();
-        },
-        err => {
-          task.deferred.reject(err);
-          this._runningCount--;
-          // drain queue;
-          this.#process();
-        }
-      );
-
-      // drain to fulfill concurrency.
-    }
-  };
-
-  #taskCompare: ICompare<TaskItem<T>> = (lhs, rhs) => {
-    // prioritize expiring items
-    if (lhs.deadline < rhs.deadline) {
-      return -1;
-    }
-    // prioritize high priority items
-    if (lhs.priority > rhs.priority) {
-      return -1;
-    }
-
-    if (this._compare) {
-      return this._compare(lhs.value, rhs.value);
-    }
-
-    if (lhs.deadline > rhs.deadline) {
-      return 1;
-    }
-    if (lhs.priority < rhs.priority) {
-      return 1;
-    }
-
-    return 0;
-  };
-
-  constructor(processor: Processor<T>, options?: TaskQueueOptions<T>) {
+  constructor(processor: Processor<T>, options?: TaskQueueOptions) {
     this._clock = options?.clock ?? systemClock;
     this._concurrency = options?.concurrency ?? 1;
-    this._compare = options?.compare;
+    this._delay = options?.delay ?? 0;
+    this._highWaterMark = options?.highWaterMark ?? Infinity;
     this._processor = processor;
-    this._queue = new PriorityQueue(this.#taskCompare);
+    this._queue = new List();
   }
 
   enqueue(value: T, options?: TaskOptions) {
@@ -124,38 +53,30 @@ export class TaskQueue<T> {
       throw new Error('TaskQueue has been closed');
     }
     const abortSignal = options?.abortSignal;
-    let deadline = Infinity;
-    if (options?.delay != null) {
-      deadline = this._clock.now() + options.delay;
-    }
 
     const task: TaskItem<T> = {
-      deadline,
-      priority: options?.priority ?? Priority.kNormal,
+      deadline: this._clock.now() + this._delay,
       abortSignal: abortSignal,
       deferred: createDeferred<void>(),
       value,
     };
-    this._queue.enqueue(task);
+    const node = this._queue.push(task);
     if (abortSignal) {
       abortSignal.addEventListener('abort', () => {
+        this._queue.remove(node);
         task.deferred.reject(new AbortError(abortSignal.reason));
       });
     }
 
     queueMicrotask(() => {
-      this.#process();
+      processQueue(this);
     });
 
     return task.deferred.promise;
   }
 
   clear() {
-    const queue = this._queue.toArray();
-    this._queue = new PriorityQueue(this.#taskCompare);
-    queue.forEach(it => {
-      it.deferred.reject(new AbortError('Queue is cleared'));
-    });
+    this._queue = new List();
   }
 
   close() {
@@ -163,8 +84,8 @@ export class TaskQueue<T> {
     this._clock.clearTimeout(this._timerHandle);
     this._timerHandle = null;
 
-    while (!this._queue.isEmpty()) {
-      const item = this._queue.dequeue();
+    while (this._queue.length !== 0) {
+      const item = this._queue.shift()!;
       item.deferred.reject(new AbortError('TaskQueue closed'));
     }
   }
@@ -173,22 +94,79 @@ export class TaskQueue<T> {
     return this._closed;
   }
 
-  [inspect.custom](depth: number, options: InspectOptions) {
-    return inspect(
-      {
-        closed: this._closed,
-        concurrency: this._concurrency,
-        queue: this._queue.toArray(),
-      },
-      options
-    );
+  _queueLength(): number {
+    return this._queue.length;
+  }
+
+  _queuePeek(): TaskItem<T> {
+    return this._queue.at(0)!;
+  }
+
+  _dequeue(): TaskItem<T> {
+    return this._queue.shift()!;
   }
 }
 
-export enum Priority {
-  kHigh = 3,
-  kNormal = 2,
-  kLow = 1,
+export type Processor<T> = (task: T) => Promise<void>;
+
+export interface Queue<T> {
+  readonly _clock: Clock;
+  readonly _highWaterMark: number;
+  readonly _concurrency: number;
+  readonly _processor: Processor<T>;
+  _timerHandle: TimerHandle | null;
+  _runningCount: number;
+
+  _queueLength(): number;
+  _queuePeek(): TaskItem<T>;
+  _dequeue(): TaskItem<T>;
 }
 
-export type Processor<T> = (task: T) => Promise<void>;
+export function processQueue<T>(queue: Queue<T>) {
+  const now = queue._clock.now();
+  while (queue._queueLength() !== 0) {
+    if (queue._runningCount >= queue._concurrency) {
+      // break current session of drain.
+      break;
+    }
+
+    const task = queue._queuePeek()!;
+    if (task.abortSignal?.aborted) {
+      // if it's already aborted, skip and drain queue.
+      queue._dequeue();
+      continue;
+    }
+
+    const delay = task.deadline === Infinity ? 0 : task.deadline - now;
+    if (queue._queueLength() <= queue._highWaterMark && delay > 0) {
+      queue._clock.clearTimeout(queue._timerHandle);
+      queue._timerHandle = queue._clock.setTimeout(
+        () => processQueue(queue),
+        delay
+      );
+      break;
+    }
+    queue._clock.clearTimeout(queue._timerHandle);
+
+    // remove from queue.
+    queue._dequeue();
+
+    queue._runningCount++;
+    queue._processor(task.value).then(
+      () => {
+        task.deferred.resolve();
+        queue._runningCount--;
+        // drain queue;
+        processQueue(queue);
+      },
+      err => {
+        task.deferred.reject(err);
+        queue._runningCount--;
+        // drain queue;
+        processQueue(queue);
+      }
+    );
+
+    // drain to fulfill concurrency.
+  }
+}

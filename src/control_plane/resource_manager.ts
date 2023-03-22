@@ -7,7 +7,7 @@ import { Logger, loggers } from '#self/lib/loggers';
 import { WorkerStoppedEvent } from './events';
 import { EventBus } from '#self/lib/event-bus';
 import { DependencyContext } from '#self/lib/dependency_context';
-import { Queue } from '#self/lib/queue';
+import { TaskQueue } from '#self/lib/task_queue';
 
 export type ResourceManagerContext = {
   config: Config;
@@ -20,7 +20,7 @@ export class ResourceManager extends Base {
   private config: Config;
   private clock: Clock;
   private logger: Logger;
-  private gcQueue: Queue<string>;
+  private gcQueue: TaskQueue<string>;
 
   constructor(ctx: DependencyContext<ResourceManagerContext>) {
     super();
@@ -28,7 +28,7 @@ export class ResourceManager extends Base {
     this.clock = ctx.getInstance('clock');
 
     this.logger = loggers.get('resource manager');
-    this.gcQueue = new Queue(this.#gcLog, {
+    this.gcQueue = new TaskQueue(this.#gcLog, {
       clock: this.clock,
       delay: this.config.worker.gcLogDelay,
       highWaterMark: this.config.worker.gcLogHighWaterMark,
