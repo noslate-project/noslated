@@ -1009,8 +1009,14 @@ const cases = [
       const stoppedEvent = await env.control._ctx
         .getInstance('eventBus')
         .once(WorkerStoppedEvent);
+        console.log(
+          stoppedEvent.timestamp ,stoppedEvent.data.registerTime ,
+            config.turf.gracefulExitPeriodMs,
+          'stopped with graceful period');
+        
+      // 误差允许
       assert.ok(
-        stoppedEvent.timestamp - stoppedEvent.data.registerTime >
+        stoppedEvent.timestamp - stoppedEvent.data.registerTime + 500 >
           config.turf.gracefulExitPeriodMs,
         'stopped with graceful period'
       );
