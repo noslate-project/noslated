@@ -301,8 +301,9 @@ export class NoslatedClient extends EventEmitter {
       root.noslated.data.IInvokeRequest,
       root.noslated.data.InvokeResponse
     > = plane[type]({
-      // TODO: proper deadline definition;
-      deadline: Date.now() + (metadata?.timeout ?? 10_000) + 1_000,
+      deadline:
+        (metadata?.deadline ?? Date.now() + (metadata?.timeout ?? 10_000)) +
+        1000,
     });
 
     const headerMsg: root.noslated.data.IInvokeRequest = {
@@ -311,8 +312,8 @@ export class NoslatedClient extends EventEmitter {
       method: metadata?.method,
       headers: tuplesToPairs(metadata?.headers ?? []),
       baggage: tuplesToPairs(metadata?.baggage ?? []),
-      // TODO: negotiate with deadline;
-      timeout: metadata?.timeout,
+      deadline:
+        metadata?.deadline ?? Date.now() + (metadata?.timeout ?? 10_000),
       requestId: metadata?.requestId ?? kDefaultRequestId,
     };
     // Fast path for buffer request.

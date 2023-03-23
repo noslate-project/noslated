@@ -46,7 +46,7 @@ export class PendingRequest extends EventEmitter {
   constructor(
     inputStream: Readable | Buffer,
     public metadata: Metadata,
-    timeout: number
+    deadline: number
   ) {
     super();
     this.startEpoch = Date.now();
@@ -57,7 +57,7 @@ export class PendingRequest extends EventEmitter {
     this.timer = setTimeout(() => {
       this.available = false;
       this.emit('timeout');
-    }, timeout);
+    }, deadline - Date.now());
   }
 
   /**
@@ -518,10 +518,10 @@ export class WorkerBroker extends Base {
     try {
       const now = performance.now();
       await this.delegate.trigger(credential, 'init', null, {
-        timeout:
-          profile.worker?.initializationTimeout !== undefined
+        deadline:
+          (profile.worker?.initializationTimeout !== undefined
             ? profile.worker.initializationTimeout
-            : this.config.worker.defaultInitializerTimeout,
+            : this.config.worker.defaultInitializerTimeout) + Date.now(),
       });
       this.logger.info(
         'worker(%s) initialization cost: %sms.',
@@ -585,7 +585,7 @@ export class WorkerBroker extends Base {
    */
   private createPendingRequest(input: Readable | Buffer, metadata: Metadata) {
     this.logger.info('create pending request(%s).', metadata.requestId);
-    const request = new PendingRequest(input, metadata, metadata.timeout);
+    const request = new PendingRequest(input, metadata, metadata.deadline);
     const node = this.requestQueue.push(request);
     this.dataFlowController.queuedRequestCounter.add(1, {
       [PlaneMetricAttributes.FUNCTION_NAME]: this.name,
@@ -597,7 +597,7 @@ export class WorkerBroker extends Base {
       this.requestQueue.remove(node);
       request.reject(
         new Error(
-          `Timeout for waiting worker in ${metadata.timeout}ms, request(${request.requestId}).`
+          `Waiting for worker has timed out at ${metadata.deadline}, request(${request.requestId}).`
         )
       );
       this.dataFlowController.queuedRequestDurationHistogram.record(

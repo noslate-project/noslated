@@ -67,7 +67,7 @@ describe(common.testName(__filename), () => {
       let triggerCalled = false;
       const delegate = {
         async trigger(credential: any, method: any, data: any, metadata: any) {
-          assert.deepStrictEqual(metadata, { timeout: 5000 });
+          assert.ok(metadata.deadline - Date.now() <= 5000);
           triggerCalled = true;
         },
         resetPeer() {},
@@ -106,7 +106,8 @@ describe(common.testName(__filename), () => {
       let triggerCalled = false;
       const delegate = {
         async trigger(credential: any, method: any, data: any, metadata: any) {
-          assert.deepStrictEqual(metadata, { timeout: 5000 });
+          assert.ok(metadata.deadline - Date.now() <= 5000);
+
           triggerCalled = true;
         },
         resetPeer() {},
@@ -145,7 +146,7 @@ describe(common.testName(__filename), () => {
       let triggerCalled = false;
       const delegate = {
         async trigger(credential: any, method: any, data: any, metadata: any) {
-          assert.deepStrictEqual(metadata, { timeout: 500 });
+          assert.ok(metadata.deadline - Date.now() <= 500);
           triggerCalled = true;
         },
         resetPeer() {},

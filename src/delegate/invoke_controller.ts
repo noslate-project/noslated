@@ -451,7 +451,6 @@ export class InvokeController {
     let metadataMethod = '';
     let metadataHeaders: string[] = [];
     let metadataBaggage: string[] = [];
-    let timeout = 10_000;
     let requestId = kDefaultRequestId;
     let metadata: Metadata = new Metadata({});
 
@@ -462,13 +461,11 @@ export class InvokeController {
         metadata = metadataInit;
       }
     }
-
     if (metadata) {
       metadataUrl = metadata.url ?? metadataUrl;
       metadataMethod = metadata.method ?? metadataMethod;
       metadataHeaders = flattenKeyValuePairs(metadata.headers ?? []);
       metadataBaggage = flattenKeyValuePairs(metadata.baggage ?? []);
-      timeout = metadata.timeout ?? timeout;
       requestId = metadata.requestId;
     }
 
@@ -488,7 +485,7 @@ export class InvokeController {
       },
       hasInputData,
       hasOutputData,
-      timeout
+      metadata.deadline ?? Date.now()
     );
     if (hasInputData) {
       const writable = this.#makeWritable(ret.sid as number);
