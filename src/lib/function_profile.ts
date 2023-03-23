@@ -1,131 +1,100 @@
-import { EventEmitter } from 'events';
-
-import { List } from './list';
 import { Validator as JSONValidator } from 'jsonschema';
 import loggers from './logger';
-import * as utils from './util';
 import SCHEMA_JSON from './json/function_profile_schema.json';
 import SPEC_JSON from './json/spec.template.json';
-import type {
+import {
   NodejsFunctionProfile,
   RawFunctionProfile,
   RawWithDefaultsFunctionProfile,
   AworkerFunctionProfile,
+  optionalKeys,
 } from './json/function_profile';
 import { Config } from '#self/config';
 import { Event, EventBus } from './event-bus';
 import { DependencyContext } from './dependency_context';
+import _ from 'lodash';
+import { TaskQueue } from './task_queue';
 
 const logger = loggers.get('function_profile');
 
+/**
+ * Keys updated that requires reload of the workers.
+ */
+const FunctionProfileUpdateKeys = [
+  'runtime',
+  'url',
+  'signature',
+  'sourceFile',
+  'handler',
+  'initializer',
+  'resourceLimit.cpu',
+  'resourceLimit.memory',
+] as const;
+
 export type Mode = 'IMMEDIATELY' | 'WAIT';
 
-/**
- * Per function profile
- */
-// @ts-expect-error Mixin type
-export interface PerFunctionProfile
-  extends NodejsFunctionProfile,
-    AworkerFunctionProfile {}
-export class PerFunctionProfile {
-  #json;
-  #config;
-  proxy;
-
-  /**
-   * constructor
-   * @param json The raw function profile.
-   * @param config The global config object.
-   */
-  constructor(json: RawFunctionProfile, config?: Config) {
-    this.#json = Object.assign({}, JSON.parse(JSON.stringify(json)));
-    this.#config = config;
-    this.proxy = new Proxy(this, {
-      get: (target, prop) => {
-        if (prop in target) {
-          if (typeof (target as any)[prop] === 'function') {
-            return (target as any)[prop].bind(this);
-          }
-
-          return (target as any)[prop];
-        }
-
-        return this.#json[prop];
-      },
-
-      set: (target, prop, value) => {
-        if (prop in target) {
-          return true;
-        }
-
-        this.#json[prop] = value;
-        return true;
-      },
-    });
-
-    return this.proxy;
+function buildProfile(
+  json: RawFunctionProfile,
+  config: Config
+): RawWithDefaultsFunctionProfile {
+  const profile: any = {
+    resourceLimit: {
+      memory: SPEC_JSON.linux.resources.memory.limit,
+      ...json.resourceLimit,
+    },
+    worker: {
+      shrinkStrategy: config.worker.defaultShrinkStrategy,
+      initializationTimeout: config.worker.defaultInitializerTimeout,
+      reservationCount: config.worker.reservationCountPerFunction,
+      replicaCountLimit: config.worker.replicaCountLimit,
+      maxActivateRequests: config.worker.maxActivateRequests,
+      fastFailRequestsOnStarting: false,
+      v8Options: [],
+      execArgv: [],
+      ...(json.worker ?? {}),
+    },
+    environments: json.environments ?? [],
+    name: json.name,
+    url: json.url,
+    signature: json.signature,
+    runtime: json.runtime,
+  };
+  if (json.runtime === 'nodejs') {
+    profile.handler = (json as NodejsFunctionProfile).handler;
+    profile.initializer = (json as NodejsFunctionProfile).initializer;
+  } else {
+    profile.sourceFile = (json as AworkerFunctionProfile).sourceFile;
   }
-
-  /**
-   * To JSON object.
-   * @param {boolean} [withDefault] Fill undefined fields with default value.
-   * @return {RawFunctionProfile} The raw function profile.
-   */
-  toJSON(withDefault = false): RawWithDefaultsFunctionProfile {
-    /**
-     * @type {RawFunctionProfile}
-     */
-    const ret = JSON.parse(JSON.stringify(this.#json));
-    if (withDefault) {
-      if (!ret.worker) ret.worker = {};
-      ret.worker = {
-        shrinkStrategy: this.#config?.worker.defaultShrinkStrategy,
-        initializationTimeout: this.#config?.worker.defaultInitializerTimeout,
-        reservationCount: this.#config?.worker.reservationCountPerFunction,
-        replicaCountLimit: this.#config?.worker.replicaCountLimit,
-        maxActivateRequests: this.#config?.worker.maxActivateRequests,
-        fastFailRequestsOnStarting: false,
-        v8Options: [],
-        execArgv: [],
-        ...ret.worker,
-      };
-
-      if (!ret.resourceLimit) ret.resourceLimit = {};
-      ret.resourceLimit = {
-        memory: SPEC_JSON.linux.resources.memory.limit,
-        ...ret.resourceLimit,
-      };
+  for (const key of optionalKeys) {
+    if (json[key]) {
+      profile[key] = json[key];
     }
-    return ret;
   }
-
-  /**
-   * Generate `PerFunctionProfile`s from a JSON array
-   * @param arr The JSON array.
-   * @param config The global config object.
-   * @return The `PerFunctionProfile` array.
-   */
-  static fromJSONArray(arr: RawFunctionProfile[], config?: Config) {
-    return arr.map(item => new PerFunctionProfile(item, config));
-  }
+  return profile as RawWithDefaultsFunctionProfile;
 }
 
 interface QueueItem {
-  profile: RawFunctionProfile[];
-  immediatelyInterrupted: boolean;
-  deferred: utils.Deferred<void>;
+  profiles: RawFunctionProfile[];
 }
 
-interface FunctionProfileUpdateEventData {
-  profile: RawFunctionProfile[];
-  mode: Mode;
+export class FunctionsRemovedEvent extends Event {
+  static type = 'functions-removed';
+  constructor(public data: string[]) {
+    super(FunctionsRemovedEvent.type);
+  }
 }
+
 export class FunctionProfileUpdateEvent extends Event {
   static type = 'function-profile-updated';
-  constructor(public data: FunctionProfileUpdateEventData) {
+  constructor(public data: RawWithDefaultsFunctionProfile[]) {
     super(FunctionProfileUpdateEvent.type);
   }
 }
+
+export const FunctionProfileManagerEvents = [
+  FunctionsRemovedEvent,
+  FunctionProfileUpdateEvent,
+];
 
 export type FunctionProfileManagerContext = {
   eventBus: EventBus;
@@ -134,88 +103,35 @@ export type FunctionProfileManagerContext = {
 /**
  * Function profile manager
  */
-export class FunctionProfileManager extends EventEmitter {
+export class FunctionProfileManager {
+  private static jsonValidator = new JSONValidator();
+  static validate(profiles: any) {
+    const ret = this.jsonValidator.validate(profiles, SCHEMA_JSON as any);
+    if (!ret.valid) {
+      throw ret.errors[0] || new Error('invalid function profile');
+    }
+  }
+
   private _eventBus: EventBus;
   private _config: Config;
-  private setQueue;
-  private setQueueRunning;
-  profile: PerFunctionProfile[];
-  private jsonValidator;
-  private internal;
+
+  private _taskQueue: TaskQueue<QueueItem>;
+  private _profiles = new Map<string, RawWithDefaultsFunctionProfile>();
 
   constructor(ctx: DependencyContext<FunctionProfileManagerContext>) {
-    super();
     this._eventBus = ctx.getInstance('eventBus');
     this._config = ctx.getInstance('config');
 
-    this.setQueue = new List<QueueItem>();
-    this.setQueueRunning = false;
-
-    this.profile = [];
-    this.jsonValidator = new JSONValidator();
-    this.internal = {
-      async IMMEDIATELY(
-        this: FunctionProfileManager,
-        profile: RawFunctionProfile[]
-      ) {
-        this.profile = PerFunctionProfile.fromJSONArray(profile, this._config);
-        this._eventBus
-          .publish(
-            new FunctionProfileUpdateEvent({
-              profile: this.profile,
-              mode: 'IMMEDIATELY',
-            })
-          )
-          .catch(e => {
-            logger.warn('Failed to publish FunctionProfileUpdateEvent:', e);
-          }); // do not await
-        logger.debug('Function profile has been updated: %j', this.profile);
-        this.emit('changed', this.profile);
-
-        // interrupt waiting profiles (but not stop the downloading tasks)
-        let node = this.setQueue.nodeAt(0);
-
-        // + node === null: no any node
-        // + node.next === null: it's an empty tail node
-        while (node && node.next) {
-          node.value!.immediatelyInterrupted = true;
-          node = node.next;
-        }
-      },
-
-      async WAIT(this: FunctionProfileManager, profile: RawFunctionProfile[]) {
-        const deferred = utils.createDeferred<void>();
-        this.setQueue.push({
-          profile,
-          immediatelyInterrupted: false,
-          deferred,
-        });
-
-        logger.debug('Code relation is up to update.', JSON.stringify(profile));
-
-        if (!this.setQueueRunning) {
-          this.setQueueRunning = true;
-          this._runSetQueue.call(this);
-        }
-
-        return deferred.promise;
-      },
-    };
+    this._taskQueue = new TaskQueue(this._applyProfiles, {
+      concurrency: 1,
+    });
   }
 
   /**
    * Get function profile via name
-   * @param name The function name
-   * @return The got function profile
    */
-  get(name: string) {
-    for (const item of this.profile) {
-      if (item.name === name) {
-        return item;
-      }
-    }
-
-    return null;
+  getProfile(name: string) {
+    return this._profiles.get(name);
   }
 
   /**
@@ -223,66 +139,63 @@ export class FunctionProfileManager extends EventEmitter {
    * @param profile The whole function profile
    * @param mode The set mode
    */
-  async set(profile: RawFunctionProfile[], mode: Mode) {
-    if (!this.internal[mode]) {
-      throw new Error(`Invalid set mode ${mode}.`);
-    }
-
-    const ret = this.jsonValidator.validate(profile, SCHEMA_JSON as any);
-    if (!ret.valid) {
-      throw ret.errors[0] || new Error('invalid function profile');
-    }
-
-    try {
-      await this.internal[mode].call(this, profile);
-    } catch (error) {
-      logger.warn('[FunctionProfile] set profile failed: ', error);
-    }
+  setProfiles(profiles: RawFunctionProfile[]): Promise<void> {
+    this._taskQueue.clear();
+    return this._taskQueue.enqueue({
+      profiles,
+    });
   }
 
-  /**
-   * Run set queue
-   * @return {Promise<void>} void
-   */
-  async _runSetQueue() {
-    const { profile, deferred } = this.setQueue.at(0)!;
+  getProfiles(): RawWithDefaultsFunctionProfile[] {
+    return Array.from(this._profiles.values());
+  }
 
-    const stringified = JSON.stringify(profile);
-    logger.debug('Updating code relation.', stringified);
+  private _applyProfiles = async (item: QueueItem) => {
+    const profiles = new Map<string, RawWithDefaultsFunctionProfile>();
+    for (const profile of item.profiles) {
+      profiles.set(profile.name, buildProfile(profile, this._config));
+    }
+    const previous = this._profiles;
+    this._profiles = profiles;
 
-    let errored = false;
-    let error;
+    // compare current to previous profiles, publish as removed.
+    const removes: string[] = [];
+    for (const profile of profiles.values()) {
+      const previousItem = previous.get(profile.name);
+      if (previousItem === undefined) continue;
+      previous.delete(profile.name);
+
+      const significantDiff = this._significantDiff(previousItem, profile);
+      if (significantDiff) removes.push(profile.name);
+    }
+    removes.push(...Array.from(previous.keys()));
+
+    try {
+      await this._eventBus.publish(new FunctionsRemovedEvent(removes));
+    } catch (e) {
+      logger.warn('Failed to publish FunctionsRemovedEvent:', e);
+    }
+
     try {
       await this._eventBus.publish(
-        new FunctionProfileUpdateEvent({
-          profile,
-          mode: 'WAIT',
-        })
+        new FunctionProfileUpdateEvent(Array.from(profiles.values()))
       );
     } catch (e) {
-      errored = true;
-      error = e;
+      logger.warn('Failed to publish FunctionProfileUpdateEvent:', e);
     }
+  };
 
-    if (!errored) {
-      if (!this.setQueue.at(0)!.immediatelyInterrupted) {
-        this.profile = PerFunctionProfile.fromJSONArray(profile, this._config);
-        logger.debug('Code relation has been delayed-updated', stringified);
-        this.emit('changed', this.profile, false);
-      } else {
-        logger.debug('Code relation has been interrupted', stringified);
+  private _significantDiff(
+    lhs: RawWithDefaultsFunctionProfile,
+    rhs: RawWithDefaultsFunctionProfile
+  ): boolean {
+    for (const key of FunctionProfileUpdateKeys) {
+      const a = _.get(lhs, key);
+      const b = _.get(rhs, key);
+      if (a !== b) {
+        return true;
       }
-      deferred.resolve();
-    } else {
-      logger.error('Failed to ensure codes with `_runSetQueue()`.', error);
-      deferred.reject(error);
     }
-
-    this.setQueue.shift();
-    if (this.setQueue.length) {
-      this._runSetQueue();
-    } else {
-      this.setQueueRunning = false;
-    }
+    return false;
   }
 }

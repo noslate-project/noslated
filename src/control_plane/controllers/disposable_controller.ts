@@ -40,7 +40,7 @@ export class DisposableController extends BaseController {
     if (
       event === WorkerStatusReport.RequestDrained &&
       worker.workerStatus === WorkerStatus.PendingStop &&
-      worker.disposable
+      broker.disposable
     ) {
       // wait next sync to gc worker data and related resources
       worker.requestId = requestId;

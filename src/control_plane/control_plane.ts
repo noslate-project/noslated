@@ -81,21 +81,17 @@ export class ControlPlane extends BaseOf(EventEmitter) {
   }
 
   private async _onPresetFunctionProfile(event: FunctionProfileUpdateEvent) {
-    const { profile, mode } = event.data;
-    this._stateManager.updateFunctionProfile();
+    this._stateManager.updateFunctionProfile(event.data);
 
-    const promises = profile.map(({ name, url, signature }) => {
+    const promises = event.data.map(({ name, url, signature }) => {
       return this._codeManager.ensure(name, url, signature);
     });
 
-    const promise = Promise.allSettled(promises).then(ret => {
-      for (const r of ret) {
-        if (r.status === 'rejected') {
-          this._logger.warn('Failed to ensure profile:', r.reason);
-        }
+    const result = await Promise.allSettled(promises);
+    for (const r of result) {
+      if (r.status === 'rejected') {
+        this._logger.warn('Failed to ensure profile:', r.reason);
       }
-    });
-
-    if (mode === 'WAIT') await promise;
+    }
   }
 }

@@ -18,15 +18,29 @@ describe(testName(__filename), () => {
   });
 
   describe('getFunctionProfile', () => {
-    it('should inspect current function profiles', async () => {
-      const expectedProfile = {
+    it('should inspect current function profiles with default values', async () => {
+      const profile = {
         name: 'node_worker_echo',
         runtime: 'nodejs' as const,
         url: `file://${baselineDir}/node_worker_echo`,
         handler: 'index.handler',
         signature: 'md5:234234',
       };
-      await env.agent.setFunctionProfile([expectedProfile]);
+      const expectedProfile = {
+        ...profile,
+        resourceLimit: {
+          memory: 536870912,
+        },
+        worker: {
+          fastFailRequestsOnStarting: false,
+          initializationTimeout: 10000,
+          maxActivateRequests: 10,
+          replicaCountLimit: 10,
+          reservationCount: 0,
+          shrinkStrategy: 'LCC',
+        },
+      };
+      await env.agent.setFunctionProfile([profile]);
 
       const ret = await (guest as any).getFunctionProfile({});
       assert.strictEqual(ret.profiles.length, 1);

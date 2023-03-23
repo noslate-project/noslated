@@ -34,6 +34,7 @@ export enum WorkerStatusReport {
 export enum ControlPlaneEvent {
   Shrink = 'Shrink',
   Expand = 'Expand',
+  FunctionRemoved = 'FunctionRemoved',
   RequestQueueExpand = 'RequestQueueExpand',
   Stopping = 'Stopping',
   Terminated = 'Terminated',

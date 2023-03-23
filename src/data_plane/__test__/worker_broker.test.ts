@@ -5,7 +5,7 @@ import { findResponseHeaderValue } from '#self/test/util';
 import {
   FunctionProfileManager,
   FunctionProfileManagerContext,
-  FunctionProfileUpdateEvent,
+  FunctionProfileManagerEvents,
 } from '#self/lib/function_profile';
 import { PendingRequest, WorkerBroker } from '../worker_broker';
 import { kMegaBytes } from '#self/control_plane/constants';
@@ -58,16 +58,22 @@ describe(common.testName(__filename), () => {
     beforeEach(async () => {
       const ctx = new DependencyContext<FunctionProfileManagerContext>();
       ctx.bindInstance('config', config);
-      ctx.bindInstance('eventBus', new EventBus([FunctionProfileUpdateEvent]));
+      ctx.bindInstance(
+        'eventBus',
+        new EventBus([...FunctionProfileManagerEvents])
+      );
       profileManager = new FunctionProfileManager(ctx);
-      await profileManager.set(PROFILES as any, 'IMMEDIATELY');
+      await profileManager.setProfiles(PROFILES as any);
     });
 
     it('all default', async () => {
       let triggerCalled = false;
       const delegate = {
         async trigger(credential: any, method: any, data: any, metadata: any) {
-          assert.ok(metadata.deadline - Date.now() <= 5000);
+          assert.ok(
+            metadata.deadline - Date.now() <=
+              config.worker.defaultInitializerTimeout
+          );
           triggerCalled = true;
         },
         resetPeer() {},
@@ -75,17 +81,11 @@ describe(common.testName(__filename), () => {
 
       const profiles = JSON.parse(JSON.stringify(PROFILES));
       delete profiles[0].worker;
-      await profileManager.set(profiles, 'IMMEDIATELY');
+      await profileManager.setProfiles(profiles);
       const broker = new WorkerBroker(
         {
           profileManager,
           delegate,
-          config: {
-            worker: {
-              maxActivateRequests: 10,
-              defaultInitializerTimeout: 5000,
-            },
-          },
           host: mockHost,
         } as unknown as DataFlowController,
         'node-http-demo',
@@ -98,7 +98,10 @@ describe(common.testName(__filename), () => {
       assert.strictEqual(broker.workers.length, 1);
       const worker = broker.workers[0];
 
-      assert.strictEqual(worker.maxActivateRequests, 10);
+      assert.strictEqual(
+        worker.maxActivateRequests,
+        config.worker.maxActivateRequests
+      );
       assert(triggerCalled);
     });
 
@@ -106,8 +109,10 @@ describe(common.testName(__filename), () => {
       let triggerCalled = false;
       const delegate = {
         async trigger(credential: any, method: any, data: any, metadata: any) {
-          assert.ok(metadata.deadline - Date.now() <= 5000);
-
+          assert.ok(
+            metadata.deadline - Date.now() <=
+              config.worker.defaultInitializerTimeout
+          );
           triggerCalled = true;
         },
         resetPeer() {},
@@ -115,17 +120,11 @@ describe(common.testName(__filename), () => {
 
       const profiles = JSON.parse(JSON.stringify(PROFILES));
       delete profiles[0].worker.initializationTimeout;
-      await profileManager.set(profiles, 'IMMEDIATELY');
+      await profileManager.setProfiles(profiles);
       const broker = new WorkerBroker(
         {
           profileManager,
           delegate,
-          config: {
-            worker: {
-              maxActivateRequests: 10,
-              defaultInitializerTimeout: 5000,
-            },
-          },
           host: mockHost,
         } as unknown as DataFlowController,
         'node-http-demo',
@@ -154,17 +153,11 @@ describe(common.testName(__filename), () => {
 
       const profiles = JSON.parse(JSON.stringify(PROFILES));
       delete profiles[0].worker.maxActivateRequests;
-      await profileManager.set(profiles, 'IMMEDIATELY');
+      await profileManager.setProfiles(profiles);
       const broker = new WorkerBroker(
         {
           profileManager,
           delegate,
-          config: {
-            worker: {
-              maxActivateRequests: 10,
-              defaultInitializerTimeout: 5000,
-            },
-          },
           host: mockHost,
         } as unknown as DataFlowController,
         'node-http-demo',
@@ -195,9 +188,12 @@ describe(common.testName(__filename), () => {
     beforeEach(async () => {
       const ctx = new DependencyContext<FunctionProfileManagerContext>();
       ctx.bindInstance('config', config);
-      ctx.bindInstance('eventBus', new EventBus([FunctionProfileUpdateEvent]));
+      ctx.bindInstance(
+        'eventBus',
+        new EventBus([...FunctionProfileManagerEvents])
+      );
       profileManager = new FunctionProfileManager(ctx);
-      await profileManager.set(PROFILES as any, 'IMMEDIATELY');
+      await profileManager.setProfiles(PROFILES as any);
     });
 
     it('no worker', async () => {
@@ -205,7 +201,6 @@ describe(common.testName(__filename), () => {
         {
           profileManager,
           delegate: dummyDelegate,
-          config: require('#self/config'),
           host: mockHost,
         } as unknown as DataFlowController,
         'node-http-demo',
@@ -219,7 +214,6 @@ describe(common.testName(__filename), () => {
         {
           profileManager,
           delegate: dummyDelegate,
-          config: require('#self/config'),
           host: mockHost,
         } as unknown as DataFlowController,
         'node-http-demo',
@@ -241,7 +235,6 @@ describe(common.testName(__filename), () => {
         {
           profileManager,
           delegate: dummyDelegate,
-          config: require('#self/config'),
           host: mockHost,
         } as unknown as DataFlowController,
         'node-http-demo',
@@ -269,7 +262,6 @@ describe(common.testName(__filename), () => {
         {
           profileManager,
           delegate: dummyDelegate,
-          config: require('#self/config'),
           host: mockHost,
         } as unknown as DataFlowController,
         'node-http-demo',

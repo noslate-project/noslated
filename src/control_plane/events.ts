@@ -1,5 +1,5 @@
 import { Event } from '#self/lib/event-bus';
-import { FunctionProfileUpdateEvent } from '#self/lib/function_profile';
+import { FunctionProfileManagerEvents } from '#self/lib/function_profile';
 import { NotNullableInterface } from '#self/lib/interfaces';
 import { RuntimeType } from '#self/lib/json/function_profile';
 import { TurfState } from '#self/lib/turf/types';
@@ -10,13 +10,6 @@ export class ContainerReconciledEvent extends Event {
   static type = 'container-reconciled';
   constructor() {
     super(ContainerReconciledEvent.type);
-  }
-}
-
-export class FunctionRemovedEvent extends Event {
-  static type = 'function-removed';
-  constructor(public data: string[]) {
-    super(FunctionRemovedEvent.type);
   }
 }
 
@@ -71,8 +64,7 @@ export class WorkerTrafficStatsEvent extends Event {
 
 export const events = [
   ContainerReconciledEvent,
-  FunctionRemovedEvent,
-  FunctionProfileUpdateEvent,
+  ...FunctionProfileManagerEvents,
   PlatformEnvironsUpdatedEvent,
   RequestQueueingEvent,
   WorkerStatusReportEvent,

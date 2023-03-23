@@ -162,10 +162,6 @@ export class CapacityManager extends Base {
       return 0;
     }
 
-    if (!broker.data) {
-      return expansionOnly ? 0 : -broker.workers.size;
-    }
-
     if (!broker.workerCount) {
       return 0;
     }
@@ -205,7 +201,7 @@ export class CapacityManager extends Base {
           const deltaMaxActivateRequests =
             totalMaxActivateRequests - newMaxActivateRequests;
           let deltaInstance = Math.floor(
-            deltaMaxActivateRequests / broker.data.worker!.maxActivateRequests!
+            deltaMaxActivateRequests / broker.profile.worker.maxActivateRequests
           );
 
           // reserve at least `this.reservationCount` instances
@@ -230,12 +226,12 @@ export class CapacityManager extends Base {
         const deltaMaxActivateRequests =
           newMaxActivateRequests - totalMaxActivateRequests;
         let deltaInstanceCount = Math.ceil(
-          deltaMaxActivateRequests / broker.data.worker!.maxActivateRequests!
+          deltaMaxActivateRequests / broker.profile.worker.maxActivateRequests
         );
         deltaInstanceCount =
-          broker.data.worker!.replicaCountLimit! <
+          broker.profile.worker.replicaCountLimit <
           broker.workerCount + deltaInstanceCount
-            ? broker.data.worker!.replicaCountLimit! - broker.workerCount
+            ? broker.profile.worker.replicaCountLimit - broker.workerCount
             : deltaInstanceCount;
 
         return Math.max(deltaInstanceCount, 0);

@@ -44,7 +44,7 @@ export class DataPlaneClientManager extends BasePlaneClientManager {
 
     (client as any)
       .setFunctionProfile({
-        profiles: this._functionProfile.profile,
+        profiles: this._functionProfile.getProfiles(),
         mode: 'IMMEDIATELY',
       })
       .catch(() => {

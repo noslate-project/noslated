@@ -38,6 +38,8 @@ describe(common.testName(__filename), () => {
     },
   ];
 
+  const initializationTimeout = 1000;
+
   const env = new DefaultEnvironment();
 
   let profileManager: ProfileManager | null;
@@ -48,7 +50,7 @@ describe(common.testName(__filename), () => {
     agent = env.agent;
     stateManager = env.control._ctx.getInstance('stateManager');
     profileManager = env.control._ctx.getInstance('functionProfile');
-    await profileManager.set(funcData, 'WAIT');
+    await profileManager.setProfiles(funcData);
   });
   afterEach(async () => {
     profileManager = null;
@@ -60,11 +62,10 @@ describe(common.testName(__filename), () => {
         'func',
         { inspect: false },
         false,
-        false,
         'hello',
         'world'
       );
-      const worker = new Worker(workerMetadata, config);
+      const worker = new Worker(workerMetadata, initializationTimeout);
       assert.deepStrictEqual(_.omit(worker.toJSON(), ['registerTime']), {
         name: 'hello',
         credential: 'world',
@@ -81,10 +82,9 @@ describe(common.testName(__filename), () => {
         'func',
         { inspect: false },
         false,
-        false,
         'hello'
       );
-      const worker = new Worker(workerMetadata, config);
+      const worker = new Worker(workerMetadata, initializationTimeout);
       assert.deepStrictEqual(_.omit(worker.toJSON(), ['registerTime']), {
         name: 'hello',
         credential: null,
@@ -103,11 +103,10 @@ describe(common.testName(__filename), () => {
         'func',
         { inspect: false },
         false,
-        false,
         'hello',
         'world'
       );
-      const worker = new Worker(workerMetadata, config);
+      const worker = new Worker(workerMetadata, initializationTimeout);
       const container = new SimpleContainer('hello');
       worker.setContainer(container);
       // Suppress ready rejection.
@@ -141,11 +140,10 @@ describe(common.testName(__filename), () => {
         'func',
         { inspect: false },
         false,
-        false,
         'hello',
         'world'
       );
-      const worker = new Worker(workerMetadata, config);
+      const worker = new Worker(workerMetadata, initializationTimeout);
       const container = new SimpleContainer('hello');
       worker.setContainer(container);
       // Suppress ready rejection.
@@ -168,11 +166,10 @@ describe(common.testName(__filename), () => {
         'func',
         { inspect: false },
         false,
-        false,
         'hello',
         'world'
       );
-      const worker = new Worker(workerMetadata, config);
+      const worker = new Worker(workerMetadata, initializationTimeout);
       const container = new SimpleContainer('hello');
       worker.setContainer(container);
       // Suppress ready rejection.
@@ -231,11 +228,10 @@ describe(common.testName(__filename), () => {
         'func',
         { inspect: false },
         false,
-        false,
         'hello',
         'world'
       );
-      const worker = new Worker(workerMetadata, config);
+      const worker = new Worker(workerMetadata, initializationTimeout);
       const container = new SimpleContainer('hello');
 
       worker.sync(data);
@@ -278,11 +274,10 @@ describe(common.testName(__filename), () => {
         'func',
         { inspect: false },
         false,
-        false,
         'hello',
         'world'
       );
-      const worker = new Worker(workerMetadata, config);
+      const worker = new Worker(workerMetadata, initializationTimeout);
 
       worker.sync(data);
       assert.strictEqual(worker.workerStatus, WorkerStatus.Created);
@@ -318,11 +313,10 @@ describe(common.testName(__filename), () => {
         'func',
         { inspect: false },
         false,
-        false,
         'hello',
         'world'
       );
-      const worker = new Worker(workerMetadata, config);
+      const worker = new Worker(workerMetadata, initializationTimeout);
 
       worker.sync(data);
       assert.strictEqual(worker.workerStatus, WorkerStatus.Created);
@@ -356,11 +350,10 @@ describe(common.testName(__filename), () => {
         'func',
         { inspect: false },
         false,
-        false,
         'hello',
         'world'
       );
-      const worker = new Worker(workerMetadata, config);
+      const worker = new Worker(workerMetadata, initializationTimeout);
 
       worker.sync(data);
       assert.strictEqual(worker.workerStatus, WorkerStatus.Created);
@@ -400,11 +393,10 @@ describe(common.testName(__filename), () => {
         'func',
         { inspect: false },
         false,
-        false,
         'hello',
         'world'
       );
-      const worker = new Worker(workerMetadata, config);
+      const worker = new Worker(workerMetadata, initializationTimeout);
       assert.strictEqual(worker.workerStatus, WorkerStatus.Created);
 
       assert.throws(() => {
@@ -429,11 +421,10 @@ describe(common.testName(__filename), () => {
         'func',
         { inspect: false },
         false,
-        false,
         'hello',
         'world'
       );
-      const worker = new Worker(workerMetadata, config);
+      const worker = new Worker(workerMetadata, initializationTimeout);
 
       const container = new SimpleContainer('hello');
       worker.setContainer(container);
@@ -467,11 +458,10 @@ describe(common.testName(__filename), () => {
         'func',
         { inspect: false },
         false,
-        false,
         'hello',
         'world'
       );
-      const worker = new Worker(workerMetadata, config);
+      const worker = new Worker(workerMetadata, initializationTimeout);
 
       const container = new SimpleContainer('hello');
       worker.setContainer(container);
@@ -501,11 +491,10 @@ describe(common.testName(__filename), () => {
         'func',
         { inspect: false },
         false,
-        false,
         'hello',
         'world'
       );
-      const worker = new Worker(workerMetadata, config);
+      const worker = new Worker(workerMetadata, initializationTimeout);
 
       const container = new SimpleContainer('hello');
       worker.setContainer(container);
@@ -552,7 +541,6 @@ describe(common.testName(__filename), () => {
           processName: 'worker1',
           credential: 'cred1',
           options: { inspect: false },
-          disposable: false,
           toReserve: false,
         },
       ]);

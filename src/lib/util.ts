@@ -192,6 +192,14 @@ export type DeepRequired<T> = T extends object
     }>
   : T;
 
+export type DeepReadonly<T> = T extends object
+  ? Readonly<{
+      [Property in keyof T]: T[Property] extends MaybeNill<infer R>
+        ? DeepReadonly<R>
+        : DeepReadonly<T[Property]>;
+    }>
+  : T;
+
 declare global {
   interface Error {
     code?: number | string | null;
