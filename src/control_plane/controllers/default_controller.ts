@@ -117,6 +117,13 @@ export class DefaultController extends BaseController {
   }
 
   private async autoScale() {
+    // Create reservation workers.
+    for (const profile of this._functionProfile.getProfiles()) {
+      const reservationCount = profile.worker.reservationCount;
+      if (reservationCount === 0) continue;
+      this._stateManager.getOrCreateBroker(profile.name, false);
+    }
+
     const brokers = [...this._stateManager.brokers()];
     const { expandDeltas, shrinkDeltas } =
       this._capacityManager.evaluateScaleDeltas(brokers);
