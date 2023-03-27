@@ -485,7 +485,7 @@ export class InvokeController {
       },
       hasInputData,
       hasOutputData,
-      metadata.deadline ?? Date.now()
+      metadata.deadline
     );
     if (hasInputData) {
       const writable = this.#makeWritable(ret.sid as number);

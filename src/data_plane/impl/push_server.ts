@@ -12,7 +12,6 @@ import { NotNullableInterface } from '#self/lib/interfaces';
 import { Readable } from 'stream';
 import { IPushServer } from '#self/lib/interfaces/push_server';
 import { kDefaultQueueingTime, kDefaultWorkerName } from '#self/lib/constants';
-import Long from 'long';
 
 interface InvokeRequest extends Readable {
   /** InvokeRequest name */
@@ -136,10 +135,6 @@ export class PushServerImpl implements IPushServer {
     const deferred = createDeferred<InvokeRequest>();
     let headerReceived = false;
     call.on('data', (msg: root.noslated.data.IInvokeRequest) => {
-      if (msg.deadline instanceof Long) {
-        msg.deadline = msg.deadline.toNumber();
-      }
-
       if (!headerReceived) {
         headerReceived = true;
         readable.name = msg.name!;

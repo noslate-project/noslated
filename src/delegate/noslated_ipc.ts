@@ -738,7 +738,7 @@ class Session {
   request<T, R>(
     kind: RequestKind,
     body: T,
-    deadline: number = Date.now() + NOSLATED_DEFAULT_REQUEST_TIMEOUT_MS
+    deadline?: number
   ): Promise<R> {
     const messageType = kRequestKindDataMap[kind][0];
     const requestId = this._nextRequestId.next();
@@ -751,11 +751,12 @@ class Session {
     const content = messageType.encode(body).finish();
     this._writeRequest(kind, requestId, content);
     const deferred = createDeferred<R>();
+    const timeout = deadline ? deadline - Date.now() : NOSLATED_DEFAULT_REQUEST_TIMEOUT_MS;
     const timer = setTimeout(() => {
       deferred.reject(
         new NoslatedError(CanonicalCode.TIMEOUT, kind, 'Request Timeout')
       );
-    }, deadline - Date.now());
+    }, timeout);
     this._requestMap.set(requestId, {
       kind,
       deferred,

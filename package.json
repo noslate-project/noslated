@@ -57,8 +57,7 @@
     "lru-cache": "~7.4.0",
     "protobufjs": "^7.1.2",
     "urllib": "^2.37.0",
-    "ws": "^7.4.2",
-    "long": "^5.2.1"
+    "ws": "^7.4.2"
   },
   "devDependencies": {
     "@opentelemetry/core": "^1.8.0",
