@@ -57,7 +57,7 @@ export class DataPlaneHost extends Host {
   }
 
   async broadcastWorkerTrafficStats(
-    brokerStats: root.noslated.data.IBrokerStats
+    brokerStats: root.noslated.data.IWorkerTrafficStatsSnapshotBroadcast
   ) {
     await this.broadcast(
       'workerTrafficStats',

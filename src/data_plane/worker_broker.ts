@@ -602,7 +602,7 @@ export class WorkerBroker extends Base {
     // broadcast that there's no enough container
     this.host.broadcastRequestQueueing(
       this,
-      this.dataFlowController.currentWorkersInformation,
+      this.dataFlowController.getCurrentWorkersInformation(),
       request.requestId
     );
     return request;
@@ -611,13 +611,13 @@ export class WorkerBroker extends Base {
   /**
    *Try `startUp` fastfail. If it needs fastfail, throw error.
    */
-  #tryStartUpFastFail() {
-    const { profile } = this;
-    if (profile?.worker?.fastFailRequestsOnStarting !== true) return;
+  #tryStartUpFastFail(metadata: Metadata) {
+    if (!this.profile.worker.fastFailRequestsOnStarting) return;
 
-    (this.host as any).broadcastRequestQueueing(
+    this.host.broadcastRequestQueueing(
       this,
-      this.dataFlowController.currentWorkersInformation
+      this.dataFlowController.getCurrentWorkersInformation(),
+      metadata.requestId
     );
     throw new Error(`No available worker process for ${this.name} now.`);
   }
@@ -665,7 +665,7 @@ export class WorkerBroker extends Base {
       case RequestQueueStatus.PASS_THROUGH: {
         const worker = this.getAvailableWorker();
         if (!worker) {
-          this.#tryStartUpFastFail();
+          this.#tryStartUpFastFail(metadata);
 
           this.requestQueueStatus = RequestQueueStatus.QUEUEING;
           const request = this.createPendingRequest(inputStream, metadata);

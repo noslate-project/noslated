@@ -344,14 +344,12 @@ export class DataFlowController extends BaseOf(EventEmitter) {
    * Current workers' stats information.
    * @type {root.noslated.data.IBrokerStats[]} The brokers with workers' stats.
    */
-  get currentWorkersInformation(): root.noslated.data.IBrokerStats[] {
+  getCurrentWorkersInformation(): root.noslated.data.IBrokerStats[] {
     return [...this.brokers.values()].map(broker => ({
       functionName: broker.name,
       inspector: broker.options.inspect === true,
-      disposable: broker.disposable,
       workers: broker.workers.map(worker => ({
         name: worker.name,
-        maxActivateRequests: worker.maxActivateRequests,
         activeRequestCount: worker.activeRequestCount,
       })),
     }));
@@ -362,8 +360,8 @@ export class DataFlowController extends BaseOf(EventEmitter) {
    * @return {Promise<void>} The result.
    */
   broadcastWorkerTrafficStats = async () => {
-    await (this.host as any).broadcastWorkerTrafficStats({
-      brokers: this.currentWorkersInformation,
+    await this.host.broadcastWorkerTrafficStats({
+      brokers: this.getCurrentWorkersInformation(),
     });
   };
 

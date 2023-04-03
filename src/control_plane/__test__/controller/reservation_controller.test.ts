@@ -31,7 +31,7 @@ describe(common.testName(__filename), () => {
       await eventBus.publish(new WorkerTrafficStatsEvent({ brokers: [] }));
       const broker = stateManager.getBroker('aworker_echo', false);
       assert(broker);
-      assert.strictEqual(broker.workerCount, 1);
+      assert.strictEqual(broker.activeWorkerCount, 1);
     });
   });
 });

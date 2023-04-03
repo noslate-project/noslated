@@ -11,7 +11,6 @@ service ControlPlane {
 }
 
 message WorkerAdditionalData {
-  int32 maxActivateRequests = 1;
   int32 activeRequestCount = 2;
   bool trafficOff = 3;
 }
@@ -32,20 +31,14 @@ message WorkerStats {
   WorkerAdditionalData data = 10;
 }
 
-message StartingPoolItem {
-  string workerName = 1;
-  string credential = 2;
-  int32 estimateRequestLeft = 3;
-  int32 maxActivateRequests = 4;
-}
-
 message BrokerStats {
   string name = 1;
   bool inspector = 2;
-  int32 redundantTimes = 4;
+  int32 redundantTimes = 3;
+  int32 initiatingWorkerCount = 4;
+  int32 activeWorkerCount = 5;
 
-  FunctionProfile profile = 5;
-  repeated StartingPoolItem startingPool = 6;
+  FunctionProfile profile = 6;
   repeated WorkerStats workers = 7;
 }
 

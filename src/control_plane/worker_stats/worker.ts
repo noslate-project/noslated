@@ -14,11 +14,9 @@ import { WorkerLogger } from './worker_logger';
 export type WorkerStats = noslated.data.IWorkerStats;
 
 class WorkerAdditionalData {
-  maxActivateRequests;
   activeRequestCount;
 
   constructor(data: WorkerStats) {
-    this.maxActivateRequests = data.maxActivateRequests;
     this.activeRequestCount = data.activeRequestCount;
   }
 }
@@ -130,12 +128,16 @@ class Worker {
     return this.#registerTime;
   }
 
+  #readyCalled = false;
   #readyDeferred: Deferred<void>;
   #initializationTimeout: number;
 
   logger: WorkerLogger;
   requestId: string | undefined;
   private readyTimeout: NodeJS.Timeout | undefined;
+
+  onstatuschanged: (newStatus: WorkerStatus, oldStatus: WorkerStatus) => void =
+    () => {};
 
   /**
    * Constructor
@@ -163,6 +165,10 @@ class Worker {
   }
 
   async ready() {
+    if (this.#readyCalled) {
+      return this.#readyDeferred.promise;
+    }
+
     // 在 await ready 之前状态已经改变了
     if (this.#workerStatus >= WorkerStatus.Ready) {
       this.logger.statusChangedBeforeReady(WorkerStatus[this.#workerStatus]);
@@ -231,7 +237,6 @@ class Worker {
 
       data: this.data
         ? {
-            maxActivateRequests: this.data.maxActivateRequests,
             activeRequestCount: this.data.activeRequestCount,
           }
         : null,
@@ -282,10 +287,6 @@ class Worker {
     return this.#workerStatus === WorkerStatus.Ready;
   }
 
-  isInitializing() {
-    return this.#workerStatus === WorkerStatus.Created;
-  }
-
   updateWorkerStatusByReport(event: WorkerStatusReport) {
     let statusTo: WorkerStatus;
 
@@ -330,6 +331,9 @@ class Worker {
     status: WorkerStatus,
     event: TurfStatusEvent | WorkerStatusReport | ControlPlaneEvent
   ) {
+    if (status === this.#workerStatus) {
+      return;
+    }
     if (status < this.#workerStatus) {
       this.logger.updateWorkerStatus(
         status,
@@ -342,10 +346,14 @@ class Worker {
     }
 
     const oldStatus = this.#workerStatus;
-
     this.#workerStatus = status;
 
     this.logger.updateWorkerStatus(status, oldStatus, event);
+    try {
+      this.onstatuschanged(status, oldStatus);
+    } catch (e) {
+      this.logger.statusChangedError(e);
+    }
 
     if (oldStatus >= WorkerStatus.Ready) {
       return;

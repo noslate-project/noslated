@@ -267,7 +267,7 @@ const cases = [
       const stateManager = control._ctx.getInstance('stateManager');
       const broker = stateManager.getBroker('aworker_echo', false)!;
       while (true) {
-        if (broker.workerCount !== 4) {
+        if (broker.activeWorkerCount !== 4) {
           await sleep(10);
         } else {
           break;
@@ -303,7 +303,7 @@ const cases = [
       const stateManager = control._ctx.getInstance('stateManager');
       const broker = stateManager.getBroker('aworker_echo', false)!;
       while (true) {
-        if (broker.workerCount !== 2) {
+        if (broker.activeWorkerCount !== 2) {
           await sleep(10);
         } else {
           break;
@@ -342,7 +342,7 @@ const cases = [
       await defaultController['tryBatchLaunch'](workerMetadata, 1);
       const broker = stateManager.getBroker('aworker_echo', false)!;
       while (true) {
-        if (broker.workerCount !== 2) {
+        if (broker.activeWorkerCount !== 2) {
           await sleep(10);
         } else {
           break;
@@ -396,7 +396,7 @@ const cases = [
       await defaultController['tryBatchLaunch'](workerMetadata, 1);
       const broker = stateManager.getBroker('aworker_echo', false)!;
       while (true) {
-        if (broker.workerCount !== 2) {
+        if (broker.activeWorkerCount !== 2) {
           await sleep(10);
         } else {
           break;
@@ -449,7 +449,7 @@ const cases = [
       await defaultController['tryBatchLaunch'](workerMetadata, 1);
       const broker = stateManager.getBroker('aworker_echo', false)!;
       while (true) {
-        if (broker.workerCount !== 2) {
+        if (broker.activeWorkerCount !== 2) {
           await sleep(10);
         } else {
           break;
@@ -505,7 +505,6 @@ const cases = [
       const worker = Array.from(broker.workers.values())[0];
       assert.strictEqual(worker.workerStatus, WorkerStatus.Ready);
 
-      mm(worker, 'data', { maxActivateRequests: 10 });
       mm(broker, 'redundantTimes', 60);
       await defaultController['autoScale']();
 

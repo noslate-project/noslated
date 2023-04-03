@@ -13,7 +13,7 @@ import {
 } from '#self/lib/constants';
 import { FunctionProfileManager } from '#self/lib/function_profile';
 import { TurfContainerStates } from '#self/lib/turf';
-import { sleep } from '#self/lib/util';
+import { DeepRequired, sleep } from '#self/lib/util';
 import * as common from '#self/test/common';
 import assert from 'assert';
 import mm from 'mm';
@@ -21,6 +21,7 @@ import sinon from 'sinon';
 import { TestEnvironment } from '../environment';
 import { registerWorkers } from '../util';
 import { funcData } from '../worker_stats/test_data';
+import { noslated } from '#self/proto/root';
 
 describe(common.testName(__filename), () => {
   const env = new TestEnvironment({
@@ -46,40 +47,35 @@ describe(common.testName(__filename), () => {
     defaultController = controlPlane._ctx.getInstance('defaultController');
   });
 
-  const brokerData1 = {
+  const brokerData1: DeepRequired<noslated.data.IBrokerStats> = {
     functionName: 'func',
     inspector: false,
     workers: [
       {
         name: 'hello',
-        maxActivateRequests: 10,
         activeRequestCount: 1,
       },
       {
         name: 'foo',
-        maxActivateRequests: 10,
         activeRequestCount: 6,
       },
     ],
   };
 
-  const brokerData2 = {
+  const brokerData2: DeepRequired<noslated.data.IBrokerStats> = {
     functionName: 'lambda',
     inspector: false,
     workers: [
       {
         name: 'coco',
-        maxActivateRequests: 10,
         activeRequestCount: 1,
       },
       {
         name: 'cocos',
-        maxActivateRequests: 10,
         activeRequestCount: 3,
       },
       {
         name: 'alibaba',
-        maxActivateRequests: 10,
         activeRequestCount: 4,
       },
     ],
@@ -362,12 +358,12 @@ describe(common.testName(__filename), () => {
       broker.sync([
         {
           name: 'hello',
-          maxActivateRequests: 10,
+          // maxActivateRequests: 10,
           activeRequestCount: 7,
         },
         {
           name: 'foo',
-          maxActivateRequests: 10,
+          // maxActivateRequests: 10,
           activeRequestCount: 4,
         },
       ]);
@@ -427,12 +423,12 @@ describe(common.testName(__filename), () => {
       broker.sync([
         {
           name: 'hello',
-          maxActivateRequests: 10,
+          // maxActivateRequests: 10,
           activeRequestCount: 4,
         },
         {
           name: 'foo',
-          maxActivateRequests: 10,
+          // maxActivateRequests: 10,
           activeRequestCount: 7,
         },
       ]);
@@ -485,12 +481,12 @@ describe(common.testName(__filename), () => {
       broker.sync([
         {
           name: 'hello',
-          maxActivateRequests: 10,
+          // maxActivateRequests: 10,
           activeRequestCount: 4,
         },
         {
           name: 'foo',
-          maxActivateRequests: 10,
+          // maxActivateRequests: 10,
           activeRequestCount: 4,
         },
       ]);
@@ -543,12 +539,12 @@ describe(common.testName(__filename), () => {
       broker.sync([
         {
           name: 'foo',
-          maxActivateRequests: 10,
+          // maxActivateRequests: 10,
           activeRequestCount: 4,
         },
         {
           name: 'hello',
-          maxActivateRequests: 10,
+          // maxActivateRequests: 10,
           activeRequestCount: 4,
         },
       ]);
@@ -594,12 +590,12 @@ describe(common.testName(__filename), () => {
       broker.sync([
         {
           name: 'hello',
-          maxActivateRequests: 10,
+          // maxActivateRequests: 10,
           activeRequestCount: 7,
         },
         {
           name: 'foo',
-          maxActivateRequests: 10,
+          // maxActivateRequests: 10,
           activeRequestCount: 4,
         },
       ]);
@@ -652,12 +648,12 @@ describe(common.testName(__filename), () => {
       broker.sync([
         {
           name: 'hello',
-          maxActivateRequests: 10,
+          // maxActivateRequests: 10,
           activeRequestCount: 7,
         },
         {
           name: 'foo',
-          maxActivateRequests: 10,
+          // maxActivateRequests: 10,
           activeRequestCount: 4,
         },
       ]);
@@ -721,12 +717,12 @@ describe(common.testName(__filename), () => {
       broker.sync([
         {
           name: 'foo',
-          maxActivateRequests: 10,
+          // maxActivateRequests: 10,
           activeRequestCount: 7,
         },
         {
           name: 'hello',
-          maxActivateRequests: 10,
+          // maxActivateRequests: 10,
           activeRequestCount: 4,
         },
       ]);
@@ -775,12 +771,12 @@ describe(common.testName(__filename), () => {
       broker.sync([
         {
           name: 'hello',
-          maxActivateRequests: 10,
+          // maxActivateRequests: 10,
           activeRequestCount: 7,
         },
         {
           name: 'foo',
-          maxActivateRequests: 10,
+          // maxActivateRequests: 10,
           activeRequestCount: 4,
         },
       ]);
@@ -833,12 +829,12 @@ describe(common.testName(__filename), () => {
       broker.sync([
         {
           name: 'hello',
-          maxActivateRequests: 10,
+          // maxActivateRequests: 10,
           activeRequestCount: 7,
         },
         {
           name: 'foo',
-          maxActivateRequests: 10,
+          // maxActivateRequests: 10,
           activeRequestCount: 4,
         },
       ]);
@@ -901,12 +897,12 @@ describe(common.testName(__filename), () => {
       broker.sync([
         {
           name: 'foo',
-          maxActivateRequests: 10,
+          // maxActivateRequests: 10,
           activeRequestCount: 7,
         },
         {
           name: 'hello',
-          maxActivateRequests: 10,
+          // maxActivateRequests: 10,
           activeRequestCount: 4,
         },
       ]);
@@ -955,12 +951,12 @@ describe(common.testName(__filename), () => {
       broker.sync([
         {
           name: 'hello',
-          maxActivateRequests: 10,
+          // maxActivateRequests: 10,
           activeRequestCount: 7,
         },
         {
           name: 'foo',
-          maxActivateRequests: 10,
+          // maxActivateRequests: 10,
           activeRequestCount: 4,
         },
       ]);
@@ -1017,12 +1013,12 @@ describe(common.testName(__filename), () => {
       broker.sync([
         {
           name: 'hello',
-          maxActivateRequests: 10,
+          // maxActivateRequests: 10,
           activeRequestCount: 7,
         },
         {
           name: 'foo',
-          maxActivateRequests: 10,
+          // maxActivateRequests: 10,
           activeRequestCount: 1,
         },
       ]);
@@ -1056,12 +1052,12 @@ describe(common.testName(__filename), () => {
       broker.sync([
         {
           name: 'hello',
-          maxActivateRequests: 10,
+          // maxActivateRequests: 10,
           activeRequestCount: 1,
         },
         {
           name: 'foo',
-          maxActivateRequests: 10,
+          // maxActivateRequests: 10,
           activeRequestCount: 7,
         },
       ]);
@@ -1101,12 +1097,12 @@ describe(common.testName(__filename), () => {
       broker.sync([
         {
           name: 'hello',
-          maxActivateRequests: 10,
+          // maxActivateRequests: 10,
           activeRequestCount: 7,
         },
         {
           name: 'foo',
-          maxActivateRequests: 10,
+          // maxActivateRequests: 10,
           activeRequestCount: 1,
         },
       ]);
@@ -1146,12 +1142,12 @@ describe(common.testName(__filename), () => {
       broker.sync([
         {
           name: 'hello',
-          maxActivateRequests: 10,
+          // maxActivateRequests: 10,
           activeRequestCount: 7,
         },
         {
           name: 'foo',
-          maxActivateRequests: 10,
+          // maxActivateRequests: 10,
           activeRequestCount: 8,
         },
       ]);

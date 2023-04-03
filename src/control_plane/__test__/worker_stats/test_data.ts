@@ -1,4 +1,6 @@
 import { AworkerFunctionProfile } from '#self/lib/json/function_profile';
+import { DeepRequired } from '#self/lib/util';
+import { noslated } from '#self/proto/root';
 
 export const funcData: AworkerFunctionProfile[] = [
   {
@@ -7,6 +9,9 @@ export const funcData: AworkerFunctionProfile[] = [
     runtime: 'aworker',
     signature: 'xxx',
     sourceFile: 'index.js',
+    worker: {
+      maxActivateRequests: 10,
+    },
     resourceLimit: {
       cpu: 1,
       memory: 512000000,
@@ -29,15 +34,13 @@ export const funcDataWithDefault = {
   environments: [],
 };
 
-export const brokerData = [
+export const brokerData: DeepRequired<noslated.data.IBrokerStats>[] = [
   {
     functionName: 'func',
     inspector: true,
     workers: [
       {
         name: 'hello',
-        credential: 'world',
-        maxActivateRequests: 10,
         activeRequestCount: 1,
       },
     ],
@@ -49,8 +52,6 @@ export const brokerData = [
       {
         // turf sandbox name min length is 5
         name: 'foooo',
-        credential: 'bar',
-        maxActivateRequests: 10,
         activeRequestCount: 6,
       },
     ],

@@ -34,7 +34,7 @@ export abstract class BaseController {
         const workerMetadata = new WorkerMetadata(
           delta.broker.name,
           { inspect: delta.broker.isInspector },
-          delta.broker.workerCount < delta.broker.reservationCount
+          delta.broker.activeWorkerCount < delta.broker.reservationCount
         );
         expansions.push(this.tryBatchLaunch(workerMetadata, delta.count));
       }

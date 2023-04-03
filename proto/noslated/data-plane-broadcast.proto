@@ -5,7 +5,6 @@ import "common.proto";
 
 message WorkerStats {
   string name = 1;
-  int32 maxActivateRequests = 2;
   int32 activeRequestCount = 3;
 }
 
@@ -13,7 +12,6 @@ message BrokerStats {
   string functionName = 1;
   bool inspector = 2;
   repeated WorkerStats workers = 3;
-  bool disposable = 4;
 }
 
 message WorkerTrafficStatsSnapshotBroadcast {

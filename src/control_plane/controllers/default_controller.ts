@@ -59,15 +59,15 @@ export class DefaultController extends BaseController {
       isInspect
     );
 
-    if (!this._capacityManager.allowExpandingOnRequestQueueing(event)) {
-      return;
-    }
-
     const profile = this._functionProfile.getProfile(name);
     if (!profile) {
       const err = new Error(`No function named ${name}.`);
       err.code = ErrorCode.kNoFunction;
       throw err;
+    }
+
+    if (!this._capacityManager.allowExpandingOnRequestQueueing(event.data)) {
+      return;
     }
 
     const workerMetadata = new WorkerMetadata(
@@ -131,7 +131,7 @@ export class DefaultController extends BaseController {
     const { true: reservationDeltas = [], false: regularDeltas = [] } =
       _.groupBy(
         expandDeltas,
-        delta => delta.broker.workerCount < delta.broker.reservationCount
+        delta => delta.broker.activeWorkerCount < delta.broker.reservationCount
       );
 
     const errors = [];
@@ -200,8 +200,10 @@ export class DefaultController extends BaseController {
       });
       this.logger.info(
         `[Auto Scale] Up to shrink ${workers.length} workers in ${broker.name}. ` +
-          `waterlevel: ${broker.activeRequestCount}/${broker.totalMaxActivateRequests}, ` +
-          `reservation: ${broker.reservationCount}, current: ${broker.workerCount}.`
+          `waterlevel: ${broker.getActiveRequestCount()}/${
+            broker.totalMaxActivateRequests
+          }, ` +
+          `reservation: ${broker.reservationCount}, current: ${broker.activeWorkerCount}.`
       );
     }
     if (!shrinkData.length) return; // To avoid unneccessary logic below.

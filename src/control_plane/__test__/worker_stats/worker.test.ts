@@ -23,6 +23,7 @@ import { NoslatedClient } from '#self/sdk';
 import { DefaultEnvironment } from '#self/test/env/environment';
 import { SimpleContainer } from '../test_container_manager';
 import { registerWorkers } from '../util';
+import { noslated } from '#self/proto/root';
 
 describe(common.testName(__filename), () => {
   const funcData: AworkerFunctionProfile[] = [
@@ -114,7 +115,6 @@ describe(common.testName(__filename), () => {
       container.updateStatus(TurfContainerStates.stopped);
       worker.sync({
         name: 'hello',
-        maxActivateRequests: 10,
         activeRequestCount: 5,
       });
       assert.deepStrictEqual(_.omit(worker.toJSON(), ['registerTime']), {
@@ -124,12 +124,10 @@ describe(common.testName(__filename), () => {
         turfContainerStates: TurfContainerStates.stopped,
         pid: container.pid,
         data: {
-          maxActivateRequests: 10,
           activeRequestCount: 5,
         },
       });
       assert.strictEqual(worker.data!.activeRequestCount, 5);
-      assert.strictEqual(worker.data!.maxActivateRequests, 10);
       assert(typeof worker.registerTime, 'number');
     });
   });
@@ -219,9 +217,8 @@ describe(common.testName(__filename), () => {
     ];
 
     it('should get', async () => {
-      const data = {
+      const data: noslated.data.IWorkerStats = {
         name: 'hello',
-        maxActivateRequests: 10,
         activeRequestCount: 5,
       };
       const workerMetadata = new WorkerMetadata(
@@ -265,9 +262,8 @@ describe(common.testName(__filename), () => {
 
   describe('update state', () => {
     it('should update state by event work, shrink', async () => {
-      const data = {
+      const data: noslated.data.IWorkerStats = {
         name: 'hello',
-        maxActivateRequests: 10,
         activeRequestCount: 5,
       };
       const workerMetadata = new WorkerMetadata(
@@ -281,7 +277,6 @@ describe(common.testName(__filename), () => {
 
       worker.sync(data);
       assert.strictEqual(worker.workerStatus, WorkerStatus.Created);
-      assert.strictEqual(worker.isInitializing(), true);
 
       const container = new SimpleContainer('hello');
       worker.setContainer(container);
@@ -304,9 +299,8 @@ describe(common.testName(__filename), () => {
     });
 
     it('should update state by event work, gc', async () => {
-      const data = {
+      const data: noslated.data.IWorkerStats = {
         name: 'hello',
-        maxActivateRequests: 10,
         activeRequestCount: 5,
       };
       const workerMetadata = new WorkerMetadata(
@@ -341,9 +335,8 @@ describe(common.testName(__filename), () => {
     });
 
     it('update state has order', async () => {
-      const data = {
+      const data: noslated.data.IWorkerStats = {
         name: 'hello',
-        maxActivateRequests: 10,
         activeRequestCount: 5,
       };
       const workerMetadata = new WorkerMetadata(
