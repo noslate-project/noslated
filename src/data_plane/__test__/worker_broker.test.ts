@@ -70,9 +70,10 @@ describe(common.testName(__filename), () => {
       let triggerCalled = false;
       const delegate = {
         async trigger(credential: any, method: any, data: any, metadata: any) {
-          assert.deepStrictEqual(metadata, {
-            timeout: config.worker.defaultInitializerTimeout,
-          });
+          assert.ok(
+            metadata.deadline - Date.now() <=
+              config.worker.defaultInitializerTimeout
+          );
           triggerCalled = true;
         },
         resetPeer() {},
@@ -108,9 +109,10 @@ describe(common.testName(__filename), () => {
       let triggerCalled = false;
       const delegate = {
         async trigger(credential: any, method: any, data: any, metadata: any) {
-          assert.deepStrictEqual(metadata, {
-            timeout: config.worker.defaultInitializerTimeout,
-          });
+          assert.ok(
+            metadata.deadline - Date.now() <=
+              config.worker.defaultInitializerTimeout
+          );
           triggerCalled = true;
         },
         resetPeer() {},
@@ -143,7 +145,7 @@ describe(common.testName(__filename), () => {
       let triggerCalled = false;
       const delegate = {
         async trigger(credential: any, method: any, data: any, metadata: any) {
-          assert.deepStrictEqual(metadata, { timeout: 500 });
+          assert.ok(metadata.deadline - Date.now() <= 500);
           triggerCalled = true;
         },
         resetPeer() {},
