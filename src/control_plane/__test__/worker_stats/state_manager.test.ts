@@ -938,7 +938,8 @@ describe(common.testName(__filename), () => {
       registerContainers(testContainerManager, stateManager, [
         { pid: 2, name: 'hello', status: TurfContainerStates.unknown },
       ]);
-      await testContainerManager.reconcileContainers();
+      await containerReconciler.reconcile();
+
       stateManager._syncBrokerData(brokerData);
 
       {

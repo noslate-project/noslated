@@ -200,7 +200,7 @@ export class NoslatedServer {
     metadata: MetadataToIPC,
     hasInputData: boolean,
     hasOutputData: boolean,
-    timeout: number
+    deadline: number
   ) {
     const kind = RequestKind.Trigger;
     const session = this._getSession(sessionId, kind);
@@ -227,7 +227,7 @@ export class NoslatedServer {
           hasOutputData,
           sid,
         },
-        timeout
+        deadline
       )
       .then(res => {
         return {
@@ -256,16 +256,12 @@ export class NoslatedServer {
     return session.request<
       aworker.ipc.IStreamPushRequestMessage,
       aworker.ipc.IStreamPushResponseMessage
-    >(
-      kind,
-      {
-        sid,
-        isEos,
-        isError,
-        data,
-      },
-      NOSLATED_STREAM_PUSH_TIMEOUT_MS
-    );
+    >(kind, {
+      sid,
+      isEos,
+      isError,
+      data,
+    });
   }
 
   async collectMetrics(sessionId: number) {
@@ -274,7 +270,7 @@ export class NoslatedServer {
     const result = await session.request<
       aworker.ipc.ICollectMetricsRequestMessage,
       aworker.ipc.ICollectMetricsResponseMessage
-    >(kind, {}, NOSLATED_COLLECT_METRICS_TIMEOUT_MS);
+    >(kind, {});
 
     return {
       integerRecords: result.integerRecords?.map(it => {
@@ -297,14 +293,10 @@ export class NoslatedServer {
     return session.request<
       aworker.ipc.IResourceNotificationRequestMessage,
       aworker.ipc.IResourceNotificationResponseMessage
-    >(
-      kind,
-      {
-        resourceId,
-        token,
-      },
-      NOSLATED_RESOURCE_NOTIFICATION_TIMEOUT_MS
-    );
+    >(kind, {
+      resourceId,
+      token,
+    });
   }
 
   async inspectorStart(sessionId: number) {
@@ -313,7 +305,7 @@ export class NoslatedServer {
     return session.request<
       aworker.ipc.IInspectorStartRequestMessage,
       aworker.ipc.IInspectorStartResponseMessage
-    >(kind, {}, NOSLATED_INSPECTOR_TIMEOUT_MS);
+    >(kind, {});
   }
 
   async inspectorStartSession(
@@ -326,14 +318,10 @@ export class NoslatedServer {
     return session.request<
       aworker.ipc.IInspectorStartSessionRequestMessage,
       aworker.ipc.IInspectorStartSessionResponseMessage
-    >(
-      kind,
-      {
-        sessionId: inspectorSessionId,
-        targetId,
-      },
-      NOSLATED_INSPECTOR_TIMEOUT_MS
-    );
+    >(kind, {
+      sessionId: inspectorSessionId,
+      targetId,
+    });
   }
 
   async inspectorEndSession(sessionId: number, inspectorSessionId: number) {
@@ -342,13 +330,9 @@ export class NoslatedServer {
     return session.request<
       aworker.ipc.IInspectorEndSessionRequestMessage,
       aworker.ipc.IInspectorEndSessionResponseMessage
-    >(
-      kind,
-      {
-        sessionId: inspectorSessionId,
-      },
-      NOSLATED_INSPECTOR_TIMEOUT_MS
-    );
+    >(kind, {
+      sessionId: inspectorSessionId,
+    });
   }
 
   async inspectorGetTargets(sessionId: number) {
@@ -357,7 +341,7 @@ export class NoslatedServer {
     const result = await session.request<
       aworker.ipc.IInspectorGetTargetsRequestMessage,
       aworker.ipc.IInspectorGetTargetsResponseMessage
-    >(kind, {}, NOSLATED_INSPECTOR_TIMEOUT_MS);
+    >(kind, {});
 
     return result.targets ?? [];
   }
@@ -372,14 +356,10 @@ export class NoslatedServer {
     return session.request<
       aworker.ipc.IInspectorCommandRequestMessage,
       aworker.ipc.IInspectorCommandResponseMessage
-    >(
-      kind,
-      {
-        sessionId: inspectorSessionId,
-        message: message,
-      },
-      NOSLATED_INSPECTOR_TIMEOUT_MS
-    );
+    >(kind, {
+      sessionId: inspectorSessionId,
+      message: message,
+    });
   }
 
   async tracingStart(sessionId: number, categories: string[]) {
@@ -388,13 +368,9 @@ export class NoslatedServer {
     return session.request<
       aworker.ipc.ITracingStartRequestMessage,
       aworker.ipc.ITracingStartResponseMessage
-    >(
-      kind,
-      {
-        categories,
-      },
-      NOSLATED_INSPECTOR_TIMEOUT_MS
-    );
+    >(kind, {
+      categories,
+    });
   }
 
   async tracingStop(sessionId: number) {
@@ -403,7 +379,7 @@ export class NoslatedServer {
     return session.request<
       aworker.ipc.ITracingStopRequestMessage,
       aworker.ipc.ITracingStopResponseMessage
-    >(kind, {}, NOSLATED_INSPECTOR_TIMEOUT_MS);
+    >(kind, {});
   }
 
   terminateSession(sessionId: number) {
@@ -538,14 +514,10 @@ export class NoslatedClient {
       await this._session.request<
         aworker.ipc.ICredentialsRequestMessage,
         aworker.ipc.ICredentialsResponseMessage
-      >(
-        RequestKind.Credentials,
-        {
-          type: aworker.ipc.CredentialTargetType.Data,
-          cred: this._credential,
-        },
-        NOSLATED_CONNECT_TIMEOUT_MS
-      );
+      >(RequestKind.Credentials, {
+        type: aworker.ipc.CredentialTargetType.Data,
+        cred: this._credential,
+      });
     } catch (e) {
       this._session.destroy();
       throw e;
@@ -574,16 +546,12 @@ export class NoslatedClient {
     return this._session.request<
       aworker.ipc.IStreamPushRequestMessage,
       aworker.ipc.IStreamPushResponseMessage
-    >(
-      RequestKind.StreamPush,
-      {
-        sid: streamId,
-        isEos,
-        isError,
-        data,
-      },
-      NOSLATED_STREAM_PUSH_TIMEOUT_MS
-    );
+    >(RequestKind.StreamPush, {
+      sid: streamId,
+      isEos,
+      isError,
+      data,
+    });
   }
 
   daprInvoke(
@@ -605,7 +573,7 @@ export class NoslatedClient {
         methodName,
         data,
       },
-      timeout
+      Date.now() + timeout
     );
   }
 
@@ -630,7 +598,7 @@ export class NoslatedClient {
         operation,
         data,
       },
-      timeout
+      Date.now() + timeout
     );
   }
 
@@ -647,16 +615,12 @@ export class NoslatedClient {
     return this._session.request<
       aworker.ipc.IExtensionBindingRequestMessage,
       aworker.ipc.IExtensionBindingResponseMessage
-    >(
-      RequestKind.ExtensionBinding,
-      {
-        name,
-        metadata,
-        operation,
-        data,
-      },
-      NOSLATED_SEND_BEACON_TIMEOUT_MS
-    );
+    >(RequestKind.ExtensionBinding, {
+      name,
+      metadata,
+      operation,
+      data,
+    });
   }
 
   resourcePut(
@@ -671,15 +635,11 @@ export class NoslatedClient {
     return this._session.request<
       aworker.ipc.IResourcePutRequestMessage,
       aworker.ipc.IResourcePutResponseMessage
-    >(
-      RequestKind.ResourcePut,
-      {
-        resourceId,
-        action,
-        token,
-      },
-      NOSLATED_RESOURCE_NOTIFICATION_TIMEOUT_MS
-    );
+    >(RequestKind.ResourcePut, {
+      resourceId,
+      action,
+      token,
+    });
   }
 
   private _onClose = () => {
@@ -775,11 +735,7 @@ class Session {
     );
   }
 
-  request<T, R>(
-    kind: RequestKind,
-    body: T,
-    timeoutMs: number = NOSLATED_DEFAULT_REQUEST_TIMEOUT_MS
-  ): Promise<R> {
+  request<T, R>(kind: RequestKind, body: T, deadline?: number): Promise<R> {
     const messageType = kRequestKindDataMap[kind][0];
     const requestId = this._nextRequestId.next();
     this._logger.debug(
@@ -791,11 +747,14 @@ class Session {
     const content = messageType.encode(body).finish();
     this._writeRequest(kind, requestId, content);
     const deferred = createDeferred<R>();
+    const timeout = deadline
+      ? deadline - Date.now()
+      : NOSLATED_DEFAULT_REQUEST_TIMEOUT_MS;
     const timer = setTimeout(() => {
       deferred.reject(
         new NoslatedError(CanonicalCode.TIMEOUT, kind, 'Request Timeout')
       );
-    }, timeoutMs);
+    }, timeout);
     this._requestMap.set(requestId, {
       kind,
       deferred,

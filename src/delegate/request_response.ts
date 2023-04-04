@@ -11,7 +11,9 @@ interface MetadataInit {
   method?: string;
   headers?: [string, string][];
   baggage?: [string, string][];
+  // homogeneously replaced with [deadline], but reserved for compatibility
   timeout?: number;
+  deadline?: number;
   requestId?: string;
 }
 
@@ -20,16 +22,16 @@ class Metadata {
   #method;
   #headers;
   #baggage;
-  #timeout;
   #requestId;
+  #deadline;
 
   constructor(init: MetadataInit) {
     this.#url = init?.url;
     this.#method = init?.method ?? 'GET';
     this.#headers = init?.headers ?? [];
     this.#baggage = init?.baggage ?? [];
-    this.#timeout = init?.timeout ?? 10_000;
     this.#requestId = init.requestId ?? kDefaultRequestId;
+    this.#deadline = init?.deadline ?? Date.now() + (init.timeout ?? 10_000);
   }
 
   get url() {
@@ -48,12 +50,12 @@ class Metadata {
     return this.#baggage;
   }
 
-  get timeout() {
-    return this.#timeout;
-  }
-
   get requestId() {
     return this.#requestId;
+  }
+
+  get deadline() {
+    return this.#deadline;
   }
 
   toJSON() {
@@ -62,8 +64,8 @@ class Metadata {
       method: this.method,
       headers: this.headers,
       baggage: this.baggage,
-      timeout: this.timeout,
       requestId: this.requestId,
+      deadline: this.deadline,
     };
   }
 }

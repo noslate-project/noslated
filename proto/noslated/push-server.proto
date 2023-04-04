@@ -14,7 +14,7 @@ message InvokeRequest {
   string method = 3;
   repeated KeyValuePair headers = 4;
   repeated KeyValuePair baggage = 5;
-  uint32 timeout = 6;
+  double deadline = 6;
   bytes body = 7;
   string requestId = 8;
 }

@@ -604,7 +604,7 @@ describe(common.testName(__filename), function () {
         env.agent.invoke('aworker_init', Buffer.from(''), {
           method: 'GET',
         }),
-        /Timeout for waiting worker/
+        /Waiting for worker has timed out/
       );
 
       const event = await stoppedFuture;

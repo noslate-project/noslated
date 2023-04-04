@@ -107,7 +107,7 @@ describe(testName(__filename), () => {
           metadata,
           false,
           false,
-          1000
+          Date.now() + 1000
         );
 
         assert(ret.sid == null);
@@ -154,7 +154,14 @@ describe(testName(__filename), () => {
         };
 
         assert(sessionId >= 0);
-        const ret = server.trigger(sessionId, 'test', {}, false, true, 2000);
+        const ret = server.trigger(
+          sessionId,
+          'test',
+          {},
+          false,
+          true,
+          Date.now() + 2000
+        );
 
         const streamId = ret.sid;
         assert(streamId != null);
@@ -247,7 +254,7 @@ describe(testName(__filename), () => {
           metadata,
           false,
           false,
-          1000
+          Date.now() + 1000
         );
 
         assert(ret.sid == null);

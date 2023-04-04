@@ -25,7 +25,7 @@ interface InvokeRequest extends Readable {
   /** InvokeRequest baggage */
   baggage: root.noslated.IKeyValuePair[];
   /** InvokeRequest timeout */
-  timeout: number;
+  deadline: number;
   /** InvokeRequest requestId */
   requestId: string;
 }
@@ -70,8 +70,7 @@ export class PushServerImpl implements IPushServer {
         (req.baggage as NotNullableInterface<root.noslated.IKeyValuePair>[]) ??
           []
       ),
-      // TODO: negotiate with deadline;
-      timeout: req.timeout,
+      deadline: req.deadline,
       requestId: req.requestId,
     });
 
@@ -143,7 +142,7 @@ export class PushServerImpl implements IPushServer {
         readable.method = msg.method!;
         readable.headers = msg.headers!;
         readable.baggage = msg.baggage!;
-        readable.timeout = msg.timeout!;
+        readable.deadline = msg.deadline ?? Date.now() + 10_000;
         readable.requestId = msg.requestId!;
         deferred.resolve(readable);
       }
