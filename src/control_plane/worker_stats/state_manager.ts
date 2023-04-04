@@ -77,11 +77,6 @@ export class StateManager extends Base {
       return;
     }
 
-    // 如果已经 ready，则从 starting pool 中移除
-    if (worker.workerStatus === WorkerStatus.Ready) {
-      broker.removeItemFromStartingPool(worker.name);
-    }
-
     worker.updateWorkerStatusByReport(event as WorkerStatusReport);
   }
 
@@ -221,7 +216,6 @@ export class StateManager extends Base {
       worker.workerStatus === WorkerStatus.PendingStop ||
       worker.workerStatus === WorkerStatus.Unknown
     ) {
-      broker.removeItemFromStartingPool(worker.name);
       worker.updateWorkerStatusByControlPlaneEvent(ControlPlaneEvent.Stopping);
 
       try {

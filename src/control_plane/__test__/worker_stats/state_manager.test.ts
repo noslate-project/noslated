@@ -225,18 +225,16 @@ describe(common.testName(__filename), () => {
         },
       ]);
 
-      const brokerStat1 = {
+      const brokerStat1: root.noslated.data.IBrokerStats = {
         functionName: 'func1',
         inspector: false,
         workers: [
           {
             name: 'worker1',
-            maxActivateRequests: 10,
             activeRequestCount: 1,
           },
           {
             name: 'worker2',
-            maxActivateRequests: 10,
             activeRequestCount: 6,
           },
         ],
@@ -286,7 +284,7 @@ describe(common.testName(__filename), () => {
           credential: 'id1',
           turfContainerStates: TurfContainerStates.running,
           containerStatus: WorkerStatus.Created,
-          data: { maxActivateRequests: 10, activeRequestCount: 1 },
+          data: { activeRequestCount: 1 },
         }
       );
 
@@ -300,7 +298,7 @@ describe(common.testName(__filename), () => {
         credential: 'id2',
         turfContainerStates: TurfContainerStates.running,
         containerStatus: WorkerStatus.Created,
-        data: { maxActivateRequests: 10, activeRequestCount: 6 },
+        data: { activeRequestCount: 6 },
       });
 
       // Suppress worker ready rejection
@@ -381,15 +379,8 @@ describe(common.testName(__filename), () => {
         brokers.map(b => b.profile),
         profiles
       );
-      const startingPoolsName = ['hello', 'foooo'];
-      brokers.forEach((broker, i) => {
-        assert.strictEqual(broker['startingPool'].size, 1);
-        const sp = broker['startingPool'].get(startingPoolsName[i]);
-        assert.deepStrictEqual(sp, {
-          credential: i === 0 ? 'world' : 'bar',
-          maxActivateRequests: 10,
-          estimateRequestLeft: 10,
-        });
+      brokers.forEach(broker => {
+        assert.strictEqual(broker.initiatingWorkerCount, 1);
       });
       const workerNames = ['hello', 'foooo'];
       const workers: Worker[] = brokers.map(
@@ -485,15 +476,8 @@ describe(common.testName(__filename), () => {
         brokers.map(b => b.profile),
         profiles
       );
-      const startingPoolsName = ['hello', 'foooo'];
-      brokers.forEach((broker, i) => {
-        assert.strictEqual(broker['startingPool'].size, 1);
-        const sp = broker['startingPool'].get(startingPoolsName[i]);
-        assert.deepStrictEqual(sp, {
-          credential: i === 0 ? 'world' : 'bar',
-          maxActivateRequests: 10,
-          estimateRequestLeft: 10,
-        });
+      brokers.forEach(broker => {
+        assert.strictEqual(broker.initiatingWorkerCount, 1);
       });
       const workerNames = ['hello', 'foooo'];
       const workers: Worker[] = brokers.map(
@@ -658,14 +642,8 @@ describe(common.testName(__filename), () => {
           inspector: true,
           profile: funcDataWithDefault,
           redundantTimes: 0,
-          startingPool: [
-            {
-              credential: 'world',
-              estimateRequestLeft: 10,
-              maxActivateRequests: 10,
-              workerName: 'hello',
-            },
-          ],
+          initiatingWorkerCount: 1,
+          activeWorkerCount: 0,
           workers: [
             {
               containerStatus: WorkerStatus.Created,
@@ -684,14 +662,8 @@ describe(common.testName(__filename), () => {
           inspector: false,
           profile: funcDataWithDefault,
           redundantTimes: 0,
-          startingPool: [
-            {
-              credential: 'bar',
-              estimateRequestLeft: 10,
-              maxActivateRequests: 10,
-              workerName: 'foooo',
-            },
-          ],
+          initiatingWorkerCount: 1,
+          activeWorkerCount: 0,
           workers: [
             {
               containerStatus: WorkerStatus.Created,
@@ -726,14 +698,8 @@ describe(common.testName(__filename), () => {
           inspector: true,
           profile: funcDataWithDefault,
           redundantTimes: 0,
-          startingPool: [
-            {
-              credential: 'world',
-              estimateRequestLeft: 9,
-              maxActivateRequests: 10,
-              workerName: 'hello',
-            },
-          ],
+          initiatingWorkerCount: 1,
+          activeWorkerCount: 0,
           workers: [
             {
               containerStatus: WorkerStatus.Created,
@@ -741,7 +707,6 @@ describe(common.testName(__filename), () => {
               name: 'hello',
               credential: 'world',
               data: {
-                maxActivateRequests: 10,
                 activeRequestCount: 1,
               },
               pid: null,
@@ -790,8 +755,6 @@ describe(common.testName(__filename), () => {
           workers: [
             {
               name: 'aho',
-              credential: 'aha',
-              maxActivateRequests: 10,
               activeRequestCount: 6,
             },
           ],
@@ -824,7 +787,7 @@ describe(common.testName(__filename), () => {
           functionProfile.getProfile('func')
         );
         assert.strictEqual(broker.workers.size, 1);
-        assert.strictEqual(broker['startingPool'].size, 1);
+        assert.strictEqual(broker.initiatingWorkerCount, 1);
 
         const worker: Partial<Worker> = JSON.parse(
           JSON.stringify(broker.workers.get(workerNames[i]))
@@ -835,10 +798,7 @@ describe(common.testName(__filename), () => {
           name: workerNames[i],
           credential: workerCredentials[i],
           pid: pids[i],
-          data: _.pick(JSON.parse(JSON.stringify(brokerData[i].workers[0])), [
-            'activeRequestCount',
-            'maxActivateRequests',
-          ]),
+          data: _.pick(brokerData[i].workers[0], ['activeRequestCount']),
           registerTime: worker.registerTime,
         });
       });
@@ -871,7 +831,6 @@ describe(common.testName(__filename), () => {
         WorkerStatus.Unknown,
       ];
       const _pids = [2, 1];
-      const _startingPoolSize = [0, 1];
 
       brokers.forEach((broker, i) => {
         assert.strictEqual(broker.name, 'func');
@@ -881,7 +840,7 @@ describe(common.testName(__filename), () => {
           functionProfile.getProfile('func')
         );
         assert.strictEqual(broker.workers.size, 1);
-        assert.strictEqual(broker['startingPool'].size, _startingPoolSize[i]);
+        assert.strictEqual(broker.initiatingWorkerCount, 0);
 
         const worker: Partial<Worker> = JSON.parse(
           JSON.stringify(broker.workers.get(workerNames[i]))
@@ -894,7 +853,6 @@ describe(common.testName(__filename), () => {
           pid: _pids[i],
           data: _.pick(JSON.parse(JSON.stringify(brokerData[i].workers[0])), [
             'activeRequestCount',
-            'maxActivateRequests',
           ]),
           registerTime: worker.registerTime,
         });
@@ -1008,11 +966,5 @@ function updateWorkerContainerStatus(
 
   if (worker) {
     worker.updateWorkerStatusByReport(event as WorkerStatusReport);
-
-    // 如果已经 ready，则从 starting pool 中移除
-    if (worker.workerStatus === WorkerStatus.Ready) {
-      const broker = stateManager.getBroker(functionName, isInspector);
-      broker?.removeItemFromStartingPool(worker.name);
-    }
   }
 }

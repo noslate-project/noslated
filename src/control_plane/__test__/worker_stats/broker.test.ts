@@ -90,7 +90,7 @@ describe(common.testName(__filename), () => {
         ]);
 
         assert.strictEqual(broker.workers.size, 1);
-        assert.strictEqual(broker['startingPool'].size, 1);
+        assert.strictEqual(broker.initiatingWorkerCount, 1);
 
         const worker = JSON.parse(JSON.stringify(broker.getWorker('foo')));
         assert.deepStrictEqual(worker, {
@@ -102,39 +102,13 @@ describe(common.testName(__filename), () => {
           data: null,
           registerTime: worker.registerTime,
         });
-        assert.deepStrictEqual(broker['startingPool'].get('foo'), {
-          credential: 'bar',
-          estimateRequestLeft: 10,
-          maxActivateRequests: 10,
-        });
       });
     });
 
-    describe('.removeItemFromStartingPool()', () => {
-      it('should removeItemFromStartingPool', () => {
+    describe('get .initiatingWorkerCount()', () => {
+      it('should return initiating worker counts', () => {
         const broker = new Broker(profileManager.getProfile('func')!, true);
-
-        registerWorkers(broker, [
-          {
-            processName: 'foo',
-            credential: 'bar',
-          },
-        ]);
-        broker.removeItemFromStartingPool('foo');
-
-        assert.strictEqual(broker.workers.size, 1);
-        assert.strictEqual(broker['startingPool'].size, 0);
-      });
-    });
-
-    describe('.prerequestStartingPool()', () => {
-      it('should return false when startingPool is empty', () => {
-        const broker = new Broker(profileManager.getProfile('func')!, true);
-        assert.strictEqual(broker.prerequestStartingPool(), false);
-      });
-
-      it('should return true when idle and false when busy', () => {
-        const broker = new Broker(profileManager.getProfile('func')!, true);
+        assert.strictEqual(broker.initiatingWorkerCount, 0);
 
         registerWorkers(broker, [
           {
@@ -142,27 +116,7 @@ describe(common.testName(__filename), () => {
             credential: 'nut',
           },
         ]);
-        for (let i = 0; i < 20; i++) {
-          assert.strictEqual(broker.prerequestStartingPool(), i < 10);
-        }
-      });
-
-      it('should return true when idle and false when busy with two items', () => {
-        const broker = new Broker(profileManager.getProfile('func')!, true);
-
-        registerWorkers(broker, [
-          {
-            processName: 'coco',
-            credential: 'nut',
-          },
-          {
-            processName: 'alibaba',
-            credential: 'seed of hope',
-          },
-        ]);
-        for (let i = 0; i < 40; i++) {
-          assert.strictEqual(broker.prerequestStartingPool(), i < 20);
-        }
+        assert.strictEqual(broker.initiatingWorkerCount, 1);
       });
     });
 
@@ -191,30 +145,31 @@ describe(common.testName(__filename), () => {
         broker.sync([
           {
             name: 'hello',
-            maxActivateRequests: 10,
+            // maxActivateRequests: 10,
             activeRequestCount: 7,
           },
           {
             name: 'foo',
-            maxActivateRequests: 10,
+            // maxActivateRequests: 10,
             activeRequestCount: 4,
           },
         ]);
       });
 
-      describe('get .workerCount()', () => {
-        it('should get when no startingPool', () => {
-          assert.strictEqual(broker.workerCount, 2);
+      describe('get .activeWorkerCount()', () => {
+        it('should get when no initiating workers', () => {
+          assert.strictEqual(broker.activeWorkerCount, 2);
         });
 
-        it('should not get in having startingPool', () => {
+        it('should not get in having initiating workers', () => {
           registerWorkers(broker, [
             {
               processName: 'coco',
               credential: 'world',
             },
           ]);
-          assert.strictEqual(broker.workerCount, 2);
+          assert.strictEqual(broker.activeWorkerCount, 2);
+          assert.strictEqual(broker.initiatingWorkerCount, 1);
         });
 
         it('should get when having stopped', () => {
@@ -227,12 +182,12 @@ describe(common.testName(__filename), () => {
           broker.sync([
             {
               name: 'hello',
-              maxActivateRequests: 10,
+              // maxActivateRequests: 10,
               activeRequestCount: 7,
             },
             {
               name: 'foo',
-              maxActivateRequests: 10,
+              // maxActivateRequests: 10,
               activeRequestCount: 4,
             },
           ]);
@@ -244,12 +199,12 @@ describe(common.testName(__filename), () => {
             }
           });
 
-          assert.strictEqual(broker.workerCount, 1);
+          assert.strictEqual(broker.activeWorkerCount, 1);
         });
       });
 
       describe('get .virtualMemory()', () => {
-        it('should get virtualMemory with startingPool, ignore in startingPool', () => {
+        it('should get virtualMemory with initiating workers, ignore initiating workers', () => {
           assert.strictEqual(broker.virtualMemory, 1024000000);
           registerWorkers(broker, [
             {
@@ -273,17 +228,17 @@ describe(common.testName(__filename), () => {
           broker.sync([
             {
               name: 'hello',
-              maxActivateRequests: 10,
+              // maxActivateRequests: 10,
               activeRequestCount: 7,
             },
             {
               name: 'foo',
-              maxActivateRequests: 10,
+              // maxActivateRequests: 10,
               activeRequestCount: 4,
             },
             {
               name: 'coco',
-              maxActivateRequests: 10,
+              // maxActivateRequests: 10,
               activeRequestCount: 0,
             },
           ]);
@@ -316,17 +271,17 @@ describe(common.testName(__filename), () => {
           broker.sync([
             {
               name: 'hello',
-              maxActivateRequests: 10,
+              // maxActivateRequests: 10,
               activeRequestCount: 7,
             },
             {
               name: 'foo',
-              maxActivateRequests: 10,
+              // maxActivateRequests: 10,
               activeRequestCount: 4,
             },
             {
               name: 'coco',
-              maxActivateRequests: 10,
+              // maxActivateRequests: 10,
               activeRequestCount: 0,
             },
           ]);
@@ -341,16 +296,16 @@ describe(common.testName(__filename), () => {
         });
       });
 
-      describe('get .activeRequestCount()', () => {
+      describe('.getActiveRequestCount()', () => {
         it('should get activeRequestCount', () => {
-          assert.strictEqual(broker.activeRequestCount, 11);
+          assert.strictEqual(broker.getActiveRequestCount(), 11);
           registerWorkers(broker, [
             {
               processName: 'coco',
               credential: 'nut',
             },
           ]);
-          assert.strictEqual(broker.activeRequestCount, 11);
+          assert.strictEqual(broker.getActiveRequestCount(), 11);
 
           broker
             .getWorker('coco')
@@ -359,17 +314,17 @@ describe(common.testName(__filename), () => {
           broker.sync([
             {
               name: 'hello',
-              maxActivateRequests: 10,
+              // maxActivateRequests: 10,
               activeRequestCount: 7,
             },
             {
               name: 'foo',
-              maxActivateRequests: 10,
+              // maxActivateRequests: 10,
               activeRequestCount: 4,
             },
             {
               name: 'coco',
-              maxActivateRequests: 10,
+              // maxActivateRequests: 10,
               activeRequestCount: 2,
             },
           ]);
@@ -380,51 +335,7 @@ describe(common.testName(__filename), () => {
               );
             }
           });
-          assert.strictEqual(broker.activeRequestCount, 6);
-        });
-      });
-
-      describe('get #waterLevel()', () => {
-        it('should get waterLevel', () => {
-          assert.strictEqual(broker.waterLevel, 0.55);
-          registerWorkers(broker, [
-            {
-              processName: 'coco',
-              credential: 'nut',
-            },
-          ]);
-          assert.strictEqual(broker.waterLevel, 0.55);
-
-          broker
-            .getWorker('coco')
-            ?.updateWorkerStatusByReport(WorkerStatusReport.ContainerInstalled);
-
-          broker.sync([
-            {
-              name: 'hello',
-              maxActivateRequests: 10,
-              activeRequestCount: 7,
-            },
-            {
-              name: 'foo',
-              maxActivateRequests: 10,
-              activeRequestCount: 4,
-            },
-            {
-              name: 'coco',
-              maxActivateRequests: 10,
-              activeRequestCount: 2,
-            },
-          ]);
-          broker.workers.forEach(worker => {
-            if (worker.name === 'hello') {
-              worker.updateWorkerStatusByReport(
-                WorkerStatusReport.ContainerDisconnected
-              );
-            }
-          });
-
-          assert.strictEqual(broker.waterLevel, 0.3);
+          assert.strictEqual(broker.getActiveRequestCount(), 6);
         });
       });
 
@@ -471,8 +382,8 @@ describe(common.testName(__filename), () => {
         ]);
 
         broker
-          .getWorker('hello')
-          ?.updateWorkerStatusByReport(WorkerStatusReport.ContainerInstalled);
+          .getWorker('hello')!
+          .updateWorkerStatusByReport(WorkerStatusReport.ContainerInstalled);
 
         registerBrokerContainers(testContainerManager, broker, [
           { pid: 1, name: 'foo', status: TurfContainerStates.running },
@@ -482,22 +393,17 @@ describe(common.testName(__filename), () => {
         broker.sync([
           {
             name: 'hello',
-            maxActivateRequests: 10,
+            // maxActivateRequests: 10,
             activeRequestCount: 7,
           },
           {
             name: 'non-exists',
-            maxActivateRequests: 10,
+            // maxActivateRequests: 10,
             activeRequestCount: 1,
           },
         ]);
 
-        assert.strictEqual(broker['startingPool'].size, 2);
-        assert.deepStrictEqual(broker['startingPool'].get('foo'), {
-          credential: 'bar',
-          estimateRequestLeft: 10,
-          maxActivateRequests: 10,
-        });
+        assert.strictEqual(broker.initiatingWorkerCount, 1);
 
         assert.strictEqual(broker.workers.size, 2);
         assert.deepStrictEqual(broker.profile, funcDataWithDefault);
@@ -509,7 +415,6 @@ describe(common.testName(__filename), () => {
             credential: 'world',
             pid: 2,
             data: {
-              maxActivateRequests: 10,
               activeRequestCount: 7,
             },
           },

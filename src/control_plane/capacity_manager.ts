@@ -57,12 +57,15 @@ export class CapacityManager extends Base {
 
       let count = this.evaluateWaterLevel(broker, false);
 
-      if (broker.workerCount < broker.reservationCount) {
+      if (broker.activeWorkerCount < broker.reservationCount) {
         // 扩容至预留数
-        count = Math.max(count, broker.reservationCount - broker.workerCount);
-      } else if (broker.workerCount + count < broker.reservationCount) {
+        count = Math.max(
+          count,
+          broker.reservationCount - broker.activeWorkerCount
+        );
+      } else if (broker.activeWorkerCount + count < broker.reservationCount) {
         // 缩容至预留数
-        count = broker.reservationCount - broker.workerCount;
+        count = broker.reservationCount - broker.activeWorkerCount;
       }
 
       const delta = { broker, count };
@@ -109,12 +112,12 @@ export class CapacityManager extends Base {
               'current: %d.',
             newDeltas,
             broker.name,
-            broker.activeRequestCount,
+            broker.getActiveRequestCount(),
             broker.totalMaxActivateRequests,
             deltas[i].count,
             rate,
             broker.reservationCount,
-            broker.workerCount
+            broker.activeWorkerCount
           );
 
           deltas[i].count = newDeltas;
@@ -133,18 +136,29 @@ export class CapacityManager extends Base {
     );
   }
 
-  allowExpandingOnRequestQueueing(event: RequestQueueingEvent): boolean {
-    const { name, isInspect, requestId } = event.data;
+  allowExpandingOnRequestQueueing(
+    event: RequestQueueingEvent['data']
+  ): boolean {
+    const { name, isInspect, requestId, queuedRequestCount } = event;
 
-    const broker = this.stateManager.getBroker(name, isInspect);
+    const broker = this.stateManager.getOrCreateBroker(name, isInspect);
+    if (broker == null) {
+      return false;
+    }
 
-    if (broker && !broker.disposable && broker.prerequestStartingPool()) {
+    if (broker.disposable) {
+      return true;
+    }
+
+    if (
+      queuedRequestCount <
+      broker.initiatingWorkerCount * broker.profile.worker.maxActivateRequests
+    ) {
       this.logger.info(
-        'Request(%s) queueing for func(%s, inspect %s, disposable %s) will not expand because StartingPool is still enough.',
+        'Request(%s) queueing for func(%s, inspect %s) not allowed to expand for sufficient initiating worker count.',
         requestId,
         name,
-        isInspect,
-        broker.disposable
+        isInspect
       );
       return false;
     }
@@ -162,26 +176,30 @@ export class CapacityManager extends Base {
       return 0;
     }
 
-    if (!broker.workerCount) {
+    if (!broker.activeWorkerCount) {
       return 0;
     }
 
-    const { activeRequestCount, totalMaxActivateRequests } = broker;
+    const { totalMaxActivateRequests } = broker;
+    const activeRequestCount = broker.getActiveRequestCount();
     const waterLevel = activeRequestCount / totalMaxActivateRequests;
 
     let waterLevelAction = WaterLevelAction.UNKNOWN;
 
     // First check is this function still existing
     if (!expansionOnly) {
-      if (waterLevel <= 0.6 && broker.workerCount > broker.reservationCount) {
+      if (
+        waterLevel <= 0.6 &&
+        broker.activeWorkerCount > broker.reservationCount
+      ) {
         waterLevelAction = waterLevelAction || WaterLevelAction.NEED_SHRINK;
       }
 
       // If only one worker left, and still have request, reserve it
       if (
         waterLevelAction === WaterLevelAction.NEED_SHRINK &&
-        broker.workerCount === 1 &&
-        broker.activeRequestCount !== 0
+        broker.activeWorkerCount === 1 &&
+        activeRequestCount !== 0
       ) {
         waterLevelAction = WaterLevelAction.NORMAL;
       }
@@ -205,8 +223,11 @@ export class CapacityManager extends Base {
           );
 
           // reserve at least `this.reservationCount` instances
-          if (broker.workerCount - deltaInstance < broker.reservationCount) {
-            deltaInstance = broker.workerCount - broker.reservationCount;
+          if (
+            broker.activeWorkerCount - deltaInstance <
+            broker.reservationCount
+          ) {
+            deltaInstance = broker.activeWorkerCount - broker.reservationCount;
           }
 
           broker.redundantTimes = 0;
@@ -230,8 +251,8 @@ export class CapacityManager extends Base {
         );
         deltaInstanceCount =
           broker.profile.worker.replicaCountLimit <
-          broker.workerCount + deltaInstanceCount
-            ? broker.profile.worker.replicaCountLimit - broker.workerCount
+          broker.activeWorkerCount + deltaInstanceCount
+            ? broker.profile.worker.replicaCountLimit - broker.activeWorkerCount
             : deltaInstanceCount;
 
         return Math.max(deltaInstanceCount, 0);
@@ -265,17 +286,17 @@ export class CapacityManager extends Base {
     }
 
     // inspect 模式只开启一个
-    if (broker.workerCount && inspect) {
+    if (broker.activeWorkerCount && inspect) {
       const err = new Error(
-        `Replica count exceeded limit in inspect mode (${broker.workerCount} / ${replicaCountLimit})`
+        `Replica count exceeded limit in inspect mode (${broker.activeWorkerCount} / ${replicaCountLimit})`
       );
       err.code = ErrorCode.kReplicaLimitExceeded;
       throw err;
     }
 
-    if (broker.workerCount >= replicaCountLimit) {
+    if (broker.activeWorkerCount >= replicaCountLimit) {
       const err = new Error(
-        `Replica count exceeded limit (${broker.workerCount} / ${replicaCountLimit})`
+        `Replica count exceeded limit (${broker.activeWorkerCount} / ${replicaCountLimit})`
       );
       err.code = ErrorCode.kReplicaLimitExceeded;
       throw err;

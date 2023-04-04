@@ -194,9 +194,7 @@ export type DeepRequired<T> = T extends object
 
 export type DeepReadonly<T> = T extends object
   ? Readonly<{
-      [Property in keyof T]: T[Property] extends MaybeNill<infer R>
-        ? DeepReadonly<R>
-        : DeepReadonly<T[Property]>;
+      [Property in keyof T]: DeepReadonly<T[Property]>;
     }>
   : T;
 

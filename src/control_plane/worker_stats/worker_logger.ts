@@ -62,4 +62,8 @@ export class WorkerLogger {
       extra ? extra : '.'
     );
   }
+
+  statusChangedError(e: unknown) {
+    this.logger.error('unexpected error on calling onstatuschanged', e);
+  }
 }
