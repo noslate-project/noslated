@@ -174,8 +174,12 @@ export class DataPlaneImpl implements IDataPlane {
       inspect: !!inspect,
     });
 
+    if (broker == null) {
+      return;
+    }
+
     await Promise.all(
-      (broker?.workers ?? []).map(it => {
+      Array.from(broker.workers()).map(it => {
         if (categories.length > 0) {
           return it.delegate.tracingStart(it.credential, categories);
         } else {
@@ -195,8 +199,12 @@ export class DataPlaneImpl implements IDataPlane {
       inspect: !!inspect,
     });
 
+    if (broker == null) {
+      return;
+    }
+
     await Promise.all(
-      (broker?.workers ?? []).map(it => {
+      Array.from(broker.workers()).map(it => {
         it.delegate.inspectorStart(it.credential);
       })
     );

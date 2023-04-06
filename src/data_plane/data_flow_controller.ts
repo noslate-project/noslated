@@ -130,8 +130,8 @@ export class DataFlowController extends BaseOf(EventEmitter) {
     const credentials = Array.from(this.credentialBrokerMap.entries());
     return credentials
       .map(([credential, broker]) => {
-        const worker = broker.getWorkerByOnlyCredential(credential);
-        if (worker == null || worker === true) {
+        const worker = broker.getWorker(credential);
+        if (worker == null || typeof worker === 'string') {
           return null;
         }
         const usage = this.delegate.getResourceUsage(credential);
@@ -167,7 +167,7 @@ export class DataFlowController extends BaseOf(EventEmitter) {
       const closed = await realWorker.closeTraffic();
 
       if (closed) {
-        await (this.host as any).broadcastContainerStatusReport({
+        await this.host.broadcastContainerStatusReport({
           functionName: broker.name,
           isInspector: broker.options.inspect === true,
           name: realWorker.name,
@@ -180,10 +180,7 @@ export class DataFlowController extends BaseOf(EventEmitter) {
 
     const promises = [];
     for (const worker of broker?.workers || []) {
-      const realWorker = realBroker.getWorker(
-        worker.name as string,
-        worker.credential as string
-      );
+      const realWorker = realBroker.getWorker(worker.credential!);
       if (!realWorker) continue;
       if (typeof realWorker === 'string') {
         // extracted from queueing credentials
@@ -255,7 +252,7 @@ export class DataFlowController extends BaseOf(EventEmitter) {
       return;
     }
 
-    const worker = broker.getWorkerByOnlyCredential(credential);
+    const worker = broker.getWorker(credential);
     const tag = worker
       ? (worker as Worker).name || `{${credential}}`
       : `{${credential}}`;
@@ -265,7 +262,7 @@ export class DataFlowController extends BaseOf(EventEmitter) {
     this.credentialBrokerMap.delete(credential);
 
     if (worker instanceof Worker) {
-      await (this.host as any).broadcastContainerStatusReport({
+      await this.host.broadcastContainerStatusReport({
         functionName: broker.name,
         name: worker.name,
         event: WorkerStatusReport.ContainerDisconnected,
@@ -335,24 +332,20 @@ export class DataFlowController extends BaseOf(EventEmitter) {
       return this.brokers.get(key);
     }
 
-    const broker = new WorkerBroker(this, name, options);
+    const profile = this.profileManager.getProfile(name);
+    if (profile == null) {
+      throw new Error(`Worker(${name}) not found`);
+    }
+    const broker = new WorkerBroker(this, profile, options);
     this.brokers.set(key, broker);
     return broker;
   }
 
   /**
    * Current workers' stats information.
-   * @type {root.noslated.data.IBrokerStats[]} The brokers with workers' stats.
    */
   getCurrentWorkersInformation(): root.noslated.data.IBrokerStats[] {
-    return [...this.brokers.values()].map(broker => ({
-      functionName: broker.name,
-      inspector: broker.options.inspect === true,
-      workers: broker.workers.map(worker => ({
-        name: worker.name,
-        activeRequestCount: worker.activeRequestCount,
-      })),
-    }));
+    return [...this.brokers.values()].map(broker => broker.toJSON());
   }
 
   /**
@@ -372,10 +365,12 @@ export class DataFlowController extends BaseOf(EventEmitter) {
   cleanOrphanBrokers = async () => {
     const cleanedKeys = [];
     for (const [key, broker] of this.brokers.entries()) {
-      if (
-        !this.profileManager.getProfile(broker.name) &&
-        !broker.workers.length
-      ) {
+      const profile = this.profileManager.getProfile(broker.name);
+      if (profile) {
+        broker.updateProfile(profile);
+        continue;
+      }
+      if (!broker.workerCount) {
         cleanedKeys.push(key);
         broker.close();
       }

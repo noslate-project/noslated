@@ -47,7 +47,7 @@ export class WorkerTelemetry {
         const functionName = broker.name;
         // TODO(chengzhong.wcz): runtime type;
 
-        return broker.workers.map(async worker => {
+        return Array.from(broker.workers()).map(async worker => {
           let metrics;
           try {
             metrics = await this.#delegate.collectMetrics(worker.credential);
