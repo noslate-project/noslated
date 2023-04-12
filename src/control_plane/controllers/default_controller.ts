@@ -72,7 +72,7 @@ export class DefaultController extends BaseController {
 
     const workerMetadata = new WorkerMetadata(
       profile.name,
-      { inspect: false },
+      { inspect: isInspect },
       false
     );
 

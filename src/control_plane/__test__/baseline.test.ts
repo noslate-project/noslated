@@ -145,6 +145,28 @@ const cases = [
     },
   },
   {
+    name: 'aworker_echo_inspect',
+    profile: {
+      name: 'aworker_echo',
+      runtime: 'aworker',
+      url: `file://${baselineDir}/aworker_echo`,
+      sourceFile: 'index.js',
+      signature: 'md5:234234',
+    },
+    input: {
+      data: Buffer.from('echo'),
+      metadata: {
+        method: 'POST',
+      },
+    },
+    before: async ({ data }: DefaultEnvironment) => {
+      await data.dataFlowController.useInspector('aworker_echo', true);
+    },
+    expect: {
+      data: Buffer.from('echo'),
+    },
+  },
+  {
     name: 'aworker_echo_v8_options',
     profile: {
       name: 'aworker_echo',
