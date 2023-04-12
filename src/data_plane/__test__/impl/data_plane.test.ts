@@ -119,8 +119,9 @@ describe(common.testName(__filename), () => {
 
       // await flushing
       await sleep(2000);
-      const containerName =
-        env.data.dataFlowController.getBroker('foobar')!.workers[0].name;
+      const containerName = Array.from(
+        env.data.dataFlowController.getBroker('foobar')!.workers()
+      )[0].name;
       const logDir = workerLogPath(config.logger.dir, containerName);
       const files = fs.readdirSync(logDir);
 

@@ -90,7 +90,7 @@ export class SystemCircuitBreaker extends EventEmitter {
   _getActiveRequestCount() {
     return sum(
       Array.from(this.#dataFlowController.brokers.values())
-        .flatMap(it => it.workers)
+        .flatMap(it => Array.from(it.workers()))
         .map(w => w.activeRequestCount)
     );
   }

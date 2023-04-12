@@ -32,7 +32,7 @@ const PROFILES = [
     },
     worker: {
       initializationTimeout: 500,
-      maxActivateRequests: 1,
+      maxActivateRequests: 10,
     },
   },
   {
@@ -84,93 +84,17 @@ describe(common.testName(__filename), () => {
       await profileManager.setProfiles(profiles);
       const broker = new WorkerBroker(
         {
-          profileManager,
           delegate,
           host: mockHost,
         } as unknown as DataFlowController,
-        'node-http-demo',
+        profileManager.getProfile('node-http-demo')!,
         {}
       );
 
       broker.registerCredential('foo', 'bar');
       await broker.bindWorker('bar');
 
-      assert.strictEqual(broker.workers.length, 1);
-      const worker = broker.workers[0];
-
-      assert.strictEqual(
-        worker.maxActivateRequests,
-        config.worker.maxActivateRequests
-      );
-      assert(triggerCalled);
-    });
-
-    it('maxActivateRequests 1', async () => {
-      let triggerCalled = false;
-      const delegate = {
-        async trigger(credential: any, method: any, data: any, metadata: any) {
-          assert.ok(
-            metadata.deadline - Date.now() <=
-              config.worker.defaultInitializerTimeout
-          );
-          triggerCalled = true;
-        },
-        resetPeer() {},
-      };
-
-      const profiles = JSON.parse(JSON.stringify(PROFILES));
-      delete profiles[0].worker.initializationTimeout;
-      await profileManager.setProfiles(profiles);
-      const broker = new WorkerBroker(
-        {
-          profileManager,
-          delegate,
-          host: mockHost,
-        } as unknown as DataFlowController,
-        'node-http-demo',
-        {}
-      );
-
-      broker.registerCredential('foo', 'bar');
-      await broker.bindWorker('bar');
-
-      assert.strictEqual(broker.workers.length, 1);
-      const worker = broker.workers[0];
-
-      assert.strictEqual(worker.maxActivateRequests, 1);
-      assert(triggerCalled);
-    });
-
-    it('initialize timeout 500', async () => {
-      let triggerCalled = false;
-      const delegate = {
-        async trigger(credential: any, method: any, data: any, metadata: any) {
-          assert.ok(metadata.deadline - Date.now() <= 500);
-          triggerCalled = true;
-        },
-        resetPeer() {},
-      };
-
-      const profiles = JSON.parse(JSON.stringify(PROFILES));
-      delete profiles[0].worker.maxActivateRequests;
-      await profileManager.setProfiles(profiles);
-      const broker = new WorkerBroker(
-        {
-          profileManager,
-          delegate,
-          host: mockHost,
-        } as unknown as DataFlowController,
-        'node-http-demo',
-        {}
-      );
-
-      broker.registerCredential('foo', 'bar');
-      await broker.bindWorker('bar');
-
-      assert.strictEqual(broker.workers.length, 1);
-      const worker = broker.workers[0];
-
-      assert.strictEqual(worker.maxActivateRequests, 10);
+      assert.strictEqual(broker.workerCount, 1);
       assert(triggerCalled);
     });
   });
@@ -199,24 +123,22 @@ describe(common.testName(__filename), () => {
     it('no worker', async () => {
       const broker = new WorkerBroker(
         {
-          profileManager,
           delegate: dummyDelegate,
           host: mockHost,
         } as unknown as DataFlowController,
-        'node-http-demo',
+        profileManager.getProfile('node-http-demo')!,
         {}
       );
-      assert.strictEqual(broker.getAvailableWorker(), null);
+      assert.ok(broker.getAvailableWorker() == null);
     });
 
     it('no `traffic on` worker', async () => {
       const broker = new WorkerBroker(
         {
-          profileManager,
           delegate: dummyDelegate,
           host: mockHost,
         } as unknown as DataFlowController,
-        'node-http-demo',
+        profileManager.getProfile('node-http-demo')!,
         {}
       );
 
@@ -226,18 +148,19 @@ describe(common.testName(__filename), () => {
       broker.registerCredential('hello', 'world');
       await broker.bindWorker('world');
 
-      await Promise.all(broker.workers.map(worker => worker.closeTraffic()));
-      assert.strictEqual(broker.getAvailableWorker(), null);
+      await Promise.all(
+        Array.from(broker.workers()).map(worker => worker.closeTraffic())
+      );
+      assert.ok(broker.getAvailableWorker() == null);
     });
 
     it('no `traffic on` worker and idle worker', async () => {
       const broker = new WorkerBroker(
         {
-          profileManager,
           delegate: dummyDelegate,
           host: mockHost,
         } as unknown as DataFlowController,
-        'node-http-demo',
+        profileManager.getProfile('node-http-demo')!,
         {}
       );
 
@@ -247,24 +170,25 @@ describe(common.testName(__filename), () => {
       broker.registerCredential('hello', 'world');
       await broker.bindWorker('world');
 
-      await Promise.all(broker.workers.map(worker => worker.closeTraffic()));
+      await Promise.all(
+        Array.from(broker.workers()).map(worker => worker.closeTraffic())
+      );
 
       broker.registerCredential('coco', 'nut');
       await broker.bindWorker('nut');
-      broker.workers[2].maxActivateRequests = 10;
-      broker.workers[2].activeRequestCount = 10;
+      const worker = Array.from(broker.workers())[2];
+      worker.activeRequestCount = 10;
 
-      assert.strictEqual(broker.getAvailableWorker(), null);
+      assert.ok(broker.getAvailableWorker() == null);
     });
 
     it('return idlest worker', async () => {
       const broker = new WorkerBroker(
         {
-          profileManager,
           delegate: dummyDelegate,
           host: mockHost,
         } as unknown as DataFlowController,
-        'node-http-demo',
+        profileManager.getProfile('node-http-demo')!,
         {}
       );
 
@@ -277,14 +201,12 @@ describe(common.testName(__filename), () => {
       broker.registerCredential('coco', 'nut');
       await broker.bindWorker('nut');
 
-      broker.workers[0].maxActivateRequests = 10;
-      broker.workers[0].activeRequestCount = 6;
-      broker.workers[1].maxActivateRequests = 10;
-      broker.workers[1].activeRequestCount = 3;
-      broker.workers[2].maxActivateRequests = 10;
-      broker.workers[2].activeRequestCount = 9;
+      const workers = Array.from(broker.workers());
+      workers[0].activeRequestCount = 6;
+      workers[1].activeRequestCount = 3;
+      workers[2].activeRequestCount = 9;
 
-      assert.strictEqual(broker.getAvailableWorker(), broker.workers[1]);
+      assert.strictEqual(broker.getAvailableWorker(), workers[1]);
     });
   });
 
@@ -310,7 +232,7 @@ describe(common.testName(__filename), () => {
       });
 
       const dpBroker = env.data.dataFlowController.getBroker('aworker_echo')!;
-      const dpWorker = dpBroker.workers[0];
+      const dpWorker = Array.from(dpBroker.workers())[0];
 
       for (let i = 0; i < 5; i++) {
         dpBroker.requestQueue.push(
@@ -355,10 +277,10 @@ describe(common.testName(__filename), () => {
 
       const defer = createDeferred<void>();
 
-      assert.strictEqual(dpBroker.workers.length, 1);
+      assert.strictEqual(dpBroker.workerCount, 1);
 
       let times = 0;
-      const dpWorker = dpBroker.workers[0];
+      const dpWorker = Array.from(dpBroker.workers())[0];
 
       const interval = setInterval(async () => {
         if (times === 10) {
@@ -432,13 +354,13 @@ describe(common.testName(__filename), () => {
       });
 
       const dpBroker = env.data.dataFlowController.getBroker('aworker_echo')!;
-      const dpWorker = dpBroker.workers[0];
+      const dpWorker = Array.from(dpBroker.workers())[0];
 
       assert.strictEqual(dpWorker.trafficOff, true);
 
       await sleep(1000);
 
-      assert.strictEqual(dpBroker.workers.length, 0);
+      assert.strictEqual(dpBroker.workerCount, 0);
     });
 
     it('should maxActivateRequests = 1 when disposable = true', async () => {
@@ -484,7 +406,7 @@ describe(common.testName(__filename), () => {
 
       await sleep(1000);
 
-      assert.strictEqual(dpBroker.workers.length, 0);
+      assert.strictEqual(dpBroker.workerCount, 0);
     });
 
     it('should stop worker after invoke fail', async () => {
@@ -513,13 +435,13 @@ describe(common.testName(__filename), () => {
       }, /MockWorkerPipeError/);
 
       const dpBroker = env.data.dataFlowController.getBroker('aworker_echo')!;
-      const dpWorker = dpBroker.workers[0];
+      const dpWorker = Array.from(dpBroker.workers())[0];
 
       assert.strictEqual(dpWorker.trafficOff, true);
 
       await sleep(1000);
 
-      assert.strictEqual(dpBroker.workers.length, 0);
+      assert.strictEqual(dpBroker.workerCount, 0);
 
       stub.restore();
     });
@@ -560,13 +482,13 @@ describe(common.testName(__filename), () => {
       const dpBroker = env.data.dataFlowController.getBroker(
         'aworker_huge_response'
       )!;
-      const dpWorker = dpBroker.workers[0];
+      const dpWorker = Array.from(dpBroker.workers())[0];
 
       assert.strictEqual(dpWorker.trafficOff, true);
 
       await sleep(1000);
 
-      assert.strictEqual(dpBroker.workers.length, 0);
+      assert.strictEqual(dpBroker.workerCount, 0);
     });
 
     it('should stop worker when response sent fail', async () => {
@@ -597,12 +519,12 @@ describe(common.testName(__filename), () => {
       const dpBroker = env.data.dataFlowController.getBroker(
         'aworker_huge_response'
       )!;
-      const dpWorker = dpBroker.workers[0];
+      const dpWorker = Array.from(dpBroker.workers())[0];
       assert.strictEqual(dpWorker.trafficOff, true);
 
       await sleep(1000);
 
-      assert.strictEqual(dpBroker.workers.length, 0);
+      assert.strictEqual(dpBroker.workerCount, 0);
     });
   });
 });

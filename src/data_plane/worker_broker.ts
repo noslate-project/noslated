@@ -1,5 +1,4 @@
 import EventEmitter from 'events';
-import _ from 'lodash';
 import * as utils from '#self/lib/util';
 import { TokenBucket, TokenBucketConfig } from './token_bucket';
 import { RpcError, RpcStatus } from '#self/lib/rpc/error';
@@ -14,12 +13,13 @@ import {
 import { NoslatedDelegateService } from '#self/delegate';
 import { PrefixedLogger } from '#self/lib/loggers';
 import { DataFlowController } from './data_flow_controller';
-import { FunctionProfileManager } from '#self/lib/function_profile';
 import * as root from '#self/proto/root';
 import { performance } from 'perf_hooks';
 import { WorkerStatusReport, kDefaultRequestId } from '#self/lib/constants';
 import { DataPlaneHost } from './data_plane_host';
-import { List } from '#self/lib/list';
+import { List, ReadonlyNode } from '#self/lib/list';
+import { RawWithDefaultsFunctionProfile } from '#self/lib/json/function_profile';
+import { MinHeap } from '@datastructures-js/heap';
 
 enum RequestQueueStatus {
   PASS_THROUGH = 0,
@@ -94,15 +94,16 @@ export class PendingRequest extends EventEmitter {
 // TODO: Reverse control with WorkerBroker.
 export class Worker extends EventEmitter {
   activeRequestCount: number;
-  logger: PrefixedLogger;
+  private logger: PrefixedLogger;
   trafficOff: boolean;
+
+  freeWorkerListNode: ReadonlyNode<Worker> | null = null;
 
   constructor(
     public broker: WorkerBroker,
     public delegate: NoslatedDelegateService,
     public name: string,
     public credential: string,
-    public maxActivateRequests: number,
     public disposable: boolean
   ) {
     super();
@@ -185,17 +186,25 @@ export class Worker extends EventEmitter {
         this.emit('downToZero');
       }
 
+      // FIXME: wait until the response stream finishes.
       this.continueConsumeQueue();
     }
   }
 
   continueConsumeQueue() {
     if (this.disposable) return;
-    if (this.trafficOff) return;
 
-    if (this.activeRequestCount < this.maxActivateRequests) {
+    if (this.isWorkerFree()) {
       this.broker.tryConsumeQueue(this);
     }
+  }
+
+  isWorkerFree() {
+    if (this.trafficOff) {
+      return false;
+    }
+
+    return this.broker.maxActivateRequests > this.activeRequestCount;
   }
 }
 
@@ -203,23 +212,25 @@ interface BrokerOptions {
   inspect?: boolean;
 }
 
-interface CredentialItem {
+interface WorkerItem {
   status: CredentialStatus;
   name: string;
+  worker: Worker | null;
 }
 
 /**
  * A container that brokers same function's workers.
  */
 export class WorkerBroker extends Base {
-  private profileManager: FunctionProfileManager;
+  public name: string;
   private delegate: NoslatedDelegateService;
   private host: DataPlaneHost;
   private logger: PrefixedLogger;
   requestQueue: List<PendingRequest>;
   private requestQueueStatus: RequestQueueStatus;
-  workers: Worker[];
-  private credentialStatusMap: Map<string, CredentialItem>;
+
+  private _workerHeap: Worker[];
+  private _workerMap: Map<string, WorkerItem>;
   private tokenBucket: TokenBucket | undefined = undefined;
 
   /**
@@ -227,24 +238,24 @@ export class WorkerBroker extends Base {
    */
   constructor(
     public dataFlowController: DataFlowController,
-    public name: string,
+    private _profile: RawWithDefaultsFunctionProfile,
     public options: BrokerOptions = {}
   ) {
     super();
 
-    this.profileManager = dataFlowController.profileManager;
+    this.name = _profile.name;
     this.delegate = dataFlowController.delegate;
     this.host = dataFlowController.host;
 
     this.logger = new PrefixedLogger(
       'worker broker',
-      `${name}${options.inspect ? ':inspect' : ''}`
+      `${this.name}${options.inspect ? ':inspect' : ''}`
     );
     this.requestQueue = new List();
     this.requestQueueStatus = RequestQueueStatus.PASS_THROUGH;
 
-    this.workers = [];
-    this.credentialStatusMap = new Map();
+    this._workerMap = new Map();
+    this._workerHeap = [];
 
     const rateLimit = this.rateLimit;
     if (rateLimit) {
@@ -252,49 +263,32 @@ export class WorkerBroker extends Base {
     }
   }
 
-  /**
-   * Get worker via worker name and credential.
-   * @param {string} name The worker's name.
-   * @param {string} credential The worker's credential.
-   * @return {Worker|string|null} The worker object or the pending credential.
-   */
-  getWorker(name: string, credential: string) {
-    for (const worker of this.workers) {
-      if (worker.name === name && worker.credential === credential) {
-        return worker;
+  get workerCount() {
+    return this._workerMap.size;
+  }
+
+  *workers() {
+    for (const item of this._workerMap.values()) {
+      if (item.worker) {
+        yield item.worker;
       }
     }
-
-    if (
-      this.credentialStatusMap.get(credential)?.status ===
-      CredentialStatus.PENDING
-    ) {
-      return credential;
-    }
-
-    return null;
   }
 
   /**
    * Get worker via only credential.
-   * @param {string} credential The worker's credential.
-   * @return {Worker|true|null} The worker object or the pending credential.
    */
-  getWorkerByOnlyCredential(credential: string) {
-    for (const worker of this.workers) {
-      if (worker.credential === credential) {
-        return worker;
-      }
+  getWorker(credential: string) {
+    const item = this._workerMap.get(credential);
+    if (item == null) {
+      return;
     }
 
-    if (
-      this.credentialStatusMap.get(credential)?.status ===
-      CredentialStatus.PENDING
-    ) {
-      return true;
+    if (item.worker != null) {
+      return item.worker;
     }
 
-    return null;
+    return credential;
   }
 
   /**
@@ -302,23 +296,22 @@ export class WorkerBroker extends Base {
    * @param {string} credential The worker's credential.
    */
   removeWorker(credential: string) {
-    this.workers = this.workers.filter(w => w.credential !== credential);
-    this.credentialStatusMap.delete(credential);
+    this._workerMap.delete(credential);
+    const idx = this._workerHeap.findIndex(it => it.credential === credential);
+    if (idx >= 0) {
+      this._workerHeap.splice(idx, 1);
+    }
   }
 
   /**
    * Try consume the pending request queue.
-   * @param {Worker} notThatBusyWorker The idled (not that busy) worker.
+   * @param notThatBusyWorker The idled (not that busy) worker.
    */
   tryConsumeQueue(notThatBusyWorker: Worker) {
-    if (notThatBusyWorker.trafficOff) return;
-
-    while (
-      this.requestQueue.length &&
-      notThatBusyWorker.maxActivateRequests >
-        notThatBusyWorker.activeRequestCount
-    ) {
-      if (notThatBusyWorker.trafficOff) break;
+    while (this.requestQueue.length) {
+      if (!notThatBusyWorker.isWorkerFree()) {
+        break;
+      }
 
       const request = this.requestQueue.shift();
 
@@ -393,10 +386,7 @@ export class WorkerBroker extends Base {
    * @return {{ credential: string, name: string }|false} The pending credential or false if not exists.
    */
   private isCredentialPending(credential: string) {
-    return (
-      this.credentialStatusMap.get(credential)?.status ===
-      CredentialStatus.PENDING
-    );
+    return this._workerMap.get(credential)?.status === CredentialStatus.PENDING;
   }
 
   /**
@@ -410,69 +400,48 @@ export class WorkerBroker extends Base {
         `Credential ${credential} already exists in ${this.name}.`
       );
     }
-    this.credentialStatusMap.set(credential, {
+    this._workerMap.set(credential, {
       status: CredentialStatus.PENDING,
       name,
+      worker: null,
     });
   }
 
-  get disposable() {
-    const profile = this.profileManager.getProfile(this.name);
-
-    if (!profile) {
-      return false;
+  updateProfile(profile: RawWithDefaultsFunctionProfile) {
+    if (profile.name !== this.name) {
+      throw new Error('Update with mismatched worker profile');
     }
+    this._profile = profile;
+  }
 
-    return profile.worker?.disposable || false;
+  get disposable() {
+    return this._profile.worker.disposable;
   }
 
   /**
    * Max activate requests count per worker of this broker.
-   * @type {number}
    */
-  private get maxActivateRequests() {
-    const profile = this.profileManager.getProfile(this.name);
-    if (!profile) {
-      return 0;
-    }
-
+  get maxActivateRequests(): number {
     if (this.disposable) {
       return 1;
     }
 
-    return profile.worker.maxActivateRequests;
+    return this._profile.worker.maxActivateRequests;
   }
 
   /**
    * Rate limit of this broker.
-   * @type {any}
    */
   get rateLimit() {
-    const profile = this.profileManager.getProfile(this.name);
-    if (!profile) {
-      return null;
-    }
-
-    return profile.rateLimit;
+    return this._profile.rateLimit;
   }
 
   private get profile() {
-    const profile = this.profileManager.getProfile(this.name);
-    if (!profile) {
-      throw new Error(
-        `Function '${this.name}' is no more existing in profile manager.`
-      );
-    }
-    return profile;
+    return this._profile;
   }
 
   get namespace() {
-    const profile = this.profileManager.getProfile(this.name);
-    if (!profile) {
-      return null;
-    }
-
-    return profile.namespace;
+    return this._profile.namespace;
   }
 
   /**
@@ -481,7 +450,7 @@ export class WorkerBroker extends Base {
    * @return {Promise<void>} The result.
    */
   async bindWorker(credential: string) {
-    if (!this.credentialStatusMap.has(credential)) {
+    if (!this._workerMap.has(credential)) {
       this.logger.error(`No credential ${credential} bound to the broker.`);
       return;
     }
@@ -493,26 +462,24 @@ export class WorkerBroker extends Base {
       );
     }
 
-    const item = this.credentialStatusMap.get(credential);
+    const item = this._workerMap.get(credential);
     if (item == null || item.status !== CredentialStatus.PENDING) {
       this.logger.error(`Duplicated worker with credential ${credential}`);
       return;
     }
 
-    const { profile } = this;
     const worker = new Worker(
       this,
       this.delegate,
       item.name,
       credential,
-      this.maxActivateRequests,
       this.disposable
     );
 
     try {
       const now = performance.now();
       await this.delegate.trigger(credential, 'init', null, {
-        deadline: profile.worker.initializationTimeout + Date.now(),
+        deadline: this.profile.worker.initializationTimeout + Date.now(),
       });
       this.logger.info(
         'worker(%s) initialization cost: %sms.',
@@ -520,7 +487,7 @@ export class WorkerBroker extends Base {
         performance.now() - now
       );
       // 同步 Container 状态
-      await (this.host as any).broadcastContainerStatusReport({
+      await this.host.broadcastContainerStatusReport({
         functionName: this.name,
         isInspector: this.options.inspect === true,
         name: worker.name,
@@ -532,8 +499,6 @@ export class WorkerBroker extends Base {
       throw e;
     }
 
-    this.workers.push(worker);
-
     const tag = worker
       ? (worker as Worker).name || `{${credential}}`
       : `{${credential}}`;
@@ -542,30 +507,42 @@ export class WorkerBroker extends Base {
       `Worker ${tag} for ${this.name} attached, draining request queue.`
     );
 
-    this.credentialStatusMap.set(credential, {
+    this._workerMap.set(credential, {
       status: CredentialStatus.BOUND,
       name: item.name,
+      worker,
     });
 
+    this._workerHeap.push(worker);
     this.tryConsumeQueue(worker);
   }
 
   /**
    * Get an available worker for balancer.
-   * @return {Worker|null} The worker object or null to indicates no available worker.
    */
-  getAvailableWorker() {
-    if (!this.workers.length) return null;
-
-    const worker = _.maxBy(
-      this.workers.filter(w => !w.trafficOff),
-      w => w.maxActivateRequests - w.activeRequestCount
+  getAvailableWorker(): Worker | undefined {
+    MinHeap.heapify(this._workerHeap, it =>
+      it.trafficOff ? Infinity : it.activeRequestCount
     );
-    if (worker && worker.maxActivateRequests > worker.activeRequestCount) {
+    const worker = this._workerHeap[0];
+    if (
+      worker &&
+      !worker.trafficOff &&
+      worker.activeRequestCount < this.maxActivateRequests
+    ) {
       return worker;
     }
+  }
 
-    return null;
+  toJSON(): root.noslated.data.IBrokerStats {
+    return {
+      functionName: this.name,
+      inspector: this.options.inspect === true,
+      workers: Array.from(this._workerMap.values()).map(item => ({
+        name: item.name,
+        activeRequestCount: item.worker?.activeRequestCount ?? 0,
+      })),
+    };
   }
 
   /**

@@ -53,7 +53,7 @@ describe(common.testName(__filename), function () {
       )[0];
       assert.ok(broker != null);
       assert.strictEqual(broker.name, testItem.name);
-      const worker = broker.workers[0];
+      const worker = Array.from(broker.workers())[0];
       assert.ok(worker != null);
       // TODO(chengzhong.wcz): get pid from worker stats.
       // const pid = worker.pid;
