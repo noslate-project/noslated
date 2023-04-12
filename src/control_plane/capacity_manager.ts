@@ -289,10 +289,12 @@ export class CapacityManager extends Base {
       throw new LauncherError(ErrorCode.kReplicaLimitExceededInspector);
     }
 
-    if (broker.activeWorkerCount >= replicaCountLimit) {
+    const initiatingAndActiveCount =
+      broker.initiatingWorkerCount + broker.activeWorkerCount;
+    if (initiatingAndActiveCount >= replicaCountLimit) {
       throw new LauncherError(
         ErrorCode.kReplicaLimitExceeded,
-        broker.activeWorkerCount,
+        initiatingAndActiveCount,
         replicaCountLimit
       );
     }

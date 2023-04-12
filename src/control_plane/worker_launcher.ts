@@ -158,28 +158,6 @@ export class WorkerLauncher extends Base {
     const processName = naming.processName(funcName);
     const { name, url, signature } = profile;
 
-    let bundlePath;
-    try {
-      bundlePath = await this.codeManager.ensure(name, url, signature);
-    } catch (exp) {
-      throw new LauncherError(ErrorCode.kEnsureCodeError, castError(exp));
-    }
-
-    const starter: WorkerStarter =
-      this.starters[this.extractRuntimeType(profile)];
-    if (!starter) {
-      throw new LauncherError(ErrorCode.kInvalidRuntime, profile.runtime);
-    }
-
-    const dataPlane =
-      await this.dataPlaneClientManager.registerWorkerCredential({
-        funcName,
-        processName,
-        credential,
-        inspect: !!options.inspect,
-      });
-    const serverSockPath = (dataPlane as any).getServerSockPath();
-
     const workerMetadata = new WorkerMetadata(
       funcName,
       { inspect: !!options.inspect },
@@ -190,8 +168,31 @@ export class WorkerLauncher extends Base {
     );
 
     const worker = this.stateManager.register(workerMetadata);
-
+    // TODO: Proper error handling.
+    //       - Collect resources.
     try {
+      let bundlePath;
+      try {
+        bundlePath = await this.codeManager.ensure(name, url, signature);
+      } catch (exp) {
+        throw new LauncherError(ErrorCode.kEnsureCodeError, castError(exp));
+      }
+
+      const starter: WorkerStarter =
+        this.starters[this.extractRuntimeType(profile)];
+      if (!starter) {
+        throw new LauncherError(ErrorCode.kInvalidRuntime, profile.runtime);
+      }
+
+      const dataPlane =
+        await this.dataPlaneClientManager.registerWorkerCredential({
+          funcName,
+          processName,
+          credential,
+          inspect: !!options.inspect,
+        });
+      const serverSockPath = (dataPlane as any).getServerSockPath();
+
       const now = performance.now();
       const container = await starter.start(
         serverSockPath,
@@ -204,6 +205,9 @@ export class WorkerLauncher extends Base {
       worker.setContainer(container);
       worker.logger.start(performance.now() - now);
     } catch (e) {
+      worker.ready().catch(() => {
+        /** ignore */
+      });
       worker.updateWorkerStatusByControlPlaneEvent(
         ControlPlaneEvent.FailedToSpawn
       );

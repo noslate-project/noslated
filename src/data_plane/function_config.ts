@@ -21,9 +21,9 @@ export class FunctionConfigBag {
     this.map = new Map();
   }
 
-  get(name: string) {
+  get(name: string): FunctionConfig {
     if (this.map.has(name)) {
-      return this.map.get(name);
+      return this.map.get(name)!;
     }
 
     const config = new FunctionConfig();
