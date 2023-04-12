@@ -30,14 +30,8 @@ export class DataPlaneHost extends Host {
     return super.start();
   }
 
-  /**
-   *
-   * @param {import('./worker_broker').WorkerBroker} workerBroker -
-   * @param {*} brokerStats -
-   */
   async broadcastRequestQueueing(
     workerBroker: WorkerBroker,
-    brokerStats: root.noslated.data.IBrokerStats[],
     requestId: string
   ) {
     return this.broadcast(
@@ -46,9 +40,6 @@ export class DataPlaneHost extends Host {
       {
         name: workerBroker.name,
         isInspect: !!workerBroker.options.inspect,
-        stats: {
-          brokers: brokerStats,
-        },
         queuedRequestCount: workerBroker.requestQueue.length,
         requestId,
         timestamp: Date.now(),

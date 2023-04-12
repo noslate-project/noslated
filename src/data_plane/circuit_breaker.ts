@@ -130,11 +130,6 @@ export class SystemCircuitBreaker extends EventEmitter {
     this.breakers.forEach(it => it.check());
   };
 
-  /**
-   *
-   * @param {import('./data_flow_controller').DataFlowController} dataFlowController -
-   * @param {SystemCircuitBreakerConfig} config -
-   */
   constructor(
     dataFlowController: DataFlowController,
     config: SystemCircuitBreakerConfig

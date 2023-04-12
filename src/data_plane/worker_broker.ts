@@ -293,7 +293,6 @@ export class WorkerBroker extends Base {
 
   /**
    * Remove a worker via credential.
-   * @param {string} credential The worker's credential.
    */
   removeWorker(credential: string) {
     this._workerMap.delete(credential);
@@ -382,8 +381,6 @@ export class WorkerBroker extends Base {
 
   /**
    * Get the pending credential.
-   * @param {string} credential The worker credential.
-   * @return {{ credential: string, name: string }|false} The pending credential or false if not exists.
    */
   private isCredentialPending(credential: string) {
     return this._workerMap.get(credential)?.status === CredentialStatus.PENDING;
@@ -391,8 +388,8 @@ export class WorkerBroker extends Base {
 
   /**
    * Register credential to this broker.
-   * @param {string} name The worker's name.
-   * @param {string} credential The worker's credential.
+   * @param name The worker's name.
+   * @param credential The worker's credential.
    */
   registerCredential(name: string, credential: string) {
     if (this.isCredentialPending(credential)) {
@@ -446,8 +443,7 @@ export class WorkerBroker extends Base {
 
   /**
    * Bind a worker to this broker and initialize.
-   * @param {string} credential The worker's credential.
-   * @return {Promise<void>} The result.
+   * @param credential The worker's credential.
    */
   async bindWorker(credential: string) {
     if (!this._workerMap.has(credential)) {
@@ -547,9 +543,9 @@ export class WorkerBroker extends Base {
 
   /**
    * Create a pending request to the queue.
-   * @param {Readable|Buffer} input The input stream to be temporarily stored.
-   * @param {import('#self/delegate/request_response').Metadata|object} metadata The metadata.
-   * @return {PendingRequest} The created pending request.
+   * @param input The input stream to be temporarily stored.
+   * @param metadata The metadata.
+   * @return The created pending request.
    */
   private createPendingRequest(input: Readable | Buffer, metadata: Metadata) {
     this.logger.info('create pending request(%s).', metadata.requestId);
@@ -577,11 +573,7 @@ export class WorkerBroker extends Base {
     });
 
     // broadcast that there's no enough container
-    this.host.broadcastRequestQueueing(
-      this,
-      this.dataFlowController.getCurrentWorkersInformation(),
-      request.requestId
-    );
+    this.host.broadcastRequestQueueing(this, request.requestId);
     return request;
   }
 
@@ -591,17 +583,12 @@ export class WorkerBroker extends Base {
   #tryStartUpFastFail(metadata: Metadata) {
     if (!this.profile.worker.fastFailRequestsOnStarting) return;
 
-    this.host.broadcastRequestQueueing(
-      this,
-      this.dataFlowController.getCurrentWorkersInformation(),
-      metadata.requestId
-    );
+    this.host.broadcastRequestQueueing(this, metadata.requestId);
     throw new Error(`No available worker process for ${this.name} now.`);
   }
 
   /**
    * Fast fail all pendings due to start error
-   * @param {root.noslated.data.IStartWorkerFastFailRequest} startWorkerFastFailRequest The fast fail request.
    */
   fastFailAllPendingsDueToStartError(
     startWorkerFastFailRequest: root.noslated.data.IStartWorkerFastFailRequest
