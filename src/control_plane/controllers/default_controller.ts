@@ -49,8 +49,7 @@ export class DefaultController extends BaseController {
    * Expend due to queueing request
    */
   private async expandDueToQueueingRequest(event: RequestQueueingEvent) {
-    const { requestId, name, isInspect, stats } = event.data;
-    const { brokers = [] } = stats || {};
+    const { requestId, name, isInspect } = event.data;
 
     this.logger.info(
       'start processing request queueing request(%s) for func(%s, inspect %s)',
@@ -103,17 +102,6 @@ export class DefaultController extends BaseController {
           this.logger.warn(e);
         });
     }
-
-    this.logger.debug('sync worker data after launch worker(%s)', name);
-    // update current workers data
-    try {
-      if (brokers) {
-        await this._stateManager._syncBrokerData(brokers);
-      }
-    } catch (e) {
-      this.logger.warn('Failed to sync data.', e);
-    }
-    this.logger.debug('worker data synchronized after launch worker(%s)', name);
   }
 
   private async autoScale() {
@@ -158,9 +146,7 @@ export class DefaultController extends BaseController {
 
   /**
    * Shrink.
-   * @param {Delta[]} deltas Broker and its processes delta number.
-   * @param {import('./worker_stats_snapshot').Broker[]} brokers Each broker
-   * @return {Promise<void>} The result.
+   * @param deltas Broker and its processes delta number.
    */
   async shrink(deltas: Delta[]) {
     if (this.shrinking) {
@@ -175,9 +161,7 @@ export class DefaultController extends BaseController {
   }
   /**
    * Do shrink.
-   * @param {Delta[]} deltas Broker and its processes delta number.
-   * @param {import('./worker_stats/broker').Broker[]} brokers Each broker
-   * @return {Promise<undefined[]>} The result.
+   * @param deltas Broker and its processes delta number.
    */
   async doShrink(deltas: Delta[]) {
     const shrinkData = [];

@@ -350,9 +350,6 @@ describe(common.testName(__filename), function () {
           name: 'func',
           queuedRequestCount: 1,
           requestId: '123',
-          stats: {
-            brokers: [],
-          },
           timestamp: Date.now(),
         }),
         true

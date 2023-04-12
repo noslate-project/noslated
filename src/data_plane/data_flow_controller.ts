@@ -149,10 +149,6 @@ export class DataFlowController extends BaseOf(EventEmitter) {
 
   /**
    * Close certain workers' traffic in one broker
-   * @param {root.noslated.data.ICapacityReductionBroker} broker The capacity reduction broker object in Protobuf.
-   * @param {WorkerBroker} realBroker The real broker object with methods.
-   * @param {root.noslated.data.ICapacityReductionBroker} toBeClosed The capacity reduction broker object in Protobuf with closed workers.
-   * @return {Promise<void>} The result.
    */
   async closeCertainWorkersTrafficInOneBroker(
     broker: root.noslated.data.ICapacityReductionBroker,
@@ -202,8 +198,6 @@ export class DataFlowController extends BaseOf(EventEmitter) {
 
   /**
    * Close traffic via workers
-   * @param {root.noslated.data.ICapacityReductionBroker[]} workersInfo The brokers including workers information.
-   * @return {Promise<root.noslated.data.ICapacityReductionBroker[]>} The brokers including workers that traffic closed.
    */
   async closeTraffic(
     workersInfo: root.noslated.data.ICapacityReductionBroker[]
@@ -242,8 +236,6 @@ export class DataFlowController extends BaseOf(EventEmitter) {
 
   /**
    * Function that be called when a worker disconnected on delegate.
-   * @param {string} credential The worker's credential.
-   * @return {Promise<void>} The result.
    */
   #onDisconnect = async (credential: string) => {
     const broker = this.credentialBrokerMap.get(credential);
@@ -273,8 +265,6 @@ export class DataFlowController extends BaseOf(EventEmitter) {
 
   /**
    * Function that be called when a worker attached to delegate.
-   * @param {string} credential The worker's credential
-   * @return {Promise<void>} The result.
    */
   #onBind = async (credential: string) => {
     const broker = this.credentialBrokerMap.get(credential);
@@ -297,10 +287,6 @@ export class DataFlowController extends BaseOf(EventEmitter) {
 
   /**
    * Register worker's credential to delegate for waiting connecting.
-   * @param {string} funcName The serverless function's name.
-   * @param {string} name The worker's name.
-   * @param {string} credential The worker's credential.
-   * @param {{ inspect?: boolean }} [options] The register options.
    */
   registerWorkerCredential(
     funcName: any,
@@ -316,9 +302,6 @@ export class DataFlowController extends BaseOf(EventEmitter) {
 
   /**
    * Get or create a broker with a certain name.
-   * @param {string} name The serverless function's name.
-   * @param {{ inspect?: boolean }} [options] The broker's options.
-   * @return {WorkerBroker} The created or got broker.
    */
   getBroker(name: string, options: RegisterWorkerOptions = {}) {
     let key = name;
@@ -350,7 +333,6 @@ export class DataFlowController extends BaseOf(EventEmitter) {
 
   /**
    * Broadcast worker's traffic stats to clients.
-   * @return {Promise<void>} The result.
    */
   broadcastWorkerTrafficStats = async () => {
     await this.host.broadcastWorkerTrafficStats({
@@ -360,7 +342,6 @@ export class DataFlowController extends BaseOf(EventEmitter) {
 
   /**
    * Clean orphan brokers (brokers that no more exists in function profiles)
-   * @return {Promise<void>} The result.
    */
   cleanOrphanBrokers = async () => {
     const cleanedKeys = [];
@@ -463,8 +444,6 @@ export class DataFlowController extends BaseOf(EventEmitter) {
 
   /**
    * Set a serverless function to whether use inspector or not.
-   * @param {string} name The function name.
-   * @param {boolean} use Whether use inspector or not.
    */
   useInspector(name: string, use: boolean) {
     this.functionConfigBag?.get(name)?.setUseInspector(!!use);
@@ -472,11 +451,6 @@ export class DataFlowController extends BaseOf(EventEmitter) {
 
   /**
    * Invoke to a certain function.
-   * @param {string} name The function's name.
-   * @param {Buffer|Readable} inputStream The input stream.
-   * @param {import('#self/delegate/request_response').Metadata} metadata The metadata.
-   * @param {{serviceName?: string}} context -
-   * @return {Promise<import('#self/delegate/request_response').TriggerResponse>} The invoke response.
    */
   async invoke(
     name: string,

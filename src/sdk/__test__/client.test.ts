@@ -1,8 +1,7 @@
 import assert from 'assert';
 import mm from 'mm';
 import { NoslatedClient } from '#self/sdk/index';
-import { testName, baselineDir, daprAdaptorDir } from '#self/test/common';
-import { config } from '#self/config';
+import { testName, baselineDir } from '#self/test/common';
 import { ControlPlane } from '#self/control_plane/index';
 import { ControlPlaneClientManager } from '#self/sdk/control_plane_client_manager';
 import { DataPlaneClientManager } from '#self/sdk/data_plane_client_manager';
