@@ -172,6 +172,17 @@ export class Worker extends EventEmitter {
 
       ret.queueing = waitMs;
       ret.workerName = this.name;
+
+      // do not await the response body finishing.
+      ret.finish().finally(() => {
+        this.activeRequestCount--;
+        if (this.activeRequestCount === 0) {
+          this.emit('downToZero');
+        }
+
+        this.continueConsumeQueue();
+      });
+
       return ret;
     } catch (e: unknown) {
       if (e instanceof Error) {
@@ -180,14 +191,6 @@ export class Worker extends EventEmitter {
       }
 
       throw e;
-    } finally {
-      this.activeRequestCount--;
-      if (this.activeRequestCount === 0) {
-        this.emit('downToZero');
-      }
-
-      // FIXME: wait until the response stream finishes.
-      this.continueConsumeQueue();
     }
   }
 
@@ -320,24 +323,19 @@ export class WorkerBroker extends Base {
 
       request.stopTimer();
 
-      let response: TriggerResponse;
-
       notThatBusyWorker
         .pipe(request, undefined)
-        .then(ret => {
-          response = ret;
-          request.resolve(ret);
-        })
-        .catch(err => {
-          request.reject(err);
-        })
+        .then(
+          ret => {
+            request.resolve(ret);
+          },
+          err => {
+            request.reject(err);
+          }
+        )
         .finally(() => {
           if (this.disposable) {
-            this.afterDisposableInvoke(
-              notThatBusyWorker,
-              response,
-              request.metadata.requestId
-            );
+            this.closeTraffic(notThatBusyWorker, request.metadata.requestId);
           }
         });
 
@@ -357,26 +355,26 @@ export class WorkerBroker extends Base {
     }
   }
 
-  private async afterDisposableInvoke(
-    worker: Worker,
-    response: TriggerResponse | undefined,
-    requestId?: string
-  ) {
-    await worker.closeTraffic();
+  async closeTraffic(worker: Worker, requestId?: string) {
+    try {
+      await worker.closeTraffic();
 
-    if (response) {
-      // wait response data sent
-      await response.finish();
+      // 同步 RequestDrained
+      await this.host.broadcastContainerStatusReport({
+        functionName: this.name,
+        isInspector: this.options.inspect === true,
+        name: worker.name,
+        event: WorkerStatusReport.RequestDrained,
+        requestId,
+      });
+    } catch (e) {
+      this.logger.error(
+        'unexpected error on closing worker traffic (%s, %s)',
+        this.name,
+        worker.name,
+        e
+      );
     }
-
-    // 同步 RequestDrained
-    await this.host.broadcastContainerStatusReport({
-      functionName: this.name,
-      isInspector: this.options.inspect === true,
-      name: worker.name,
-      event: WorkerStatusReport.RequestDrained,
-      requestId,
-    });
   }
 
   /**
@@ -495,12 +493,8 @@ export class WorkerBroker extends Base {
       throw e;
     }
 
-    const tag = worker
-      ? (worker as Worker).name || `{${credential}}`
-      : `{${credential}}`;
-
     this.logger.info(
-      `Worker ${tag} for ${this.name} attached, draining request queue.`
+      `Worker ${worker.name} for ${this.name} attached, draining request queue.`
     );
 
     this._workerMap.set(credential, {
@@ -560,8 +554,11 @@ export class WorkerBroker extends Base {
       this.logger.debug('A request wait timeout.');
       this.requestQueue.remove(node);
       request.reject(
-        new Error(
-          `Waiting for worker has timed out at ${metadata.deadline}, request(${request.requestId}).`
+        new RpcError(
+          `Waiting for worker has timed out at ${metadata.deadline}, request(${request.requestId}).`,
+          {
+            code: RpcStatus.DEADLINE_EXCEEDED,
+          }
         )
       );
       this.dataFlowController.queuedRequestDurationHistogram.record(
@@ -655,7 +652,7 @@ export class WorkerBroker extends Base {
           response = await worker.pipe(inputStream, metadata);
         } finally {
           if (this.disposable) {
-            this.afterDisposableInvoke(worker, response, metadata.requestId);
+            this.closeTraffic(worker, metadata.requestId);
           }
         }
 

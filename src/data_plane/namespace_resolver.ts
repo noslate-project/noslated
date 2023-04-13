@@ -48,7 +48,7 @@ export class NamespaceResolver {
     this.#sharedNamespace.delete(namespace);
   }
 
-  existingShardedNamespaceKeys(): Set<string> {
+  existingSharedNamespaceKeys(): Set<string> {
     return new Set(this.#sharedNamespace.keys());
   }
 

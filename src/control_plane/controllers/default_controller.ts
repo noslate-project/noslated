@@ -96,7 +96,7 @@ export class DefaultController extends BaseController {
       );
 
       event.client
-        .startWorkerFastFail(wrapLaunchErrorObject(name, isInspect, e as Error))
+        .startWorkerFastFail(wrapLaunchErrorObject(name, isInspect, e))
         .catch((e: unknown) => {
           this.logger.warn(e);
         });

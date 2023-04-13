@@ -155,25 +155,6 @@ export class DataFlowController extends BaseOf(EventEmitter) {
     realBroker: WorkerBroker,
     toBeClosed: root.noslated.data.ICapacityReductionBroker
   ) {
-    const close = async (
-      realWorker: Worker,
-      worker: root.noslated.data.ICapacityReductionWorker,
-      broker: WorkerBroker
-    ) => {
-      const closed = await realWorker.closeTraffic();
-
-      if (closed) {
-        await this.host.broadcastContainerStatusReport({
-          functionName: broker.name,
-          isInspector: broker.options.inspect === true,
-          name: realWorker.name,
-          event: WorkerStatusReport.RequestDrained,
-        });
-
-        toBeClosed?.workers?.push(worker);
-      }
-    };
-
     const promises = [];
     for (const worker of broker?.workers || []) {
       const realWorker = realBroker.getWorker(worker.credential!);
@@ -185,7 +166,8 @@ export class DataFlowController extends BaseOf(EventEmitter) {
       }
 
       // real close traffic
-      promises.push(close(realWorker, worker, realBroker));
+      toBeClosed?.workers?.push(worker);
+      promises.push(realBroker.closeTraffic(realWorker));
     }
 
     const ret = await Promise.allSettled(promises);
@@ -303,7 +285,7 @@ export class DataFlowController extends BaseOf(EventEmitter) {
   /**
    * Get or create a broker with a certain name.
    */
-  getBroker(name: string, options: RegisterWorkerOptions = {}) {
+  getBroker(name: string, options: RegisterWorkerOptions = {}): WorkerBroker {
     let key = name;
     if (options.inspect) {
       key += '$$inspect';
@@ -312,12 +294,14 @@ export class DataFlowController extends BaseOf(EventEmitter) {
     }
 
     if (this.brokers.has(key)) {
-      return this.brokers.get(key);
+      return this.brokers.get(key)!;
     }
 
     const profile = this.profileManager.getProfile(name);
     if (profile == null) {
-      throw new Error(`Worker(${name}) not found`);
+      throw new RpcError(`No function named ${name} registered in this node.`, {
+        code: RpcStatus.NOT_FOUND,
+      });
     }
     const broker = new WorkerBroker(this, profile, options);
     this.brokers.set(key, broker);
@@ -423,7 +407,7 @@ export class DataFlowController extends BaseOf(EventEmitter) {
 
   compareSharedNamespaces(profile: RawFunctionProfile[]) {
     const existingNamespaces =
-      this.namespaceResolver.existingShardedNamespaceKeys();
+      this.namespaceResolver.existingSharedNamespaceKeys();
     const newNamespaces = new Set<string>();
 
     profile.forEach(p => {
@@ -446,7 +430,7 @@ export class DataFlowController extends BaseOf(EventEmitter) {
    * Set a serverless function to whether use inspector or not.
    */
   useInspector(name: string, use: boolean) {
-    this.functionConfigBag?.get(name)?.setUseInspector(!!use);
+    this.functionConfigBag.get(name).setUseInspector(!!use);
   }
 
   /**
@@ -463,28 +447,14 @@ export class DataFlowController extends BaseOf(EventEmitter) {
         code: RpcStatus.FAILED_PRECONDITION,
       });
     }
-    const funcProfile = this.profileManager.getProfile(name);
-
-    if (funcProfile == null) {
-      throw new RpcError(`No function named ${name} registered in this node.`, {
-        code: RpcStatus.NOT_FOUND,
-      });
-    }
+    const broker = this.getBroker(name, {
+      inspect: this.functionConfigBag?.get(name)?.getUseInspector(),
+    });
 
     const startTime = Date.now();
     try {
-      const broker = this.getBroker(name, {
-        inspect: this.functionConfigBag?.get(name)?.getUseInspector(),
-      });
-
-      if (broker) {
-        return broker.invoke(inputStream, metadata);
-      } else {
-        throw new RpcError(
-          `No broker to invoke function [${name}] in this node.`,
-          { code: RpcStatus.NOT_FOUND }
-        );
-      }
+      const resp = await broker.invoke(inputStream, metadata);
+      return resp;
     } finally {
       const endTime = Date.now();
       this.#invokeCounter.add(1, {
