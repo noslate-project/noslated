@@ -1,72 +1,82 @@
+import { castError } from '#self/lib/util';
 import * as root from '#self/proto/root';
+import { format } from 'util';
 
-enum ErrorCode {
-  kEnsureCodeError = 'ENOENSR',
-  kInvalidRuntime = 'EIVDRTM',
-  kNoEnoughVirtualMemoryPoolSize = 'ENOMEM',
-  kNoFunction = 'ENOFUNC',
-  kReplicaLimitExceeded = 'EREPLIM',
-  kInvalidV8Option = 'EIVDV8O',
+const kLauncherErrors = {
+  // Recoverable errors
+  kReplicaLimitExceeded: {
+    fatal: false,
+    template: 'Replica count exceeded limit (%s / %s)',
+  },
+
+  // Fatal errors
+  kReplicaLimitExceededInspector: {
+    fatal: true,
+    template: 'Replica count exceeded limit in inspect mode',
+  },
+  kNoEnoughVirtualMemoryPoolSize: {
+    fatal: true,
+    template: 'No enough virtual memory (used: %s + need: %s) > total: %s',
+  },
+  kEnsureCodeError: {
+    fatal: true,
+    template: 'Failed to ensure (or download) code: %s',
+  },
+  kInvalidRuntime: {
+    fatal: true,
+    template: 'Invalid runtime %s',
+  },
+  kNoFunction: {
+    fatal: true,
+    template: 'No function profile %s registered.',
+  },
+  kInvalidV8Option: {
+    fatal: true,
+    template: 'Invalid v8 options: %s',
+  },
+  kInternal: {
+    fatal: true,
+    template: 'Internal error: %s',
+  },
+} as const;
+type ErrorCodes = keyof typeof kLauncherErrors;
+
+export const ErrorCode = Object.fromEntries(
+  Object.keys(kLauncherErrors).map(it => [it, it])
+) as { [key in ErrorCodes]: key };
+
+export class LauncherError extends Error {
+  code: string;
+  fatal: boolean;
+  constructor(code: ErrorCodes, ...args: unknown[]) {
+    const desc = kLauncherErrors[code] ?? kLauncherErrors.kInternal;
+    const msg = format(desc.template, ...args);
+    super(msg);
+    this.code = code;
+    this.fatal = desc.fatal;
+  }
 }
 
 /**
  * Wrap launch error object.
- * @param {string} name The function name.
- * @param {bool} isInspector Whether it's using inspector.
- * @param {Error} err The error object.
- * @return {root.noslated.data.StartWorkerFastFailRequest} The wrapped object.
  */
-function wrapLaunchErrorObject(
+export function wrapLaunchErrorObject(
   name: string,
   isInspector: boolean,
-  err: Error
+  err: unknown
 ): root.noslated.data.IStartWorkerFastFailRequest {
-  let displayMessage;
-  switch (err.code) {
-    case ErrorCode.kEnsureCodeError: {
-      displayMessage = `Failed to ensure (or download) code for ${name} now.`;
-      break;
-    }
-
-    case ErrorCode.kInvalidRuntime: {
-      displayMessage = `Invalid runtime for function ${name}.`;
-      break;
-    }
-
-    case ErrorCode.kNoEnoughVirtualMemoryPoolSize: {
-      displayMessage = `No enough virtual memory to start worker process for ${name} now.`;
-      break;
-    }
-
-    case ErrorCode.kNoFunction: {
-      displayMessage = `No function profile ${name} registered.`;
-      break;
-    }
-
-    case ErrorCode.kReplicaLimitExceeded: {
-      displayMessage = `${err.message} for function ${name}.`;
-      break;
-    }
-
-    case ErrorCode.kInvalidV8Option: {
-      displayMessage = `Invalid v8 options config for function profile ${name}.`;
-      break;
-    }
-
-    default: {
-      displayMessage = 'Uncategoried start error: ' + err.stack;
-      break;
-    }
+  if (!(err instanceof LauncherError)) {
+    err = new LauncherError(ErrorCode.kInternal, castError(err));
   }
+  const e = err as LauncherError;
 
   return {
-    type: (err.code as string) || '',
     funcName: name,
     inspect: isInspector,
-    message: err.message,
-    stack: err.stack,
-    displayMessage,
+
+    type: e.code,
+    message: e.message,
+    stack: e.stack,
+    fatal: e.fatal,
   };
 }
-
-export { ErrorCode, wrapLaunchErrorObject };

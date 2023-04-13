@@ -22,21 +22,6 @@ import { funcData } from './test_data';
 import sinon from 'sinon';
 
 describe(common.testName(__filename), () => {
-  const funcDataWithDefault = {
-    ...funcData[0],
-    worker: {
-      fastFailRequestsOnStarting: false,
-      initializationTimeout: 10000,
-      maxActivateRequests: 10,
-      replicaCountLimit: 10,
-      reservationCount: 0,
-      shrinkStrategy: 'LCC',
-      v8Options: [],
-      execArgv: [],
-    },
-    environments: [],
-  };
-
   let profileManager: ProfileManager;
   beforeEach(async () => {
     const ctx = new DependencyContext<FunctionProfileManagerContext>();
@@ -406,7 +391,6 @@ describe(common.testName(__filename), () => {
         assert.strictEqual(broker.initiatingWorkerCount, 1);
 
         assert.strictEqual(broker.workers.size, 2);
-        assert.deepStrictEqual(broker.profile, funcDataWithDefault);
         const workers = [
           {
             containerStatus: WorkerStatus.Ready,

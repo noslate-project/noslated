@@ -3,7 +3,7 @@ import { castError } from '#self/lib/util';
 import loggers from '#self/lib/logger';
 import * as naming from '#self/lib/naming';
 import * as starters from './starter';
-import { ErrorCode } from './worker_launcher_error_code';
+import { ErrorCode, LauncherError } from './worker_launcher_error_code';
 import {
   RawFunctionProfile,
   RawWithDefaultsFunctionProfile,
@@ -98,9 +98,7 @@ export class WorkerLauncher extends Base {
       return 'aworker';
     }
 
-    const err = new Error(`Invalid runtime ${profile.runtime}.`);
-    err.code = ErrorCode.kInvalidRuntime;
-    throw err;
+    throw new LauncherError(ErrorCode.kInvalidRuntime, profile.runtime);
   }
 
   /**
@@ -114,9 +112,7 @@ export class WorkerLauncher extends Base {
 
     const profile = this.functionProfile.getProfile(funcName);
     if (profile == null) {
-      const err = new Error(`No function named ${funcName}.`);
-      err.code = ErrorCode.kNoFunction;
-      throw err;
+      throw new LauncherError(ErrorCode.kNoFunction);
     }
     return this.launchQueue.enqueue(
       {
@@ -166,17 +162,13 @@ export class WorkerLauncher extends Base {
     try {
       bundlePath = await this.codeManager.ensure(name, url, signature);
     } catch (exp) {
-      const e = castError(exp);
-      e.code = ErrorCode.kEnsureCodeError;
-      throw e;
+      throw new LauncherError(ErrorCode.kEnsureCodeError, castError(exp));
     }
 
     const starter: WorkerStarter =
       this.starters[this.extractRuntimeType(profile)];
     if (!starter) {
-      const err = new Error(`Invalid runtime ${profile.runtime}.`);
-      err.code = ErrorCode.kInvalidRuntime;
-      throw err;
+      throw new LauncherError(ErrorCode.kInvalidRuntime, profile.runtime);
     }
 
     const dataPlane =

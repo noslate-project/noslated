@@ -59,9 +59,13 @@
           "type": "number",
           "description": "the limitation for replica count"
         },
+        "disableRequestQueue": {
+          "type": "boolean",
+          "description": "if the request queue is enabled when worker is starting"
+        },
         "fastFailRequestsOnStarting": {
           "type": "boolean",
-          "description": "whether requests should hold on when starting worker"
+          "description": "whether requests should be rejected immediately when starting failed"
         },
         "shrinkStrategy": {
           "type": "string",

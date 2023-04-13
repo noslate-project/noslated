@@ -98,7 +98,7 @@ export async function assertWorkerInvoke(
   invokePromise: Promise<any>,
   expected: any
 ) {
-  let error: Error;
+  let error: Error | undefined;
   let response;
   try {
     response = await invokePromise;
@@ -112,7 +112,7 @@ export async function assertWorkerInvoke(
     return;
   }
 
-  assert.ok(error! == null, util.inspect(error!));
+  assert.ok(error == null, util.inspect(error));
   await assertWorkerResponse(response, expected);
 }
 

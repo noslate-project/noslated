@@ -8,7 +8,7 @@ import { ControlPlaneDependencyContext } from './deps';
 import { StateManager } from './worker_stats/state_manager';
 import { kMemoryLimit } from './constants';
 import { RawWithDefaultsFunctionProfile } from '#self/lib/json/function_profile';
-import { ErrorCode } from './worker_launcher_error_code';
+import { ErrorCode, LauncherError } from './worker_launcher_error_code';
 
 enum WaterLevelAction {
   UNKNOWN = 0,
@@ -268,9 +268,7 @@ export class CapacityManager extends Base {
     // get broker / virtualMemoryUsed / virtualMemoryPoolSize, etc.
     const broker = this.stateManager.getOrCreateBroker(funcName, inspect);
     if (!broker) {
-      const err = new Error(`No broker named ${funcName})}`);
-      err.code = ErrorCode.kNoFunction;
-      throw err;
+      throw new LauncherError(ErrorCode.kNoFunction);
     }
 
     const {
@@ -278,28 +276,25 @@ export class CapacityManager extends Base {
       resourceLimit: { memory = kMemoryLimit },
     } = profile;
     if (this.virtualMemoryUsed + memory > this.virtualMemoryPoolSize) {
-      const err = new Error(
-        `No enough virtual memory (used: ${this.virtualMemoryUsed} + need: ${memory}) > total: ${this.virtualMemoryPoolSize}`
+      throw new LauncherError(
+        ErrorCode.kNoEnoughVirtualMemoryPoolSize,
+        this.virtualMemoryUsed,
+        memory,
+        this.virtualMemoryPoolSize
       );
-      err.code = ErrorCode.kNoEnoughVirtualMemoryPoolSize;
-      throw err;
     }
 
     // inspect 模式只开启一个
     if (broker.activeWorkerCount && inspect) {
-      const err = new Error(
-        `Replica count exceeded limit in inspect mode (${broker.activeWorkerCount} / ${replicaCountLimit})`
-      );
-      err.code = ErrorCode.kReplicaLimitExceeded;
-      throw err;
+      throw new LauncherError(ErrorCode.kReplicaLimitExceededInspector);
     }
 
     if (broker.activeWorkerCount >= replicaCountLimit) {
-      const err = new Error(
-        `Replica count exceeded limit (${broker.activeWorkerCount} / ${replicaCountLimit})`
+      throw new LauncherError(
+        ErrorCode.kReplicaLimitExceeded,
+        broker.activeWorkerCount,
+        replicaCountLimit
       );
-      err.code = ErrorCode.kReplicaLimitExceeded;
-      throw err;
     }
   }
 }

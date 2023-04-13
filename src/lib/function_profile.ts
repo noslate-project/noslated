@@ -49,6 +49,7 @@ function buildProfile(
       replicaCountLimit: config.worker.replicaCountLimit,
       maxActivateRequests: config.worker.maxActivateRequests,
       fastFailRequestsOnStarting: false,
+      disableRequestQueue: false,
       v8Options: [],
       execArgv: [],
       ...(json.worker ?? {}),

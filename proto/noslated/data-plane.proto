@@ -57,12 +57,14 @@ message CapacityReductionResponse {
 }
 
 message StartWorkerFastFailRequest {
-  string type = 1;
   string funcName = 2;
   bool inspect = 3;
+
+  // error details.
+  string type = 1;
   string message = 4;
   string stack = 5;
-  string displayMessage = 6;
+  bool fatal = 7;
 }
 
 message FunctionService {
