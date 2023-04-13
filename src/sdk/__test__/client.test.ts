@@ -70,10 +70,7 @@ describe(testName(__filename), () => {
         () => agent.setFunctionProfile([profile]),
         /Function profile didn't set\./
       );
-      assert.match(
-        errMessage,
-        /Additional v8Options array includes an invalid v8 option --hello./
-      );
+      assert.match(errMessage, /Invalid v8 options: --hello/);
     });
 
     it('should not set profile due to invalid v8 options (nodejs)', async () => {
@@ -113,10 +110,7 @@ describe(testName(__filename), () => {
         () => agent.setFunctionProfile([profile]),
         /Function profile didn't set\./
       );
-      assert.match(
-        errMessage,
-        /Additional v8Options array includes an invalid v8 option --hello./
-      );
+      assert.match(errMessage, /Invalid v8 options: --hello/);
     });
   });
 

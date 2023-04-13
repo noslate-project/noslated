@@ -21,6 +21,7 @@ export interface ProcessFunctionProfile {
     reservationCount?: number;
     replicaCountLimit?: number;
     fastFailRequestsOnStarting?: boolean;
+    disableRequestQueue?: boolean;
     v8Options?: string[];
     execArgv?: string[];
     disableSeed?: boolean;

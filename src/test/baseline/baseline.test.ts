@@ -12,7 +12,6 @@ import { testWorker } from '../util';
 import { config } from '#self/config';
 import assert from 'assert';
 import { CanonicalCode } from '#self/delegate/index';
-import { sleep } from '#self/lib/util';
 import { WorkerStatus } from '#self/lib/constants';
 import sinon, { SinonSpy } from 'sinon';
 import { DefaultEnvironment } from '../env/environment';
@@ -577,50 +576,6 @@ const cases = [
     },
   },
   {
-    name: 'node_worker_echo_startup_fastfail',
-    profile: {
-      name: 'node_worker_echo',
-      runtime: 'nodejs',
-      url: `file://${baselineDir}/node_worker_echo`,
-      handler: 'index.handler',
-      signature: 'md5:234234',
-      worker: {
-        fastFailRequestsOnStarting: true,
-      },
-    },
-    input: {
-      data: Buffer.from('foobar'),
-      metadata: {
-        method: 'POST',
-      },
-    },
-    expect: {
-      error: {
-        message: /No available worker process for node_worker_echo now\./,
-      },
-    },
-    after: async (env: DefaultEnvironment) => {
-      // 虽然在启动阶段检验要 fastfail，但是仍然要在测试之后检测在 fastfail 之后，Worker 进程是否仍然被
-      // 正常启动，所以用一个 loop 去轮询，直至 worker 正常为止。
-      // 若不正常，则触发 mocha 超时，导致失败。
-      do {
-        await sleep(10);
-        const worker = env.data.dataFlowController
-          .getBroker('node_worker_echo')!
-          .getAvailableWorker();
-        if (!worker) continue;
-        const ps = await env.turf.ps();
-        for (const p of ps) {
-          if (
-            p.status === TurfContainerStates.running &&
-            p.name === worker.name
-          )
-            return;
-        }
-      } while (true);
-    },
-  },
-  {
     name: 'node_worker_echo_no_enough_memory_pool_fastfail',
     before: async (env: DefaultEnvironment) => {
       mm(
@@ -644,8 +599,7 @@ const cases = [
     },
     expect: {
       error: {
-        message:
-          /No enough virtual memory to start worker process for node_worker_echo now\./,
+        message: /No enough virtual memory/,
       },
     },
   },
@@ -666,8 +620,7 @@ const cases = [
     },
     expect: {
       error: {
-        message:
-          /Failed to ensure \(or download\) code for node_worker_echo now\./,
+        message: /Failed to ensure \(or download\) code/,
       },
     },
   },

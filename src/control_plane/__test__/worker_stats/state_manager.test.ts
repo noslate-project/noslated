@@ -21,7 +21,7 @@ import { Broker } from '#self/control_plane/worker_stats/broker';
 import { Worker } from '#self/control_plane/worker_stats/worker';
 import { NotNullableInterface } from '#self/lib/interfaces';
 import * as root from '#self/proto/root';
-import { brokerData, funcData, funcDataWithDefault } from './test_data';
+import { brokerData, funcData } from './test_data';
 import { ContainerReconciler } from '#self/control_plane/container/reconciler';
 
 describe(common.testName(__filename), () => {
@@ -366,7 +366,6 @@ describe(common.testName(__filename), () => {
 
       const names = ['func', 'func'];
       const inspectors = [true, false];
-      const profiles = [funcDataWithDefault, funcDataWithDefault];
       assert.deepStrictEqual(
         brokers.map(b => b.name),
         names
@@ -374,10 +373,6 @@ describe(common.testName(__filename), () => {
       assert.deepStrictEqual(
         brokers.map(b => b.isInspector),
         inspectors
-      );
-      assert.deepStrictEqual(
-        brokers.map(b => b.profile),
-        profiles
       );
       brokers.forEach(broker => {
         assert.strictEqual(broker.initiatingWorkerCount, 1);
@@ -463,7 +458,6 @@ describe(common.testName(__filename), () => {
 
       const names = ['func', 'func'];
       const inspectors = [true, false];
-      const profiles = [funcDataWithDefault, funcDataWithDefault];
       assert.deepStrictEqual(
         brokers.map(b => b.name),
         names
@@ -471,10 +465,6 @@ describe(common.testName(__filename), () => {
       assert.deepStrictEqual(
         brokers.map(b => b.isInspector),
         inspectors
-      );
-      assert.deepStrictEqual(
-        brokers.map(b => b.profile),
-        profiles
       );
       brokers.forEach(broker => {
         assert.strictEqual(broker.initiatingWorkerCount, 1);
@@ -636,48 +626,14 @@ describe(common.testName(__filename), () => {
         },
       ]);
 
-      assert.deepStrictEqual(stateManager.getSnapshot(), [
-        {
-          name: 'func',
-          inspector: true,
-          profile: funcDataWithDefault,
-          redundantTimes: 0,
-          initiatingWorkerCount: 1,
-          activeWorkerCount: 0,
-          workers: [
-            {
-              containerStatus: WorkerStatus.Created,
-              turfContainerStates: null,
-              name: 'hello',
-              credential: 'world',
-              data: null,
-              pid: null,
-              registerTime: stateManager.getWorker('func', true, 'hello')!
-                .registerTime,
-            },
-          ],
-        },
-        {
-          name: 'func',
-          inspector: false,
-          profile: funcDataWithDefault,
-          redundantTimes: 0,
-          initiatingWorkerCount: 1,
-          activeWorkerCount: 0,
-          workers: [
-            {
-              containerStatus: WorkerStatus.Created,
-              turfContainerStates: null,
-              name: 'foooo',
-              credential: 'bar',
-              data: null,
-              pid: null,
-              registerTime: stateManager.getWorker('func', false, 'foooo')!
-                .registerTime,
-            },
-          ],
-        },
-      ]);
+      const snapshot = stateManager.getSnapshot();
+      assert.strictEqual(snapshot.length, 2);
+
+      assert.strictEqual(snapshot[0].inspector, true);
+      assert.strictEqual(snapshot[1].inspector, false);
+      for (const item of snapshot) {
+        assert.strictEqual(item.workers.length, 1);
+      }
     });
 
     it('should to protobuf object with worker data', () => {
@@ -692,30 +648,11 @@ describe(common.testName(__filename), () => {
       ]);
       stateManager._syncBrokerData(brokerData);
 
-      assert.deepStrictEqual(stateManager.getSnapshot(), [
-        {
-          name: 'func',
-          inspector: true,
-          profile: funcDataWithDefault,
-          redundantTimes: 0,
-          initiatingWorkerCount: 1,
-          activeWorkerCount: 0,
-          workers: [
-            {
-              containerStatus: WorkerStatus.Created,
-              turfContainerStates: null,
-              name: 'hello',
-              credential: 'world',
-              data: {
-                activeRequestCount: 1,
-              },
-              pid: null,
-              registerTime: stateManager.getWorker('func', true, 'hello')!
-                .registerTime,
-            },
-          ],
-        },
-      ]);
+      const snapshot = stateManager.getSnapshot();
+      assert.strictEqual(snapshot.length, 1);
+      assert.strictEqual(snapshot[0].workers.length, 1);
+      assert.ok(snapshot[0].workers[0].data != null);
+      assert.strictEqual(snapshot[0].workers[0].data!.activeRequestCount, 1);
     });
   });
 

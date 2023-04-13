@@ -578,10 +578,10 @@ export class WorkerBroker extends Base {
   }
 
   /**
-   *Try `startUp` fastfail. If it needs fastfail, throw error.
+   * Check if request queue is enabled.
    */
-  #tryStartUpFastFail(metadata: Metadata) {
-    if (!this.profile.worker.fastFailRequestsOnStarting) return;
+  #checkRequestQueue(metadata: Metadata) {
+    if (!this.profile.worker.disableRequestQueue) return;
 
     this.host.broadcastRequestQueueing(this, metadata.requestId);
     throw new Error(`No available worker process for ${this.name} now.`);
@@ -593,9 +593,16 @@ export class WorkerBroker extends Base {
   fastFailAllPendingsDueToStartError(
     startWorkerFastFailRequest: root.noslated.data.IStartWorkerFastFailRequest
   ) {
+    // If the error is fatal, reject all pending requests anyway.
+    if (
+      !startWorkerFastFailRequest.fatal &&
+      !this.profile.worker.fastFailRequestsOnStarting
+    )
+      return;
+
     const requestQueue = this.requestQueue;
     this.requestQueue = new List();
-    const err = new Error(startWorkerFastFailRequest.displayMessage!);
+    const err = new Error(startWorkerFastFailRequest.message!);
     for (const pendingRequest of requestQueue.values()) {
       pendingRequest.stopTimer();
       pendingRequest.reject(err);
@@ -608,10 +615,21 @@ export class WorkerBroker extends Base {
     }
   }
 
+  private _queueRequest(inputStream: Readable | Buffer, metadata: Metadata) {
+    this.#checkRequestQueue(metadata);
+
+    this.requestQueueStatus = RequestQueueStatus.QUEUEING;
+    const request = this.createPendingRequest(inputStream, metadata);
+    return request.promise;
+  }
+
   /**
    * Invoke to an available worker if possible and response.
    */
-  async invoke(inputStream: Readable | Buffer, metadata: Metadata) {
+  async invoke(
+    inputStream: Readable | Buffer,
+    metadata: Metadata
+  ): Promise<TriggerResponse> {
     await this.ready();
     const acquiredToken = this.tokenBucket?.acquire() ?? true;
     if (!acquiredToken) {
@@ -622,18 +640,13 @@ export class WorkerBroker extends Base {
 
     switch (this.requestQueueStatus) {
       case RequestQueueStatus.QUEUEING: {
-        const request = this.createPendingRequest(inputStream, metadata);
-        return request.promise;
+        return this._queueRequest(inputStream, metadata);
       }
 
       case RequestQueueStatus.PASS_THROUGH: {
         const worker = this.getAvailableWorker();
-        if (!worker) {
-          this.#tryStartUpFastFail(metadata);
-
-          this.requestQueueStatus = RequestQueueStatus.QUEUEING;
-          const request = this.createPendingRequest(inputStream, metadata);
-          return request.promise;
+        if (worker == null) {
+          return this._queueRequest(inputStream, metadata);
         }
 
         let response;

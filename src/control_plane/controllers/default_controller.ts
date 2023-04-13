@@ -6,6 +6,7 @@ import { CapacityManager, Delta } from '../capacity_manager';
 import { RequestQueueingEvent, WorkerTrafficStatsEvent } from '../events';
 import {
   ErrorCode,
+  LauncherError,
   wrapLaunchErrorObject,
 } from '../worker_launcher_error_code';
 import { BaseController } from './base_controller';
@@ -60,9 +61,7 @@ export class DefaultController extends BaseController {
 
     const profile = this._functionProfile.getProfile(name);
     if (!profile) {
-      const err = new Error(`No function named ${name}.`);
-      err.code = ErrorCode.kNoFunction;
-      throw err;
+      throw new LauncherError(ErrorCode.kNoFunction);
     }
 
     if (!this._capacityManager.allowExpandingOnRequestQueueing(event.data)) {

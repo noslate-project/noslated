@@ -62,4 +62,5 @@ message FunctionProfileWorker {
   repeated string execArgv = 8;
   bool disposable = 9;
   bool disableSeed = 10;
+  bool disableRequestQueue = 11;
 }

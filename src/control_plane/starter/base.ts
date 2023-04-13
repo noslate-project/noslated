@@ -6,7 +6,7 @@ import extend from 'extend';
 import { Base } from '#self/lib/sdk_base';
 import loggers from '#self/lib/logger';
 import { pairsToMap } from '#self/lib/rpc/key_value_pair';
-import { ErrorCode } from '../worker_launcher_error_code';
+import { ErrorCode, LauncherError } from '../worker_launcher_error_code';
 import {
   ProcessFunctionProfile,
   RawFunctionProfile,
@@ -183,11 +183,7 @@ export abstract class BaseStarter extends Base {
     for (let opt of options) {
       opt = opt.replace(/(=.*)?$/, '');
       if (!this.validV8Options.includes(opt)) {
-        const err = new Error(
-          `Additional v8Options array includes an invalid v8 option ${opt}.`
-        );
-        err.code = ErrorCode.kInvalidV8Option;
-        throw err;
+        throw new LauncherError(ErrorCode.kInvalidV8Option, opt);
       }
     }
   }

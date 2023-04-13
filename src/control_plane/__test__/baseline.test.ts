@@ -55,6 +55,7 @@ const cases = [
       handler: 'index.handler',
       signature: 'md5:234234',
       worker: {
+        fastFailRequestsOnStarting: true,
         replicaCountLimit: 0,
       },
     },
@@ -66,8 +67,7 @@ const cases = [
     },
     expect: {
       error: {
-        message:
-          /Replica count exceeded limit \(0 \/ 0\) for function node_worker_echo\./,
+        message: /Replica count exceeded limit \(0 \/ 0\)/,
       },
     },
   },
@@ -79,6 +79,9 @@ const cases = [
       url: `file://${baselineDir}/node_worker_echo`,
       handler: 'index.handler',
       signature: 'md5:234234',
+      worker: {
+        fastFailRequestsOnStarting: true,
+      },
     },
     input: {
       data: Buffer.from('foobar'),
@@ -91,8 +94,7 @@ const cases = [
     },
     expect: {
       error: {
-        message:
-          /Replica count exceeded limit \(0 \/ 0\) for function node_worker_echo\./,
+        message: /Replica count exceeded limit \(0 \/ 0\)/,
       },
     },
   },
