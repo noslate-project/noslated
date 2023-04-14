@@ -12,10 +12,6 @@ export enum WorkerStatus {
    */
   PendingStop,
   /**
-   * Worker is being stopped.
-   */
-  Stopping,
-  /**
    * Worker is stopped. It is pending garbage collection.
    */
   Stopped,
@@ -36,7 +32,6 @@ export enum ControlPlaneEvent {
   Expand = 'Expand',
   FunctionRemoved = 'FunctionRemoved',
   RequestQueueExpand = 'RequestQueueExpand',
-  Stopping = 'Stopping',
   Terminated = 'Terminated',
   FailedToSpawn = 'FailedToSpawn',
   InitializationTimeout = 'InitializationTimeout',

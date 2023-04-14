@@ -1,5 +1,4 @@
 import path from 'path';
-import fs from 'fs';
 import { Config } from '#self/config';
 import { Logger, loggers } from '#self/lib/loggers';
 import { createDeferred, Deferred, sleep } from '#self/lib/util';
@@ -14,8 +13,8 @@ import {
   TurfCode,
   TurfContainerStates,
   TurfProcess,
+  TurfRunOptions,
   TurfSpec,
-  TurfStartOptions,
   TurfState,
 } from '#self/lib/turf/types';
 import { DependencyContext } from '#self/lib/dependency_context';
@@ -26,10 +25,9 @@ const TurfStopRetryableCodes = [TurfCode.EAGAIN];
 
 export class TurfContainerManager implements ContainerManager {
   private config: Config;
-  private bundlePathLock = new Map<string, Promise<void>>();
   private logger: Logger;
   private containers = new Map<string, TurfContainer>();
-  cleanupQueue: TaskQueue<TurfContainer>;
+  _cleanupQueue: TaskQueue<TurfContainer>;
 
   client: Turf;
 
@@ -38,7 +36,7 @@ export class TurfContainerManager implements ContainerManager {
     this.client = new Turf(this.config.turf.bin, this.config.turf.socketPath);
     this.logger = loggers.get('turf-manager');
 
-    this.cleanupQueue = new TaskQueue(this._cleanup, {
+    this._cleanupQueue = new TaskQueue(this._cleanup, {
       concurrency: 1,
     });
   }
@@ -59,28 +57,23 @@ export class TurfContainerManager implements ContainerManager {
   ): Promise<Container> {
     const runLogDir = this.config.logger.dir;
     const logPath = workerLogPath(runLogDir, name);
-    const specPath = path.join(bundlePath, 'config.json');
 
-    await this._bundlePathLock(bundlePath, async () => {
-      await fs.promises.writeFile(specPath, JSON.stringify(spec), 'utf8');
-      this.logger.info('turf create (%s, %s)', name, bundlePath);
-      await this.client.create(name, bundlePath);
-    });
-
-    const startOptions: TurfStartOptions = {
+    const runOptions: TurfRunOptions = {
+      bundlePath,
+      config: JSON.stringify(spec),
       stdout: path.join(logPath, 'stdout.log'),
       stderr: path.join(logPath, 'stderr.log'),
     };
-    if (options?.seed) startOptions.seed = options.seed;
+    if (options?.seed) runOptions.seed = options.seed;
 
-    this.logger.info('turf start (%s)', name);
+    this.logger.debug('turf run (%s)', name);
     // TODO: retrieve pid immediately.
     try {
-      await this.client.start(name, startOptions);
+      await this.client.run(name, runOptions);
     } catch (e) {
       await this.client.delete(name).catch(e => {
         this.logger.error(
-          'failed to delete container %s when it failed to start',
+          'failed to delete container %s when it failed to run',
           name,
           e
         );
@@ -124,29 +117,6 @@ export class TurfContainerManager implements ContainerManager {
     }
   }
 
-  private async _bundlePathLock<T>(bundlePath: string, fn: () => T) {
-    const start = Date.now();
-    let bundlePathLock = this.bundlePathLock.get(bundlePath);
-    while (bundlePathLock != null) {
-      await bundlePathLock;
-      bundlePathLock = this.bundlePathLock.get(bundlePath);
-    }
-
-    this.logger.info(
-      'fetched lock on bundle path(%s) cost %d ms',
-      bundlePath,
-      Date.now() - start
-    );
-    const { promise, resolve } = createDeferred<void>();
-    this.bundlePathLock.set(bundlePath, promise);
-    try {
-      return await fn();
-    } finally {
-      this.bundlePathLock.delete(bundlePath);
-      resolve();
-    }
-  }
-
   private _cleanup = (container: TurfContainer) => {
     return container._onStopped();
   };
@@ -177,8 +147,11 @@ export class TurfContainer implements Container {
         this.logger.info('%s stop failed', this.name, e.message);
         throw e;
       }
-      this.logger.info('%s stop failed, force stopping after 3s', this.name);
       await sleep(this.manager['config'].turf.gracefulExitPeriodMs);
+      if (this.status >= TurfContainerStates.stopped) {
+        return;
+      }
+      this.logger.info('%s force stopping', this.name);
       await this.client.stop(this.name, true);
     }
   }
@@ -195,7 +168,7 @@ export class TurfContainer implements Container {
     }
     this.status = newStatus;
     if (newStatus >= TurfContainerStates.stopped) {
-      this.manager.cleanupQueue.enqueue(this);
+      this.manager._cleanupQueue.enqueue(this);
     }
     try {
       this.onstatuschanged();

@@ -11,6 +11,7 @@ import {
   TurfState,
   TurfCode,
   TurfContainerStates,
+  TurfRunOptions,
 } from './types';
 
 const logger = Logger.get('turf/wrapper');
@@ -136,14 +137,36 @@ export class Turf {
     }
   }
 
-  async create(containerName: string, bundlePath: string) {
-    return await this.#sendOrExec(['create', '-b', bundlePath, containerName]);
+  async create(containerName: string, bundlePath: string, config?: string) {
+    const args = ['create', '-b', bundlePath];
+    if (config) {
+      args.push('-s', config);
+    }
+    args.push(containerName);
+    return await this.#sendOrExec(args);
   }
 
   async start(containerName: string, options: TurfStartOptions = {}) {
     const args = ['start'];
 
     const ADDITIONAL_KEYS = ['seed', 'stdout', 'stderr'] as const;
+    for (const key of ADDITIONAL_KEYS) {
+      const val = options[key];
+      if (val) {
+        args.push(`--${key}`);
+        args.push(val);
+      }
+    }
+
+    args.push(containerName);
+
+    return this.#sendOrExec(args);
+  }
+
+  async run(containerName: string, options: TurfRunOptions) {
+    const args = ['run', '-b', options.bundlePath];
+
+    const ADDITIONAL_KEYS = ['seed', 'stdout', 'stderr', 'config'] as const;
     for (const key of ADDITIONAL_KEYS) {
       const val = options[key];
       if (val) {

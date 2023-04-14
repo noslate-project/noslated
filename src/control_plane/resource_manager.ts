@@ -73,7 +73,7 @@ export class ResourceManager extends Base {
   async makeWorkerDirs(workerName: string, dirs: string[]) {
     const logDir = workerLogPath(this.config.logger.dir, workerName);
 
-    this.logger.info('create directories for worker(%s)', workerName);
+    this.logger.debug('create directories for worker(%s)', workerName);
     await Promise.all(
       [logDir, ...(dirs ?? [])].map(dir => fs.mkdir(dir, { recursive: true }))
     );
