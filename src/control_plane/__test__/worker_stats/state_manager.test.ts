@@ -92,7 +92,6 @@ describe(common.testName(__filename), () => {
           name: 'worker1',
           isInspector: false,
           event: WorkerStatusReport.ContainerInstalled,
-          requestId: '',
         })
       );
 
@@ -104,7 +103,6 @@ describe(common.testName(__filename), () => {
           name: 'worker1',
           isInspector: false,
           event: WorkerStatusReport.RequestDrained,
-          requestId: '',
         })
       );
 
@@ -116,7 +114,6 @@ describe(common.testName(__filename), () => {
           name: 'worker1',
           isInspector: false,
           event: WorkerStatusReport.ContainerDisconnected,
-          requestId: '',
         })
       );
 
@@ -129,7 +126,6 @@ describe(common.testName(__filename), () => {
             name: 'worker1',
             isInspector: false,
             event: 'Unknown state',
-            requestId: '',
           })
         );
       }, /Unrecognizable WorkerStatusReport/);
@@ -142,7 +138,6 @@ describe(common.testName(__filename), () => {
           name: 'worker1',
           isInspector: false,
           event: WorkerStatusReport.ContainerDisconnected,
-          requestId: '',
         })
       );
 
@@ -193,7 +188,6 @@ describe(common.testName(__filename), () => {
           name: 'worker1',
           isInspector: false,
           event: WorkerStatusReport.RequestDrained,
-          requestId: '',
         })
       );
 
@@ -205,7 +199,6 @@ describe(common.testName(__filename), () => {
           name: 'worker1',
           isInspector: false,
           event: WorkerStatusReport.ContainerInstalled,
-          requestId: '',
         })
       );
 
@@ -746,7 +739,6 @@ describe(common.testName(__filename), () => {
         name: 'hello',
         isInspector: true,
         event: WorkerStatusReport.ContainerInstalled,
-        requestId: '',
       });
 
       registerContainers(testContainerManager, stateManager, [
@@ -831,7 +823,6 @@ describe(common.testName(__filename), () => {
         isInspector: true,
         event: WorkerStatusReport.ContainerInstalled,
         name: 'hello',
-        requestId: '',
       });
       // Suppress ready rejection
       updateWorkerContainerStatus(stateManager, {
@@ -839,7 +830,6 @@ describe(common.testName(__filename), () => {
         isInspector: false,
         event: WorkerStatusReport.ContainerInstalled,
         name: 'foooo',
-        requestId: '',
       });
 
       updateWorkerContainerStatus(stateManager, {
@@ -847,7 +837,6 @@ describe(common.testName(__filename), () => {
         isInspector: false,
         event: WorkerStatusReport.ContainerDisconnected,
         name: 'foooo',
-        requestId: '',
       });
 
       assert.strictEqual(stateManager.getBroker('func', true)!.workers.size, 1);
