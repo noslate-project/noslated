@@ -23,7 +23,23 @@ const NOSLATED_INSPECTOR_TIMEOUT_MS = 60000;
 const NOSLATED_DEFAULT_REQUEST_TIMEOUT_MS = 10_000;
 const NOSLATED_SEND_BEACON_TIMEOUT_MS = 10_000;
 
-const kRequestKindDataMap: { [key: number]: [any, any] } = {
+const kRequestKindTimeoutMap: { [key in RequestKind]?: number } = {
+  [RequestKind.StreamPush]: NOSLATED_STREAM_PUSH_TIMEOUT_MS,
+  [RequestKind.CollectMetrics]: NOSLATED_COLLECT_METRICS_TIMEOUT_MS,
+  [RequestKind.Credentials]: NOSLATED_CONNECT_TIMEOUT_MS,
+  [RequestKind.ExtensionBinding]: NOSLATED_SEND_BEACON_TIMEOUT_MS,
+  [RequestKind.ResourceNotification]: NOSLATED_RESOURCE_NOTIFICATION_TIMEOUT_MS,
+  [RequestKind.ResourcePut]: NOSLATED_RESOURCE_NOTIFICATION_TIMEOUT_MS,
+  [RequestKind.InspectorStart]: NOSLATED_INSPECTOR_TIMEOUT_MS,
+  [RequestKind.InspectorStartSession]: NOSLATED_INSPECTOR_TIMEOUT_MS,
+  [RequestKind.InspectorEndSession]: NOSLATED_INSPECTOR_TIMEOUT_MS,
+  [RequestKind.InspectorGetTargets]: NOSLATED_INSPECTOR_TIMEOUT_MS,
+  [RequestKind.InspectorCommand]: NOSLATED_INSPECTOR_TIMEOUT_MS,
+  [RequestKind.TracingStart]: NOSLATED_INSPECTOR_TIMEOUT_MS,
+  [RequestKind.TracingStop]: NOSLATED_INSPECTOR_TIMEOUT_MS,
+};
+
+const kRequestKindDataMap: { [key in RequestKind]?: [any, any] } = {
   [RequestKind.Trigger]: [
     aworker.ipc.TriggerRequestMessage,
     aworker.ipc.TriggerResponseMessage,
@@ -736,7 +752,10 @@ class Session {
   }
 
   request<T, R>(kind: RequestKind, body: T, deadline?: number): Promise<R> {
-    const messageType = kRequestKindDataMap[kind][0];
+    const messageType = kRequestKindDataMap[kind]?.[0];
+    if (!messageType) {
+      throw new NoslatedError(CanonicalCode.NOT_IMPLEMENTED, kind);
+    }
     const requestId = this._nextRequestId.next();
     this._logger.debug(
       'request: session(%s) kind(%s), id(%s)',
@@ -749,7 +768,7 @@ class Session {
     const deferred = createDeferred<R>();
     const timeout = deadline
       ? deadline - Date.now()
-      : NOSLATED_DEFAULT_REQUEST_TIMEOUT_MS;
+      : kRequestKindTimeoutMap[kind] ?? NOSLATED_DEFAULT_REQUEST_TIMEOUT_MS;
     const timer = setTimeout(() => {
       deferred.reject(
         new NoslatedError(CanonicalCode.TIMEOUT, kind, 'Request Timeout')
@@ -850,7 +869,13 @@ class Session {
         );
         let content;
         if (code === CanonicalCode.OK) {
-          const messageType = kRequestKindDataMap[message.requestKind][1];
+          const messageType = kRequestKindDataMap[message.requestKind]?.[1];
+          if (!messageType) {
+            throw new NoslatedError(
+              CanonicalCode.NOT_IMPLEMENTED,
+              message.requestKind
+            );
+          }
           content = messageType.encode(body).finish();
         } else {
           this._logger.debug('error', error ?? new Error().stack);
@@ -954,6 +979,12 @@ export class MessageParser {
         header.requestKind,
         header.code
       );
+      if (!messageType) {
+        throw new NoslatedError(
+          CanonicalCode.NOT_IMPLEMENTED,
+          header.messageKind
+        );
+      }
       const content = messageType.decode(buf, header.contentLength);
       this._header = null;
       return {
@@ -974,7 +1005,7 @@ export class MessageParser {
     if (messageKind === MessageKind.Response && code !== CanonicalCode.OK) {
       return aworker.ipc.ErrorResponseMessage;
     }
-    return kRequestKindDataMap[requestKind][
+    return kRequestKindDataMap[requestKind]?.[
       messageKind === MessageKind.Request ? 0 : 1
     ];
   }
