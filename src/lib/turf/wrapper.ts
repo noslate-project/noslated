@@ -23,6 +23,9 @@ export { TurfContainerStates } from './types';
 
 const TurfStopIgnorableCodes = [TurfCode.ECHILD, TurfCode.ENOENT];
 
+const kStartOptionKeys = ['seed', 'stdout', 'stderr'] as const;
+const kRunOptionKeys = ['seed', 'stdout', 'stderr', 'config'] as const;
+
 export class Turf {
   session: TurfSession;
   sessionConnectedDeferred = createDeferred<void>();
@@ -149,8 +152,7 @@ export class Turf {
   async start(containerName: string, options: TurfStartOptions = {}) {
     const args = ['start'];
 
-    const ADDITIONAL_KEYS = ['seed', 'stdout', 'stderr'] as const;
-    for (const key of ADDITIONAL_KEYS) {
+    for (const key of kStartOptionKeys) {
       const val = options[key];
       if (val) {
         args.push(`--${key}`);
@@ -165,9 +167,7 @@ export class Turf {
 
   async run(containerName: string, options: TurfRunOptions) {
     const args = ['run', '-b', options.bundlePath];
-
-    const ADDITIONAL_KEYS = ['seed', 'stdout', 'stderr', 'config'] as const;
-    for (const key of ADDITIONAL_KEYS) {
+    for (const key of kRunOptionKeys) {
       const val = options[key];
       if (val) {
         args.push(`--${key}`);
