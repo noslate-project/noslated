@@ -1,5 +1,4 @@
 import { Logger, loggers } from '#self/lib/loggers';
-import { WorkerStatus, WorkerStatusReport } from '#self/lib/constants';
 import { WorkerStatusReportEvent } from '../events';
 import { BaseController } from './base_controller';
 import { ControlPlaneDependencyContext } from '../deps';
@@ -20,7 +19,7 @@ export class DisposableController extends BaseController {
   }
 
   async tryStopDisposableWorkerByReport(eve: WorkerStatusReportEvent) {
-    const { functionName, name, requestId, isInspector, event } = eve.data;
+    const { functionName, name, isInspector } = eve.data;
     const broker = this._stateManager.getBroker(functionName, isInspector);
     const worker = this._stateManager.getWorker(
       functionName,
@@ -35,16 +34,6 @@ export class DisposableController extends BaseController {
         name
       );
       return;
-    }
-
-    if (
-      event === WorkerStatusReport.RequestDrained &&
-      worker.workerStatus === WorkerStatus.PendingStop &&
-      broker.disposable
-    ) {
-      // wait next sync to gc worker data and related resources
-      worker.requestId = requestId;
-      // worker is being stopped.
     }
   }
 }

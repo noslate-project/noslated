@@ -86,6 +86,11 @@ export interface TurfStartOptions {
   stderr?: string;
 }
 
+export interface TurfRunOptions extends TurfStartOptions {
+  bundlePath: string;
+  config?: string;
+}
+
 export interface TurfSpecSyscall {
   names: string[];
   action: string;

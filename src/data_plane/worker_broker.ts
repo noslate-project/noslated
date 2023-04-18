@@ -159,7 +159,10 @@ export class Worker extends EventEmitter {
 
     this.activeRequestCount++;
     this.logger.info(
-      `[${requestId}] Event dispatched, activeRequestCount: ${this.activeRequestCount}, wait: ${waitMs}ms.`
+      '[%s] Dispatching request, activeRequestCount: %s, wait: %sms.',
+      requestId,
+      this.activeRequestCount,
+      waitMs
     );
 
     try {
@@ -335,7 +338,7 @@ export class WorkerBroker extends Base {
         )
         .finally(() => {
           if (this.disposable) {
-            this.closeTraffic(notThatBusyWorker, request.metadata.requestId);
+            this.closeTraffic(notThatBusyWorker);
           }
         });
 
@@ -355,17 +358,16 @@ export class WorkerBroker extends Base {
     }
   }
 
-  async closeTraffic(worker: Worker, requestId?: string) {
+  async closeTraffic(worker: Worker) {
     try {
       await worker.closeTraffic();
 
       // 同步 RequestDrained
-      await this.host.broadcastContainerStatusReport({
+      this.host.broadcastContainerStatusReport({
         functionName: this.name,
         isInspector: this.options.inspect === true,
         name: worker.name,
         event: WorkerStatusReport.RequestDrained,
-        requestId,
       });
     } catch (e) {
       this.logger.error(
@@ -481,7 +483,7 @@ export class WorkerBroker extends Base {
         performance.now() - now
       );
       // 同步 Container 状态
-      await this.host.broadcastContainerStatusReport({
+      this.host.broadcastContainerStatusReport({
         functionName: this.name,
         isInspector: this.options.inspect === true,
         name: worker.name,
@@ -492,10 +494,6 @@ export class WorkerBroker extends Base {
       this.delegate.resetPeer(credential);
       throw e;
     }
-
-    this.logger.info(
-      `Worker ${worker.name} for ${this.name} attached, draining request queue.`
-    );
 
     this._workerMap.set(credential, {
       status: CredentialStatus.BOUND,
@@ -652,7 +650,7 @@ export class WorkerBroker extends Base {
           response = await worker.pipe(inputStream, metadata);
         } finally {
           if (this.disposable) {
-            this.closeTraffic(worker, metadata.requestId);
+            this.closeTraffic(worker);
           }
         }
 

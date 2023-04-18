@@ -158,7 +158,6 @@ describe(common.testName(__filename), () => {
             name: 'hello',
             isInspector: false,
             event: WorkerStatusReport.ContainerInstalled,
-            requestId: '',
           })
         );
 
@@ -168,7 +167,6 @@ describe(common.testName(__filename), () => {
             name: 'foo',
             isInspector: false,
             event: WorkerStatusReport.ContainerInstalled,
-            requestId: '',
           })
         );
 
@@ -178,7 +176,6 @@ describe(common.testName(__filename), () => {
             name: 'coco',
             isInspector: false,
             event: WorkerStatusReport.ContainerInstalled,
-            requestId: '',
           })
         );
 
@@ -188,7 +185,6 @@ describe(common.testName(__filename), () => {
             name: 'cocos',
             isInspector: false,
             event: WorkerStatusReport.ContainerInstalled,
-            requestId: '',
           })
         );
 
@@ -198,8 +194,6 @@ describe(common.testName(__filename), () => {
             name: 'alibaba',
             isInspector: false,
             event: WorkerStatusReport.ContainerInstalled,
-
-            requestId: '',
           })
         );
 

@@ -155,10 +155,9 @@ export class CapacityManager extends Base {
       broker.initiatingWorkerCount * broker.profile.worker.maxActivateRequests
     ) {
       this.logger.info(
-        'Request(%s) queueing for func(%s, inspect %s) not allowed to expand for sufficient initiating worker count.',
+        'Request(%s) queued for func(%s) not allowed to expand for sufficient initiating worker count.',
         requestId,
-        name,
-        isInspect
+        name
       );
       return false;
     }
