@@ -963,10 +963,6 @@ const cases = [
         .getInstance('eventBus')
         .once(WorkerStoppedEvent);
       // 误差允许
-      console.log('graceful period time')
-      console.log(stoppedEvent.timestamp)
-      console.log(stoppedEvent.data.registerTime)
-      console.log(config.turf.gracefulExitPeriodMs)
       assert.ok(
         stoppedEvent.timestamp - stoppedEvent.data.registerTime + 500 >
           config.turf.gracefulExitPeriodMs,
