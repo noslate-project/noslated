@@ -15,13 +15,7 @@ const RequestKind = aworker.ipc.RequestKind;
 type MessageKind = aworker.ipc.MessageKind;
 const MessageKind = aworker.ipc.MessageKind;
 
-const NOSLATED_CONNECT_TIMEOUT_MS = 5000;
-const NOSLATED_STREAM_PUSH_TIMEOUT_MS = 30000;
-const NOSLATED_RESOURCE_NOTIFICATION_TIMEOUT_MS = 2000;
-const NOSLATED_COLLECT_METRICS_TIMEOUT_MS = 2000;
-const NOSLATED_INSPECTOR_TIMEOUT_MS = 60000;
 const NOSLATED_DEFAULT_REQUEST_TIMEOUT_MS = 10_000;
-const NOSLATED_SEND_BEACON_TIMEOUT_MS = 10_000;
 
 const kRequestKindDataMap: { [key: number]: [any, any] } = {
   [RequestKind.Trigger]: [
