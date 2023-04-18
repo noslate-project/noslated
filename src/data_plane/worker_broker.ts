@@ -441,6 +441,11 @@ export class WorkerBroker extends Base {
     return this._profile.namespace;
   }
 
+  getWorkerInfo(credential: string) {
+    const item = this._workerMap.get(credential);
+    return item;
+  }
+
   /**
    * Bind a worker to this broker and initialize.
    * @param credential The worker's credential.

@@ -32,6 +32,7 @@ import { DataPlaneHost } from './data_plane_host';
 import { DependencyContext } from '#self/lib/dependency_context';
 import { EventBus } from '#self/lib/event-bus';
 import { events } from './events';
+import { DataPlaneInspectorAgentDelegate } from './inspector_agent_delegate';
 
 const logger = require('#self/lib/logger').get('data flow controller');
 
@@ -104,7 +105,10 @@ export class DataFlowController extends BaseOf(EventEmitter) {
     });
 
     if (process.env.DISABLE_INSPECTOR !== 'true') {
-      this.inspectorAgent = new InspectorAgent(this.delegate);
+      const inspectorDelegate = new DataPlaneInspectorAgentDelegate(this);
+      this.inspectorAgent = new InspectorAgent(this.delegate, {
+        inspectorDelegate,
+      });
     }
 
     // TODO: there is no way to cleanup unused configs.
