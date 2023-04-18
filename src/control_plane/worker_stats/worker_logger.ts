@@ -1,6 +1,6 @@
 import loggers from '#self/lib/logger';
 import { WorkerMetadata } from './worker';
-import { Logger, LogLevels } from '#self/lib/loggers';
+import { Logger } from '#self/lib/loggers';
 import {
   WorkerStatus,
   WorkerStatusReport,
@@ -19,10 +19,8 @@ export class WorkerLogger {
 
   start(cost: number) {
     this.logger.info(
-      'worker(%s, %s, inspect %s) started, cost: %s, related request(%s)',
-      this.workerMetadata.funcName,
+      'worker(%s) started, cost: %s, related request(%s)',
       this.workerMetadata.processName,
-      this.workerMetadata.options.inspect,
       cost.toFixed(3),
       this.workerMetadata.requestId
     );
@@ -30,40 +28,31 @@ export class WorkerLogger {
 
   ready(cost: number) {
     this.logger.info(
-      'worker(%s, %s, inspect %s) ready, cost: %s, related request(%s)',
-      this.workerMetadata.funcName,
+      'worker(%s) ready, cost: %s',
       this.workerMetadata.processName,
-      this.workerMetadata.options.inspect,
-      cost.toFixed(3),
-      this.workerMetadata.requestId
-    );
-  }
-
-  statusChangedBeforeReady(status: string) {
-    this.logger.info(
-      'Worker(%s) status settle to [%s] before pending ready.',
-      this.workerMetadata.processName,
-      status
+      cost.toFixed(3)
     );
   }
 
   updateWorkerStatus(
     to: WorkerStatus,
     from: WorkerStatus,
-    event: TurfStatusEvent | WorkerStatusReport | ControlPlaneEvent,
-    level?: LogLevels,
-    extra?: string
+    event: TurfStatusEvent | WorkerStatusReport | ControlPlaneEvent
   ) {
-    this.logger[level ?? 'info'](
-      'update worker status [%s] from [%s] by event [%s]%s',
+    this.logger.info(
+      'worker(%s) update status [%s] from [%s] by event [%s]',
+      this.workerMetadata.processName,
       WorkerStatus[to],
       WorkerStatus[from],
-      event,
-      extra ? extra : '.'
+      event
     );
   }
 
   statusChangedError(e: unknown) {
-    this.logger.error('unexpected error on calling onstatuschanged', e);
+    this.logger.error(
+      'worker(%s) unexpected error on calling onstatuschanged',
+      this.workerMetadata.processName,
+      e
+    );
   }
 }

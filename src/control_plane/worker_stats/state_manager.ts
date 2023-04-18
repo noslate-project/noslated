@@ -30,6 +30,8 @@ export class StateManager extends Base {
   _brokers: Map<string, Broker> = new Map();
   private _statLogger: StatLogger;
 
+  private _gcWorkers: Set<Worker> = new Set();
+
   constructor(ctx: ControlPlaneDependencyContext) {
     super();
     this._logger = loggers.get('state manager');
@@ -211,12 +213,16 @@ export class StateManager extends Base {
    * @return {Promise<void>} The result.
    */
   private async _tryGC(broker: Broker, worker: Worker) {
+    if (this._gcWorkers.has(worker)) {
+      return;
+    }
+
     // 进入该状态，必然要被 GC
     if (
       worker.workerStatus === WorkerStatus.PendingStop ||
       worker.workerStatus === WorkerStatus.Unknown
     ) {
-      worker.updateWorkerStatusByControlPlaneEvent(ControlPlaneEvent.Stopping);
+      this._gcWorkers.add(worker);
 
       try {
         await worker.container!.stop();
@@ -230,6 +236,7 @@ export class StateManager extends Base {
       // Do not await as terminating may end up more than seconds.
       this._workerStopped(broker, worker);
     } else if (worker.workerStatus === WorkerStatus.Stopped) {
+      this._gcWorkers.add(worker);
       // If the worker is already stopped, clean it up.
       // Do not await as terminating may end up more than seconds.
       this._workerStopped(broker, worker);
@@ -258,8 +265,9 @@ export class StateManager extends Base {
 
     worker.updateWorkerStatusByControlPlaneEvent(ControlPlaneEvent.Terminated);
 
-    this._logger.info("%s's last state: %j", worker.name, state);
+    this._logger.info('%s last state: %j', worker.name, state);
     broker.workers.delete(worker.name);
+    this._gcWorkers.delete(worker);
 
     const event = new WorkerStoppedEvent({
       state,

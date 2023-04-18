@@ -104,6 +104,7 @@ benchmark: build node_modules clean-test
 .PHONY: clean
 clean:
 	rm -rf build
+	rm -rf src/proto/*
 
 .PHONY: clean-test
 clean-test: export TURF_WORKDIR=$(TURF_TEST_WORKDIR)

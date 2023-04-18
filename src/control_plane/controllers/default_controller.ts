@@ -71,7 +71,10 @@ export class DefaultController extends BaseController {
     const workerMetadata = new WorkerMetadata(
       profile.name,
       { inspect: isInspect },
-      false
+      false,
+      undefined,
+      undefined,
+      requestId
     );
 
     try {
@@ -80,7 +83,7 @@ export class DefaultController extends BaseController {
         workerMetadata
       );
       this.logger.info(
-        'Request(%s) queueing for func(%s, inspect %s) expanded, cost: %sms.',
+        'Request(%s) queued for func(%s, inspect %s) expanded, cost: %sms.',
         requestId,
         name,
         isInspect,
@@ -88,7 +91,7 @@ export class DefaultController extends BaseController {
       );
     } catch (e) {
       this.logger.warn(
-        'Request(%s) queueing for func(%s, inspect %s) expanding failed.',
+        'Request(%s) queued for func(%s, inspect %s) expanding failed.',
         requestId,
         name,
         isInspect,

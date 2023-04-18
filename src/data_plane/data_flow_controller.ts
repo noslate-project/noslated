@@ -219,10 +219,9 @@ export class DataFlowController extends BaseOf(EventEmitter) {
   /**
    * Function that be called when a worker disconnected on delegate.
    */
-  #onDisconnect = async (credential: string) => {
+  #onDisconnect = (credential: string) => {
     const broker = this.credentialBrokerMap.get(credential);
     if (!broker) {
-      logger.warn(`${credential} already disconnected.`);
       return;
     }
 
@@ -230,13 +229,13 @@ export class DataFlowController extends BaseOf(EventEmitter) {
     const tag = worker
       ? (worker as Worker).name || `{${credential}}`
       : `{${credential}}`;
-    logger.info(`Worker ${tag} disconnected from ${broker.name}.`);
+    logger.info('worker(%s) disconnected %s', tag);
 
     broker.removeWorker(credential);
     this.credentialBrokerMap.delete(credential);
 
     if (worker instanceof Worker) {
-      await this.host.broadcastContainerStatusReport({
+      this.host.broadcastContainerStatusReport({
         functionName: broker.name,
         name: worker.name,
         event: WorkerStatusReport.ContainerDisconnected,
@@ -318,8 +317,8 @@ export class DataFlowController extends BaseOf(EventEmitter) {
   /**
    * Broadcast worker's traffic stats to clients.
    */
-  broadcastWorkerTrafficStats = async () => {
-    await this.host.broadcastWorkerTrafficStats({
+  broadcastWorkerTrafficStats = () => {
+    this.host.broadcastWorkerTrafficStats({
       brokers: this.getCurrentWorkersInformation(),
     });
   };

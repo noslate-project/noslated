@@ -30,11 +30,8 @@ export class DataPlaneHost extends Host {
     return super.start();
   }
 
-  async broadcastRequestQueueing(
-    workerBroker: WorkerBroker,
-    requestId: string
-  ) {
-    return this.broadcast(
+  broadcastRequestQueueing(workerBroker: WorkerBroker, requestId: string) {
+    this.broadcast(
       'requestQueueing',
       'noslated.data.RequestQueueingBroadcast',
       {
@@ -47,20 +44,20 @@ export class DataPlaneHost extends Host {
     );
   }
 
-  async broadcastWorkerTrafficStats(
+  broadcastWorkerTrafficStats(
     brokerStats: root.noslated.data.IWorkerTrafficStatsSnapshotBroadcast
   ) {
-    await this.broadcast(
+    this.broadcast(
       'workerTrafficStats',
       'noslated.data.WorkerTrafficStatsSnapshotBroadcast',
       brokerStats
     );
   }
 
-  async broadcastContainerStatusReport(
+  broadcastContainerStatusReport(
     report: root.noslated.data.IContainerStatusReport
   ) {
-    await this.broadcast(
+    this.broadcast(
       'containerStatusReport',
       'noslated.data.ContainerStatusReport',
       report

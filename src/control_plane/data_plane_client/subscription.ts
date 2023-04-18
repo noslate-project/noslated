@@ -27,7 +27,7 @@ export class DataPlaneSubscription {
   async requestQueueing(
     requestQueueingRequest: NotNullableInterface<root.noslated.data.IRequestQueueingBroadcast>
   ) {
-    this.logger.info(
+    this.logger.debug(
       'received request queueing event (requestId: %s) for func(%s, inspect %s) with request count %d gap(%d)',
       requestQueueingRequest.requestId,
       requestQueueingRequest.name,
@@ -61,9 +61,8 @@ export class DataPlaneSubscription {
   async containerStatusReport(
     report: NotNullableInterface<root.noslated.data.IContainerStatusReport>
   ) {
-    this.logger.info(
-      'receive container status report: requestId(%s), functionName(%s), workerName(%s), isInspector(%s), event(%s)',
-      report.requestId,
+    this.logger.debug(
+      'receive container status report: functionName(%s), workerName(%s), isInspector(%s), event(%s)',
       report.functionName,
       report.name,
       report.isInspector,

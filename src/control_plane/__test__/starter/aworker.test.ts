@@ -131,14 +131,12 @@ describe(common.testName(__filename), function () {
         );
         fs.mkdirSync(path.join(bundlePath, 'code'), { recursive: true });
         fs.writeFileSync(path.join(bundlePath, 'code', 'index.js'), '');
-        mm(turf, 'create', async (...args: any[]) => {
-          assert.deepStrictEqual(args, ['foo', bundlePath]);
-        });
-
-        mm(turf, 'start', async (...args: any[]) => {
+        mm(turf, 'run', async (...args: any[]) => {
           assert.deepStrictEqual(args, [
             'foo',
             {
+              bundlePath,
+              config: args[1].config,
               stdout: args[1].stdout,
               stderr: args[1].stderr,
               seed: Aworker.SEED_CONTAINER_NAME,
@@ -177,14 +175,12 @@ describe(common.testName(__filename), function () {
         );
         fs.mkdirSync(path.join(bundlePath, 'code'), { recursive: true });
         fs.writeFileSync(path.join(bundlePath, 'code', 'index.js'), '');
-        mm(turf, 'create', async (...args: any[]) => {
-          assert.deepStrictEqual(args, ['foo', bundlePath]);
-        });
-
-        mm(turf, 'start', async (...args: any[]) => {
+        mm(turf, 'run', async (...args: any[]) => {
           assert.deepStrictEqual(args, [
             'foo',
             {
+              bundlePath,
+              config: args[1].config,
               stdout: args[1].stdout,
               stderr: args[1].stderr,
             },
@@ -229,14 +225,12 @@ describe(common.testName(__filename), function () {
         );
         fs.mkdirSync(path.join(bundlePath, 'code'), { recursive: true });
         fs.writeFileSync(path.join(bundlePath, 'code', 'index.js'), '');
-        mm(turf, 'create', async (...args: any[]) => {
-          assert.deepStrictEqual(args, ['foo', bundlePath]);
-        });
-
-        mm(turf, 'start', async (...args: any[]) => {
+        mm(turf, 'run', async (...args: any[]) => {
           assert.deepStrictEqual(args, [
             'foo',
             {
+              bundlePath,
+              config: args[1].config,
               stdout: args[1].stdout,
               stderr: args[1].stderr,
             },

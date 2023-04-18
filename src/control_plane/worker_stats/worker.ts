@@ -44,6 +44,23 @@ class WorkerMetadata {
   }
 }
 
+const kWorkerStatusReportStatusMap: {
+  [key in WorkerStatusReport]: WorkerStatus;
+} = {
+  [WorkerStatusReport.ContainerInstalled]: WorkerStatus.Ready,
+  [WorkerStatusReport.RequestDrained]: WorkerStatus.PendingStop,
+  [WorkerStatusReport.ContainerDisconnected]: WorkerStatus.PendingStop,
+};
+
+const kControlPlaneEventStatusMap: {
+  [key in ControlPlaneEvent]?: WorkerStatus;
+} = {
+  [ControlPlaneEvent.FunctionRemoved]: WorkerStatus.PendingStop,
+  [ControlPlaneEvent.Shrink]: WorkerStatus.PendingStop,
+  [ControlPlaneEvent.FailedToSpawn]: WorkerStatus.Unknown,
+  [ControlPlaneEvent.Terminated]: WorkerStatus.Stopped,
+};
+
 class Worker {
   /**
    * Underlying turf container.
@@ -132,8 +149,8 @@ class Worker {
   #readyDeferred: Deferred<void>;
   #initializationTimeout: number;
 
-  logger: WorkerLogger;
-  requestId: string | undefined;
+  readonly logger: WorkerLogger;
+  readonly requestId: string | undefined;
   private readyTimeout: NodeJS.Timeout | undefined;
 
   onstatuschanged: (newStatus: WorkerStatus, oldStatus: WorkerStatus) => void =
@@ -171,8 +188,6 @@ class Worker {
 
     // 在 await ready 之前状态已经改变了
     if (this.#workerStatus >= WorkerStatus.Ready) {
-      this.logger.statusChangedBeforeReady(WorkerStatus[this.#workerStatus]);
-
       if (this.#workerStatus >= WorkerStatus.PendingStop) {
         this.#readyDeferred.reject(
           new Error(
@@ -288,41 +303,18 @@ class Worker {
   }
 
   updateWorkerStatusByReport(event: WorkerStatusReport) {
-    let statusTo: WorkerStatus;
-
-    switch (event) {
-      case WorkerStatusReport.ContainerInstalled:
-        statusTo = WorkerStatus.Ready;
-        break;
-      case WorkerStatusReport.RequestDrained:
-      case WorkerStatusReport.ContainerDisconnected:
-        statusTo = WorkerStatus.PendingStop;
-        break;
-      default:
-        throw new Error(`Unrecognizable WorkerStatusReport(${event})`);
+    const statusTo = kWorkerStatusReportStatusMap[event];
+    if (statusTo == null) {
+      throw new Error(`Unrecognizable WorkerStatusReport(${event})`);
     }
 
     this._updateWorkerStatus(statusTo, event);
   }
 
   updateWorkerStatusByControlPlaneEvent(event: ControlPlaneEvent) {
-    let status: WorkerStatus;
-    switch (event) {
-      case ControlPlaneEvent.FunctionRemoved:
-      case ControlPlaneEvent.Shrink:
-        status = WorkerStatus.PendingStop;
-        break;
-      case ControlPlaneEvent.FailedToSpawn:
-        status = WorkerStatus.Unknown;
-        break;
-      case ControlPlaneEvent.Stopping:
-        status = WorkerStatus.Stopping;
-        break;
-      case ControlPlaneEvent.Terminated:
-        status = WorkerStatus.Stopped;
-        break;
-      default:
-        throw new Error(`Unable to update worker status by event ${event}`);
+    const status = kControlPlaneEventStatusMap[event];
+    if (status == null) {
+      throw new Error(`Unable to update worker status by event ${event}`);
     }
     this._updateWorkerStatus(status, event);
   }
@@ -331,17 +323,7 @@ class Worker {
     status: WorkerStatus,
     event: TurfStatusEvent | WorkerStatusReport | ControlPlaneEvent
   ) {
-    if (status === this.#workerStatus) {
-      return;
-    }
-    if (status < this.#workerStatus) {
-      this.logger.updateWorkerStatus(
-        status,
-        this.#workerStatus,
-        event,
-        'warn',
-        ' is ignored.'
-      );
+    if (status <= this.#workerStatus) {
       return;
     }
 

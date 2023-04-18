@@ -179,7 +179,7 @@ export class AworkerStarter extends BaseStarter {
     bundlePath: string,
     options: BaseOptions
   ) {
-    this.logger.info('start worker(%s)', name);
+    this.logger.debug('start worker(%s)', name);
     const sourceFile = path.join(bundlePath, 'code', profile.sourceFile);
     const sameOriginSharedDataDir = path.join(
       SameOriginSharedDataRoot,
