@@ -17,8 +17,9 @@ export default {
   },
 
   dataPlane: {
-    daprAdaptorModulePath: null,
-    beaconHostModulePath: null,
+    daprAdaptorModulePath: undefined,
+    daprAdaptorModuleOptions: undefined,
+    beaconHostModulePath: undefined,
   },
 
   dirs: {
@@ -81,13 +82,6 @@ export default {
     // only influence on access/error/resource log now
     // TODO: set to @midwayjs/logger instance when support
     timestampFormat: 'YYYY-MM-DD HH:mm:ss.SSS',
-  },
-
-  dispatchStrategy: {
-    idrs: {
-      // 默认十分钟
-      idleDuration: 10 * 60 * 1000,
-    },
   },
 
   grpc: {

@@ -428,7 +428,9 @@ const cases = [
       data: JSON.stringify({
         name: 'key-value',
         metadata: {
-          foo: '[object Object]',
+          foo: JSON.stringify({
+            bar: 'bar',
+          }),
         },
         operation: 'get',
         data: 'foobar',
@@ -1063,11 +1065,7 @@ describe(common.testName(__filename), function () {
     describe(`${type} server`, () => {
       beforeEach(async () => {
         mm(config.delegate, 'type', type);
-        mm(
-          config.dataPlane,
-          'daprAdaptorModulePath',
-          require.resolve('./dapr-adaptor')
-        );
+        mm(config.dataPlane, 'daprAdaptorModulePath', common.daprAdaptorDir);
       });
 
       afterEach(() => {

@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 
 import defaultConfig from './default';
+import { Config } from '.';
 
 const config = {};
 
@@ -90,12 +91,6 @@ export function resolveEnvConfig() {
     envConfig.noslatedAddonType = 'Debug';
   }
 
-  if (process.env.NOSLATED_DISPATCH_STRATEGY_IDRS_MAX_IDLE) {
-    envConfig.dispatchStrategy.idrs.idleDuration = Number.parseInt(
-      process.env.NOSLATED_DISPATCH_STRATEGY_IDRS_MAX_IDLE
-    );
-  }
-
   if (process.env.NOSLATED_VIRTUAL_MEMORY_POOL_SIZE) {
     envConfig.virtualMemoryPoolSize =
       process.env.NOSLATED_VIRTUAL_MEMORY_POOL_SIZE;
@@ -121,7 +116,7 @@ export function resolveEnvConfig() {
   return envConfig;
 }
 
-export function resolveConfig(): typeof defaultConfig {
+export function resolveConfig(): Config {
   const platformFileConfig = loadConfig(
     process.env.NOSLATED_PLATFORM_CONFIG_PATH
   );
@@ -138,7 +133,7 @@ export function resolveConfig(): typeof defaultConfig {
   );
 }
 
-export function dumpConfig(name: string, config: typeof defaultConfig) {
+export function dumpConfig(name: string, config: Config) {
   try {
     const runDir = path.join(config.dirs.noslatedWork, 'run');
     fs.mkdirSync(runDir, { recursive: true });

@@ -218,7 +218,7 @@ describe(common.testName(__filename), () => {
         namespaceResolver: resolver,
       } as any);
       delegate.register(cred);
-      delegate.start();
+      await delegate.start();
 
       client = new TestClient(delegate.serverSockPath(), cred);
 
@@ -250,7 +250,7 @@ describe(common.testName(__filename), () => {
     it('should publish resource notifications', async () => {
       delegate = new NoslatedDelegateService();
       delegate.register(cred);
-      delegate.start();
+      await delegate.start();
 
       client = new TestClient(delegate.serverSockPath(), cred);
 
@@ -315,7 +315,7 @@ describe(common.testName(__filename), () => {
       delegate = new NoslatedDelegateService({
         namespaceResolver: resolver,
       } as any);
-      delegate.start();
+      await delegate.start();
 
       delegate.register(cred1);
       const client1 = new TestClient(delegate.serverSockPath(), cred1);
@@ -369,7 +369,7 @@ describe(common.testName(__filename), () => {
       delegate = new NoslatedDelegateService({
         namespaceResolver: resolver,
       } as any);
-      delegate.start();
+      await delegate.start();
 
       delegate.register(cred1);
       const client1 = new TestClient(delegate.serverSockPath(), cred1);

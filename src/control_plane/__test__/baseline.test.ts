@@ -569,11 +569,7 @@ describe(common.testName(__filename), function () {
   });
 
   beforeEach(async () => {
-    mm(
-      config.dataPlane,
-      'daprAdaptorModulePath',
-      require.resolve('#self/test/baseline/dapr-adaptor')
-    );
+    mm(config.dataPlane, 'daprAdaptorModulePath', common.daprAdaptorDir);
   });
 
   afterEach(async () => {

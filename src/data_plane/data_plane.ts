@@ -8,16 +8,20 @@ import { getCurrentPlaneId } from '#self/lib/util';
 import { Logger, loggers } from '#self/lib/loggers';
 import { DaprAdaptor } from '#self/delegate/dapr_adaptor';
 
+export interface ConfigurableDataPlaneDeps {
+  config?: Config;
+}
+
 export class DataPlane extends Base {
   config: Config;
   logger: Logger;
   host: DataPlaneHost;
   dataFlowController: DataFlowController;
 
-  constructor() {
+  constructor(deps?: ConfigurableDataPlaneDeps) {
     super();
-    dumpConfig('data', config);
-    this.config = config;
+    this.config = deps?.config ?? config;
+    dumpConfig('data', this.config);
 
     this.logger = loggers.get('data plane');
     const sockPath = path.join(
@@ -47,15 +51,26 @@ export class DataPlane extends Base {
 
   private async _loadDaprAdaptor() {
     const modPath = this.config.dataPlane.daprAdaptorModulePath;
+    const modOptions = this.config.dataPlane.daprAdaptorModuleOptions;
+
     this.logger.info('load dapr module', modPath);
-    if (modPath == null) {
+
+    if (!modPath) {
       return;
     }
+
     const Clz = require(modPath);
 
-    const mod = new Clz({
-      logger: loggers.get('dapr'),
-    });
+    const options = Object.assign(
+      {
+        logger: loggers.get('dapr'),
+      },
+      modOptions || {}
+    );
+
+    this.logger.info('init dapr module with options: ', options);
+
+    const mod = new Clz(options);
 
     await mod.ready();
     this.dataFlowController.delegate.setDaprAdaptor(mod);

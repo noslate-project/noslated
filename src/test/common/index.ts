@@ -3,6 +3,8 @@ import assert from 'assert';
 import { FIXTURES_DIR } from '../util';
 import FakeTimers from '@sinonjs/fake-timers';
 import { Clock } from '#self/lib/clock';
+import { Config, config } from '#self/config';
+import extend from 'extend';
 
 const srcRoot = path.resolve(__dirname, '../..');
 
@@ -52,6 +54,10 @@ export function createTestClock(options?: TestClockOptions): TestClock {
       clearInterval(advanceInterval);
     },
   };
+}
+
+export function extendDefaultConfig(extra: Partial<Config>) {
+  return extend(true, {}, config, extra);
 }
 
 export const baselineDir = path.join(FIXTURES_DIR, 'baseline');
