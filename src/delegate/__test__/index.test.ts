@@ -2,9 +2,7 @@ import assert from 'assert';
 import * as common from '#self/test/common';
 import { TestClient } from './test-client';
 import { NoslatedDelegateService } from '#self/delegate/index';
-import path from 'path';
 import { once } from 'events';
-import { sleep } from '#self/lib/util';
 
 describe(common.testName(__filename), () => {
   let client: TestClient | null;
