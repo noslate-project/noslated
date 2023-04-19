@@ -7,6 +7,7 @@ import { NoslatedClient } from '#self/sdk/index';
 import { startTurfD, stopTurfD } from '#self/test/turf';
 import mm from 'mm';
 import { createTestClock, TestClock } from '../common';
+import { Config } from '#self/config';
 
 export abstract class MochaEnvironment {
   constructor() {
@@ -48,6 +49,7 @@ export abstract class MochaEnvironment {
 
 export interface DefaultEnvironmentOptions {
   createTestClock?: boolean;
+  config?: Config;
 }
 
 export class DefaultEnvironment extends MochaEnvironment {
@@ -75,11 +77,15 @@ export class DefaultEnvironment extends MochaEnvironment {
       this.clock = systemClock;
     }
 
-    this.data = new DataPlane();
+    this.data = new DataPlane({
+      config: this.options?.config,
+    });
 
     this.control = new ControlPlane({
       clock: this.clock,
+      config: this.options?.config,
     });
+
     const containerManager = this.control._ctx.getInstance(
       'containerManager'
     ) as TurfContainerManager;

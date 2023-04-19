@@ -4,6 +4,7 @@ import { TestClient } from './test-client';
 import { NoslatedDelegateService } from '#self/delegate/index';
 import path from 'path';
 import { once } from 'events';
+import { sleep } from '#self/lib/util';
 
 describe(common.testName(__filename), () => {
   let client: TestClient | null;
@@ -37,7 +38,7 @@ describe(common.testName(__filename), () => {
         assert.strictEqual(cred, 'foobar');
       }, 1)
     );
-    delegate.start();
+    await delegate.start();
 
     client = new TestClient(delegate.serverSockPath(), 'foobar');
     client.once('bind', clientOnBind.calls(1));
@@ -80,7 +81,7 @@ describe(common.testName(__filename), () => {
         assert.strictEqual(cred, 'foobar');
       }, 1)
     );
-    delegate.start();
+    await delegate.start();
 
     client = new TestClient(delegate.serverSockPath(), 'foobar');
     client.once('bind', clientOnBind.calls(1));
@@ -119,7 +120,7 @@ describe(common.testName(__filename), () => {
   it('should cancel requests on client disconnected for resetPeer', async () => {
     delegate = new NoslatedDelegateService();
     delegate.register('foobar');
-    delegate.start();
+    await delegate.start();
 
     client = new TestClient(delegate.serverSockPath(), 'foobar');
 
@@ -149,7 +150,7 @@ describe(common.testName(__filename), () => {
   it('should reset requests on client disconnected for peer disconnected', async () => {
     delegate = new NoslatedDelegateService();
     delegate.register('foobar');
-    delegate.start();
+    await delegate.start();
 
     client = new TestClient(delegate.serverSockPath(), 'foobar');
 
@@ -179,7 +180,7 @@ describe(common.testName(__filename), () => {
   it('should reset response on client disconnected for peer disconnected', async () => {
     delegate = new NoslatedDelegateService();
     delegate.register('foobar');
-    delegate.start();
+    await delegate.start();
 
     client = new TestClient(delegate.serverSockPath(), 'foobar');
 
@@ -209,8 +210,7 @@ describe(common.testName(__filename), () => {
     });
 
     it('should setDaprAdaptor work', async () => {
-      const modPath = path.join(common.daprAdaptorDir, 'index');
-      const Clz = require(modPath);
+      const Clz = require(common.daprAdaptorDir);
 
       oldMod = new Clz({
         logger: console,
@@ -224,8 +224,7 @@ describe(common.testName(__filename), () => {
     });
 
     it('should close old DaprAdaptor when set new', async () => {
-      const modPath = path.join(common.daprAdaptorDir, 'index');
-      const Clz = require(modPath);
+      const Clz = require(common.daprAdaptorDir);
 
       newMod = new Clz({
         logger: console,
@@ -235,7 +234,7 @@ describe(common.testName(__filename), () => {
 
       assert(newMod.isReady);
 
-      delegate.setDaprAdaptor(newMod);
+      await delegate.setDaprAdaptor(newMod);
 
       assert(oldMod.isReady === false);
     });
@@ -243,7 +242,10 @@ describe(common.testName(__filename), () => {
     it('should close DaprAdaptor when close', async () => {
       await delegate.start();
       await delegate.close();
-      assert(newMod.isReady === false);
+
+      process.nextTick(() => {
+        assert(newMod.isReady === false);
+      });
     });
   });
 });

@@ -16,7 +16,7 @@ describe(common.testName(__filename), () => {
   it('should call client methods', async () => {
     delegate = new NoslatedDelegateService();
     delegate.register('foobar');
-    delegate.start();
+    await delegate.start();
 
     client = new TestClient(delegate.serverSockPath(), 'foobar');
 

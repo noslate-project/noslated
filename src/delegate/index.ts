@@ -259,31 +259,36 @@ export class NoslatedDelegateService extends EventEmitter {
       );
   }
 
-  start() {
+  async start() {
     if (this.#sharedState.server) {
       return;
     }
+
     const server = new NoslatedServer(
       this.#sharedState.serverPath,
       Logger.get('noslated server')
     );
+
     server.onRequest = this.#onRequest;
     server.onDisconnect = this.#onDisconnect;
     this.#sharedState.server = server;
-    this.#sharedState.server!.start();
+
+    await this.#sharedState.server!.start();
   }
 
-  close() {
+  async close() {
     if (this.#sharedState.server == null) {
       return;
     }
     for (const credential of this.#credentialsMap.keys()) {
       this.resetPeer(credential);
     }
-    this.#sharedState.server.close();
+
+    await this.#sharedState.server.close();
     this.#sharedState.server = null;
 
-    this.#sharedState.daprAdaptor?.close?.();
+    await this.#sharedState.daprAdaptor?.close?.();
+    this.#sharedState.daprAdaptor = null;
 
     queueMicrotask(() => {
       for (const sessionId of this.#sessionIdMaps.keys()) {
@@ -310,10 +315,14 @@ export class NoslatedDelegateService extends EventEmitter {
    * @param {DaprAdaptor} adaptor the adaptor object
    */
   setDaprAdaptor(adaptor: DaprAdaptor) {
-    // 关闭旧的，防止泄露
-    this.#sharedState.daprAdaptor?.close?.();
+    const precedent = this.#sharedState.daprAdaptor;
 
     this.#sharedState.daprAdaptor = adaptor;
+
+    if (precedent) {
+      // 关闭旧的，防止泄露
+      return precedent.close?.();
+    }
   }
 
   /**

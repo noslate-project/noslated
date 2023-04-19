@@ -7,9 +7,9 @@ addEventListener('fetch', event => {
       const response = await dapr.binding({
         name: 'key-value',
         metadata: {
-          foo: {
+          foo: JSON.stringify({
             bar: 'bar',
-          },
+          }),
         },
         operation: event.request.headers.get('DAPR_OPERATION') ?? 'get',
         body: 'foobar',
