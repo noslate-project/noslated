@@ -1065,11 +1065,7 @@ describe(common.testName(__filename), function () {
     describe(`${type} server`, () => {
       beforeEach(async () => {
         mm(config.delegate, 'type', type);
-        mm(
-          config.dataPlane,
-          'daprAdaptorModulePath',
-          common.daprAdaptorDir
-        );
+        mm(config.dataPlane, 'daprAdaptorModulePath', common.daprAdaptorDir);
       });
 
       afterEach(() => {
