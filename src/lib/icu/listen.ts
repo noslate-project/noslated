@@ -1,22 +1,27 @@
 import arg from 'arg';
 import { Guest } from '#self/lib/rpc/guest';
-import { icu, IcuError } from './_util';
+import { getSockAddr, icu, IcuError } from './_util';
 
 async function main(argv: string[]) {
   const args = arg(
     {
       '--sock': String,
+      '--service': String,
     },
     {
       argv,
     }
   );
 
-  if (args['--sock'] == null) {
+  let sockAddr = args['--sock'];
+  if (sockAddr == null && args['--service']) {
+    sockAddr = getSockAddr(args['--service']);
+  }
+  if (sockAddr == null) {
     throw new IcuError('use --sock <address> to set host address');
   }
 
-  const guest = new Guest(args['--sock']);
+  const guest = new Guest(sockAddr);
   await guest.start();
   args._.forEach(event => {
     guest.subscribe(event, (msg: any, packed: { toObject: () => any }) => {

@@ -1,9 +1,10 @@
 import assert from 'assert';
-import { EventEmitter } from 'events';
+import { EventEmitter, once } from 'events';
 import fs from 'fs';
 import http from 'http';
 import path from 'path';
 import util from 'util';
+import childProcess from 'child_process';
 
 import mm from 'mm';
 import serveHandler from 'serve-handler';
@@ -191,4 +192,36 @@ export function findResponseHeaderValue(
   const header = findResponseHeader(response, key);
 
   return header ? header[1] : null;
+}
+
+export async function spawn(
+  execPath: string,
+  args: string[],
+  options: childProcess.SpawnOptions
+) {
+  const cp = childProcess.spawn(execPath, args, {
+    ...options,
+    stdio: 'pipe',
+  });
+  let stderr = cp.stderr.setEncoding('utf8');
+  cp.stderr.on('data', data => {
+    stderr += data;
+  });
+
+  let stdout = '';
+  cp.stdout.setEncoding('utf8');
+  cp.stdout.on('data', data => {
+    stdout += data;
+  });
+  const [code, signal] = await once(cp, 'close');
+  if (code !== 0) {
+    const e = new Error('Child process exited with non-zero code');
+    Object.assign(e, {
+      code,
+      signal,
+      stderr,
+      stdout,
+    });
+  }
+  return stdout;
 }

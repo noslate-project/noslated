@@ -2,7 +2,7 @@ import _ from 'lodash';
 import arg from 'arg';
 import { Guest } from '#self/lib/rpc/guest';
 import { loadDescriptor } from '#self/lib/rpc/util';
-import { icu, IcuError } from './_util';
+import { getSockAddr, icu, IcuError } from './_util';
 
 async function main(argv: string[]) {
   const args = arg(
@@ -18,27 +18,27 @@ async function main(argv: string[]) {
     }
   );
 
-  if (args['--sock'] == null) {
-    throw new IcuError('use --sock <address> to set host address');
-  }
-  if (args['--service'] == null) {
+  const service = args['--service'];
+  if (service == null) {
     throw new IcuError(
       'use --service <path> to set service proto definition url'
     );
   }
+  const sockAddr = args['--sock'] ?? getSockAddr(service);
+  if (sockAddr == null) {
+    throw new IcuError('use --sock <address> to set host address');
+  }
   const { grpcDescriptor } = loadDescriptor(args['--include']);
-  const serviceDescriptor: any = _.get(grpcDescriptor, args['--service']);
+  const serviceDescriptor: any = _.get(grpcDescriptor, service);
   if (serviceDescriptor == null) {
-    throw new IcuError(`service '${args['--service']}' not found`);
+    throw new IcuError(`service '${service}' not found`);
   }
   const [method, data] = args._;
   if (!(method in serviceDescriptor.service)) {
-    throw new IcuError(
-      `no method named '${method}' in service '${args['--service']}'.`
-    );
+    throw new IcuError(`no method named '${method}' in service '${service}'.`);
   }
 
-  const guest: any = new Guest(args['--sock']);
+  const guest: any = new Guest(sockAddr);
   guest.addService(serviceDescriptor);
   await guest.start();
   const resp = await guest[method](JSON.parse(data));
