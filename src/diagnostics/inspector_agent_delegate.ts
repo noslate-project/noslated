@@ -1,7 +1,6 @@
 import { aworker } from '../proto/aworker';
 
 export interface InspectorTargetDescriptor {
-  id: string;
   title: string;
   url: string;
 }

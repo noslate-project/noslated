@@ -223,5 +223,8 @@ export async function spawn(
       stdout,
     });
   }
-  return stdout;
+  return {
+    stdout,
+    stderr,
+  };
 }

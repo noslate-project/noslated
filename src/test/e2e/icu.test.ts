@@ -33,7 +33,7 @@ describe(common.testName(__filename), function () {
 
     await env.agent.setFunctionProfile([profile]);
 
-    const output = await spawn(
+    const { stdout } = await spawn(
       process.execPath,
       [
         invokePath,
@@ -50,7 +50,7 @@ describe(common.testName(__filename), function () {
         },
       }
     );
-    const { profiles } = JSON.parse(output);
+    const { profiles } = JSON.parse(stdout);
     assert.ok(Array.isArray(profiles));
     assert.strictEqual(profiles.length, 1);
   });

@@ -11,12 +11,10 @@ const logger = loggers.get('inspector_socket_server');
 
 const CredentialSymbol = Symbol('credential');
 const ConnectedSessionIdsSymbol = Symbol('sessions');
-const TargetIdSymbol = Symbol('targetId');
 
 interface InspectorTarget {
   [CredentialSymbol]: string;
   [ConnectedSessionIdsSymbol]: number[];
-  [TargetIdSymbol]: string;
   description: string;
   devtoolsFrontendUrl: string;
   devtoolsFrontendUrlCompat: string;
@@ -30,28 +28,28 @@ interface InspectorTarget {
 
 class InspectorSession {
   #inspectorSessionId;
-  #facadeTargetId;
+  #targetId;
   #agent;
   #ws: WebSocket | null = null;
   constructor(
     inspectorSessionId: number,
-    facadeTargetId: string,
+    targetId: string,
     agent: InspectorAgent
   ) {
     this.#inspectorSessionId = inspectorSessionId;
-    this.#facadeTargetId = facadeTargetId;
+    this.#targetId = targetId;
     this.#agent = agent;
   }
 
-  get facadeTargetId() {
-    return this.#facadeTargetId;
+  get targetId() {
+    return this.#targetId;
   }
 
   assignSocket(ws: WebSocket) {
     this.#ws = ws;
     this.#ws.on('message', (message: string) => {
       this.#agent.sendInspectorCommand(
-        this.#facadeTargetId,
+        this.#targetId,
         this.#inspectorSessionId,
         message
       );
@@ -100,28 +98,22 @@ export class InspectorAgent {
     }
     this.#diagnosticsChannels.set(cred, { targets });
     for (const target of targets) {
-      const facadeDesc = this.#inspectorDelegate.getTargetDescriptorOf(
-        cred,
-        target
-      );
-      const webSocketAddress = `${this.#server.address()}/${facadeDesc.id}`;
-      this.#targets.set(facadeDesc.id, {
+      const webSocketAddress = `${this.#server.address()}/${target.id}`;
+      this.#targets.set(target.id, {
         [CredentialSymbol]: cred,
         [ConnectedSessionIdsSymbol]: [],
-        [TargetIdSymbol]: target.id,
         description: 'noslated worker',
         devtoolsFrontendUrl: `devtools://devtools/bundled/js_app.html?experiments=true&v8only=true&ws=${webSocketAddress}`,
         devtoolsFrontendUrlCompat: `devtools://devtools/bundled/inspector.html?experiments=true&v8only=true&ws=${webSocketAddress}`,
-        faviconUrl: 'https://nodejs.org/static/images/favicons/favicon.ico',
-        // faviconUrl: 'https://noslate.midwayjs.org/img/logo.svg',
-        id: facadeDesc.id,
-        title: facadeDesc.title,
+        faviconUrl: 'https://noslate.midwayjs.org/img/logo.svg',
+        id: target.id,
+        title: target.title,
         // Mocking as a node process to disable web devtool tabs.
         type: 'node',
-        url: facadeDesc.url,
+        url: target.url,
         webSocketDebuggerUrl: `ws://${webSocketAddress}`,
       });
-      logger.debug('register target', target.id, facadeDesc);
+      logger.debug('register target', target.id);
     }
   };
   #onDisconnect = (cred: string) => {
@@ -183,15 +175,31 @@ export class InspectorAgent {
   }
 
   getInspectorTargets() {
-    return Array.from(this.#targets.values());
+    return Array.from(this.#targets.values()).map(it => {
+      const facadeDesc = this.#inspectorDelegate.getTargetDescriptorOf(
+        it[CredentialSymbol],
+        it
+      );
+      return {
+        description: it.description,
+        devtoolsFrontendUrl: it.devtoolsFrontendUrl,
+        devtoolsFrontendUrlCompat: it.devtoolsFrontendUrlCompat,
+        faviconUrl: it.faviconUrl,
+        id: it.id,
+        type: it.type,
+        webSocketDebuggerUrl: it.webSocketDebuggerUrl,
+        title: facadeDesc.title,
+        url: facadeDesc.url,
+      };
+    });
   }
 
   sendInspectorCommand(
-    facadeTargetId: string,
+    targetId: string,
     inspectorSessionId: number,
     message: string
   ) {
-    const target = this.#targets.get(facadeTargetId);
+    const target = this.#targets.get(targetId);
     if (target == null) {
       return;
     }
@@ -203,12 +211,11 @@ export class InspectorAgent {
       });
   }
 
-  async accept(facadeTargetId: string) {
-    const reg = this.#targets.get(facadeTargetId);
+  async accept(targetId: string) {
+    const reg = this.#targets.get(targetId);
     if (reg == null) {
       return false;
     }
-    const targetId = reg[TargetIdSymbol];
     const credential = reg[CredentialSymbol];
     const inspectorSessionId = this.#sessionSec++;
     try {
@@ -222,11 +229,7 @@ export class InspectorAgent {
       return false;
     }
 
-    const session = new InspectorSession(
-      inspectorSessionId,
-      facadeTargetId,
-      this
-    );
+    const session = new InspectorSession(inspectorSessionId, targetId, this);
     reg[ConnectedSessionIdsSymbol].push(inspectorSessionId);
     this.#sessions.set(inspectorSessionId, session);
 
@@ -242,7 +245,7 @@ export class InspectorAgent {
     this.#sessions.delete(inspectorSessionId);
     session.terminate();
 
-    const target = this.#targets.get(session.facadeTargetId);
+    const target = this.#targets.get(session.targetId);
     if (target == null) {
       return;
     }

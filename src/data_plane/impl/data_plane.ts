@@ -166,20 +166,24 @@ export class DataPlaneImpl implements IDataPlane {
   async setTracingCategories(
     call: ServerUnaryCall<root.noslated.data.ISetTracingCategoriesRequest>
   ): Promise<void> {
-    const { functionName, inspect } = call.request;
+    const { functionName, workerName } = call.request;
     const categories = call.request.categories ?? [];
     rpcAssert(functionName);
 
     const broker = this.dataFlowController.getBroker(functionName, {
-      inspect: !!inspect,
+      inspect: false,
     });
 
     if (broker == null) {
+      logger.info('broker not found', functionName);
       return;
     }
 
     await Promise.all(
       Array.from(broker.workers()).map(it => {
+        if (workerName && it.name !== workerName) {
+          return;
+        }
         if (categories.length > 0) {
           return it.delegate.tracingStart(it.credential, categories);
         } else {
@@ -192,20 +196,24 @@ export class DataPlaneImpl implements IDataPlane {
   async startInspector(
     call: ServerUnaryCall<root.noslated.data.IStartInspectorRequest>
   ): Promise<void> {
-    const { functionName, inspect } = call.request;
+    const { functionName, workerName } = call.request;
     rpcAssert(functionName);
 
     const broker = this.dataFlowController.getBroker(functionName, {
-      inspect: !!inspect,
+      inspect: false,
     });
 
     if (broker == null) {
+      logger.info('broker not found', functionName);
       return;
     }
 
     await Promise.all(
       Array.from(broker.workers()).map(it => {
-        it.delegate.inspectorStart(it.credential);
+        if (workerName && it.name !== workerName) {
+          return;
+        }
+        return it.delegate.inspectorStart(it.credential);
       })
     );
   }

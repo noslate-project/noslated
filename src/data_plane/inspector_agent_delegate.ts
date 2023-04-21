@@ -25,8 +25,13 @@ export class DataPlaneInspectorAgentDelegate implements InspectorAgentDelegate {
       logger.info('inspector target worker not found', cred);
       return target;
     }
+    if (worker.worker?.debuggerTag) {
+      return {
+        title: `${worker.name} (${worker.worker.debuggerTag})`,
+        url: `noslate://workers/${broker.name}/${worker.name}?debuggerTag=${worker.worker.debuggerTag}`,
+      };
+    }
     return {
-      id: worker.name,
       title: worker.name,
       url: `noslate://workers/${broker.name}/${worker.name}`,
     };
