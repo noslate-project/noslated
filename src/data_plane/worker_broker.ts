@@ -5,11 +5,7 @@ import { RpcError, RpcStatus } from '#self/lib/rpc/error';
 import { Base } from '#self/lib/sdk_base';
 import { PlaneMetricAttributes } from '#self/lib/telemetry/semantic_conventions';
 import { Readable } from 'stream';
-import {
-  Metadata,
-  MetadataInit,
-  TriggerResponse,
-} from '#self/delegate/request_response';
+import { Metadata, TriggerResponse } from '#self/delegate/request_response';
 import { NoslatedDelegateService } from '#self/delegate';
 import { PrefixedLogger } from '#self/lib/loggers';
 import { DataFlowController } from './data_flow_controller';
@@ -98,6 +94,7 @@ export class Worker extends EventEmitter {
   trafficOff: boolean;
 
   freeWorkerListNode: ReadonlyNode<Worker> | null = null;
+  debuggerTag: string | undefined;
 
   constructor(
     public broker: WorkerBroker,
@@ -138,9 +135,14 @@ export class Worker extends EventEmitter {
   /**
    * Pipe input stream to worker process and get response.
    */
+  pipe(inputStream: PendingRequest): Promise<TriggerResponse>;
+  pipe(
+    inputStream: Readable | Buffer,
+    metadata: Metadata
+  ): Promise<TriggerResponse>;
   async pipe(
     inputStream: Readable | Buffer | PendingRequest,
-    metadata?: MetadataInit
+    metadata?: Metadata
   ): Promise<TriggerResponse> {
     let waitMs = 0;
 
@@ -156,6 +158,10 @@ export class Worker extends EventEmitter {
     }
 
     requestId = requestId ?? kDefaultRequestId;
+    if (this.disposable && metadata?.debuggerTag) {
+      this.debuggerTag = metadata.debuggerTag;
+      await this.delegate.inspectorStart(this.credential);
+    }
 
     this.activeRequestCount++;
     this.logger.info(
@@ -327,7 +333,7 @@ export class WorkerBroker extends Base {
       request.stopTimer();
 
       notThatBusyWorker
-        .pipe(request, undefined)
+        .pipe(request)
         .then(
           ret => {
             request.resolve(ret);

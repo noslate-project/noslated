@@ -17,6 +17,7 @@ message InvokeRequest {
   double deadline = 6;
   bytes body = 7;
   string requestId = 8;
+  string debuggerTag = 9;
 }
 
 message InvokeResponse {

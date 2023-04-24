@@ -15,6 +15,7 @@ interface MetadataInit {
   timeout?: number;
   deadline?: number;
   requestId?: string;
+  debuggerTag?: string;
 }
 
 class Metadata {
@@ -23,15 +24,17 @@ class Metadata {
   #headers;
   #baggage;
   #requestId;
+  #debuggerTag;
   #deadline;
 
   constructor(init: MetadataInit) {
-    this.#url = init?.url;
-    this.#method = init?.method ?? 'GET';
-    this.#headers = init?.headers ?? [];
-    this.#baggage = init?.baggage ?? [];
+    this.#url = init.url;
+    this.#method = init.method ?? 'GET';
+    this.#headers = init.headers ?? [];
+    this.#baggage = init.baggage ?? [];
     this.#requestId = init.requestId ?? kDefaultRequestId;
-    this.#deadline = init?.deadline ?? Date.now() + (init.timeout ?? 10_000);
+    this.#debuggerTag = init.debuggerTag;
+    this.#deadline = init.deadline ?? Date.now() + (init.timeout ?? 10_000);
   }
 
   get url() {
@@ -54,6 +57,10 @@ class Metadata {
     return this.#requestId;
   }
 
+  get debuggerTag() {
+    return this.#debuggerTag;
+  }
+
   get deadline() {
     return this.#deadline;
   }
@@ -65,6 +72,7 @@ class Metadata {
       headers: this.headers,
       baggage: this.baggage,
       requestId: this.requestId,
+      debuggerTag: this.debuggerTag,
       deadline: this.deadline,
     };
   }

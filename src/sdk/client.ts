@@ -63,7 +63,6 @@ export class NoslatedClient extends EventEmitter {
 
   /**
    * Start noslated client
-   * @return {Promise<void>} The result.
    */
   async start() {
     this.logger.debug('starting...');
@@ -84,7 +83,6 @@ export class NoslatedClient extends EventEmitter {
 
   /**
    * Close noslated client
-   * @return {Promise<void>} The result.
    */
   async close() {
     await Promise.all([
@@ -95,38 +93,24 @@ export class NoslatedClient extends EventEmitter {
 
   /**
    * Invoke function.
-   * @param {string} name The function name.
-   * @param {Readable | Buffer} data Input data.
-   * @param {import('#self/delegate/request_response').Metadata} metadata The metadata.
-   * @return {Promise<import('#self/delegate/request_response').TriggerResponse>} The invoke response.
    */
-  async invoke(
-    name: string,
-    data: Readable | Buffer,
-    metadata?: InvokeMetadata
-  ) {
+  async invoke(name: string, data: Readable | Buffer, metadata?: MetadataInit) {
     return this.#invoke('invoke', name, data, metadata);
   }
 
   /**
    * Invoke service.
-   * @param {string} name The service name.
-   * @param {Readable | Buffer} data Input data.
-   * @param {import('#self/delegate/request_response').Metadata} metadata The metadata.
-   * @return {Promise<import('#self/delegate/request_response').TriggerResponse>} The invoke response.
    */
   async invokeService(
     name: string,
     data: Readable | Buffer,
-    metadata?: InvokeMetadata
+    metadata?: MetadataInit
   ) {
     return this.#invoke('invokeService', name, data, metadata);
   }
 
   /**
    * Set platform environment variables.
-   * @param {root.noslated.IKeyValuePair[]} envs The environment variables pair.
-   * @return {Promise<void>} The result.
    */
   async setPlatformEnvironmentVariables(envs: root.noslated.IKeyValuePair[]) {
     // wash envs and throw Error if neccessary
@@ -174,7 +158,6 @@ export class NoslatedClient extends EventEmitter {
 
   /**
    * Get platform environment variables.
-   * @return {root.noslated.IKeyValuePair[]} envs The environment variables pair.
    */
   getPlatformEnvironmentVariables(): root.noslated.IKeyValuePair[] {
     return this.platformEnvironmentVariables;
@@ -182,8 +165,6 @@ export class NoslatedClient extends EventEmitter {
 
   /**
    * Set function profile.
-   * @param {RawFunctionProfile[]} profiles function profile
-   * @param {'IMMEDIATELY' | 'WAIT'} mode set mode
    */
   async setFunctionProfile(
     profiles: RawFunctionProfile[],
@@ -207,8 +188,7 @@ export class NoslatedClient extends EventEmitter {
   }
 
   /**
-   * Get funciton profile.
-   * @return {import('#self/lib/json/function_profile').RawFunctionProfile[]} The function profile.
+   * Get function profile.
    */
   getFunctionProfile() {
     return this.functionProfiles;
@@ -216,7 +196,6 @@ export class NoslatedClient extends EventEmitter {
 
   /**
    * Set service profile.
-   * @param {any[]} profiles service profile
    */
   async setServiceProfile(profiles: ServiceProfileItem[]) {
     this.validator.validate(profiles, kServiceProfileSchema);
@@ -258,7 +237,6 @@ export class NoslatedClient extends EventEmitter {
 
   /**
    * Get service profile.
-   * @return {any[]} The result.
    */
   getServiceProfile() {
     return this.serviceProfiles ?? [];
@@ -266,9 +244,6 @@ export class NoslatedClient extends EventEmitter {
 
   /**
    * Set a function whether using inspector or not.
-   * @param {string} funcName The function name.
-   * @param {boolean} use Wheher using inspector or not.
-   * @return {Promise<void>} The result.
    */
   async useInspector(funcName: string, use: boolean) {
     if (use) {
@@ -291,7 +266,7 @@ export class NoslatedClient extends EventEmitter {
     type: InvokeType,
     name: string,
     data: Readable | Buffer,
-    metadata?: InvokeMetadata
+    metadata?: MetadataInit
   ): Promise<TriggerResponse> {
     const plane = this.dataPlaneClientManager.sample();
     if (plane == null) {
@@ -316,6 +291,7 @@ export class NoslatedClient extends EventEmitter {
       deadline:
         metadata?.deadline ?? Date.now() + (metadata?.timeout ?? 10_000),
       requestId: metadata?.requestId ?? kDefaultRequestId,
+      debuggerTag: metadata?.debuggerTag,
     };
     // Fast path for buffer request.
     if (isUint8Array(data)) {
@@ -413,10 +389,6 @@ export class NoslatedClient extends EventEmitter {
 
     return deferred.promise;
   }
-}
-
-interface InvokeMetadata extends MetadataInit {
-  requestId?: string;
 }
 
 type InvokeType = 'invoke' | 'invokeService';

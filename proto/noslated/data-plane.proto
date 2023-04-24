@@ -84,11 +84,11 @@ message ServiceProfilesAccessor {
 
 message SetTracingCategoriesRequest {
   string functionName = 1;
-  bool inspect = 2;
+  string workerName = 2;
   repeated string categories = 3;
 }
 
 message StartInspectorRequest {
   string functionName = 1;
-  bool inspect = 2;
+  string workerName = 2;
 }

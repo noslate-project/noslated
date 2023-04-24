@@ -28,6 +28,7 @@ interface InvokeRequest extends Readable {
   deadline: number;
   /** InvokeRequest requestId */
   requestId: string;
+  debuggerTag?: string;
 }
 
 interface PipeResult {
@@ -72,6 +73,7 @@ export class PushServerImpl implements IPushServer {
       ),
       deadline: req.deadline,
       requestId: req.requestId,
+      debuggerTag: req.debuggerTag,
     });
 
     const resFuture = this.dataFlowController[type](req.name, req, metadata);
@@ -144,6 +146,7 @@ export class PushServerImpl implements IPushServer {
         readable.baggage = msg.baggage!;
         readable.deadline = msg.deadline ?? Date.now() + 10_000;
         readable.requestId = msg.requestId!;
+        readable.debuggerTag = msg.debuggerTag!;
         deferred.resolve(readable);
       }
       if (msg.body) {

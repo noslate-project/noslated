@@ -68,8 +68,6 @@ export class DataPlane extends Base {
       modOptions || {}
     );
 
-    this.logger.info('init dapr module with options: ', options);
-
     const mod = new Clz(options);
 
     await mod.ready();
