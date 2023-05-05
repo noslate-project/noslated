@@ -42,6 +42,7 @@ type CommonCallback = (
     data?: any;
     successOrAcquired?: boolean;
     token?: string;
+    metadata?: Record<string, string | number>
   }
 ) => void;
 
@@ -317,13 +318,13 @@ export class InvokeController {
       return;
     }
     try {
-      const { status, data } = await this.#sharedState.daprAdaptor.binding({
+      const { status, data, metadata } = await this.#sharedState.daprAdaptor.binding({
         name: params.name,
         metadata: JSON.parse(params.metadata),
         operation: params.operation,
         data: params.data,
       });
-      callback(CanonicalCode.OK, null, { status, data });
+      callback(CanonicalCode.OK, null, { status, data, metadata });
     } catch (e) {
       logger.error('dapr binding failed', e);
       callback(CanonicalCode.INTERNAL_ERROR, e as Error);

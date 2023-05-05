@@ -58,6 +58,14 @@ class DaprAdaptor extends Base {
       };
     }
 
+    if (operation === 'response-metadata') {
+      return {
+        status: 200,
+        data: Buffer.from(JSON.stringify({ foo: 'bar' })),
+        metadata: JSON.stringify({ dataType: 'json' })
+      };
+    }
+
     return {
       status: 500,
       data: Buffer.from('unknown operation'),
