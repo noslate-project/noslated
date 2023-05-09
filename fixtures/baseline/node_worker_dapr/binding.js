@@ -12,8 +12,13 @@ exports.handler = async (ctx, req, res) => {
     operation: req.headers.DAPR_OPERATION ?? 'get',
     body: 'foobar',
   });
+
+  res.writeHead(resp.status, {
+    'x-response-data-type': resp?.metadata?.dataType
+  });
+
   res.end(JSON.stringify({
     status: resp.status,
-    text: await resp.text(),
+    text: await resp.text()
   }));
 };

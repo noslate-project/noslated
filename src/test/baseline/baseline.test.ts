@@ -212,6 +212,7 @@ const cases = [
       },
     },
     expect: {
+      status: 500,
       data: JSON.stringify({
         status: 500,
         text: 'unknown operation',

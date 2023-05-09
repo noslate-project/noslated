@@ -11,7 +11,11 @@ import { NoslatedStreamError } from './error';
 import { DelegateMetricAttributes } from '#self/lib/telemetry/semantic_conventions';
 import { Extension } from './extension';
 import { aworker } from '../proto/aworker';
-import { keyValuePairsToObject, flattenToKeyValuePairs } from './noslated_ipc';
+import {
+  keyValuePairsToObject,
+  flattenToKeyValuePairs,
+  objectToKeyValuePairs,
+} from './noslated_ipc';
 import { DelegateSharedState } from './delegate_shared_state';
 import { CredentialRegistration, WorkerState } from './registration';
 import { NoslatedDelegateService } from '.';
@@ -42,7 +46,7 @@ type CommonCallback = (
     data?: any;
     successOrAcquired?: boolean;
     token?: string;
-    metadata?: Record<string, string | number>
+    metadata?: aworker.ipc.IKeyValuePair[];
   }
 ) => void;
 
@@ -317,14 +321,21 @@ export class InvokeController {
       callback(CanonicalCode.NOT_IMPLEMENTED);
       return;
     }
+
     try {
-      const { status, data, metadata } = await this.#sharedState.daprAdaptor.binding({
-        name: params.name,
-        metadata: JSON.parse(params.metadata),
-        operation: params.operation,
-        data: params.data,
+      const { status, data, metadata } =
+        await this.#sharedState.daprAdaptor.binding({
+          name: params.name,
+          metadata: keyValuePairsToObject(params.metadata),
+          operation: params.operation,
+          data: params.data,
+        });
+
+      callback(CanonicalCode.OK, null, {
+        status,
+        data,
+        metadata: objectToKeyValuePairs(metadata),
       });
-      callback(CanonicalCode.OK, null, { status, data, metadata });
     } catch (e) {
       logger.error('dapr binding failed', e);
       callback(CanonicalCode.INTERNAL_ERROR, e as Error);

@@ -1,11 +1,22 @@
+import { aworker } from '#self/proto/aworker';
 import { NoslatedClient } from './util';
 
-function objectToKeyValueMap(object: object) {
-  const entries = Object.entries(object).map(([key, value]) => [
-    key,
-    `${value}`,
-  ]);
-  return Object.fromEntries(entries);
+function objectToKeyValuePairs(
+  obj: Record<string, unknown> = {}
+): aworker.ipc.IKeyValuePair[] {
+  return Object.entries(obj).map(([key, value]) => {
+    return { key, value: `${value}` };
+  });
+}
+
+function keyValuePairsToObject(
+  keyValuePairs: aworker.ipc.IKeyValuePair[] = []
+): Record<string, string> {
+  const obj = Object.create(null);
+  keyValuePairs.forEach(kv => {
+    obj[kv.key] = kv.value;
+  });
+  return obj;
 }
 
 type BufferSource = Buffer | Uint8Array | string;
@@ -47,7 +58,7 @@ class ServiceRequest {
 
 interface BindingRequestInit {
   name?: string;
-  metadata?: any;
+  metadata?: Record<string, string>;
   operation?: string;
   body?: BufferSource;
   timeout?: number;
@@ -61,7 +72,7 @@ class BindingRequest {
   #timeout;
   constructor(init: BindingRequestInit = {}) {
     this.#name = `${init.name ?? ''}`;
-    this.#metadata = init.metadata ? objectToKeyValueMap(init.metadata) : {};
+    this.#metadata = init.metadata ? objectToKeyValuePairs(init.metadata) : [];
     this.#operation = `${init.operation ?? ''}`;
     this.#dataSource = init.body ?? '';
     this.#timeout = init.timeout ?? 10_000;
@@ -72,7 +83,7 @@ class BindingRequest {
   }
 
   get metadata() {
-    return { ...this.#metadata };
+    return [...this.#metadata];
   }
 
   get operation() {
@@ -91,18 +102,26 @@ class BindingRequest {
 interface ResponseInit {
   status: number;
   data: Buffer | Uint8Array;
+  metadata?: aworker.ipc.IKeyValuePair[] | null;
 }
 
 class Response {
   #status;
   #data;
+  #metadata;
+
   constructor(init: ResponseInit) {
     this.#status = init.status;
     this.#data = init.data;
+    this.#metadata = init.metadata ? keyValuePairsToObject(init.metadata) : {};
   }
 
   get status() {
     return this.#status;
+  }
+
+  get metadata() {
+    return { ...this.#metadata };
   }
 
   async json() {
@@ -146,14 +165,16 @@ export function makeDapr(client: NoslatedClient) {
         } else {
           req = init;
         }
+
         const data = await req.buffer();
         const res = await client.daprBinding(
           req.name,
-          JSON.stringify(req.metadata),
+          req.metadata,
           req.operation,
           data,
           req.timeout
         );
+
         return new Response(res);
       },
     },
