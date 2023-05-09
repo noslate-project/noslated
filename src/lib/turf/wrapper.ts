@@ -216,7 +216,7 @@ export class Turf {
         if (match == null) {
           return null;
         }
-        const [, /** match */ name, pid, status] = match;
+        const { 1: name, 2: pid, 3: status } = match;
         return {
           status: TurfContainerStates[status] ?? TurfContainerStates.unknown,
           pid: Number.parseInt(pid),
@@ -240,7 +240,7 @@ export class Turf {
       if (match == null) {
         return obj;
       }
-      const [, /** match */ name, value] = match;
+      const { 1: name, 2: value } = match;
       if (
         name === 'pid' ||
         name.startsWith('stat.') ||

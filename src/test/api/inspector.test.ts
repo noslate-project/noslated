@@ -52,6 +52,14 @@ describe(common.testName(__filename), function () {
     assert.strictEqual(response.status, 200);
 
     {
+      const targets = await icuGetInspectorTargets();
+      assert.strictEqual(targets.length, 1);
+      const [target] = targets;
+      assert.strictEqual(target.functionName, name);
+      assert.strictEqual(target.inspectorUrl, undefined);
+    }
+
+    {
       const targets = await getInspectorTargets();
       assert.strictEqual(targets.length, 0, 'inspector is not started yet');
     }
@@ -59,6 +67,14 @@ describe(common.testName(__filename), function () {
     await icuInvoke(Service.DataPlane, 'startInspector', {
       functionName: name,
     });
+
+    {
+      const targets = await icuGetInspectorTargets();
+      assert.strictEqual(targets.length, 1);
+      const [target] = targets;
+      assert.strictEqual(target.functionName, name);
+      assert.strictEqual(typeof target.inspectorUrl, 'string');
+    }
 
     {
       const targets = await getInspectorTargets();
@@ -89,6 +105,15 @@ describe(common.testName(__filename), function () {
     assert.strictEqual(response.status, 200);
 
     {
+      const targets = await icuGetInspectorTargets();
+      assert.strictEqual(targets.length, 1);
+      const [target] = targets;
+      assert.strictEqual(target.functionName, name);
+      assert.strictEqual(target.debuggerTag, 'foobar');
+      assert.strictEqual(typeof target.inspectorUrl, 'string');
+    }
+
+    {
       const targets = await getInspectorTargets();
       assert.strictEqual(targets.length, 1, 'inspector started');
       const target = targets[0];
@@ -111,7 +136,7 @@ describe(common.testName(__filename), function () {
         'webSocketDebuggerUrl',
       ].sort()
     );
-    const [, /** match */ funcName, workerName] = target.url.match(
+    const { 1: funcName, 2: workerName } = target.url.match(
       /noslate:\/\/workers\/(\w+)\/(\w+)/
     );
     assert.strictEqual(funcName, expectedFuncName);
@@ -124,5 +149,14 @@ describe(common.testName(__filename), function () {
     });
     assert.ok(Array.isArray(result.data));
     return result.data;
+  }
+
+  async function icuGetInspectorTargets() {
+    const result = await icuInvoke(
+      Service.DataPlane,
+      'getInspectorTargets',
+      {}
+    );
+    return result.targets;
   }
 });

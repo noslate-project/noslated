@@ -14,11 +14,13 @@ service DataPlane {
 
   rpc startWorkerFastFail(StartWorkerFastFailRequest) returns (Empty);
 
+  rpc getInspectorTargets(Empty) returns (GetInspectorTargetsResponse);
+  rpc startInspector(StartInspectorRequest) returns (Empty);
+
   /**
    * experimental
    */
   rpc setTracingCategories(SetTracingCategoriesRequest) returns (Empty);
-  rpc startInspector(StartInspectorRequest) returns (Empty);
 }
 
 message UseInspectorRequest {
@@ -91,4 +93,15 @@ message SetTracingCategoriesRequest {
 message StartInspectorRequest {
   string functionName = 1;
   string workerName = 2;
+}
+
+message GetInspectorTargetsResponse {
+  repeated InspectorTarget targets = 1;
+}
+
+message InspectorTarget {
+  string functionName = 1;
+  string workerName = 2;
+  string debuggerTag = 3;
+  string inspectorUrl = 4; // 如果已经打开则为 websocket url，如果未打开则为空
 }

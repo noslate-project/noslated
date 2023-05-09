@@ -218,6 +218,41 @@ export class DataPlaneImpl implements IDataPlane {
     );
   }
 
+  async getInspectorTargets() {
+    const inspectorAgent = this.dataFlowController.inspectorAgent;
+    if (inspectorAgent == null) {
+      return { targets: [] };
+    }
+    const inspectorTargets = inspectorAgent.getInspectorTargets().map(it => {
+      const url = new URL(it.url);
+      const { 1: functionName, 2: workerName } = url.pathname.split('/');
+      return {
+        functionName,
+        workerName,
+        inspectorUrl: it.webSocketDebuggerUrl,
+      };
+    });
+    const targets = Array.from(
+      this.dataFlowController.brokers.values()
+    ).flatMap(broker => {
+      return Array.from(broker.workers()).map(worker => {
+        return {
+          functionName: broker.name,
+          workerName: worker.name,
+          debuggerTag: worker.debuggerTag,
+          inspectorUrl: inspectorTargets.find(
+            it =>
+              it.functionName === broker.name && it.workerName === worker.name
+          )?.inspectorUrl,
+        };
+      });
+    });
+
+    return {
+      targets,
+    };
+  }
+
   /**
    * Register worker credential
    */
