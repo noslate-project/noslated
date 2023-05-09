@@ -62,7 +62,9 @@ class DaprAdaptor extends Base {
       return {
         status: 200,
         data: Buffer.from(JSON.stringify({ foo: 'bar' })),
-        metadata: JSON.stringify({ dataType: 'json' })
+        metadata: [
+          { key: 'dataType', value: 'json' }
+        ]
       };
     }
 
