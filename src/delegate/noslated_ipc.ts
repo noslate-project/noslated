@@ -595,7 +595,7 @@ export class NoslatedClient {
 
   daprBinding(
     name: string,
-    metadata: string,
+    metadata: aworker.ipc.IKeyValuePair[],
     operation: string,
     data: Uint8Array,
     timeout: number
@@ -1059,6 +1059,14 @@ export function keyValuePairsToObject(
     obj[kv.key] = kv.value;
   });
   return obj;
+}
+
+export function objectToKeyValuePairs(
+  obj: Record<string, unknown> = {}
+): aworker.ipc.IKeyValuePair[] {
+  return Object.entries(obj).map(([key, value]) => {
+    return { key, value: `${value}` };
+  });
 }
 
 function keyValuePairsToArray(

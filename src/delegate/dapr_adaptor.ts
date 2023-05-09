@@ -14,6 +14,7 @@ export interface DaprAdaptorBindingRequest {
 export interface DaprAdaptorResponse {
   status: number;
   data: Uint8Array;
+  metadata?: Record<string, string>;
 }
 
 export interface DaprAdaptor {
