@@ -1,6 +1,6 @@
 {
   "name": "noslated",
-  "version": "0.22.0",
+  "version": "0.23.0",
   "description": "Noslate Container Deamon",
   "main": "index.js",
   "types": "./build/sdk/index.js",
