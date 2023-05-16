@@ -15,12 +15,9 @@ import { WorkerStatusReport, kDefaultRequestId } from '#self/lib/constants';
 import { DataPlaneHost } from './data_plane_host';
 import { List, ReadonlyNode } from '#self/lib/list';
 import { RawWithDefaultsFunctionProfile } from '#self/lib/json/function_profile';
-import { MinHeap } from '@datastructures-js/heap';
-
-enum RequestQueueStatus {
-  PASS_THROUGH = 0,
-  QUEUEING = 1,
-}
+import { Dispatcher, DispatcherDelegate } from './dispatcher/dispatcher';
+import { DisposableDispatcher } from './dispatcher/disposable';
+import { LeastRequestCountDispatcher } from './dispatcher/least_request_count';
 
 enum CredentialStatus {
   PENDING = 1,
@@ -76,6 +73,7 @@ export class PendingRequest extends EventEmitter {
    * Resolve the `promise`.
    */
   get resolve(): (ret: TriggerResponse) => void {
+    this.stopTimer();
     return this.deferred.resolve;
   }
 
@@ -83,11 +81,11 @@ export class PendingRequest extends EventEmitter {
    * Reject the `promise`.
    */
   get reject(): (err: Error) => void {
+    this.stopTimer();
     return this.deferred.reject;
   }
 }
 
-// TODO: Reverse control with WorkerBroker.
 export class Worker extends EventEmitter {
   activeRequestCount: number;
   private logger: PrefixedLogger;
@@ -96,8 +94,9 @@ export class Worker extends EventEmitter {
   freeWorkerListNode: ReadonlyNode<Worker> | null = null;
   debuggerTag: string | undefined;
 
+  private _dispatcherData: unknown;
+
   constructor(
-    public broker: WorkerBroker,
     public delegate: NoslatedDelegateService,
     public name: string,
     public credential: string,
@@ -110,6 +109,14 @@ export class Worker extends EventEmitter {
     // + if `trafficOff` is `false`, then traffic may in;
     // + if `trafficOff` is `true`, then traffic won't in;
     this.trafficOff = false;
+  }
+
+  getDispatcherData<T>() {
+    return this._dispatcherData as T;
+  }
+
+  setDispatcherData<T>(val: T) {
+    this._dispatcherData = val;
   }
 
   /**
@@ -135,12 +142,12 @@ export class Worker extends EventEmitter {
   /**
    * Pipe input stream to worker process and get response.
    */
-  pipe(inputStream: PendingRequest): Promise<TriggerResponse>;
-  pipe(
+  invoke(inputStream: PendingRequest): Promise<TriggerResponse>;
+  invoke(
     inputStream: Readable | Buffer,
     metadata: Metadata
   ): Promise<TriggerResponse>;
-  async pipe(
+  async invoke(
     inputStream: Readable | Buffer | PendingRequest,
     metadata?: Metadata
   ): Promise<TriggerResponse> {
@@ -188,8 +195,6 @@ export class Worker extends EventEmitter {
         if (this.activeRequestCount === 0) {
           this.emit('downToZero');
         }
-
-        this.continueConsumeQueue();
       });
 
       return ret;
@@ -201,22 +206,6 @@ export class Worker extends EventEmitter {
 
       throw e;
     }
-  }
-
-  continueConsumeQueue() {
-    if (this.disposable) return;
-
-    if (this.isWorkerFree()) {
-      this.broker.tryConsumeQueue(this);
-    }
-  }
-
-  isWorkerFree() {
-    if (this.trafficOff) {
-      return false;
-    }
-
-    return this.broker.maxActivateRequests > this.activeRequestCount;
   }
 }
 
@@ -233,15 +222,15 @@ interface WorkerItem {
 /**
  * A container that brokers same function's workers.
  */
-export class WorkerBroker extends Base {
+export class WorkerBroker extends Base implements DispatcherDelegate {
   public name: string;
   private delegate: NoslatedDelegateService;
   private host: DataPlaneHost;
   private logger: PrefixedLogger;
   requestQueue: List<PendingRequest>;
-  private requestQueueStatus: RequestQueueStatus;
 
-  private _workerHeap: Worker[];
+  private _dispatcher: Dispatcher;
+
   private _workerMap: Map<string, WorkerItem>;
   private tokenBucket: TokenBucket | undefined = undefined;
 
@@ -264,10 +253,14 @@ export class WorkerBroker extends Base {
       `${this.name}${options.inspect ? ':inspect' : ''}`
     );
     this.requestQueue = new List();
-    this.requestQueueStatus = RequestQueueStatus.PASS_THROUGH;
 
     this._workerMap = new Map();
-    this._workerHeap = [];
+
+    if (this.disposable) {
+      this._dispatcher = new DisposableDispatcher(this);
+    } else {
+      this._dispatcher = new LeastRequestCountDispatcher(this);
+    }
 
     const rateLimit = this.rateLimit;
     if (rateLimit) {
@@ -307,65 +300,17 @@ export class WorkerBroker extends Base {
    * Remove a worker via credential.
    */
   removeWorker(credential: string) {
+    const item = this._workerMap.get(credential);
     this._workerMap.delete(credential);
-    const idx = this._workerHeap.findIndex(it => it.credential === credential);
-    if (idx >= 0) {
-      this._workerHeap.splice(idx, 1);
+    if (item?.worker == null) {
+      return;
     }
-  }
-
-  /**
-   * Try consume the pending request queue.
-   * @param notThatBusyWorker The idled (not that busy) worker.
-   */
-  tryConsumeQueue(notThatBusyWorker: Worker) {
-    while (this.requestQueue.length) {
-      if (!notThatBusyWorker.isWorkerFree()) {
-        break;
-      }
-
-      const request = this.requestQueue.shift();
-
-      if (!request) continue;
-
-      if (!request.available) continue;
-
-      request.stopTimer();
-
-      notThatBusyWorker
-        .pipe(request)
-        .then(
-          ret => {
-            request.resolve(ret);
-          },
-          err => {
-            request.reject(err);
-          }
-        )
-        .finally(() => {
-          if (this.disposable) {
-            this.closeTraffic(notThatBusyWorker);
-          }
-        });
-
-      this.dataFlowController.queuedRequestDurationHistogram.record(
-        Date.now() - request.startEpoch,
-        {
-          [PlaneMetricAttributes.FUNCTION_NAME]: this.name,
-        }
-      );
-
-      // disposable 只消费一个请求
-      if (this.disposable) break;
-    }
-
-    if (!this.requestQueue.length) {
-      this.requestQueueStatus = RequestQueueStatus.PASS_THROUGH;
-    }
+    this._dispatcher.unregisterWorker(item.worker);
   }
 
   async closeTraffic(worker: Worker) {
     try {
+      this._dispatcher.unregisterWorker(worker);
       await worker.closeTraffic();
 
       // 同步 RequestDrained
@@ -422,17 +367,6 @@ export class WorkerBroker extends Base {
   }
 
   /**
-   * Max activate requests count per worker of this broker.
-   */
-  get maxActivateRequests(): number {
-    if (this.disposable) {
-      return 1;
-    }
-
-    return this._profile.worker.maxActivateRequests;
-  }
-
-  /**
    * Rate limit of this broker.
    */
   get rateLimit() {
@@ -476,7 +410,6 @@ export class WorkerBroker extends Base {
     }
 
     const worker = new Worker(
-      this,
       this.delegate,
       item.name,
       credential,
@@ -512,25 +445,7 @@ export class WorkerBroker extends Base {
       worker,
     });
 
-    this._workerHeap.push(worker);
-    this.tryConsumeQueue(worker);
-  }
-
-  /**
-   * Get an available worker for balancer.
-   */
-  getAvailableWorker(): Worker | undefined {
-    MinHeap.heapify(this._workerHeap, it =>
-      it.trafficOff ? Infinity : it.activeRequestCount
-    );
-    const worker = this._workerHeap[0];
-    if (
-      worker &&
-      !worker.trafficOff &&
-      worker.activeRequestCount < this.maxActivateRequests
-    ) {
-      return worker;
-    }
+    this._dispatcher.registerWorker(worker);
   }
 
   toJSON(): root.noslated.data.IBrokerStats {
@@ -544,13 +459,40 @@ export class WorkerBroker extends Base {
     };
   }
 
+  // MARK: begin DispatcherDelegate
+  get maxActiveRequestCount(): number {
+    if (this.disposable) {
+      return 1;
+    }
+
+    return this._profile.worker.maxActivateRequests;
+  }
+
+  getPendingRequestCount(): number {
+    return this.requestQueue.length;
+  }
+
+  getPendingRequest(): PendingRequest | undefined {
+    return this.requestQueue.shift();
+  }
+
+  /**
+   * Check if request queue is enabled.
+   */
+  checkRequestQueueing(metadata: Metadata) {
+    if (!this.profile.worker.disableRequestQueue) return;
+
+    this.host.broadcastRequestQueueing(this, metadata.requestId);
+    throw new Error(`No available worker process for ${this.name} now.`);
+  }
+
   /**
    * Create a pending request to the queue.
    * @param input The input stream to be temporarily stored.
    * @param metadata The metadata.
    * @return The created pending request.
    */
-  private createPendingRequest(input: Readable | Buffer, metadata: Metadata) {
+  createPendingRequest(input: Readable | Buffer, metadata: Metadata) {
     this.logger.info('create pending request(%s).', metadata.requestId);
     const request = new PendingRequest(input, metadata, metadata.deadline);
     const node = this.requestQueue.push(request);
@@ -583,15 +525,7 @@ export class WorkerBroker extends Base {
     return request;
   }
 
-  /**
-   * Check if request queue is enabled.
-   */
-  #checkRequestQueue(metadata: Metadata) {
-    if (!this.profile.worker.disableRequestQueue) return;
-
-    this.host.broadcastRequestQueueing(this, metadata.requestId);
-    throw new Error(`No available worker process for ${this.name} now.`);
-  }
+  // MARK: end DispatcherDelegate
 
   /**
    * Fast fail all pendings due to start error
@@ -621,14 +555,6 @@ export class WorkerBroker extends Base {
     }
   }
 
-  private _queueRequest(inputStream: Readable | Buffer, metadata: Metadata) {
-    this.#checkRequestQueue(metadata);
-
-    this.requestQueueStatus = RequestQueueStatus.QUEUEING;
-    const request = this.createPendingRequest(inputStream, metadata);
-    return request.promise;
-  }
-
   /**
    * Invoke to an available worker if possible and response.
    */
@@ -644,36 +570,7 @@ export class WorkerBroker extends Base {
       });
     }
 
-    switch (this.requestQueueStatus) {
-      case RequestQueueStatus.QUEUEING: {
-        return this._queueRequest(inputStream, metadata);
-      }
-
-      case RequestQueueStatus.PASS_THROUGH: {
-        const worker = this.getAvailableWorker();
-        if (worker == null) {
-          return this._queueRequest(inputStream, metadata);
-        }
-
-        let response;
-
-        try {
-          response = await worker.pipe(inputStream, metadata);
-        } finally {
-          if (this.disposable) {
-            this.closeTraffic(worker);
-          }
-        }
-
-        return response;
-      }
-
-      default: {
-        throw new Error(
-          `Request queue status ${this.requestQueueStatus} unreachable.`
-        );
-      }
-    }
+    return this._dispatcher.invoke(inputStream, metadata);
   }
 
   /**
