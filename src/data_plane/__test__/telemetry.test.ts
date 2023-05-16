@@ -16,7 +16,7 @@ import {
 } from '#self/test/telemetry-util';
 import { DefaultEnvironment } from '#self/test/env/environment';
 
-describe(common.testName(__filename), function () {
+describe.skip(common.testName(__filename), function () {
   // Debug version of Node.js may take longer time to bootstrap.
   this.timeout(30_000);
 

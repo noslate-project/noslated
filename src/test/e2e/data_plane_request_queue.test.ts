@@ -46,10 +46,11 @@ describe(common.testName(__filename), function () {
     // 若不正常，则触发 mocha 超时，导致失败。
     do {
       await sleep(10);
-      const worker = env.data.dataFlowController
-        .getBroker('node_worker_echo')!
-        .getAvailableWorker();
-      if (!worker) continue;
+      const workers = Array.from(
+        env.data.dataFlowController.getBroker('node_worker_echo')!.workers()
+      );
+      if (workers.length === 0) continue;
+      const worker = workers[0];
       const ps = await env.turf.ps();
       for (const p of ps) {
         if (p.status === TurfContainerStates.running && p.name === worker.name)
