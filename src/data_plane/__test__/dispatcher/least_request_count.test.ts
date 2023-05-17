@@ -16,6 +16,10 @@ describe(common.testName(__filename), () => {
     dispatcher = new LeastRequestCountDispatcher(delegate);
   });
 
+  afterEach(() => {
+    delegate.close();
+  });
+
   describe('getAvailableWorker', () => {
     it('no worker', async () => {
       assert.ok(dispatcher._getAvailableWorker() == null);

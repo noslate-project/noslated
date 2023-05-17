@@ -26,7 +26,7 @@ export class LeastRequestCountDispatcher implements Dispatcher {
     }
   }
 
-  protected _isWorkerFree(worker: DataWorker): boolean {
+  _isWorkerFree(worker: DataWorker): boolean {
     return (
       !worker.trafficOff &&
       worker.activeRequestCount < this._delegate.maxActiveRequestCount

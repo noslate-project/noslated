@@ -93,6 +93,11 @@
         "disposable": {
           "type": "boolean",
           "description": "whether worker destroy after one request finished"
+        },
+        "dispatchMode": {
+          "type": "string",
+          "description": "The dispatching mode",
+          "enum": ["least-request-count", "round-robin"]
         }
       },
       "additionalProperties": true

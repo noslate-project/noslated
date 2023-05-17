@@ -23,7 +23,11 @@ export class TestDispatcherDelegate implements DispatcherDelegate {
     metadata: Metadata
   ): PendingRequest {
     logger.debug('create pending request');
-    const pendingRequest = new PendingRequest(input, metadata, 10_000);
+    const pendingRequest = new PendingRequest(
+      input,
+      metadata,
+      10_000 + Date.now()
+    );
     this.pendingRequestList.push(pendingRequest);
     return pendingRequest;
   }
@@ -38,6 +42,13 @@ export class TestDispatcherDelegate implements DispatcherDelegate {
   closeTraffic(worker: TestDataWorker): void {
     logger.debug('close traffic of worker', worker.name);
     worker.trafficOff = true;
+  }
+
+  close() {
+    while (this.pendingRequestList.length) {
+      const req = this.pendingRequestList.shift()!;
+      req.stopTimer();
+    }
   }
 }
 
