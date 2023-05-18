@@ -87,7 +87,7 @@ interface TriggerResponseInit {
 
 class TriggerResponse extends Readable {
   #status;
-  #metadata;
+  #metadata: Metadata;
   #finishDeferred;
   // time for request wait to be invoked
   #queueing: number;
@@ -103,7 +103,7 @@ class TriggerResponse extends Readable {
     if (!(metadata instanceof Metadata)) {
       metadata = new Metadata(metadata);
     }
-    this.#metadata = metadata;
+    this.#metadata = metadata as Metadata;
     this.#queueing = kDefaultQueueingTime;
     this.#workerName = kDefaultWorkerName;
     this.#finishDeferred = createDeferred<boolean>();

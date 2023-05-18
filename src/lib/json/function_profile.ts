@@ -2,6 +2,7 @@ import { DeepRequired, DeepReadonly } from '../util';
 
 export type RuntimeType = 'nodejs' | 'aworker';
 export type ShrinkStrategy = 'FILO' | 'FIFO' | 'LCC';
+export type DispatchMode = 'least-request-count' | 'round-robin';
 
 /**
  * Options needed to start a process
@@ -26,6 +27,10 @@ export interface ProcessFunctionProfile {
     execArgv?: string[];
     disableSeed?: boolean;
     disposable?: boolean;
+    /**
+     * Not applicable if `disposable` is true.
+     */
+    dispatchMode?: DispatchMode;
   };
   environments?: {
     key: string;

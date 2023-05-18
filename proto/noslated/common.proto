@@ -63,4 +63,5 @@ message FunctionProfileWorker {
   bool disposable = 9;
   bool disableSeed = 10;
   bool disableRequestQueue = 11;
+  string dispatchMode = 12;
 }

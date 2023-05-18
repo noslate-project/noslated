@@ -18,6 +18,7 @@ import { RawWithDefaultsFunctionProfile } from '#self/lib/json/function_profile'
 import { Dispatcher, DispatcherDelegate } from './dispatcher/dispatcher';
 import { DisposableDispatcher } from './dispatcher/disposable';
 import { LeastRequestCountDispatcher } from './dispatcher/least_request_count';
+import { RoundRobinDispatcher } from './dispatcher/round_robin';
 
 enum CredentialStatus {
   PENDING = 1,
@@ -258,6 +259,8 @@ export class WorkerBroker extends Base implements DispatcherDelegate {
 
     if (this.disposable) {
       this._dispatcher = new DisposableDispatcher(this);
+    } else if (this._profile.worker.dispatchMode === 'round-robin') {
+      this._dispatcher = new RoundRobinDispatcher(this);
     } else {
       this._dispatcher = new LeastRequestCountDispatcher(this);
     }
