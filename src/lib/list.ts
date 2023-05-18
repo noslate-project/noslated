@@ -9,7 +9,7 @@ class Node<T> implements ReadonlyNode<T> {
     public value: T,
     public prev: Node<T> | undefined,
     public next: Node<T> | undefined,
-    public _list: List<T>
+    public _list: List<T> | undefined
   ) {}
 }
 
@@ -163,6 +163,8 @@ export class List<T> {
     if (myNode._list !== this) {
       return;
     }
+    myNode._list = undefined;
+
     const prev = myNode.prev;
     const next = myNode.next;
     if (next) {

@@ -76,19 +76,6 @@ export class RoundRobinDispatcher implements Dispatcher {
     }
   }
 
-  private _handleResponse(future: Promise<TriggerResponse>) {
-    future
-      .then(
-        res => {
-          return res.finish();
-        },
-        () => {}
-      )
-      .finally(() => {
-        this._tryConsumeQueue();
-      });
-  }
-
   private _queueRequest(
     input: Readable | Buffer,
     metadata: Metadata

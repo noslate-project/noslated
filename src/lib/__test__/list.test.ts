@@ -70,4 +70,17 @@ describe(common.testName(__filename), () => {
     assert.strictEqual(list.length, 0);
     assert.deepStrictEqual(Array.from(list.values()), []);
   });
+
+  it('should ignore removed nodes', () => {
+    const list = new List<number>();
+    const node = list.push(1);
+    assert.strictEqual(list.length, 1);
+
+    list.remove(node);
+    assert.strictEqual(list.length, 0);
+
+    // Remove the node again.
+    list.remove(node);
+    assert.strictEqual(list.length, 0);
+  });
 });
