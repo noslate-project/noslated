@@ -1,5 +1,5 @@
 import * as common from '#self/test/common';
-import { findResponseHeader, testWorker } from '#self/test/util';
+import { findResponseHeader } from '#self/test/util';
 import { DefaultEnvironment } from '#self/test/env/environment';
 import { baselineDir } from '#self/test/common';
 import { AworkerFunctionProfile } from '#self/lib/json/function_profile';
