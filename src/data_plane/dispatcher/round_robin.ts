@@ -62,6 +62,7 @@ export class RoundRobinDispatcher implements Dispatcher {
       count++;
       worker = undefined;
 
+      // TODO: better way to yield.
       if (count >= this._batchSize) {
         setTimeout(() => {
           this._tryConsumeQueue();
