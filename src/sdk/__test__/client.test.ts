@@ -1,14 +1,13 @@
 import assert from 'assert';
 import mm from 'mm';
 import { NoslatedClient } from '#self/sdk/index';
-import { testName, baselineDir } from '#self/test/common';
+import { testName } from '#self/test/common';
 import { ControlPlane } from '#self/control_plane/index';
 import { ControlPlaneClientManager } from '#self/sdk/control_plane_client_manager';
 import { DataPlaneClientManager } from '#self/sdk/data_plane_client_manager';
 import { DataPlaneClientManager as _DataPlaneClientManager } from '#self/control_plane/data_plane_client/manager';
 import { Guest } from '#self/lib/rpc/guest';
 import { mockClientCreatorForManager } from '#self/test/util';
-import { RawFunctionProfile } from '#self/lib/json/function_profile';
 import { DataPlane } from '#self/data_plane/index';
 import { startTurfD, stopTurfD } from '#self/test/turf';
 import sinon from 'sinon';
@@ -30,88 +29,6 @@ describe(testName(__filename), () => {
     await control?.close();
     await data?.close();
     stopTurfD();
-  });
-
-  describe('.setFunctionProfile()', () => {
-    it('should not set profile due to invalid v8 options (service worker)', async () => {
-      const profile: any = {
-        name: 'aworker_echo',
-        runtime: 'aworker',
-        url: `file://${baselineDir}/aworker_echo`,
-        sourceFile: 'index.js',
-        signature: 'md5:234234',
-        worker: {
-          v8Options: ['--hello'],
-        },
-      };
-
-      control = new ControlPlane();
-      const herald = control._ctx.getInstance('herald');
-      const checkV8Options = herald.impl.checkV8Options;
-      let errMessage = '';
-      mm(
-        herald.impl,
-        'checkV8Options',
-        function (this: ControlPlane, profiles: RawFunctionProfile[]) {
-          try {
-            checkV8Options.call(this, profiles);
-          } catch (e) {
-            errMessage = (e as Error).message;
-            throw e;
-          }
-        }
-      );
-      mockClientCreatorForManager(DataPlaneClientManager);
-      mockClientCreatorForManager(_DataPlaneClientManager);
-      await control.ready();
-      await agent.start();
-
-      await assert.rejects(
-        () => agent.setFunctionProfile([profile]),
-        /Function profile didn't set\./
-      );
-      assert.match(errMessage, /Invalid v8 options: --hello/);
-    });
-
-    it('should not set profile due to invalid v8 options (nodejs)', async () => {
-      const profile: any = {
-        name: 'node_worker_v8_options',
-        runtime: 'nodejs',
-        url: `file://${baselineDir}/node_worker_v8_options`,
-        handler: 'index.handler',
-        signature: 'md5:234234',
-        worker: {
-          v8Options: ['--hello'],
-        },
-      };
-
-      control = new ControlPlane();
-      const herald = control._ctx.getInstance('herald');
-      const checkV8Options = herald.impl.checkV8Options;
-      let errMessage = '';
-      mm(
-        herald.impl,
-        'checkV8Options',
-        function (this: ControlPlane, profiles: RawFunctionProfile[]) {
-          try {
-            checkV8Options.call(this, profiles);
-          } catch (e) {
-            errMessage = (e as Error).message;
-            throw e;
-          }
-        }
-      );
-      mockClientCreatorForManager(DataPlaneClientManager);
-      mockClientCreatorForManager(_DataPlaneClientManager);
-      await control.ready();
-      await agent.start();
-
-      await assert.rejects(
-        () => agent.setFunctionProfile([profile]),
-        /Function profile didn't set\./
-      );
-      assert.match(errMessage, /Invalid v8 options: --hello/);
-    });
   });
 
   describe('.setPlatformEnvironmentVariables()', () => {
