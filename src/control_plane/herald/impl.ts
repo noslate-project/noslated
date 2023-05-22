@@ -56,27 +56,6 @@ export class HeraldImpl {
     };
   }
 
-  checkV8Options(profiles: root.noslated.IFunctionProfile[]) {
-    for (const profile of profiles) {
-      const v8Options = profile?.worker?.v8Options || [];
-
-      /**
-       * @type {'nodejs'|'aworker'}
-       */
-      let runtime = profile?.runtime || 'aworker';
-      switch (runtime) {
-        case 'nodejs':
-          runtime = 'nodejs';
-          break;
-        case 'aworker':
-        default:
-          runtime = 'aworker';
-          break;
-      }
-      this._workerLauncher.starters[runtime].checkV8Options(v8Options);
-    }
-  }
-
   /**
    * Set function profile
    * @param {ServerWritableStream<root.noslated.SetFunctionProfileRequest, root.noslated.SetFunctionProfileResponse>} call The call object.
@@ -94,18 +73,6 @@ export class HeraldImpl {
       mode,
       profiles.length
     );
-
-    // 验证 worker v8options
-    try {
-      this.checkV8Options(profiles);
-    } catch (e) {
-      this.logger.warn(
-        'Failed to validate function profile: %o, profile: %j',
-        e,
-        profiles
-      );
-      return { set: false };
-    }
 
     try {
       await this._functionProfile.setProfiles(profiles as RawFunctionProfile[]);

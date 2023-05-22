@@ -1,5 +1,4 @@
-import { castError, sleep } from '#self/lib/util';
-import cp from 'child_process';
+import { sleep, BackoffCounter } from '#self/lib/util';
 import fs from 'fs';
 import path from 'path';
 
@@ -8,50 +7,37 @@ import { TurfContainerStates } from '#self/lib/turf/wrapper';
 import * as naming from '#self/lib/naming';
 import { AworkerFunctionProfile } from '#self/lib/json/function_profile';
 import { Container, workerLogPath } from '../container/container_manager';
-import { DependencyContext } from '#self/lib/dependency_context';
+import { DependencyContext, Injectable } from '#self/lib/dependency_context';
+import { Clock, TimerHandle } from '#self/lib/clock';
 
 const SEED_CONTAINER_NAME = '___seed___';
 const SameOriginSharedDataRoot = '/tmp/noslated-sosd';
 
-export class AworkerStarter extends BaseStarter {
+const kValidSeedStatuses = [
+  TurfContainerStates.starting,
+  TurfContainerStates.init,
+  TurfContainerStates.running,
+  TurfContainerStates.forkwait,
+];
+
+export class AworkerStarter extends BaseStarter implements Injectable {
   static SEED_CONTAINER_NAME = SEED_CONTAINER_NAME;
-  keepSeedAliveTimer: ReturnType<typeof setTimeout> | null;
-  closed;
-  binPath;
-  seedContainer?: Container;
+
+  private _closed;
+  private _clock: Clock;
+  private _seedContainer?: Container;
+  private _seedBackoffCounter = new BackoffCounter(1000, 10_000);
+  private _seedBackoffTimer: TimerHandle | null = null;
+  private _seedStarting = false;
 
   constructor(ctx: DependencyContext<StarterContext>) {
     super('aworker', 'aworker', 'aworker starter', ctx);
-    this.keepSeedAliveTimer = null;
-    this.closed = false;
-    this.binPath = BaseStarter.findRealBinPath('aworker', 'aworker');
+    this._clock = ctx.getInstance('clock');
+    this._closed = false;
   }
 
-  _initValidV8Options() {
-    const options = cp.execFileSync(this.binPath, ['--v8-options'], {
-      encoding: 'utf8',
-    });
-    this._validV8Options = BaseStarter.parseV8OptionsString(options);
-  }
-
-  async seedStatus() {
-    if (this.seedContainer == null) {
-      return null;
-    }
-    if (this.seedContainer.status === TurfContainerStates.forkwait) {
-      return this.seedContainer.status;
-    }
-    try {
-      await this.seedContainer.state();
-    } catch (exp: any) {
-      this.logger.warn(`Cannot state ${SEED_CONTAINER_NAME}.`, exp.message);
-      return null;
-    }
-    return this.seedContainer.status;
-  }
-
-  async startSeed() {
-    this.seedContainer = undefined;
+  private async _startSeed() {
+    this._seedContainer = undefined;
     const commands = [this.bin];
     if (this.config.starter.aworker.defaultSeedScript != null) {
       commands.push(
@@ -71,7 +57,7 @@ export class AworkerStarter extends BaseStarter {
     );
     fs.mkdirSync(path.join(bundlePath, 'code'), { recursive: true });
 
-    this.seedContainer = await this.doStart(
+    this._seedContainer = await this.doStart(
       SEED_CONTAINER_NAME, // container name
       bundlePath, // bundle path
       commands, // run command
@@ -79,98 +65,121 @@ export class AworkerStarter extends BaseStarter {
       this.config.starter.aworker.defaultEnvirons, // environment
       { additionalSpec: { turf: { seed: true } } }
     );
+    this._seedContainer.onstatuschanged = this._onSeedStatusChanged;
   }
 
-  async waitSeedReady() {
+  private _onSeedStatusChanged = () => {
+    if (this._seedContainer == null) {
+      return;
+    }
+    const { _seedContainer: seedContainer } = this;
+    const status = seedContainer.status;
+    if (kValidSeedStatuses.includes(status)) {
+      return;
+    }
+
+    this._restartSeed();
+  };
+
+  private _restartSeed = async () => {
+    if (this._seedStarting) {
+      return;
+    }
+    if (this._seedBackoffTimer) {
+      this._clock.clearTimeout(this._seedBackoffTimer);
+    }
+
+    this._seedStarting = true;
+    let seedStarted = false;
+    try {
+      if (this._seedContainer) {
+        try {
+          await this._seedContainer.stop();
+          const state = await this._seedContainer.terminated;
+          this._seedContainer = undefined;
+          this.logger.info('seed terminated, last state: %j', state);
+        } catch (e) {
+          this.logger.error('terminate seed failed', e);
+          return;
+        }
+      }
+
+      try {
+        await this._bootstrapSeed();
+      } catch (e) {
+        this.logger.info('restart seed failed', e);
+        return;
+      }
+      seedStarted = true;
+    } finally {
+      this._seedStarting = false;
+      if (seedStarted) {
+        this._seedBackoffCounter.reset();
+      } else {
+        const backoffMs = this._seedBackoffCounter.next();
+        this.logger.info('starting seed in %d ms', backoffMs);
+        this._seedBackoffTimer = this._clock.setTimeout(
+          this._restartSeed,
+          backoffMs
+        );
+      }
+    }
+  };
+
+  async _waitSeedReady() {
     let times = 100;
     do {
-      if (this.closed) return;
-      await sleep(50);
-      const state = await this.seedStatus();
-      if (state === TurfContainerStates.forkwait) {
+      if (this._closed) return;
+      await sleep(50, this._clock);
+      if (this._seedContainer == null) return;
+      const state = await this._seedContainer.state();
+      if (state.state === TurfContainerStates.forkwait) {
         return;
+      }
+      if (state.state >= TurfContainerStates.stopping) {
+        throw new Error('Seed exited before ready');
       }
     } while (times--);
 
     throw new Error('Wait seed ready timeout.');
   }
 
-  async keepSeedAlive() {
-    this.keepSeedAliveTimer = null;
-    try {
-      const status = await this.seedContainer?.state().catch((exp: unknown) => {
-        const e = castError(exp);
-        if (!e.message.includes('not found')) {
-          this.logger.warn(`Cannot state ${SEED_CONTAINER_NAME}.`, e.message);
-        }
-        return null;
-      });
-      if (this.closed) return;
-      let needStart = false;
-      if (status == null) {
-        needStart = true;
-      } else if (
-        ![
-          TurfContainerStates.starting,
-          TurfContainerStates.init,
-          TurfContainerStates.running,
-          TurfContainerStates.forkwait,
-        ].includes(status.state)
-      ) {
-        needStart = true;
-        await this.seedContainer?.stop();
-        await this.seedContainer?.terminated;
-        if (this.closed) return;
-      }
-
-      if (needStart && !this.closed) {
-        this.logger.info('starting seed... oldStatus:', status);
-        await this.startSeed();
-        if (this.closed) return;
-        this.waitSeedReady()
-          .then(() => {
-            this.logger.info('Seed process started.');
-          })
-          .catch(e => {
-            this.logger.warn(e);
-          });
-      }
-    } catch (e) {
-      this.logger.warn('Failed to keep seed alive.', e);
-    } finally {
-      if (!this.closed) {
-        this.keepSeedAliveTimer = setTimeout(
-          this.keepSeedAlive.bind(this),
-          1000
-        );
-      }
-    }
+  private async _bootstrapSeed() {
+    await this._startSeed();
+    await this._waitSeedReady();
+    this.logger.info('Seed started.');
   }
 
-  async _init() {
-    await super._init();
+  // MARK: Injectable
+  async ready() {
     if (
-      process.platform !== 'darwin' &&
-      !process.env.NOSLATED_FORCE_NON_SEED_MODE
+      process.platform !== 'linux' ||
+      process.env.NOSLATED_FORCE_NON_SEED_MODE
     ) {
-      await this.keepSeedAlive();
+      this.logger.info('seed is not enabled');
+      return;
     }
+
+    await this._restartSeed();
   }
 
-  async _close() {
-    this.closed = true;
-    if (this.keepSeedAliveTimer) {
-      clearTimeout(this.keepSeedAliveTimer);
-      this.keepSeedAliveTimer = null;
+  async close() {
+    this._closed = true;
+    if (this._seedBackoffTimer) {
+      this._clock.clearTimeout(this._seedBackoffTimer);
+    }
+    if (this._seedContainer == null) {
+      return;
     }
 
     try {
-      await this.seedContainer?.stop();
+      await this._seedContainer.stop();
     } catch (e) {
-      this.logger.warn(e);
+      this.logger.error('failed to stop seed', e);
     }
   }
 
+  // MARK: WorkerStarter
   async start(
     serverSockPath: string,
     name: string,
@@ -187,11 +196,10 @@ export class AworkerStarter extends BaseStarter {
     );
 
     let useSeed = true;
-    const seedStatus = await this.seedStatus();
-    if (seedStatus !== TurfContainerStates.forkwait) {
-      useSeed = false;
-    }
-    if (profile.worker?.disableSeed) {
+    if (
+      this._seedContainer?.status !== TurfContainerStates.forkwait ||
+      profile.worker?.disableSeed
+    ) {
       useSeed = false;
     }
 
@@ -226,9 +234,10 @@ export class AworkerStarter extends BaseStarter {
     }
 
     this.logger.info(
-      `Up to start ${name} (func: ${profile.name}) with ${
-        useSeed ? '' : 'non-'
-      }seed mode.`
+      'Up to start %s (func: %s) with %s mode.',
+      name,
+      profile.name,
+      useSeed ? 'seed' : 'non-seed'
     );
     return this.doStart(
       name,

@@ -1,34 +1,28 @@
-import cp from 'child_process';
 import fs from 'fs';
 import path from 'path';
 
 import { BaseOptions, BaseStarter } from './base';
 import { ENV } from './constant';
 import { NodejsFunctionProfile } from '#self/lib/json/function_profile';
-import { WorkerStarter } from '../worker_launcher';
 import { ControlPlaneDependencyContext } from '../deps';
+import { Injectable } from '#self/lib/dependency_context';
 
 const NOSLATED_STARTER_PATH = require.resolve('../../starter/noslated_node');
 
-export class NodejsStarter extends BaseStarter implements WorkerStarter {
-  binPath;
-
+export class NodejsStarter extends BaseStarter implements Injectable {
   constructor(ctx: ControlPlaneDependencyContext) {
     super('nodejs', 'node', 'node starter', ctx);
-    this.binPath = BaseStarter.findRealBinPath('nodejs', 'node');
   }
 
-  _initValidV8Options() {
-    const options = cp.execFileSync(this.binPath, ['--v8-options'], {
-      encoding: 'utf8',
-    });
-    this._validV8Options = BaseStarter.parseV8OptionsString(options);
+  // MARK: Injectable
+  async ready() {
+    /** empty */
+  }
+  async close() {
+    /** empty */
   }
 
-  async _close() {
-    // empty
-  }
-
+  // MARK: WorkerStarter
   async start(
     serverSockPath: string,
     name: string,

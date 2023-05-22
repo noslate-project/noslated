@@ -3,10 +3,8 @@ import os from 'os';
 import path from 'path';
 import extend from 'extend';
 
-import { Base } from '#self/lib/sdk_base';
 import loggers from '#self/lib/logger';
 import { pairsToMap } from '#self/lib/rpc/key_value_pair';
-import { ErrorCode, LauncherError } from '../worker_launcher_error_code';
 import {
   ProcessFunctionProfile,
   RawFunctionProfile,
@@ -19,6 +17,7 @@ import { Config } from '#self/config';
 import { EventBus } from '#self/lib/event-bus';
 import { DependencyContext } from '#self/lib/dependency_context';
 import { ResourceManager, ResourceManagerContext } from '../resource_manager';
+import { WorkerStarter } from '../worker_launcher';
 
 export interface BaseOptions {
   inspect?: boolean;
@@ -37,7 +36,7 @@ export type StarterContext = {
   eventBus: EventBus;
 } & ResourceManagerContext;
 
-export abstract class BaseStarter extends Base {
+export abstract class BaseStarter implements WorkerStarter {
   /**
    * Find the real bin path
    * @param {string} runtimeName The runtime name.
@@ -91,15 +90,14 @@ export abstract class BaseStarter extends Base {
     return ret;
   }
 
-  runtime;
-  bin;
-  logger;
-  config;
-  containerManager;
-  resourceManager;
-  _validV8Options: string[];
+  private runtime;
+  private containerManager;
+  private resourceManager;
+  protected bin;
+  protected logger;
+  protected config;
 
-  platformEnvirons: Record<string, string> = {};
+  private platformEnvirons: Record<string, string> = {};
 
   constructor(
     runtime: string,
@@ -107,11 +105,9 @@ export abstract class BaseStarter extends Base {
     loggerName: string,
     ctx: DependencyContext<StarterContext>
   ) {
-    super();
     this.runtime = runtime;
     this.bin = bin;
     this.logger = loggers.get(loggerName);
-    this._validV8Options = [];
     this.config = ctx.getInstance('config');
     this.containerManager = ctx.getInstance('containerManager');
     this.resourceManager = ctx.getInstance('resourceManager');
@@ -123,30 +119,6 @@ export abstract class BaseStarter extends Base {
       },
     });
   }
-
-  /**
-   * @type {string[]}
-   */
-  get validV8Options() {
-    return this._validV8Options;
-  }
-
-  /**
-   * Init valid v8 options (override)
-   */
-  abstract _initValidV8Options(): void;
-
-  /**
-   * Init (override)
-   */
-  async _init() {
-    this._initValidV8Options();
-  }
-
-  /**
-   * Close (override)
-   */
-  abstract _close(): Promise<void>;
 
   /**
    * Get common exec argv
@@ -173,19 +145,6 @@ export abstract class BaseStarter extends Base {
     }
 
     return ret;
-  }
-
-  /**
-   * Check v8 options
-   * @param {string[]} options The v8 options.
-   */
-  checkV8Options(options: string[]) {
-    for (let opt of options) {
-      opt = opt.replace(/(=.*)?$/, '');
-      if (!this.validV8Options.includes(opt)) {
-        throw new LauncherError(ErrorCode.kInvalidV8Option, opt);
-      }
-    }
   }
 
   /**

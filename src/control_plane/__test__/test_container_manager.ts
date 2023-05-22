@@ -3,18 +3,29 @@ import {
   TurfContainerStates,
   TurfProcess,
   TurfSpec,
+  TurfStartOptions,
   TurfState,
 } from '#self/lib/turf/types';
-import { Container, ContainerManager } from '../container/container_manager';
+import {
+  Container,
+  ContainerManager,
+  ContainerStartOptions,
+} from '../container/container_manager';
 import SPEC from '../../lib/json/spec.template.json';
 import { Broker } from '../worker_stats/broker';
 import { createDeferred, Deferred } from '#self/lib/util';
 import { StateManager } from '../worker_stats/state_manager';
+import EventEmitter from 'events';
 
-export class TestContainerManager implements ContainerManager {
+export class TestContainerManager
+  extends EventEmitter
+  implements ContainerManager
+{
   containers = new Map<string, TestContainer>();
 
-  constructor(public clock: Clock = systemClock) {}
+  constructor(public clock: Clock = systemClock) {
+    super();
+  }
 
   async ready(): Promise<void> {}
   async close(): Promise<void> {}
@@ -23,7 +34,7 @@ export class TestContainerManager implements ContainerManager {
     for (const it of list) {
       const container =
         this.containers.get(it.name) ??
-        new TestContainer(it.name, '', SPEC, this);
+        new TestContainer(it.name, '', SPEC, {}, this);
       container.pid = it.pid;
       container.pendingStatus = it.status;
       this.containers.set(it.name, container);
@@ -33,10 +44,18 @@ export class TestContainerManager implements ContainerManager {
   async spawn(
     name: string,
     bundlePath: string,
-    spec: TurfSpec
+    spec: TurfSpec,
+    options?: ContainerStartOptions
   ): Promise<Container> {
-    const container = new TestContainer(name, bundlePath, spec, this);
+    const container = new TestContainer(
+      name,
+      bundlePath,
+      spec,
+      options ?? {},
+      this
+    );
     this.containers.set(name, container);
+    this.emit('spawn', container);
     return container;
   }
 
@@ -72,6 +91,7 @@ export class SimpleContainer implements Container {
     readonly name: string,
     readonly bundlePath?: string,
     readonly spec?: TurfSpec,
+    readonly options?: TurfStartOptions,
     private clock: Clock = systemClock
   ) {
     this.terminatedDeferred = createDeferred();
@@ -152,9 +172,10 @@ export class TestContainer extends SimpleContainer {
     name: string,
     bundlePath: string,
     spec: TurfSpec,
+    options: TurfStartOptions,
     private manager: TestContainerManager
   ) {
-    super(name, bundlePath, spec, manager.clock);
+    super(name, bundlePath, spec, options, manager.clock);
   }
 
   _onStopped() {
