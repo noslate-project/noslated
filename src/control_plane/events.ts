@@ -56,7 +56,7 @@ export class WorkerStoppedEvent extends Event {
 export class WorkerTrafficStatsEvent extends Event {
   static type = 'worker-traffic-stats';
   constructor(
-    public data: NotNullableInterface<root.noslated.data.IWorkerTrafficStatsSnapshot>
+    public data: NotNullableInterface<root.noslated.data.IBrokerStats[]>
   ) {
     super(WorkerTrafficStatsEvent.type);
   }

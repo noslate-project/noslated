@@ -42,6 +42,12 @@ export class DataPlaneImpl implements IDataPlane {
     broker.fastFailAllPendingsDueToStartError(request);
   }
 
+  async getWorkerTrafficStats(): Promise<root.noslated.data.IWorkerTrafficStatsResponse> {
+    return {
+      brokers: this.dataFlowController.getWorkerTrafficStats(),
+    };
+  }
+
   /**
    * Reduce capacity
    * @param call The call object.

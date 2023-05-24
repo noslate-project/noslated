@@ -10,6 +10,7 @@ service DataPlane {
   rpc useInspector(UseInspectorRequest) returns (Empty);
   rpc registerWorkerCredential(RegisterWorkerCredentialRequest) returns (Empty);
   rpc serverSockPath(Empty) returns (ServerSockPathResponse);
+  rpc getWorkerTrafficStats(Empty) returns (WorkerTrafficStatsResponse);
   rpc reduceCapacity(CapacityReductionRequest) returns (CapacityReductionResponse);
 
   rpc startWorkerFastFail(StartWorkerFastFailRequest) returns (Empty);
@@ -37,6 +38,21 @@ message RegisterWorkerCredentialRequest {
 
 message ServerSockPathResponse {
   string path = 1;
+}
+
+message WorkerStats {
+  string name = 1;
+  int32 activeRequestCount = 3;
+}
+
+message BrokerStats {
+  string functionName = 1;
+  bool inspector = 2;
+  repeated WorkerStats workers = 3;
+}
+
+message WorkerTrafficStatsResponse {
+  repeated BrokerStats brokers = 1;
 }
 
 message CapacityReductionWorker {

@@ -75,12 +75,6 @@ export function resolveEnvConfig() {
     );
   }
 
-  if (process.env.NOSLATED_WORKER_SHRINK_REDUNDANT_TIMES) {
-    envConfig.worker.shrinkRedundantTimes = Number.parseInt(
-      process.env.NOSLATED_WORKER_SHRINK_REDUNDANT_TIMES
-    );
-  }
-
   if (process.env.NOSLATED_RESERVATION_WORKER_COUNT_PER_FUNCTION) {
     envConfig.worker.reservationCountPerFunction = Number.parseInt(
       process.env.NOSLATED_RESERVATION_WORKER_COUNT_PER_FUNCTION

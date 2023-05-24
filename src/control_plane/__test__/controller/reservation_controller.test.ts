@@ -28,7 +28,7 @@ describe(common.testName(__filename), () => {
         'WAIT'
       );
 
-      await eventBus.publish(new WorkerTrafficStatsEvent({ brokers: [] }));
+      await eventBus.publish(new WorkerTrafficStatsEvent([]));
       const broker = stateManager.getBroker('aworker_echo', false);
       assert(broker);
       assert.strictEqual(broker.activeWorkerCount, 1);

@@ -14,6 +14,7 @@ export default {
   controlPlane: {
     // worker launcher 扩容并发度
     expandConcurrency: 4,
+    workerTrafficStatsPullingMs: 10_000,
   },
 
   dataPlane: {
@@ -37,10 +38,6 @@ export default {
     maxActivateRequests: 10,
     defaultInitializerTimeout: 10_000,
     replicaCountLimit: 10,
-    // Noslated will check water level regularly. If water level is always too low
-    // in continuous `shrinkRedundantTimes` times, some worker(s) will be
-    // shrinked.
-    shrinkRedundantTimes: 60,
   },
   starter: {
     aworker: {

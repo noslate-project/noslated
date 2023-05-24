@@ -58,7 +58,6 @@ export class DataFlowController extends BaseOf(EventEmitter) {
   circuitBreaker: SystemCircuitBreaker;
   serviceSelector: ServiceSelector;
 
-  workerTrafficStatsBroadcastInterval: NodeJS.Timer | null;
   orphanBrokerCleanInterval: NodeJS.Timer | null;
 
   telemetry: WorkerTelemetry;
@@ -124,7 +123,6 @@ export class DataFlowController extends BaseOf(EventEmitter) {
     this.delegate.on('bind', this.#onBind);
     this.delegate.on('disconnect', this.#onDisconnect);
 
-    this.workerTrafficStatsBroadcastInterval = null;
     this.orphanBrokerCleanInterval = null;
 
     this.telemetry = new WorkerTelemetry(this.meter, this.delegate, this);
@@ -314,18 +312,9 @@ export class DataFlowController extends BaseOf(EventEmitter) {
   /**
    * Current workers' stats information.
    */
-  getCurrentWorkersInformation(): root.noslated.data.IBrokerStats[] {
+  getWorkerTrafficStats(): root.noslated.data.IBrokerStats[] {
     return [...this.brokers.values()].map(broker => broker.toJSON());
   }
-
-  /**
-   * Broadcast worker's traffic stats to clients.
-   */
-  broadcastWorkerTrafficStats = () => {
-    this.host.broadcastWorkerTrafficStats({
-      brokers: this.getCurrentWorkersInformation(),
-    });
-  };
 
   /**
    * Clean orphan brokers (brokers that no more exists in function profiles)
@@ -354,10 +343,6 @@ export class DataFlowController extends BaseOf(EventEmitter) {
     await this.delegate.start();
     if (this.inspectorAgent) await this.inspectorAgent.start();
 
-    this.workerTrafficStatsBroadcastInterval = setInterval(
-      this.broadcastWorkerTrafficStats,
-      1000
-    );
     this.orphanBrokerCleanInterval = setInterval(this.cleanOrphanBrokers, 1000);
 
     this.circuitBreaker.start();
@@ -369,11 +354,6 @@ export class DataFlowController extends BaseOf(EventEmitter) {
    * Close function (override)
    */
   async _close() {
-    if (this.workerTrafficStatsBroadcastInterval) {
-      clearInterval(this.workerTrafficStatsBroadcastInterval);
-      this.workerTrafficStatsBroadcastInterval = null;
-    }
-
     if (this.orphanBrokerCleanInterval) {
       clearInterval(this.orphanBrokerCleanInterval);
       this.orphanBrokerCleanInterval = null;
