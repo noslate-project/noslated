@@ -5,6 +5,7 @@ import FakeTimers from '@sinonjs/fake-timers';
 import { Clock } from '#self/lib/clock';
 import { Config, config } from '#self/config';
 import extend from 'extend';
+import { DeepPartial } from '#self/lib/util';
 
 const srcRoot = path.resolve(__dirname, '../..');
 
@@ -56,7 +57,7 @@ export function createTestClock(options?: TestClockOptions): TestClock {
   };
 }
 
-export function extendDefaultConfig(extra: Partial<Config>) {
+export function extendDefaultConfig(extra: DeepPartial<Config>) {
   return extend(true, {}, config, extra);
 }
 
