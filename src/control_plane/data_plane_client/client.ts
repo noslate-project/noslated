@@ -27,11 +27,20 @@ export class DataPlaneClient extends BasePlaneClient {
     // import { ProtoGrpcType } from 'src/proto/data-plane'
     this.addService((descriptor as any).noslated.data.DataPlane);
     await super._init();
-    this.subscription = new Subscription(this.eventBus, this);
+    this.subscription = new Subscription(
+      this.eventBus,
+      this,
+      this.config.controlPlane.workerTrafficStatsPullingMs
+    );
     this.subscription.subscribe();
 
     const ret = await (this as any).serverSockPath({});
     this.#serverSockPath = ret.path;
+  }
+
+  async _close(): Promise<void> {
+    this.subscription?.unsubscribe();
+    return super._close();
   }
 
   getServerSockPath() {

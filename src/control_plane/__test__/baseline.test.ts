@@ -569,6 +569,8 @@ describe(common.testName(__filename), function () {
   });
 
   beforeEach(async () => {
+    // TODO: controller e2e tests.
+    mm(config.controlPlane, 'workerTrafficStatsPullingMs', 1000);
     mm(config.dataPlane, 'daprAdaptorModulePath', common.daprAdaptorDir);
   });
 

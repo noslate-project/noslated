@@ -3,25 +3,6 @@ package noslated.data;
 
 import "common.proto";
 
-message WorkerStats {
-  string name = 1;
-  int32 activeRequestCount = 3;
-}
-
-message BrokerStats {
-  string functionName = 1;
-  bool inspector = 2;
-  repeated WorkerStats workers = 3;
-}
-
-message WorkerTrafficStatsSnapshotBroadcast {
-  repeated BrokerStats brokers = 1;
-}
-
-message WorkerTrafficStatsSnapshot {
-  repeated BrokerStats brokers = 1;
-}
-
 message RequestQueueingBroadcast {
   string name = 1;
   bool isInspect = 2;

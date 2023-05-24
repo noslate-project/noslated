@@ -41,7 +41,7 @@ export class StateManager extends Base {
     this._eventBus = ctx.getInstance('eventBus');
     this._eventBus.subscribe(WorkerTrafficStatsEvent, {
       next: event => {
-        return this._syncBrokerData(event.data.brokers);
+        return this._syncBrokerData(event.data);
       },
     });
     this._eventBus.subscribe(WorkerStatusReportEvent, {

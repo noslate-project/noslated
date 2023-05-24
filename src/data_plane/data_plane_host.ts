@@ -44,16 +44,6 @@ export class DataPlaneHost extends Host {
     );
   }
 
-  broadcastWorkerTrafficStats(
-    brokerStats: root.noslated.data.IWorkerTrafficStatsSnapshotBroadcast
-  ) {
-    this.broadcast(
-      'workerTrafficStats',
-      'noslated.data.WorkerTrafficStatsSnapshotBroadcast',
-      brokerStats
-    );
-  }
-
   broadcastContainerStatusReport(
     report: root.noslated.data.IContainerStatusReport
   ) {

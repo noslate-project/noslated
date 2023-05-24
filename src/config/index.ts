@@ -101,6 +101,11 @@ export interface ControlPlaneConfig {
    * 默认为 4
    */
   expandConcurrency: number;
+  /**
+   * Worker traffic stats pulling interval in milliseconds.
+   * Default: 10_000ms
+   */
+  workerTrafficStatsPullingMs: number;
 }
 
 export interface DatePlaneConfig {
@@ -180,11 +185,6 @@ export interface WorkerDefaultConfig {
    * 默认为 10
    */
   replicaCountLimit: number;
-  /**
-   * 连续检测 N 次函数水位低于预期后进行缩容
-   * 默认 N 为 60
-   */
-  shrinkRedundantTimes: number;
 }
 
 export interface StarterConfig {

@@ -21,7 +21,7 @@ enum WaterLevelAction {
  * CapacityManager
  */
 export class CapacityManager extends Base {
-  private _shrinkRedundantTimes: number;
+  private _shrinkRedundantTimes = 6 /** 6 * 10_000 */;
   private virtualMemoryPoolSize: number;
   private logger: Logger;
   private stateManager: StateManager;
@@ -32,7 +32,6 @@ export class CapacityManager extends Base {
     this.stateManager = ctx.getInstance('stateManager');
 
     this.virtualMemoryPoolSize = bytes(config.virtualMemoryPoolSize);
-    this._shrinkRedundantTimes = config.worker.shrinkRedundantTimes;
     this.logger = loggers.get('capacity manager');
   }
 

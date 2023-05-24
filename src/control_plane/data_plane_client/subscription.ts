@@ -11,15 +11,18 @@ import {
 } from '../events';
 
 export class DataPlaneSubscription {
-  static SubscriptionNames = [
-    'requestQueueing',
-    'workerTrafficStats',
-    'containerStatusReport',
-  ];
+  static SubscriptionNames = ['requestQueueing', 'containerStatusReport'];
 
-  logger: Logger;
+  private logger: Logger;
+  private closed = false;
 
-  constructor(private eventBus: EventBus, private client: DataPlaneClient) {
+  private trafficStatsTimeout: NodeJS.Timeout | null = null;
+
+  constructor(
+    private eventBus: EventBus,
+    private client: DataPlaneClient,
+    private pullingInterval: number
+  ) {
     this.client = client;
     this.logger = loggers.get('data plane subscription');
   }
@@ -47,17 +50,6 @@ export class DataPlaneSubscription {
     }
   }
 
-  async workerTrafficStats(
-    snapshot: root.noslated.data.WorkerTrafficStatsSnapshot
-  ) {
-    const event = new WorkerTrafficStatsEvent(snapshot);
-    try {
-      await this.eventBus.publish(event);
-    } catch (e) {
-      this.logger.error('Failed to process WorkerTrafficStats event', e);
-    }
-  }
-
   async containerStatusReport(
     report: NotNullableInterface<root.noslated.data.IContainerStatusReport>
   ) {
@@ -77,6 +69,34 @@ export class DataPlaneSubscription {
     }
   }
 
+  async _pullWorkerTrafficStats() {
+    const stats = (await (this.client as any).getWorkerTrafficStats(
+      {}
+    )) as root.noslated.data.IWorkerTrafficStatsResponse;
+    this.logger.debug('pulled worker traffic stats');
+    const event = new WorkerTrafficStatsEvent(stats?.brokers ?? []);
+    await this.eventBus.publish(event);
+  }
+
+  _onWorkerTrafficStatsTimeout = () => {
+    this._pullWorkerTrafficStats()
+      .catch(e => {
+        this.logger.error(
+          'unexpected error on processing worker traffic stats',
+          e
+        );
+      })
+      .finally(() => {
+        if (this.closed) {
+          return;
+        }
+        this.trafficStatsTimeout = setTimeout(
+          this._onWorkerTrafficStatsTimeout,
+          this.pullingInterval
+        );
+      });
+  };
+
   /**
    * Subscribe Data Plane's broadcasting
    */
@@ -93,6 +113,17 @@ export class DataPlaneSubscription {
           });
         }
       });
+    }
+    this.trafficStatsTimeout = setTimeout(
+      this._onWorkerTrafficStatsTimeout,
+      this.pullingInterval
+    );
+  }
+
+  unsubscribe() {
+    this.closed = true;
+    if (this.trafficStatsTimeout) {
+      clearTimeout(this.trafficStatsTimeout);
     }
   }
 }
