@@ -15,6 +15,8 @@ export default {
     // worker launcher 扩容并发度
     expandConcurrency: 4,
     workerTrafficStatsPullingMs: 10_000,
+    workerRedundantVictimSpareTimes: 6,
+    capacityScalingStage: 0.7,
   },
 
   dataPlane: {

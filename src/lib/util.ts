@@ -198,6 +198,12 @@ export type DeepReadonly<T> = T extends object
     }>
   : T;
 
+export type DeepPartial<T> = T extends object
+  ? Partial<{
+      [Property in keyof T]: DeepPartial<T[Property]>;
+    }>
+  : T;
+
 declare global {
   interface Error {
     code?: number | string | null;

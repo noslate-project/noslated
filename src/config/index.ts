@@ -106,6 +106,14 @@ export interface ControlPlaneConfig {
    * Default: 10_000ms
    */
   workerTrafficStatsPullingMs: number;
+  /**
+   * Default: 6
+   */
+  workerRedundantVictimSpareTimes: number;
+  /**
+   * Default: 0.7
+   */
+  capacityScalingStage: number;
 }
 
 export interface DatePlaneConfig {
