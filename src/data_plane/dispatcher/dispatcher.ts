@@ -19,6 +19,7 @@ export interface DataWorker {
 
 export interface DispatcherDelegate {
   readonly maxActiveRequestCount: number;
+  readonly replicaCountLimit: number;
 
   checkRequestQueueing(metadata: Metadata): void;
   createPendingRequest(

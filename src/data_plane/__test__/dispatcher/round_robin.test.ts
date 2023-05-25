@@ -75,7 +75,9 @@ describe(common.testName(__filename), () => {
       const clock = sinon.useFakeTimers({
         shouldAdvanceTime: false,
       });
-      dispatcher = new RoundRobinDispatcher(delegate, 2);
+      dispatcher = new RoundRobinDispatcher(delegate, {
+        batchSize: 2,
+      });
 
       _.times(5).map(async () => {
         const resp = await dispatcher.invoke(
@@ -99,6 +101,68 @@ describe(common.testName(__filename), () => {
 
       clock.tick(1);
       assert.strictEqual(delegate.pendingRequestList.length, 0);
+    });
+
+    it('should yield when dispatcher concurrency reaches limit', async () => {
+      const clock = sinon.useFakeTimers({
+        shouldAdvanceTime: false,
+      });
+      dispatcher = new RoundRobinDispatcher(delegate, {
+        maxConcurrency: 2,
+      });
+
+      const responseFutures = _.times(5).map(async () => {
+        const resp = await dispatcher.invoke(
+          Buffer.from('ok'),
+          new Metadata({
+            method: 'POST',
+          })
+        );
+        // Drain the response data.
+        resp.on('data', () => {});
+        resp.on('end', () => {});
+
+        return resp;
+      });
+      assert.strictEqual(delegate.pendingRequestList.length, 5);
+
+      const worker1 = new TestDataWorker();
+      dispatcher.registerWorker(worker1);
+      // worker1 consumes 2 concurrent request at once.
+      assert.strictEqual(delegate.pendingRequestList.length, 3);
+
+      const worker2 = new TestDataWorker();
+      dispatcher.registerWorker(worker2);
+      // worker2 consumes no request as the concurrency reached the limit.
+      assert.strictEqual(delegate.pendingRequestList.length, 3);
+
+      // Ticking the clock doesn't consume the queue.
+      clock.tick(1);
+      assert.strictEqual(delegate.pendingRequestList.length, 3);
+
+      const resp1 = await responseFutures[0];
+      resp1.push(null);
+      await resp1.finish();
+      await clock.tickAsync(1);
+      // Req1 finished, worker2 takes the next request.
+      assert.strictEqual(delegate.pendingRequestList.length, 2);
+
+      const resp2 = await responseFutures[1];
+      resp2.push(null);
+      await resp2.finish();
+      await clock.tickAsync(1);
+      // Req2 finished, worker1 takes the next request.
+      assert.strictEqual(delegate.pendingRequestList.length, 1);
+
+      const resp3 = await responseFutures[2];
+      resp3.push(null);
+      await resp3.finish();
+      await clock.tickAsync(1);
+      // Req3 finished, worker2 takes the next request.
+      assert.strictEqual(delegate.pendingRequestList.length, 0);
+
+      assert.strictEqual(worker1.activeRequestCount, 1);
+      assert.strictEqual(worker2.activeRequestCount, 1);
     });
   });
 });

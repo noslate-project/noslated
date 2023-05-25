@@ -4,7 +4,10 @@ import * as root from '#self/proto/root';
 import { ServerWritableStream } from '@grpc/grpc-js';
 import { RawFunctionProfile } from '#self/lib/json/function_profile';
 import { FunctionProfileManager } from '#self/lib/function_profile';
-import { PlatformEnvironsUpdatedEvent } from '../events';
+import {
+  FunctionProfileSynchronizedEvent,
+  PlatformEnvironsUpdatedEvent,
+} from '../events';
 import { ControlPlaneDependencyContext } from '../deps';
 import { EventBus } from '#self/lib/event-bus';
 import { WorkerLauncher } from '../worker_launcher';
@@ -87,6 +90,13 @@ export class HeraldImpl {
         profiles
       );
     }
+
+    this._eventBus.publish(new FunctionProfileSynchronizedEvent()).catch(e => {
+      this.logger.error(
+        'unexpected error on publishing event FunctionProfileSynchronizedEvent',
+        e
+      );
+    });
 
     return {
       set: true,

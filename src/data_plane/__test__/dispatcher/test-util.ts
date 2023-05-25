@@ -13,7 +13,10 @@ const logger = loggers.get('test');
 export class TestDispatcherDelegate implements DispatcherDelegate {
   pendingRequestList = new List<PendingRequest>();
 
-  constructor(public maxActiveRequestCount: number = 1) {}
+  constructor(
+    public maxActiveRequestCount: number = 1,
+    public replicaCountLimit = 1
+  ) {}
 
   checkRequestQueueing(): void {
     return;

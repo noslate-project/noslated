@@ -13,6 +13,13 @@ export class ContainerReconciledEvent extends Event {
   }
 }
 
+export class FunctionProfileSynchronizedEvent extends Event {
+  static type = 'function-profile-synchronized';
+  constructor() {
+    super(FunctionProfileSynchronizedEvent.type);
+  }
+}
+
 export class PlatformEnvironsUpdatedEvent extends Event {
   static type = 'platform-environs-updated';
   constructor(public data: Record<string, string>) {
@@ -65,6 +72,7 @@ export class WorkerTrafficStatsEvent extends Event {
 export const events = [
   ContainerReconciledEvent,
   ...FunctionProfileManagerEvents,
+  FunctionProfileSynchronizedEvent,
   PlatformEnvironsUpdatedEvent,
   RequestQueueingEvent,
   WorkerStatusReportEvent,

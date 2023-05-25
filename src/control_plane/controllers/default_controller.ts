@@ -3,7 +3,11 @@ import loggers from '#self/lib/logger';
 import { Logger } from '#self/lib/loggers';
 import { ControlPlaneEvent } from '#self/lib/constants';
 import { CapacityManager, Delta } from '../capacity_manager';
-import { RequestQueueingEvent, WorkerTrafficStatsEvent } from '../events';
+import {
+  FunctionProfileSynchronizedEvent,
+  RequestQueueingEvent,
+  WorkerTrafficStatsEvent,
+} from '../events';
 import {
   ErrorCode,
   LauncherError,
@@ -40,6 +44,11 @@ export class DefaultController extends BaseController {
       },
     });
     eventBus.subscribe(WorkerTrafficStatsEvent, {
+      next: () => {
+        return this.autoScale();
+      },
+    });
+    eventBus.subscribe(FunctionProfileSynchronizedEvent, {
       next: () => {
         return this.autoScale();
       },
@@ -233,6 +242,10 @@ export class DefaultController extends BaseController {
     const nWorkers = workers.sort(compareFn).slice(0, n);
 
     return nWorkers.map(w => ({ name: w.name, credential: w.credential! }));
+  }
+
+  public async onFunctionProfileUpdated() {
+    await this.autoScale();
   }
 
   /**
