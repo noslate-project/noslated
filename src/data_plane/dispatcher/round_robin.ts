@@ -136,7 +136,10 @@ export class RoundRobinDispatcher implements Dispatcher {
     input: Readable | Buffer,
     metadata: Metadata
   ): Promise<TriggerResponse> {
-    if (this._delegate.getPendingRequestCount()) {
+    if (
+      this._delegate.getPendingRequestCount() ||
+      this._concurrency >= this._maxConcurrency
+    ) {
       return this._queueRequest(input, metadata);
     }
 
@@ -145,7 +148,10 @@ export class RoundRobinDispatcher implements Dispatcher {
       return this._queueRequest(input, metadata);
     }
 
-    return worker.invoke(input, metadata);
+    this._concurrency++;
+    const future = worker.invoke(input, metadata);
+    this._handleResponse(future);
+    return future;
   }
 
   registerWorker(worker: DataWorker) {

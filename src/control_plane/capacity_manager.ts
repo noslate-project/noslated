@@ -278,14 +278,6 @@ export class CapacityManager extends Base {
       worker: { replicaCountLimit },
       resourceLimit: { memory = kMemoryLimit },
     } = profile;
-    if (this.virtualMemoryUsed + memory > this.virtualMemoryPoolSize) {
-      throw new LauncherError(
-        ErrorCode.kNoEnoughVirtualMemoryPoolSize,
-        this.virtualMemoryUsed,
-        memory,
-        this.virtualMemoryPoolSize
-      );
-    }
 
     // inspect 模式只开启一个
     if (broker.activeWorkerCount && inspect) {
@@ -299,6 +291,15 @@ export class CapacityManager extends Base {
         ErrorCode.kReplicaLimitExceeded,
         initiatingAndActiveCount,
         replicaCountLimit
+      );
+    }
+
+    if (this.virtualMemoryUsed + memory > this.virtualMemoryPoolSize) {
+      throw new LauncherError(
+        ErrorCode.kNoEnoughVirtualMemoryPoolSize,
+        this.virtualMemoryUsed,
+        memory,
+        this.virtualMemoryPoolSize
       );
     }
   }

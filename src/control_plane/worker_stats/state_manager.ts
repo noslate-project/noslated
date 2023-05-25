@@ -225,7 +225,7 @@ export class StateManager extends Base {
       this._gcWorkers.add(worker);
 
       try {
-        await worker.container!.stop();
+        await worker.container?.stop();
       } catch (e) {
         this._logger.warn(
           `Failed to stop worker [${worker.name}] via \`.#tryGC()\`.`,
