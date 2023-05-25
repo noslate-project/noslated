@@ -86,7 +86,6 @@ describe(common.testName(__filename), function () {
 
     // One request had been queued.
     await env.control['_eventBus'].once(RequestQueueingEvent);
-    console.log('request queuing');
     requests.forEach(it => it.push(null));
 
     const resps = await Promise.all(respFutures);
