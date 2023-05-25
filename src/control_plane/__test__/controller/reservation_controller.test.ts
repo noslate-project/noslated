@@ -1,4 +1,4 @@
-import { WorkerTrafficStatsEvent } from '#self/control_plane/events';
+import { FunctionProfileSynchronizedEvent } from '#self/control_plane/events';
 import * as common from '#self/test/common';
 import { baselineDir } from '#self/test/common';
 import assert from 'assert';
@@ -12,6 +12,7 @@ describe(common.testName(__filename), () => {
       const eventBus = env.control._ctx.getInstance('eventBus');
       const stateManager = env.control._ctx.getInstance('stateManager');
 
+      const eventFuture = eventBus.once(FunctionProfileSynchronizedEvent);
       await env.agent.setFunctionProfile(
         [
           {
@@ -27,8 +28,9 @@ describe(common.testName(__filename), () => {
         ],
         'WAIT'
       );
+      // Provisional workers should be bootstrapped once profiles is set.
+      await eventFuture;
 
-      await eventBus.publish(new WorkerTrafficStatsEvent([]));
       const broker = stateManager.getBroker('aworker_echo', false);
       assert(broker);
       assert.strictEqual(broker.activeWorkerCount, 1);
