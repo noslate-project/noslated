@@ -471,6 +471,10 @@ export class WorkerBroker extends Base implements DispatcherDelegate {
     return this._profile.worker.maxActivateRequests;
   }
 
+  get replicaCountLimit(): number {
+    return this._profile.worker.replicaCountLimit;
+  }
+
   getPendingRequestCount(): number {
     return this.requestQueue.length;
   }
