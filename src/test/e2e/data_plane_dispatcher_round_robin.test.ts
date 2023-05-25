@@ -102,6 +102,5 @@ describe(common.testName(__filename), function () {
 
     // drain the requests.
     await Promise.all(resps.map(it => bufferFromStream(it)));
-    console.log('buffer drained');
   });
 });
