@@ -58,4 +58,27 @@ describe('test/lib/logger.test.js', () => {
 
     tracker.verify();
   });
+
+  it('should avoid call sink methods with filtered level', () => {
+    const loggers = new Loggers();
+
+    const tracker = new assert.CallTracker();
+    const neverCalls = () => {
+      assert.fail('unreachable');
+    };
+    const someSink: Sink = {
+      debug: neverCalls,
+      info: neverCalls,
+      warn: neverCalls,
+      error: tracker.calls(1),
+    };
+
+    loggers.setSink(someSink, 'error');
+    const logger = loggers.get('helloworld');
+    for (const lvl of levels) {
+      logger[lvl]('foobar');
+    }
+
+    tracker.verify();
+  });
 });
