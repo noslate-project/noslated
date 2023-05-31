@@ -44,17 +44,22 @@ class Logger {
   sink!: Sink;
   meta: LoggerMeta;
 
-  constructor(category: string, sink: Sink) {
+  constructor(category: string, sink: Sink, level: LogLevels) {
     this.category = category;
-    this.setSink(sink);
+    this.setSink(sink, level);
     this.meta = {
       label: this.category,
     };
   }
 
-  setSink(sink: Sink) {
+  setSink(sink: Sink, level: LogLevels = 'debug') {
     this.sink = sink;
-    for (const lvl of levels) {
+    const expectedLevel = levels.indexOf(level);
+    for (const [idx, lvl] of levels.entries()) {
+      if (idx < expectedLevel) {
+        this[lvl] = noopSink[lvl];
+        continue;
+      }
       this[lvl] = (...args) => {
         this.sink[lvl](...args, {
           label: this.meta.label,
@@ -96,16 +101,22 @@ class Loggers {
 
   loggers: Map<string, Logger>;
   sink: Sink;
+  _sinkLevel: LogLevels = 'debug';
 
   constructor() {
     this.loggers = new Map();
     this.sink = noopSink;
   }
 
-  setSink(sink: Sink) {
+  setSink(sink: Sink, level?: LogLevels) {
+    if (level == null) {
+      const { config } = require('#self/config');
+      level = config.logger.level.toLowerCase();
+    }
     this.sink = sink;
+    this._sinkLevel = level!;
     for (const logger of this.loggers.values()) {
-      logger.setSink(this.sink);
+      logger.setSink(this.sink, level);
     }
   }
 
@@ -125,7 +136,7 @@ class Loggers {
       return this.loggers.get(category)!;
     }
 
-    const logger = new Logger(category, this.sink);
+    const logger = new Logger(category, this.sink, this._sinkLevel);
     this.loggers.set(category, logger);
     return logger;
   }
