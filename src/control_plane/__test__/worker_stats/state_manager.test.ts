@@ -315,6 +315,33 @@ describe(common.testName(__filename), () => {
         null
       );
     });
+
+    it('should sync with none workers', async () => {
+      await functionProfile.setProfiles([
+        {
+          name: 'func1',
+          url: `file://${__dirname}`,
+          runtime: 'aworker',
+          signature: 'xxx',
+          sourceFile: 'index.js',
+        },
+      ]);
+
+      stateManager.getOrCreateBroker('func1', false);
+
+      const brokerStat1: root.noslated.data.IBrokerStats = {
+        functionName: 'func1',
+        inspector: false,
+      };
+
+      await stateManager._syncBrokerData([brokerStat1]);
+
+      assert.strictEqual(stateManager['_brokers'].size, 1);
+      assert.strictEqual(
+        stateManager.getBroker('func1', false)!.workers.size,
+        0
+      );
+    });
   });
 
   describe('.register()', () => {
