@@ -128,7 +128,7 @@ export class StateManager extends Base {
         continue;
       }
 
-      broker.sync(item.workers!);
+      broker.sync(item.workers ?? []);
       const key = Broker.getKey(item.functionName!, item.inspector!);
       newMap.set(key, broker);
       this._brokers.delete(key);
