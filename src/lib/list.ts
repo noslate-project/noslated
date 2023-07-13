@@ -88,13 +88,7 @@ export class List<T> {
     if (tail == null) {
       return undefined;
     }
-    const prev = tail.prev;
-    if (prev) {
-      prev.next = undefined;
-    }
-    this._tail = prev;
-    this.#length--;
-
+    this._removeNode(tail);
     return tail.value;
   }
 
@@ -110,17 +104,7 @@ export class List<T> {
     if (head == null) {
       return undefined;
     }
-
-    const next = head.next;
-    if (next) {
-      if (next.next == null) {
-        this._tail = undefined;
-      }
-      next.prev = undefined;
-    }
-    this._head = next;
-    this.#length--;
-
+    this._removeNode(head);
     return head.value;
   }
 
@@ -137,6 +121,7 @@ export class List<T> {
       this._tail = node;
     } else {
       this._head = node;
+      this._tail = node;
     }
     this.#length++;
     return node;
@@ -163,10 +148,14 @@ export class List<T> {
     if (myNode._list !== this) {
       return;
     }
-    myNode._list = undefined;
+    this._removeNode(myNode);
+  }
 
-    const prev = myNode.prev;
-    const next = myNode.next;
+  _removeNode(node: Node<T>) {
+    node._list = undefined;
+
+    const prev = node.prev;
+    const next = node.next;
     if (next) {
       next.prev = prev;
     } else {
