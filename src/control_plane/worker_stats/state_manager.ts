@@ -14,7 +14,7 @@ import {
 import { Config } from '#self/config';
 import { Base } from '#self/lib/sdk_base';
 import { Broker } from './broker';
-import { Worker, WorkerMetadata } from './worker';
+import { Worker, WorkerMetadata, WorkerStats } from './worker';
 import { ControlPlaneDependencyContext } from '../deps';
 import { StatLogger } from './stat_logger';
 import { EventBus } from '#self/lib/event-bus';
@@ -120,26 +120,26 @@ export class StateManager extends Base {
   }
 
   async _syncBrokerData(data: root.noslated.data.IBrokerStats[]) {
-    const newMap: Map<string, Broker> = new Map();
+    const allSyncData = new Map<string, WorkerStats>();
     for (const item of data) {
-      const broker = this.getBroker(item.functionName!, item.inspector!);
-      if (!broker) {
-        // 一切以 Control Plane 已存在数据为准
-        continue;
+      for (const workerData of item.workers ?? []) {
+        const name = `${Broker.getKey(item.functionName!, item.inspector!)}#${
+          workerData.name
+        }`;
+        allSyncData.set(name, workerData);
       }
-
-      broker.sync(item.workers ?? []);
-      const key = Broker.getKey(item.functionName!, item.inspector!);
-      newMap.set(key, broker);
-      this._brokers.delete(key);
     }
 
-    for (const [key, value] of this._brokers.entries()) {
-      value.sync([]);
-      newMap.set(key, value);
+    for (const broker of this.brokers()) {
+      for (const worker of broker.workers.values()) {
+        const name = `${Broker.getKey(broker.name, broker.isInspector)}#${
+          worker.name
+        }`;
+        worker.sync(allSyncData.get(name) ?? null);
+      }
     }
 
-    this._brokers = newMap;
+    allSyncData.clear();
   }
 
   getBroker(functionName: string, isInspector: boolean): Broker | null {

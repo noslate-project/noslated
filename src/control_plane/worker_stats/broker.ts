@@ -110,32 +110,17 @@ class Broker {
 
   /**
    * Sync from data plane.
-   * @param workers The workers.
+   * @param data The workers.
    */
-  sync(workers: WorkerStats[]) {
-    const newMap: Map<string, Worker> = new Map();
-    for (const item of workers) {
-      const name = item.name;
-      if (name == null) {
-        continue;
-      }
-      const worker = this.workers.get(name);
-      if (!worker) {
-        // 一切以 Control Plane 已存在数据为准
-        continue;
-      }
-
-      worker.sync(item);
-      newMap.set(name, worker);
-      this.workers.delete(name);
+  sync(data: WorkerStats[]) {
+    const allWorkerSyncData = new Map<string, WorkerStats>();
+    for (const item of data) {
+      allWorkerSyncData.set(item.name!, item);
     }
 
-    for (const item of this.workers.values()) {
-      item.sync(null);
-      newMap.set(item.name, item);
+    for (const worker of this.workers.values()) {
+      worker.sync(allWorkerSyncData.get(worker.name) ?? null);
     }
-
-    this.workers = newMap;
   }
 
   get workerCount() {
