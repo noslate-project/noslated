@@ -1,6 +1,6 @@
 import * as common from '#self/test/common';
 import assert from 'assert';
-import { List } from '../list';
+import { List, ReadonlyNode } from '../list';
 
 describe(common.testName(__filename), () => {
   it('should construct', () => {
@@ -73,14 +73,28 @@ describe(common.testName(__filename), () => {
 
   it('should ignore removed nodes', () => {
     const list = new List<number>();
+    const ops: ((node: ReadonlyNode<number>) => void)[] = [
+      () => list.shift(),
+      () => list.pop(),
+      node => list.remove(node),
+    ];
+
+    // Each operation should remove nodes.
+    for (const op of ops) {
+      const node = list.push(1);
+      assert.strictEqual(list.length, 1);
+      // Repeat twice.
+      op(node);
+      op(node);
+      assert.strictEqual(list.length, 0, op.toString());
+    }
+
+    // Remove nodes that have been removed already.
     const node = list.push(1);
     assert.strictEqual(list.length, 1);
-
-    list.remove(node);
-    assert.strictEqual(list.length, 0);
-
-    // Remove the node again.
-    list.remove(node);
-    assert.strictEqual(list.length, 0);
+    for (const op of ops) {
+      op(node);
+      assert.strictEqual(list.length, 0, op.toString());
+    }
   });
 });
