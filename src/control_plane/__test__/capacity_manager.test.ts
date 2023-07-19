@@ -209,7 +209,7 @@ describe(common.testName(__filename), function () {
     });
 
     it('should evaluate when some worker stopped (low)', () => {
-      const broker = new Broker(profileManager.getProfile('func')!, false);
+      const broker = stateManager.getOrCreateBroker('func', false)!;
       registerWorkers(broker, [
         {
           processName: 'hello',
@@ -228,17 +228,20 @@ describe(common.testName(__filename), function () {
         .getWorker('hello')!
         .updateWorkerStatusByReport(WorkerStatusReport.ContainerInstalled);
 
-      broker.sync([
-        {
-          name: 'hello',
-          // maxActivateRequests: 10,
-          activeRequestCount: 10,
-        },
-        {
-          name: 'foo',
-          activeRequestCount: 0,
-        },
-      ]);
+      stateManager._syncBrokerData([{
+        functionName: 'func',
+        workers: [
+          {
+            name: 'hello',
+            // maxActivateRequests: 10,
+            activeRequestCount: 10,
+          },
+          {
+            name: 'foo',
+            activeRequestCount: 0,
+          },
+        ]
+      }]);
       // 更新运行状态
       broker
         .getWorker('hello')!
@@ -249,7 +252,7 @@ describe(common.testName(__filename), function () {
     });
 
     it('should evaluate when some worker stopped (high)', () => {
-      const broker = new Broker(profileManager.getProfile('func')!, false);
+      const broker = stateManager.getOrCreateBroker('func', false)!;
       registerWorkers(broker, [
         {
           processName: 'hello',
@@ -268,17 +271,20 @@ describe(common.testName(__filename), function () {
         .getWorker('hello')!
         .updateWorkerStatusByReport(WorkerStatusReport.ContainerInstalled);
 
-      broker.sync([
-        {
-          name: 'hello',
-          // maxActivateRequests: 10,
-          activeRequestCount: 10,
-        },
-        {
-          name: 'foo',
-          activeRequestCount: 0,
-        },
-      ]);
+      stateManager._syncBrokerData([{
+        functionName: 'func',
+        workers: [
+          {
+            name: 'hello',
+            // maxActivateRequests: 10,
+            activeRequestCount: 10,
+          },
+          {
+            name: 'foo',
+            activeRequestCount: 0,
+          },
+        ]
+      }]);
       broker
         .getWorker('foo')!
         .updateWorkerStatusByReport(WorkerStatusReport.ContainerDisconnected);
@@ -287,7 +293,7 @@ describe(common.testName(__filename), function () {
     });
 
     it('should evaluate with initiating workers, ignore initiating workers', () => {
-      const broker = new Broker(profileManager.getProfile('func')!, false);
+      const broker = stateManager.getOrCreateBroker('func', false)!;
       registerWorkers(broker, [
         {
           processName: 'hello',
@@ -304,18 +310,21 @@ describe(common.testName(__filename), function () {
         .getWorker('hello')!
         .updateWorkerStatusByReport(WorkerStatusReport.ContainerInstalled);
 
-      broker.sync([
-        {
-          name: 'hello',
-          // maxActivateRequests: 10,
-          activeRequestCount: 5,
-        },
-      ]);
+      stateManager._syncBrokerData([{
+        functionName: 'func',
+        workers: [
+          {
+            name: 'hello',
+            // maxActivateRequests: 10,
+            activeRequestCount: 5,
+          },
+        ]
+      }]);
       assert.strictEqual(capacityManager.evaluateWaterLevel(broker), 0);
     });
 
     it('should evaluate with initiating workers (high)', () => {
-      const broker = new Broker(profileManager.getProfile('func')!, false);
+      const broker = stateManager.getOrCreateBroker('func', false)!;
       registerWorkers(broker, [
         {
           processName: 'hello',
@@ -323,7 +332,7 @@ describe(common.testName(__filename), function () {
         },
         {
           processName: 'foo',
-          credential: 'bar',
+          credential: 'bar1',
         },
       ]);
 
@@ -332,13 +341,16 @@ describe(common.testName(__filename), function () {
         .getWorker('hello')!
         .updateWorkerStatusByReport(WorkerStatusReport.ContainerInstalled);
 
-      broker.sync([
-        {
-          name: 'hello',
-          // maxActivateRequests: 10,
-          activeRequestCount: 10,
-        },
-      ]);
+      stateManager._syncBrokerData([{
+        functionName: 'func',
+        workers: [
+          {
+            name: 'hello',
+            // maxActivateRequests: 10,
+            activeRequestCount: 10,
+          },
+        ]
+      }]);
 
       assert.strictEqual(
         capacityManager.allowExpandingOnRequestQueueing({
@@ -348,18 +360,18 @@ describe(common.testName(__filename), function () {
           requestId: '123',
           timestamp: Date.now(),
         }),
-        true
+        false
       );
       assert.strictEqual(capacityManager.evaluateWaterLevel(broker), 1);
     });
 
     it('should evaluate water level', () => {
-      const broker = new Broker(profileManager.getProfile('func')!, false);
+      const broker = stateManager.getOrCreateBroker('func', false)!;
       assert.strictEqual(capacityManager.evaluateWaterLevel(broker), 0);
     });
 
     it('should evaluate water level with one worker left', () => {
-      const broker = new Broker(profileManager.getProfile('func')!, false);
+      const broker = stateManager.getOrCreateBroker('func', false)!;
 
       registerWorkers(broker, [
         {
@@ -372,19 +384,22 @@ describe(common.testName(__filename), function () {
         .getWorker('hello')!
         .updateWorkerStatusByReport(WorkerStatusReport.ContainerInstalled);
 
-      broker.sync([
-        {
-          name: 'hello',
-          // maxActivateRequests: 10,
-          activeRequestCount: 4,
-        },
-      ]);
+      stateManager._syncBrokerData([{
+        functionName: 'func',
+        workers: [
+          {
+            name: 'hello',
+            // maxActivateRequests: 10,
+            activeRequestCount: 4,
+          },
+        ]
+      }]);
 
       assert.strictEqual(capacityManager.evaluateWaterLevel(broker), 0);
     });
 
     it('should evaluate water level (still redundant, high)', () => {
-      const broker = new Broker(profileManager.getProfile('func')!, false);
+      const broker = stateManager.getOrCreateBroker('func', false)!;
       registerWorkers(broker, [
         {
           processName: 'hello',
@@ -403,23 +418,25 @@ describe(common.testName(__filename), function () {
         .getWorker('hello')!
         .updateWorkerStatusByReport(WorkerStatusReport.ContainerInstalled);
 
-      broker.sync([
-        {
-          name: 'hello',
-          // maxActivateRequests: 10,
-          activeRequestCount: 8,
-        },
-        {
-          name: 'foo',
-          // maxActivateRequests: 10,
-          activeRequestCount: 8,
-        },
-      ]);
+      stateManager._syncBrokerData([{
+        functionName: 'func',
+        workers: [
+          {
+            name: 'hello',
+            // maxActivateRequests: 10,
+            activeRequestCount: 8,
+          },
+          {
+            name: 'foo',
+            activeRequestCount: 8,
+          },
+        ]
+      }]);
       assert.strictEqual(capacityManager.evaluateWaterLevel(broker), 1);
     });
 
     it('should evaluate water level (still redundant, low)', () => {
-      const broker = new Broker(profileManager.getProfile('func')!, false);
+      const broker = stateManager.getOrCreateBroker('func', false)!;
       registerWorkers(broker, [
         {
           processName: 'hello',
@@ -438,18 +455,19 @@ describe(common.testName(__filename), function () {
         .getWorker('hello')!
         .updateWorkerStatusByReport(WorkerStatusReport.ContainerInstalled);
 
-      broker.sync([
-        {
-          name: 'hello',
-          // maxActivateRequests: 10,
-          activeRequestCount: 0,
-        },
-        {
-          name: 'foo',
-          // maxActivateRequests: 10,
-          activeRequestCount: 0,
-        },
-      ]);
+      stateManager._syncBrokerData([{
+        functionName: 'func',
+        workers: [
+          {
+            name: 'hello',
+            activeRequestCount: 0,
+          },
+          {
+            name: 'foo',
+            activeRequestCount: 0,
+          },
+        ]
+      }]);
       assert.strictEqual(capacityManager.evaluateWaterLevel(broker), 0);
     });
 
@@ -457,7 +475,7 @@ describe(common.testName(__filename), function () {
       await profileManager.setProfiles([
         { ...funcData[0], worker: { reservationCount: 1 } },
       ]);
-      const broker = new Broker(profileManager.getProfile('func')!, false);
+      const broker = stateManager.getOrCreateBroker('func', false)!;
       registerWorkers(broker, [
         {
           processName: 'hello',
@@ -476,18 +494,21 @@ describe(common.testName(__filename), function () {
         .getWorker('hello')!
         .updateWorkerStatusByReport(WorkerStatusReport.ContainerInstalled);
 
-      broker.sync([
-        {
-          name: 'hello',
-          // maxActivateRequests: 10,
-          activeRequestCount: 0,
-        },
-        {
-          name: 'foo',
-          // maxActivateRequests: 10,
-          activeRequestCount: 0,
-        },
-      ]);
+      stateManager._syncBrokerData([{
+        functionName: 'func',
+        workers: [
+          {
+            name: 'hello',
+            // maxActivateRequests: 10,
+            activeRequestCount: 0,
+          },
+          {
+            name: 'foo',
+            // maxActivateRequests: 10,
+            activeRequestCount: 0,
+          },
+        ]
+      }]);
       broker.redundantTimes = 60;
       assert.strictEqual(capacityManager.evaluateWaterLevel(broker), -1);
     });
@@ -496,7 +517,7 @@ describe(common.testName(__filename), function () {
       await profileManager.setProfiles([
         { ...funcData[0], worker: { reservationCount: 1 } },
       ]);
-      const broker = new Broker(profileManager.getProfile('func')!, false);
+      const broker = stateManager.getOrCreateBroker('func', false)!;
       registerWorkers(broker, [
         {
           processName: 'hello',
@@ -515,24 +536,27 @@ describe(common.testName(__filename), function () {
         .getWorker('hello')!
         .updateWorkerStatusByReport(WorkerStatusReport.ContainerInstalled);
 
-      broker.sync([
-        {
-          name: 'hello',
-          // maxActivateRequests: 10,
-          activeRequestCount: 3,
-        },
-        {
-          name: 'foo',
-          // maxActivateRequests: 10,
-          activeRequestCount: 3,
-        },
-      ]);
+      stateManager._syncBrokerData([{
+        functionName: 'func',
+        workers: [
+          {
+            name: 'hello',
+            // maxActivateRequests: 10,
+            activeRequestCount: 3,
+          },
+          {
+            name: 'foo',
+            // maxActivateRequests: 10,
+            activeRequestCount: 3,
+          },
+        ]
+      }]);
       broker.redundantTimes = 60;
       assert.strictEqual(capacityManager.evaluateWaterLevel(broker), -1);
     });
 
     it('should evaluate water level (low 1, no reservation)', () => {
-      const broker = new Broker(profileManager.getProfile('func')!, false);
+      const broker = stateManager.getOrCreateBroker('func', false)!;
       registerWorkers(broker, [
         {
           processName: 'hello',
@@ -551,24 +575,27 @@ describe(common.testName(__filename), function () {
         .getWorker('hello')!
         .updateWorkerStatusByReport(WorkerStatusReport.ContainerInstalled);
 
-      broker.sync([
-        {
-          name: 'hello',
-          // maxActivateRequests: 10,
-          activeRequestCount: 0,
-        },
-        {
-          name: 'foo',
-          // maxActivateRequests: 10,
-          activeRequestCount: 0,
-        },
-      ]);
+      stateManager._syncBrokerData([{
+        functionName: 'func',
+        workers: [
+          {
+            name: 'hello',
+            // maxActivateRequests: 10,
+            activeRequestCount: 0,
+          },
+          {
+            name: 'foo',
+            // maxActivateRequests: 10,
+            activeRequestCount: 0,
+          },
+        ]
+      }]);
       broker.redundantTimes = 60;
       assert.strictEqual(capacityManager.evaluateWaterLevel(broker), -2);
     });
 
     it('should evaluate water level (low 2, no reservation)', () => {
-      const broker = new Broker(profileManager.getProfile('func')!, false);
+      const broker = stateManager.getOrCreateBroker('func', false)!;
       registerWorkers(broker, [
         {
           processName: 'hello',
@@ -587,24 +614,27 @@ describe(common.testName(__filename), function () {
         .getWorker('hello')!
         .updateWorkerStatusByReport(WorkerStatusReport.ContainerInstalled);
 
-      broker.sync([
-        {
-          name: 'hello',
-          // maxActivateRequests: 10,
-          activeRequestCount: 3,
-        },
-        {
-          name: 'foo',
-          // maxActivateRequests: 10,
-          activeRequestCount: 3,
-        },
-      ]);
+      stateManager._syncBrokerData([{
+        functionName: 'func',
+        workers: [
+          {
+            name: 'hello',
+            // maxActivateRequests: 10,
+            activeRequestCount: 3,
+          },
+          {
+            name: 'foo',
+            // maxActivateRequests: 10,
+            activeRequestCount: 3,
+          },
+        ]
+      }]);
       broker.redundantTimes = 60;
       assert.strictEqual(capacityManager.evaluateWaterLevel(broker), -1);
     });
 
     it('should evaluate water level (low, expansionOnly)', () => {
-      const broker = new Broker(profileManager.getProfile('func')!, false);
+      const broker = stateManager.getOrCreateBroker('func', false)!;
       registerWorkers(broker, [
         {
           processName: 'hello',
@@ -623,24 +653,27 @@ describe(common.testName(__filename), function () {
         .getWorker('hello')!
         .updateWorkerStatusByReport(WorkerStatusReport.ContainerInstalled);
 
-      broker.sync([
-        {
-          name: 'hello',
-          // maxActivateRequests: 10,
-          activeRequestCount: 0,
-        },
-        {
-          name: 'foo',
-          // maxActivateRequests: 10,
-          activeRequestCount: 0,
-        },
-      ]);
+      stateManager._syncBrokerData([{
+        functionName: 'func',
+        workers: [
+          {
+            name: 'hello',
+            // maxActivateRequests: 10,
+            activeRequestCount: 0,
+          },
+          {
+            name: 'foo',
+            // maxActivateRequests: 10,
+            activeRequestCount: 0,
+          },
+        ]
+      }]);
       broker.redundantTimes = 60;
       assert.strictEqual(capacityManager.evaluateWaterLevel(broker, true), 0);
     });
 
     it('should reset redundantTimes', () => {
-      const broker = new Broker(profileManager.getProfile('func')!, false);
+      const broker = stateManager.getOrCreateBroker('func', false)!;
       registerWorkers(broker, [
         {
           processName: 'hello',
@@ -659,18 +692,21 @@ describe(common.testName(__filename), function () {
         .getWorker('hello')!
         .updateWorkerStatusByReport(WorkerStatusReport.ContainerInstalled);
 
-      broker.sync([
-        {
-          name: 'hello',
-          // maxActivateRequests: 10,
-          activeRequestCount: 7,
-        },
-        {
-          name: 'foo',
-          // maxActivateRequests: 10,
-          activeRequestCount: 7,
-        },
-      ]);
+      stateManager._syncBrokerData([{
+        functionName: 'func',
+        workers: [
+          {
+            name: 'hello',
+            // maxActivateRequests: 10,
+            activeRequestCount: 7,
+          },
+          {
+            name: 'foo',
+            // maxActivateRequests: 10,
+            activeRequestCount: 7,
+          },
+        ]
+      }]);
 
       broker.redundantTimes = 60;
       assert.strictEqual(capacityManager.evaluateWaterLevel(broker), 0);
@@ -681,7 +717,7 @@ describe(common.testName(__filename), function () {
       await profileManager.setProfiles([
         { ...funcData[0], worker: { replicaCountLimit: 50 } },
       ]);
-      const broker = new Broker(profileManager.getProfile('func')!, false);
+      const broker = stateManager.getOrCreateBroker('func', false)!;
       const mocked: noslated.data.IWorkerStats[] = [];
       for (let i = 0; i < 20; i++) {
         mocked.push({
@@ -701,7 +737,10 @@ describe(common.testName(__filename), function () {
           .getWorker(String(i))!
           .updateWorkerStatusByReport(WorkerStatusReport.ContainerInstalled);
       }
-      broker.sync(mocked);
+      stateManager._syncBrokerData([{
+        functionName: 'func',
+        workers: mocked
+      }]);
       assert.strictEqual(capacityManager.evaluateWaterLevel(broker), 9);
     });
 
@@ -709,7 +748,7 @@ describe(common.testName(__filename), function () {
       await profileManager.setProfiles([
         { ...funcData[0], worker: { replicaCountLimit: 25 } },
       ]);
-      const broker = new Broker(profileManager.getProfile('func')!, false);
+      const broker = stateManager.getOrCreateBroker('func', false)!;
       const mocked: noslated.data.IWorkerStats[] = [];
       for (let i = 0; i < 20; i++) {
         mocked.push({
@@ -728,7 +767,10 @@ describe(common.testName(__filename), function () {
           .getWorker(String(i))!
           .updateWorkerStatusByReport(WorkerStatusReport.ContainerInstalled);
       }
-      broker.sync(mocked);
+      stateManager._syncBrokerData([{
+        functionName: 'func',
+        workers: mocked
+      }]);
       assert.strictEqual(capacityManager.evaluateWaterLevel(broker), 5);
     });
   });

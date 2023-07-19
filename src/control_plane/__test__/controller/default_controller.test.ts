@@ -83,189 +83,188 @@ describe(common.testName(__filename), () => {
 
   describe('#autoScale()', () => {
     for (let id = 0; id < 2; id++) {
-      it(`should auto scale with ${
-        id === 0 ? 'enough' : 'not enough'
-      } memory`, async () => {
-        await functionProfile.setProfiles([
-          {
-            name: 'func',
-            url: `file://${__dirname}`,
-            runtime: 'aworker',
-            signature: 'xxx',
-            sourceFile: 'index.js',
-          },
-          {
-            name: 'lambda',
-            url: `file://${__dirname}`,
-            runtime: 'aworker',
-            signature: 'xxx',
-            sourceFile: 'index.js',
-          },
-        ]);
+      it(`should auto scale with ${id === 0 ? 'enough' : 'not enough'
+        } memory`, async () => {
+          await functionProfile.setProfiles([
+            {
+              name: 'func',
+              url: `file://${__dirname}`,
+              runtime: 'aworker',
+              signature: 'xxx',
+              sourceFile: 'index.js',
+            },
+            {
+              name: 'lambda',
+              url: `file://${__dirname}`,
+              runtime: 'aworker',
+              signature: 'xxx',
+              sourceFile: 'index.js',
+            },
+          ]);
 
-        env.containerManager.setTestContainers([
-          { pid: 1, name: 'hello', status: TurfContainerStates.running },
-          { pid: 2, name: 'foo', status: TurfContainerStates.running },
-          { pid: 3, name: 'coco', status: TurfContainerStates.running },
-          { pid: 4, name: 'cocos', status: TurfContainerStates.running },
-          { pid: 5, name: 'alibaba', status: TurfContainerStates.running },
-        ]);
+          env.containerManager.setTestContainers([
+            { pid: 1, name: 'hello', status: TurfContainerStates.running },
+            { pid: 2, name: 'foo', status: TurfContainerStates.running },
+            { pid: 3, name: 'coco', status: TurfContainerStates.running },
+            { pid: 4, name: 'cocos', status: TurfContainerStates.running },
+            { pid: 5, name: 'alibaba', status: TurfContainerStates.running },
+          ]);
 
-        registerWorkers(stateManager, [
-          {
-            funcName: 'func',
-            processName: 'hello',
-            credential: 'world',
-            options: { inspect: false },
-            toReserve: false,
-          },
-          {
-            funcName: 'func',
-            processName: 'foo',
-            credential: 'bar',
-            options: { inspect: false },
-            toReserve: false,
-          },
-          {
-            funcName: 'lambda',
-            processName: 'coco',
-            credential: 'nut',
-            options: { inspect: false },
-            toReserve: false,
-          },
-          {
-            funcName: 'lambda',
-            processName: 'cocos',
-            credential: '2d',
-            options: { inspect: false },
-            toReserve: false,
-          },
-          {
-            funcName: 'lambda',
-            processName: 'alibaba',
-            credential: 'seed of hope',
-            options: { inspect: false },
-            toReserve: false,
-          },
-        ]);
+          registerWorkers(stateManager, [
+            {
+              funcName: 'func',
+              processName: 'hello',
+              credential: 'world',
+              options: { inspect: false },
+              toReserve: false,
+            },
+            {
+              funcName: 'func',
+              processName: 'foo',
+              credential: 'bar',
+              options: { inspect: false },
+              toReserve: false,
+            },
+            {
+              funcName: 'lambda',
+              processName: 'coco',
+              credential: 'nut',
+              options: { inspect: false },
+              toReserve: false,
+            },
+            {
+              funcName: 'lambda',
+              processName: 'cocos',
+              credential: '2d',
+              options: { inspect: false },
+              toReserve: false,
+            },
+            {
+              funcName: 'lambda',
+              processName: 'alibaba',
+              credential: 'seed of hope',
+              options: { inspect: false },
+              toReserve: false,
+            },
+          ]);
 
-        if (id === 0)
-          mm(capacityManager, 'virtualMemoryPoolSize', 512 * 1024 * 1024 * 6);
+          if (id === 0)
+            mm(capacityManager, 'virtualMemoryPoolSize', 512 * 1024 * 1024 * 6);
 
-        stateManager._updateWorkerStatusByReport(
-          new WorkerStatusReportEvent({
-            functionName: 'func',
-            name: 'hello',
-            isInspector: false,
-            event: WorkerStatusReport.ContainerInstalled,
-          })
-        );
+          stateManager._updateWorkerStatusByReport(
+            new WorkerStatusReportEvent({
+              functionName: 'func',
+              name: 'hello',
+              isInspector: false,
+              event: WorkerStatusReport.ContainerInstalled,
+            })
+          );
 
-        stateManager._updateWorkerStatusByReport(
-          new WorkerStatusReportEvent({
-            functionName: 'func',
-            name: 'foo',
-            isInspector: false,
-            event: WorkerStatusReport.ContainerInstalled,
-          })
-        );
+          stateManager._updateWorkerStatusByReport(
+            new WorkerStatusReportEvent({
+              functionName: 'func',
+              name: 'foo',
+              isInspector: false,
+              event: WorkerStatusReport.ContainerInstalled,
+            })
+          );
 
-        stateManager._updateWorkerStatusByReport(
-          new WorkerStatusReportEvent({
-            functionName: 'lambda',
-            name: 'coco',
-            isInspector: false,
-            event: WorkerStatusReport.ContainerInstalled,
-          })
-        );
+          stateManager._updateWorkerStatusByReport(
+            new WorkerStatusReportEvent({
+              functionName: 'lambda',
+              name: 'coco',
+              isInspector: false,
+              event: WorkerStatusReport.ContainerInstalled,
+            })
+          );
 
-        stateManager._updateWorkerStatusByReport(
-          new WorkerStatusReportEvent({
-            functionName: 'lambda',
-            name: 'cocos',
-            isInspector: false,
-            event: WorkerStatusReport.ContainerInstalled,
-          })
-        );
+          stateManager._updateWorkerStatusByReport(
+            new WorkerStatusReportEvent({
+              functionName: 'lambda',
+              name: 'cocos',
+              isInspector: false,
+              event: WorkerStatusReport.ContainerInstalled,
+            })
+          );
 
-        stateManager._updateWorkerStatusByReport(
-          new WorkerStatusReportEvent({
-            functionName: 'lambda',
-            name: 'alibaba',
-            isInspector: false,
-            event: WorkerStatusReport.ContainerInstalled,
-          })
-        );
+          stateManager._updateWorkerStatusByReport(
+            new WorkerStatusReportEvent({
+              functionName: 'lambda',
+              name: 'alibaba',
+              isInspector: false,
+              event: WorkerStatusReport.ContainerInstalled,
+            })
+          );
 
-        await stateManager._syncBrokerData([brokerData1, brokerData2]);
+          await stateManager._syncBrokerData([brokerData1, brokerData2]);
 
-        stateManager.getWorker(
-          'func',
-          false,
-          'hello'
-        )!.data!.activeRequestCount = 10;
-        stateManager.getWorker(
-          'func',
-          false,
-          'foo'
-        )!.data!.activeRequestCount = 10;
-        stateManager.getWorker(
-          'lambda',
-          false,
-          'coco'
-        )!.data!.activeRequestCount = 3;
-        stateManager.getWorker(
-          'lambda',
-          false,
-          'cocos'
-        )!.data!.activeRequestCount = 1;
-        stateManager.getWorker(
-          'lambda',
-          false,
-          'alibaba'
-        )!.data!.activeRequestCount = 2;
-        stateManager.getBroker('lambda', false)!.redundantTimes = 60;
+          stateManager.getWorker(
+            'func',
+            false,
+            'hello'
+          )!.data!.activeRequestCount = 10;
+          stateManager.getWorker(
+            'func',
+            false,
+            'foo'
+          )!.data!.activeRequestCount = 10;
+          stateManager.getWorker(
+            'lambda',
+            false,
+            'coco'
+          )!.data!.activeRequestCount = 3;
+          stateManager.getWorker(
+            'lambda',
+            false,
+            'cocos'
+          )!.data!.activeRequestCount = 1;
+          stateManager.getWorker(
+            'lambda',
+            false,
+            'alibaba'
+          )!.data!.activeRequestCount = 2;
+          stateManager.getBroker('lambda', false)!.redundantTimes = 60;
 
-        let tryLaunchCalled = 0;
-        let reduceCapacityCalled = 0;
-        mm(
-          workerLauncher,
-          'tryLaunch',
-          async (event: ControlPlaneEvent, { funcName, options }: any) => {
-            assert.strictEqual(event, ControlPlaneEvent.Expand);
-            assert.strictEqual(funcName, 'func');
-            assert.deepStrictEqual(options, { inspect: false });
-            tryLaunchCalled++;
-          }
-        );
-        mm(
-          dataPlaneClientManager,
-          'reduceCapacity',
-          async (data: { brokers: string | any[] }) => {
-            assert.strictEqual(data.brokers.length, 1);
-            assert.strictEqual(data.brokers[0].functionName, 'lambda');
-            assert.strictEqual(data.brokers[0].inspector, false);
-            assert.deepStrictEqual(data.brokers[0].workers, [
-              { name: 'cocos', credential: '2d' },
-              { name: 'alibaba', credential: 'seed of hope' },
-            ]);
-            reduceCapacityCalled++;
+          let tryLaunchCalled = 0;
+          let reduceCapacityCalled = 0;
+          mm(
+            workerLauncher,
+            'tryLaunch',
+            async (event: ControlPlaneEvent, { funcName, options }: any) => {
+              assert.strictEqual(event, ControlPlaneEvent.Expand);
+              assert.strictEqual(funcName, 'func');
+              assert.deepStrictEqual(options, { inspect: false });
+              tryLaunchCalled++;
+            }
+          );
+          mm(
+            dataPlaneClientManager,
+            'reduceCapacity',
+            async (data: { brokers: string | any[]; }) => {
+              assert.strictEqual(data.brokers.length, 1);
+              assert.strictEqual(data.brokers[0].functionName, 'lambda');
+              assert.strictEqual(data.brokers[0].inspector, false);
+              assert.deepStrictEqual(data.brokers[0].workers, [
+                { name: 'cocos', credential: '2d' },
+                { name: 'alibaba', credential: 'seed of hope' },
+              ]);
+              reduceCapacityCalled++;
 
-            const ret = JSON.parse(JSON.stringify(data));
-            ret.brokers[0].workers.pop();
-            return ret.brokers;
-          }
-        );
+              const ret = JSON.parse(JSON.stringify(data));
+              ret.brokers[0].workers.pop();
+              return ret.brokers;
+            }
+          );
 
-        await defaultController['autoScale']();
+          await defaultController['autoScale']();
 
-        assert.strictEqual(tryLaunchCalled, id === 0 ? 1 : 0);
-        assert.strictEqual(reduceCapacityCalled, 1);
-        assert.strictEqual(
-          stateManager.getWorker('lambda', false, 'cocos')?.workerStatus,
-          WorkerStatus.PendingStop
-        );
-      });
+          assert.strictEqual(tryLaunchCalled, id === 0 ? 1 : 0);
+          assert.strictEqual(reduceCapacityCalled, 1);
+          assert.strictEqual(
+            stateManager.getWorker('lambda', false, 'cocos')?.workerStatus,
+            WorkerStatus.PendingStop
+          );
+        });
     }
 
     it('a wrong situation of worker count infinitely increasing', async () => {
@@ -337,7 +336,7 @@ describe(common.testName(__filename), () => {
     });
 
     it('should get', () => {
-      const broker = new Broker(functionProfile.getProfile('func')!, true);
+      const broker = stateManager.getOrCreateBroker('func', true)!;
       registerWorkers(broker, [
         {
           processName: 'hello',
@@ -349,18 +348,22 @@ describe(common.testName(__filename), () => {
         },
       ]);
 
-      broker.sync([
-        {
-          name: 'hello',
-          // maxActivateRequests: 10,
-          activeRequestCount: 7,
-        },
-        {
-          name: 'foo',
-          // maxActivateRequests: 10,
-          activeRequestCount: 4,
-        },
-      ]);
+      stateManager._syncBrokerData([{
+        functionName: 'func',
+        inspector: true,
+        workers: [
+          {
+            name: 'hello',
+            // maxActivateRequests: 10,
+            activeRequestCount: 7,
+          },
+          {
+            name: 'foo',
+            // maxActivateRequests: 10,
+            activeRequestCount: 4,
+          },
+        ]
+      }]);
 
       // 更新到运行状态
       broker.workers.forEach(worker => {
@@ -395,7 +398,7 @@ describe(common.testName(__filename), () => {
     });
 
     it('should run with activeRequestCount order', () => {
-      const broker = new Broker(functionProfile.getProfile('func')!, true);
+      const broker = stateManager.getOrCreateBroker('func', true)!;
       registerWorkers(broker, [
         {
           processName: 'hello',
@@ -414,18 +417,22 @@ describe(common.testName(__filename), () => {
         );
       });
 
-      broker.sync([
-        {
-          name: 'hello',
-          // maxActivateRequests: 10,
-          activeRequestCount: 4,
-        },
-        {
-          name: 'foo',
-          // maxActivateRequests: 10,
-          activeRequestCount: 7,
-        },
-      ]);
+      stateManager._syncBrokerData([{
+        functionName: 'func',
+        inspector: true,
+        workers: [
+          {
+            name: 'hello',
+            // maxActivateRequests: 10,
+            activeRequestCount: 4,
+          },
+          {
+            name: 'foo',
+            // maxActivateRequests: 10,
+            activeRequestCount: 7,
+          },
+        ]
+      }]);
 
       assert.deepStrictEqual(defaultController.mostIdleNWorkers(broker, 1), [
         { name: 'hello', credential: 'world' },
@@ -453,7 +460,7 @@ describe(common.testName(__filename), () => {
     });
 
     it('should run with credential order when activeRequestCount is equal (1)', () => {
-      const broker = new Broker(functionProfile.getProfile('func')!, true);
+      const broker = stateManager.getOrCreateBroker('func', true)!
       registerWorkers(broker, [
         {
           processName: 'hello',
@@ -472,18 +479,22 @@ describe(common.testName(__filename), () => {
         );
       });
 
-      broker.sync([
-        {
-          name: 'hello',
-          // maxActivateRequests: 10,
-          activeRequestCount: 4,
-        },
-        {
-          name: 'foo',
-          // maxActivateRequests: 10,
-          activeRequestCount: 4,
-        },
-      ]);
+      stateManager._syncBrokerData([{
+        functionName: 'func',
+        inspector: true,
+        workers: [
+          {
+            name: 'hello',
+            // maxActivateRequests: 10,
+            activeRequestCount: 4
+          },
+          {
+            name: 'foo',
+            // maxActivateRequests: 10,
+            activeRequestCount: 4,
+          },
+        ]
+      }]);
 
       assert.deepStrictEqual(defaultController.mostIdleNWorkers(broker, 1), [
         { name: 'foo', credential: 'bar' },
@@ -511,7 +522,7 @@ describe(common.testName(__filename), () => {
     });
 
     it('should run with credential order when activeRequestCount is equal (2)', () => {
-      const broker = new Broker(functionProfile.getProfile('func')!, true);
+      const broker = stateManager.getOrCreateBroker('func', true)!;
       registerWorkers(broker, [
         {
           processName: 'hello',
@@ -530,18 +541,22 @@ describe(common.testName(__filename), () => {
         );
       });
 
-      broker.sync([
-        {
-          name: 'foo',
-          // maxActivateRequests: 10,
-          activeRequestCount: 4,
-        },
-        {
-          name: 'hello',
-          // maxActivateRequests: 10,
-          activeRequestCount: 4,
-        },
-      ]);
+      stateManager._syncBrokerData([{
+        functionName: 'func',
+        inspector: true,
+        workers: [
+          {
+            name: 'hello',
+            // maxActivateRequests: 10,
+            activeRequestCount: 4,
+          },
+          {
+            name: 'foo',
+            // maxActivateRequests: 10,
+            activeRequestCount: 4,
+          },
+        ]
+      }]);
 
       assert.deepStrictEqual(defaultController.mostIdleNWorkers(broker, 1), [
         { name: 'foo', credential: 'bar' },
@@ -569,7 +584,7 @@ describe(common.testName(__filename), () => {
     });
 
     it('should get when has non-valid', () => {
-      const broker = new Broker(functionProfile.getProfile('func')!, true);
+      const broker = stateManager.getOrCreateBroker('func', true)!;
       registerWorkers(broker, [
         {
           processName: 'hello',
@@ -581,18 +596,22 @@ describe(common.testName(__filename), () => {
         },
       ]);
 
-      broker.sync([
-        {
-          name: 'hello',
-          // maxActivateRequests: 10,
-          activeRequestCount: 7,
-        },
-        {
-          name: 'foo',
-          // maxActivateRequests: 10,
-          activeRequestCount: 4,
-        },
-      ]);
+      stateManager._syncBrokerData([{
+        functionName: 'func',
+        inspector: true,
+        workers: [
+          {
+            name: 'hello',
+            // maxActivateRequests: 10,
+            activeRequestCount: 7,
+          },
+          {
+            name: 'foo',
+            // maxActivateRequests: 10,
+            activeRequestCount: 4,
+          },
+        ]
+      }]);
 
       // 更新到运行状态
       broker.workers.forEach(worker => {
@@ -624,7 +643,7 @@ describe(common.testName(__filename), () => {
     });
 
     it('should get', async () => {
-      const broker = new Broker(functionProfile.getProfile('func')!, true);
+      const broker = stateManager.getOrCreateBroker('func', true)!;
       registerWorkers(broker, [
         {
           processName: 'hello',
@@ -639,18 +658,22 @@ describe(common.testName(__filename), () => {
         },
       ]);
 
-      broker.sync([
-        {
-          name: 'hello',
-          // maxActivateRequests: 10,
-          activeRequestCount: 7,
-        },
-        {
-          name: 'foo',
-          // maxActivateRequests: 10,
-          activeRequestCount: 4,
-        },
-      ]);
+      stateManager._syncBrokerData([{
+        functionName: 'func',
+        inspector: true,
+        workers: [
+          {
+            name: 'hello',
+            // maxActivateRequests: 10,
+            activeRequestCount: 7,
+          },
+          {
+            name: 'foo',
+            // maxActivateRequests: 10,
+            activeRequestCount: 4,
+          },
+        ]
+      }]);
 
       // 更新到运行状态
       broker.workers.forEach(worker => {
@@ -685,7 +708,7 @@ describe(common.testName(__filename), () => {
     });
 
     it('should run with registerTime order', async () => {
-      const broker = new Broker(functionProfile.getProfile('func')!, true);
+      const broker = stateManager.getOrCreateBroker('func', true)!;
       registerWorkers(broker, [
         {
           processName: 'hello',
@@ -708,18 +731,22 @@ describe(common.testName(__filename), () => {
         );
       });
 
-      broker.sync([
-        {
-          name: 'foo',
-          // maxActivateRequests: 10,
-          activeRequestCount: 7,
-        },
-        {
-          name: 'hello',
-          // maxActivateRequests: 10,
-          activeRequestCount: 4,
-        },
-      ]);
+      stateManager._syncBrokerData([{
+        functionName: 'func',
+        inspector: true,
+        workers: [
+          {
+            name: 'foo',
+            // maxActivateRequests: 10,
+            activeRequestCount: 7,
+          },
+          {
+            name: 'hello',
+            // maxActivateRequests: 10,
+            activeRequestCount: 4,
+          },
+        ]
+      }]);
 
       assert.deepStrictEqual(defaultController.newestNWorkers(broker, 1), [
         { name: 'foo', credential: 'bar' },
@@ -747,7 +774,7 @@ describe(common.testName(__filename), () => {
     });
 
     it('should get when has non-valid', async () => {
-      const broker = new Broker(functionProfile.getProfile('func')!, true);
+      const broker = stateManager.getOrCreateBroker('func', true)!;
       registerWorkers(broker, [
         {
           processName: 'hello',
@@ -762,18 +789,22 @@ describe(common.testName(__filename), () => {
         },
       ]);
 
-      broker.sync([
-        {
-          name: 'hello',
-          // maxActivateRequests: 10,
-          activeRequestCount: 7,
-        },
-        {
-          name: 'foo',
-          // maxActivateRequests: 10,
-          activeRequestCount: 4,
-        },
-      ]);
+      stateManager._syncBrokerData([{
+        functionName: 'func',
+        inspector: true,
+        workers: [
+          {
+            name: 'hello',
+            // maxActivateRequests: 10,
+            activeRequestCount: 7,
+          },
+          {
+            name: 'foo',
+            // maxActivateRequests: 10,
+            activeRequestCount: 4,
+          },
+        ]
+      }]);
 
       // 更新到运行状态
       broker.workers.forEach(worker => {
@@ -805,7 +836,7 @@ describe(common.testName(__filename), () => {
     });
 
     it('should get', async () => {
-      const broker = new Broker(functionProfile.getProfile('func')!, true);
+      const broker = stateManager.getOrCreateBroker('func', true)!;
       registerWorkers(broker, [
         {
           processName: 'hello',
@@ -820,18 +851,22 @@ describe(common.testName(__filename), () => {
         },
       ]);
 
-      broker.sync([
-        {
-          name: 'hello',
-          // maxActivateRequests: 10,
-          activeRequestCount: 7,
-        },
-        {
-          name: 'foo',
-          // maxActivateRequests: 10,
-          activeRequestCount: 4,
-        },
-      ]);
+      stateManager._syncBrokerData([{
+        functionName: 'func',
+        inspector: true,
+        workers: [
+          {
+            name: 'hello',
+            // maxActivateRequests: 10,
+            activeRequestCount: 7,
+          },
+          {
+            name: 'foo',
+            // maxActivateRequests: 10,
+            activeRequestCount: 4,
+          },
+        ]
+      }]);
 
       // 更新到运行状态
       broker.workers.forEach(worker => {
@@ -866,7 +901,7 @@ describe(common.testName(__filename), () => {
     });
 
     it('should run with registerTime order', async () => {
-      const broker = new Broker(functionProfile.getProfile('func')!, true);
+      const broker = stateManager.getOrCreateBroker('func', true)!;
       registerWorkers(broker, [
         {
           processName: 'hello',
@@ -888,18 +923,22 @@ describe(common.testName(__filename), () => {
         );
       });
 
-      broker.sync([
-        {
-          name: 'foo',
-          // maxActivateRequests: 10,
-          activeRequestCount: 7,
-        },
-        {
-          name: 'hello',
-          // maxActivateRequests: 10,
-          activeRequestCount: 4,
-        },
-      ]);
+      stateManager._syncBrokerData([{
+        functionName: 'func',
+        inspector: true,
+        workers: [
+          {
+            name: 'foo',
+            // maxActivateRequests: 10,
+            activeRequestCount: 7,
+          },
+          {
+            name: 'hello',
+            // maxActivateRequests: 10,
+            activeRequestCount: 4,
+          },
+        ]
+      }]);
 
       assert.deepStrictEqual(defaultController.oldestNWorkers(broker, 1), [
         { name: 'hello', credential: 'world' },
@@ -927,7 +966,7 @@ describe(common.testName(__filename), () => {
     });
 
     it('should get when has non-valid', async () => {
-      const broker = new Broker(functionProfile.getProfile('func')!, true);
+      const broker = stateManager.getOrCreateBroker('func', true)!;
       registerWorkers(broker, [
         {
           processName: 'hello',
@@ -942,18 +981,22 @@ describe(common.testName(__filename), () => {
         },
       ]);
 
-      broker.sync([
-        {
-          name: 'hello',
-          // maxActivateRequests: 10,
-          activeRequestCount: 7,
-        },
-        {
-          name: 'foo',
-          // maxActivateRequests: 10,
-          activeRequestCount: 4,
-        },
-      ]);
+      stateManager._syncBrokerData([{
+        inspector: true,
+        functionName: 'func',
+        workers: [
+          {
+            name: 'hello',
+            // maxActivateRequests: 10,
+            activeRequestCount: 7,
+          },
+          {
+            name: 'foo',
+            // maxActivateRequests: 10,
+            activeRequestCount: 4,
+          },
+        ]
+      }]);
 
       // 更新到运行状态
       broker.workers.forEach(worker => {
@@ -985,7 +1028,7 @@ describe(common.testName(__filename), () => {
     });
 
     it('should use default strategy LCC', () => {
-      const broker = new Broker(functionProfile.getProfile('func')!, true);
+      const broker = stateManager.getOrCreateBroker('func', true)!;
       registerWorkers(broker, [
         {
           processName: 'hello',
@@ -1004,18 +1047,22 @@ describe(common.testName(__filename), () => {
         .getWorker('foo')
         ?.updateWorkerStatusByReport(WorkerStatusReport.ContainerInstalled);
 
-      broker.sync([
-        {
-          name: 'hello',
-          // maxActivateRequests: 10,
-          activeRequestCount: 7,
-        },
-        {
-          name: 'foo',
-          // maxActivateRequests: 10,
-          activeRequestCount: 1,
-        },
-      ]);
+      stateManager._syncBrokerData([{
+        functionName: 'func',
+        inspector: true,
+        workers: [
+          {
+            name: 'hello',
+            // maxActivateRequests: 10,
+            activeRequestCount: 7,
+          },
+          {
+            name: 'foo',
+            // maxActivateRequests: 10,
+            activeRequestCount: 1,
+          },
+        ]
+      }]);
 
       const workers = defaultController.shrinkDraw(broker, 1);
 
@@ -1024,7 +1071,7 @@ describe(common.testName(__filename), () => {
     });
 
     it('should use default strategy LCC when worker strategy not supported', () => {
-      const broker = new Broker(functionProfile.getProfile('func')!, true);
+      const broker = stateManager.getOrCreateBroker('func', true)!;
       registerWorkers(broker, [
         {
           processName: 'hello',
@@ -1043,18 +1090,22 @@ describe(common.testName(__filename), () => {
         .getWorker('foo')
         ?.updateWorkerStatusByReport(WorkerStatusReport.ContainerInstalled);
 
-      broker.sync([
-        {
-          name: 'hello',
-          // maxActivateRequests: 10,
-          activeRequestCount: 1,
-        },
-        {
-          name: 'foo',
-          // maxActivateRequests: 10,
-          activeRequestCount: 7,
-        },
-      ]);
+      stateManager._syncBrokerData([{
+        functionName: 'func',
+        inspector: true,
+        workers: [
+          {
+            name: 'hello',
+            // maxActivateRequests: 10,
+            activeRequestCount: 1,
+          },
+          {
+            name: 'foo',
+            // maxActivateRequests: 10,
+            activeRequestCount: 7,
+          },
+        ]
+      }]);
 
       sinon.stub(broker.profile.worker, 'shrinkStrategy').value('NOTSUPPORTED');
 
@@ -1065,7 +1116,7 @@ describe(common.testName(__filename), () => {
     });
 
     it('should use worker strategy FIFO', async () => {
-      const broker = new Broker(functionProfile.getProfile('func')!, true);
+      const broker = stateManager.getOrCreateBroker('func', true)!;
 
       registerWorkers(broker, [
         {
@@ -1088,18 +1139,22 @@ describe(common.testName(__filename), () => {
         .getWorker('foo')
         ?.updateWorkerStatusByReport(WorkerStatusReport.ContainerInstalled);
 
-      broker.sync([
-        {
-          name: 'hello',
-          // maxActivateRequests: 10,
-          activeRequestCount: 7,
-        },
-        {
-          name: 'foo',
-          // maxActivateRequests: 10,
-          activeRequestCount: 1,
-        },
-      ]);
+      stateManager._syncBrokerData([{
+        functionName: 'func',
+        inspector: true,
+        workers: [
+          {
+            name: 'hello',
+            // maxActivateRequests: 10,
+            activeRequestCount: 7,
+          },
+          {
+            name: 'foo',
+            // maxActivateRequests: 10,
+            activeRequestCount: 1,
+          },
+        ]
+      }]);
 
       sinon.stub(broker.profile.worker, 'shrinkStrategy').value('FIFO');
 
@@ -1110,7 +1165,7 @@ describe(common.testName(__filename), () => {
     });
 
     it('should use worker strategy FILO', async () => {
-      const broker = new Broker(functionProfile.getProfile('func')!, true);
+      const broker = stateManager.getOrCreateBroker('func', true)!;
 
       registerWorkers(broker, [
         {
@@ -1133,18 +1188,22 @@ describe(common.testName(__filename), () => {
         .getWorker('foo')
         ?.updateWorkerStatusByReport(WorkerStatusReport.ContainerInstalled);
 
-      broker.sync([
-        {
-          name: 'hello',
-          // maxActivateRequests: 10,
-          activeRequestCount: 7,
-        },
-        {
-          name: 'foo',
-          // maxActivateRequests: 10,
-          activeRequestCount: 8,
-        },
-      ]);
+      stateManager._syncBrokerData([{
+        functionName: 'func',
+        inspector: true,
+        workers: [
+          {
+            name: 'hello',
+            // maxActivateRequests: 10,
+            activeRequestCount: 7,
+          },
+          {
+            name: 'foo',
+            // maxActivateRequests: 10,
+            activeRequestCount: 8,
+          },
+        ]
+      }]);
 
       sinon.stub(broker.profile.worker, 'shrinkStrategy').value('FILO');
 

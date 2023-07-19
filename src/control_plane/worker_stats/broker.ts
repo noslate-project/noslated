@@ -108,21 +108,6 @@ class Broker {
     this.#profile = profile;
   }
 
-  /**
-   * Sync from data plane.
-   * @param data The workers.
-   */
-  sync(data: WorkerStats[]) {
-    const allWorkerSyncData = new Map<string, WorkerStats>();
-    for (const item of data) {
-      allWorkerSyncData.set(item.name!, item);
-    }
-
-    for (const worker of this.workers.values()) {
-      worker.sync(allWorkerSyncData.get(worker.name) ?? null);
-    }
-  }
-
   get workerCount() {
     return this._activeWorkerCount + this._initiatingWorkerCount;
   }
