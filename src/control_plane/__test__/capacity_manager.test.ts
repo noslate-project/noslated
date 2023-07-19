@@ -228,20 +228,22 @@ describe(common.testName(__filename), function () {
         .getWorker('hello')!
         .updateWorkerStatusByReport(WorkerStatusReport.ContainerInstalled);
 
-      stateManager._syncBrokerData([{
-        functionName: 'func',
-        workers: [
-          {
-            name: 'hello',
-            // maxActivateRequests: 10,
-            activeRequestCount: 10,
-          },
-          {
-            name: 'foo',
-            activeRequestCount: 0,
-          },
-        ]
-      }]);
+      stateManager._syncBrokerData([
+        {
+          functionName: 'func',
+          workers: [
+            {
+              name: 'hello',
+              // maxActivateRequests: 10,
+              activeRequestCount: 10,
+            },
+            {
+              name: 'foo',
+              activeRequestCount: 0,
+            },
+          ],
+        },
+      ]);
       // 更新运行状态
       broker
         .getWorker('hello')!
@@ -271,20 +273,22 @@ describe(common.testName(__filename), function () {
         .getWorker('hello')!
         .updateWorkerStatusByReport(WorkerStatusReport.ContainerInstalled);
 
-      stateManager._syncBrokerData([{
-        functionName: 'func',
-        workers: [
-          {
-            name: 'hello',
-            // maxActivateRequests: 10,
-            activeRequestCount: 10,
-          },
-          {
-            name: 'foo',
-            activeRequestCount: 0,
-          },
-        ]
-      }]);
+      stateManager._syncBrokerData([
+        {
+          functionName: 'func',
+          workers: [
+            {
+              name: 'hello',
+              // maxActivateRequests: 10,
+              activeRequestCount: 10,
+            },
+            {
+              name: 'foo',
+              activeRequestCount: 0,
+            },
+          ],
+        },
+      ]);
       broker
         .getWorker('foo')!
         .updateWorkerStatusByReport(WorkerStatusReport.ContainerDisconnected);
@@ -310,16 +314,18 @@ describe(common.testName(__filename), function () {
         .getWorker('hello')!
         .updateWorkerStatusByReport(WorkerStatusReport.ContainerInstalled);
 
-      stateManager._syncBrokerData([{
-        functionName: 'func',
-        workers: [
-          {
-            name: 'hello',
-            // maxActivateRequests: 10,
-            activeRequestCount: 5,
-          },
-        ]
-      }]);
+      stateManager._syncBrokerData([
+        {
+          functionName: 'func',
+          workers: [
+            {
+              name: 'hello',
+              // maxActivateRequests: 10,
+              activeRequestCount: 5,
+            },
+          ],
+        },
+      ]);
       assert.strictEqual(capacityManager.evaluateWaterLevel(broker), 0);
     });
 
@@ -341,16 +347,18 @@ describe(common.testName(__filename), function () {
         .getWorker('hello')!
         .updateWorkerStatusByReport(WorkerStatusReport.ContainerInstalled);
 
-      stateManager._syncBrokerData([{
-        functionName: 'func',
-        workers: [
-          {
-            name: 'hello',
-            // maxActivateRequests: 10,
-            activeRequestCount: 10,
-          },
-        ]
-      }]);
+      stateManager._syncBrokerData([
+        {
+          functionName: 'func',
+          workers: [
+            {
+              name: 'hello',
+              // maxActivateRequests: 10,
+              activeRequestCount: 10,
+            },
+          ],
+        },
+      ]);
 
       assert.strictEqual(
         capacityManager.allowExpandingOnRequestQueueing({
@@ -384,16 +392,18 @@ describe(common.testName(__filename), function () {
         .getWorker('hello')!
         .updateWorkerStatusByReport(WorkerStatusReport.ContainerInstalled);
 
-      stateManager._syncBrokerData([{
-        functionName: 'func',
-        workers: [
-          {
-            name: 'hello',
-            // maxActivateRequests: 10,
-            activeRequestCount: 4,
-          },
-        ]
-      }]);
+      stateManager._syncBrokerData([
+        {
+          functionName: 'func',
+          workers: [
+            {
+              name: 'hello',
+              // maxActivateRequests: 10,
+              activeRequestCount: 4,
+            },
+          ],
+        },
+      ]);
 
       assert.strictEqual(capacityManager.evaluateWaterLevel(broker), 0);
     });
@@ -418,20 +428,22 @@ describe(common.testName(__filename), function () {
         .getWorker('hello')!
         .updateWorkerStatusByReport(WorkerStatusReport.ContainerInstalled);
 
-      stateManager._syncBrokerData([{
-        functionName: 'func',
-        workers: [
-          {
-            name: 'hello',
-            // maxActivateRequests: 10,
-            activeRequestCount: 8,
-          },
-          {
-            name: 'foo',
-            activeRequestCount: 8,
-          },
-        ]
-      }]);
+      stateManager._syncBrokerData([
+        {
+          functionName: 'func',
+          workers: [
+            {
+              name: 'hello',
+              // maxActivateRequests: 10,
+              activeRequestCount: 8,
+            },
+            {
+              name: 'foo',
+              activeRequestCount: 8,
+            },
+          ],
+        },
+      ]);
       assert.strictEqual(capacityManager.evaluateWaterLevel(broker), 1);
     });
 
@@ -455,19 +467,21 @@ describe(common.testName(__filename), function () {
         .getWorker('hello')!
         .updateWorkerStatusByReport(WorkerStatusReport.ContainerInstalled);
 
-      stateManager._syncBrokerData([{
-        functionName: 'func',
-        workers: [
-          {
-            name: 'hello',
-            activeRequestCount: 0,
-          },
-          {
-            name: 'foo',
-            activeRequestCount: 0,
-          },
-        ]
-      }]);
+      stateManager._syncBrokerData([
+        {
+          functionName: 'func',
+          workers: [
+            {
+              name: 'hello',
+              activeRequestCount: 0,
+            },
+            {
+              name: 'foo',
+              activeRequestCount: 0,
+            },
+          ],
+        },
+      ]);
       assert.strictEqual(capacityManager.evaluateWaterLevel(broker), 0);
     });
 
@@ -494,21 +508,23 @@ describe(common.testName(__filename), function () {
         .getWorker('hello')!
         .updateWorkerStatusByReport(WorkerStatusReport.ContainerInstalled);
 
-      stateManager._syncBrokerData([{
-        functionName: 'func',
-        workers: [
-          {
-            name: 'hello',
-            // maxActivateRequests: 10,
-            activeRequestCount: 0,
-          },
-          {
-            name: 'foo',
-            // maxActivateRequests: 10,
-            activeRequestCount: 0,
-          },
-        ]
-      }]);
+      stateManager._syncBrokerData([
+        {
+          functionName: 'func',
+          workers: [
+            {
+              name: 'hello',
+              // maxActivateRequests: 10,
+              activeRequestCount: 0,
+            },
+            {
+              name: 'foo',
+              // maxActivateRequests: 10,
+              activeRequestCount: 0,
+            },
+          ],
+        },
+      ]);
       broker.redundantTimes = 60;
       assert.strictEqual(capacityManager.evaluateWaterLevel(broker), -1);
     });
@@ -536,21 +552,23 @@ describe(common.testName(__filename), function () {
         .getWorker('hello')!
         .updateWorkerStatusByReport(WorkerStatusReport.ContainerInstalled);
 
-      stateManager._syncBrokerData([{
-        functionName: 'func',
-        workers: [
-          {
-            name: 'hello',
-            // maxActivateRequests: 10,
-            activeRequestCount: 3,
-          },
-          {
-            name: 'foo',
-            // maxActivateRequests: 10,
-            activeRequestCount: 3,
-          },
-        ]
-      }]);
+      stateManager._syncBrokerData([
+        {
+          functionName: 'func',
+          workers: [
+            {
+              name: 'hello',
+              // maxActivateRequests: 10,
+              activeRequestCount: 3,
+            },
+            {
+              name: 'foo',
+              // maxActivateRequests: 10,
+              activeRequestCount: 3,
+            },
+          ],
+        },
+      ]);
       broker.redundantTimes = 60;
       assert.strictEqual(capacityManager.evaluateWaterLevel(broker), -1);
     });
@@ -575,21 +593,23 @@ describe(common.testName(__filename), function () {
         .getWorker('hello')!
         .updateWorkerStatusByReport(WorkerStatusReport.ContainerInstalled);
 
-      stateManager._syncBrokerData([{
-        functionName: 'func',
-        workers: [
-          {
-            name: 'hello',
-            // maxActivateRequests: 10,
-            activeRequestCount: 0,
-          },
-          {
-            name: 'foo',
-            // maxActivateRequests: 10,
-            activeRequestCount: 0,
-          },
-        ]
-      }]);
+      stateManager._syncBrokerData([
+        {
+          functionName: 'func',
+          workers: [
+            {
+              name: 'hello',
+              // maxActivateRequests: 10,
+              activeRequestCount: 0,
+            },
+            {
+              name: 'foo',
+              // maxActivateRequests: 10,
+              activeRequestCount: 0,
+            },
+          ],
+        },
+      ]);
       broker.redundantTimes = 60;
       assert.strictEqual(capacityManager.evaluateWaterLevel(broker), -2);
     });
@@ -614,21 +634,23 @@ describe(common.testName(__filename), function () {
         .getWorker('hello')!
         .updateWorkerStatusByReport(WorkerStatusReport.ContainerInstalled);
 
-      stateManager._syncBrokerData([{
-        functionName: 'func',
-        workers: [
-          {
-            name: 'hello',
-            // maxActivateRequests: 10,
-            activeRequestCount: 3,
-          },
-          {
-            name: 'foo',
-            // maxActivateRequests: 10,
-            activeRequestCount: 3,
-          },
-        ]
-      }]);
+      stateManager._syncBrokerData([
+        {
+          functionName: 'func',
+          workers: [
+            {
+              name: 'hello',
+              // maxActivateRequests: 10,
+              activeRequestCount: 3,
+            },
+            {
+              name: 'foo',
+              // maxActivateRequests: 10,
+              activeRequestCount: 3,
+            },
+          ],
+        },
+      ]);
       broker.redundantTimes = 60;
       assert.strictEqual(capacityManager.evaluateWaterLevel(broker), -1);
     });
@@ -653,21 +675,23 @@ describe(common.testName(__filename), function () {
         .getWorker('hello')!
         .updateWorkerStatusByReport(WorkerStatusReport.ContainerInstalled);
 
-      stateManager._syncBrokerData([{
-        functionName: 'func',
-        workers: [
-          {
-            name: 'hello',
-            // maxActivateRequests: 10,
-            activeRequestCount: 0,
-          },
-          {
-            name: 'foo',
-            // maxActivateRequests: 10,
-            activeRequestCount: 0,
-          },
-        ]
-      }]);
+      stateManager._syncBrokerData([
+        {
+          functionName: 'func',
+          workers: [
+            {
+              name: 'hello',
+              // maxActivateRequests: 10,
+              activeRequestCount: 0,
+            },
+            {
+              name: 'foo',
+              // maxActivateRequests: 10,
+              activeRequestCount: 0,
+            },
+          ],
+        },
+      ]);
       broker.redundantTimes = 60;
       assert.strictEqual(capacityManager.evaluateWaterLevel(broker, true), 0);
     });
@@ -692,21 +716,23 @@ describe(common.testName(__filename), function () {
         .getWorker('hello')!
         .updateWorkerStatusByReport(WorkerStatusReport.ContainerInstalled);
 
-      stateManager._syncBrokerData([{
-        functionName: 'func',
-        workers: [
-          {
-            name: 'hello',
-            // maxActivateRequests: 10,
-            activeRequestCount: 7,
-          },
-          {
-            name: 'foo',
-            // maxActivateRequests: 10,
-            activeRequestCount: 7,
-          },
-        ]
-      }]);
+      stateManager._syncBrokerData([
+        {
+          functionName: 'func',
+          workers: [
+            {
+              name: 'hello',
+              // maxActivateRequests: 10,
+              activeRequestCount: 7,
+            },
+            {
+              name: 'foo',
+              // maxActivateRequests: 10,
+              activeRequestCount: 7,
+            },
+          ],
+        },
+      ]);
 
       broker.redundantTimes = 60;
       assert.strictEqual(capacityManager.evaluateWaterLevel(broker), 0);
@@ -737,10 +763,12 @@ describe(common.testName(__filename), function () {
           .getWorker(String(i))!
           .updateWorkerStatusByReport(WorkerStatusReport.ContainerInstalled);
       }
-      stateManager._syncBrokerData([{
-        functionName: 'func',
-        workers: mocked
-      }]);
+      stateManager._syncBrokerData([
+        {
+          functionName: 'func',
+          workers: mocked,
+        },
+      ]);
       assert.strictEqual(capacityManager.evaluateWaterLevel(broker), 9);
     });
 
@@ -767,10 +795,12 @@ describe(common.testName(__filename), function () {
           .getWorker(String(i))!
           .updateWorkerStatusByReport(WorkerStatusReport.ContainerInstalled);
       }
-      stateManager._syncBrokerData([{
-        functionName: 'func',
-        workers: mocked
-      }]);
+      stateManager._syncBrokerData([
+        {
+          functionName: 'func',
+          workers: mocked,
+        },
+      ]);
       assert.strictEqual(capacityManager.evaluateWaterLevel(broker), 5);
     });
   });

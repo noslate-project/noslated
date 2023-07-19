@@ -38,7 +38,6 @@ describe(common.testName(__filename), () => {
     stateManager = controlPlane._ctx.getInstance('stateManager');
     profileManager = controlPlane._ctx.getInstance('functionProfile');
     await profileManager.setProfiles(funcData);
-
   });
   afterEach(() => {
     mm.restore();
@@ -134,21 +133,23 @@ describe(common.testName(__filename), () => {
           .getWorker('foo')
           ?.updateWorkerStatusByReport(WorkerStatusReport.ContainerInstalled);
 
-        stateManager._syncBrokerData([{
-          functionName: 'func',
-          workers: [
-            {
-              name: 'hello',
-              // maxActivateRequests: 10,
-              activeRequestCount: 7,
-            },
-            {
-              name: 'foo',
-              // maxActivateRequests: 10,
-              activeRequestCount: 4,
-            },
-          ]
-        }]);
+        stateManager._syncBrokerData([
+          {
+            functionName: 'func',
+            workers: [
+              {
+                name: 'hello',
+                // maxActivateRequests: 10,
+                activeRequestCount: 7,
+              },
+              {
+                name: 'foo',
+                // maxActivateRequests: 10,
+                activeRequestCount: 4,
+              },
+            ],
+          },
+        ]);
       });
 
       describe('get .activeWorkerCount()', () => {
@@ -174,21 +175,23 @@ describe(common.testName(__filename), () => {
               credential: 'nut',
             },
           ]);
-          stateManager._syncBrokerData([{
-            functionName: 'func',
-            workers: [
-              {
-                name: 'hello',
-                // maxActivateRequests: 10,
-                activeRequestCount: 7,
-              },
-              {
-                name: 'foo',
-                // maxActivateRequests: 10,
-                activeRequestCount: 4,
-              },
-            ]
-          }]);
+          stateManager._syncBrokerData([
+            {
+              functionName: 'func',
+              workers: [
+                {
+                  name: 'hello',
+                  // maxActivateRequests: 10,
+                  activeRequestCount: 7,
+                },
+                {
+                  name: 'foo',
+                  // maxActivateRequests: 10,
+                  activeRequestCount: 4,
+                },
+              ],
+            },
+          ]);
           broker.workers.forEach(worker => {
             if (worker.name === 'hello') {
               worker.updateWorkerStatusByReport(
@@ -223,26 +226,28 @@ describe(common.testName(__filename), () => {
             },
           ]);
 
-          stateManager._syncBrokerData([{
-            functionName: 'func',
-            workers: [
-              {
-                name: 'hello',
-                // maxActivateRequests: 10,
-                activeRequestCount: 7,
-              },
-              {
-                name: 'foo',
-                // maxActivateRequests: 10,
-                activeRequestCount: 4,
-              },
-              {
-                name: 'coco',
-                // maxActivateRequests: 10,
-                activeRequestCount: 0,
-              },
-            ]
-          }]);
+          stateManager._syncBrokerData([
+            {
+              functionName: 'func',
+              workers: [
+                {
+                  name: 'hello',
+                  // maxActivateRequests: 10,
+                  activeRequestCount: 7,
+                },
+                {
+                  name: 'foo',
+                  // maxActivateRequests: 10,
+                  activeRequestCount: 4,
+                },
+                {
+                  name: 'coco',
+                  // maxActivateRequests: 10,
+                  activeRequestCount: 0,
+                },
+              ],
+            },
+          ]);
           broker.workers.forEach(worker => {
             if (worker.name === 'hello') {
               worker.updateWorkerStatusByReport(
@@ -269,27 +274,28 @@ describe(common.testName(__filename), () => {
             .getWorker('coco')
             ?.updateWorkerStatusByReport(WorkerStatusReport.ContainerInstalled);
 
-
-          stateManager._syncBrokerData([{
-            functionName: 'func',
-            workers: [
-              {
-                name: 'hello',
-                // maxActivateRequests: 10,
-                activeRequestCount: 7,
-              },
-              {
-                name: 'foo',
-                // maxActivateRequests: 10,
-                activeRequestCount: 4,
-              },
-              {
-                name: 'coco',
-                // maxActivateRequests: 10,
-                activeRequestCount: 0,
-              },
-            ]
-          }]);
+          stateManager._syncBrokerData([
+            {
+              functionName: 'func',
+              workers: [
+                {
+                  name: 'hello',
+                  // maxActivateRequests: 10,
+                  activeRequestCount: 7,
+                },
+                {
+                  name: 'foo',
+                  // maxActivateRequests: 10,
+                  activeRequestCount: 4,
+                },
+                {
+                  name: 'coco',
+                  // maxActivateRequests: 10,
+                  activeRequestCount: 0,
+                },
+              ],
+            },
+          ]);
           broker.workers.forEach(worker => {
             if (worker.name === 'hello') {
               worker.updateWorkerStatusByReport(
@@ -316,27 +322,28 @@ describe(common.testName(__filename), () => {
             .getWorker('coco')
             ?.updateWorkerStatusByReport(WorkerStatusReport.ContainerInstalled);
 
-
-          stateManager._syncBrokerData([{
-            functionName: 'func',
-            workers: [
-              {
-                name: 'hello',
-                // maxActivateRequests: 10,
-                activeRequestCount: 7,
-              },
-              {
-                name: 'foo',
-                // maxActivateRequests: 10,
-                activeRequestCount: 4,
-              },
-              {
-                name: 'coco',
-                // maxActivateRequests: 10,
-                activeRequestCount: 2,
-              },
-            ]
-          }]);
+          stateManager._syncBrokerData([
+            {
+              functionName: 'func',
+              workers: [
+                {
+                  name: 'hello',
+                  // maxActivateRequests: 10,
+                  activeRequestCount: 7,
+                },
+                {
+                  name: 'foo',
+                  // maxActivateRequests: 10,
+                  activeRequestCount: 4,
+                },
+                {
+                  name: 'coco',
+                  // maxActivateRequests: 10,
+                  activeRequestCount: 2,
+                },
+              ],
+            },
+          ]);
           broker.workers.forEach(worker => {
             if (worker.name === 'hello') {
               worker.updateWorkerStatusByReport(
@@ -399,22 +406,24 @@ describe(common.testName(__filename), () => {
           { pid: 2, name: 'hello', status: TurfContainerStates.running },
         ]);
         testContainerManager.reconcileContainers();
-        stateManager._syncBrokerData([{
-          functionName: 'func',
-          inspector: true,
-          workers: [
-            {
-              name: 'hello',
-              // maxActivateRequests: 10,
-              activeRequestCount: 7,
-            },
-            {
-              name: 'non-exists',
-              // maxActivateRequests: 10,
-              activeRequestCount: 1,
-            },
-          ]
-        }]);
+        stateManager._syncBrokerData([
+          {
+            functionName: 'func',
+            inspector: true,
+            workers: [
+              {
+                name: 'hello',
+                // maxActivateRequests: 10,
+                activeRequestCount: 7,
+              },
+              {
+                name: 'non-exists',
+                // maxActivateRequests: 10,
+                activeRequestCount: 1,
+              },
+            ],
+          },
+        ]);
 
         assert.strictEqual(broker.initiatingWorkerCount, 1);
 
