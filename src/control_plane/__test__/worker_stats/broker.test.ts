@@ -20,17 +20,23 @@ import { DependencyContext } from '#self/lib/dependency_context';
 import { EventBus } from '#self/lib/event-bus';
 import { funcData } from './test_data';
 import sinon from 'sinon';
+import { StateManager } from '#self/control_plane/worker_stats/state_manager';
+import { TestEnvironment } from '../environment';
+import { ControlPlane } from '#self/control_plane/control_plane';
 
 describe(common.testName(__filename), () => {
   let profileManager: ProfileManager;
+  let stateManager: StateManager;
+
+  const env = new TestEnvironment({
+    createTestClock: true,
+  });
+  let controlPlane: ControlPlane;
+
   beforeEach(async () => {
-    const ctx = new DependencyContext<FunctionProfileManagerContext>();
-    ctx.bindInstance('config', config);
-    ctx.bindInstance(
-      'eventBus',
-      new EventBus([...FunctionProfileManagerEvents])
-    );
-    profileManager = new ProfileManager(ctx);
+    controlPlane = env.control;
+    stateManager = controlPlane._ctx.getInstance('stateManager');
+    profileManager = controlPlane._ctx.getInstance('functionProfile');
     await profileManager.setProfiles(funcData);
   });
   afterEach(() => {
@@ -40,7 +46,7 @@ describe(common.testName(__filename), () => {
   describe('Broker', () => {
     describe('constructor', () => {
       it('should constructor', () => {
-        const broker = new Broker(profileManager.getProfile('func')!, true);
+        const broker = stateManager.getOrCreateBroker('func', true)!;
         assert.ok(broker instanceof Broker);
         assert.strictEqual(broker.redundantTimes, 0);
         assert.strictEqual(broker.name, 'func');
@@ -51,7 +57,7 @@ describe(common.testName(__filename), () => {
 
     describe('.getWorker()', () => {
       it('should get worker', () => {
-        const broker = new Broker(profileManager.getProfile('func')!, true);
+        const broker = stateManager.getOrCreateBroker('func', true)!;
         registerWorkers(broker, [
           {
             processName: 'hello',
@@ -66,7 +72,7 @@ describe(common.testName(__filename), () => {
 
     describe('.register()', () => {
       it('should register', () => {
-        const broker = new Broker(profileManager.getProfile('func')!, true);
+        const broker = stateManager.getOrCreateBroker('func', true)!;
         registerWorkers(broker, [
           {
             processName: 'foo',
@@ -92,7 +98,7 @@ describe(common.testName(__filename), () => {
 
     describe('get .initiatingWorkerCount()', () => {
       it('should return initiating worker counts', () => {
-        const broker = new Broker(profileManager.getProfile('func')!, true);
+        const broker = stateManager.getOrCreateBroker('func', true)!;
         assert.strictEqual(broker.initiatingWorkerCount, 0);
 
         registerWorkers(broker, [
@@ -108,7 +114,7 @@ describe(common.testName(__filename), () => {
     describe('getters', () => {
       let broker: Broker;
       beforeEach(() => {
-        broker = new Broker(profileManager.getProfile('func')!, false);
+        broker = stateManager.getOrCreateBroker('func', false)!;
         registerWorkers(broker, [
           {
             processName: 'hello',
@@ -127,16 +133,21 @@ describe(common.testName(__filename), () => {
           .getWorker('foo')
           ?.updateWorkerStatusByReport(WorkerStatusReport.ContainerInstalled);
 
-        broker.sync([
+        stateManager._syncBrokerData([
           {
-            name: 'hello',
-            // maxActivateRequests: 10,
-            activeRequestCount: 7,
-          },
-          {
-            name: 'foo',
-            // maxActivateRequests: 10,
-            activeRequestCount: 4,
+            functionName: 'func',
+            workers: [
+              {
+                name: 'hello',
+                // maxActivateRequests: 10,
+                activeRequestCount: 7,
+              },
+              {
+                name: 'foo',
+                // maxActivateRequests: 10,
+                activeRequestCount: 4,
+              },
+            ],
           },
         ]);
       });
@@ -164,16 +175,21 @@ describe(common.testName(__filename), () => {
               credential: 'nut',
             },
           ]);
-          broker.sync([
+          stateManager._syncBrokerData([
             {
-              name: 'hello',
-              // maxActivateRequests: 10,
-              activeRequestCount: 7,
-            },
-            {
-              name: 'foo',
-              // maxActivateRequests: 10,
-              activeRequestCount: 4,
+              functionName: 'func',
+              workers: [
+                {
+                  name: 'hello',
+                  // maxActivateRequests: 10,
+                  activeRequestCount: 7,
+                },
+                {
+                  name: 'foo',
+                  // maxActivateRequests: 10,
+                  activeRequestCount: 4,
+                },
+              ],
             },
           ]);
           broker.workers.forEach(worker => {
@@ -210,21 +226,26 @@ describe(common.testName(__filename), () => {
             },
           ]);
 
-          broker.sync([
+          stateManager._syncBrokerData([
             {
-              name: 'hello',
-              // maxActivateRequests: 10,
-              activeRequestCount: 7,
-            },
-            {
-              name: 'foo',
-              // maxActivateRequests: 10,
-              activeRequestCount: 4,
-            },
-            {
-              name: 'coco',
-              // maxActivateRequests: 10,
-              activeRequestCount: 0,
+              functionName: 'func',
+              workers: [
+                {
+                  name: 'hello',
+                  // maxActivateRequests: 10,
+                  activeRequestCount: 7,
+                },
+                {
+                  name: 'foo',
+                  // maxActivateRequests: 10,
+                  activeRequestCount: 4,
+                },
+                {
+                  name: 'coco',
+                  // maxActivateRequests: 10,
+                  activeRequestCount: 0,
+                },
+              ],
             },
           ]);
           broker.workers.forEach(worker => {
@@ -253,21 +274,26 @@ describe(common.testName(__filename), () => {
             .getWorker('coco')
             ?.updateWorkerStatusByReport(WorkerStatusReport.ContainerInstalled);
 
-          broker.sync([
+          stateManager._syncBrokerData([
             {
-              name: 'hello',
-              // maxActivateRequests: 10,
-              activeRequestCount: 7,
-            },
-            {
-              name: 'foo',
-              // maxActivateRequests: 10,
-              activeRequestCount: 4,
-            },
-            {
-              name: 'coco',
-              // maxActivateRequests: 10,
-              activeRequestCount: 0,
+              functionName: 'func',
+              workers: [
+                {
+                  name: 'hello',
+                  // maxActivateRequests: 10,
+                  activeRequestCount: 7,
+                },
+                {
+                  name: 'foo',
+                  // maxActivateRequests: 10,
+                  activeRequestCount: 4,
+                },
+                {
+                  name: 'coco',
+                  // maxActivateRequests: 10,
+                  activeRequestCount: 0,
+                },
+              ],
             },
           ]);
           broker.workers.forEach(worker => {
@@ -296,21 +322,26 @@ describe(common.testName(__filename), () => {
             .getWorker('coco')
             ?.updateWorkerStatusByReport(WorkerStatusReport.ContainerInstalled);
 
-          broker.sync([
+          stateManager._syncBrokerData([
             {
-              name: 'hello',
-              // maxActivateRequests: 10,
-              activeRequestCount: 7,
-            },
-            {
-              name: 'foo',
-              // maxActivateRequests: 10,
-              activeRequestCount: 4,
-            },
-            {
-              name: 'coco',
-              // maxActivateRequests: 10,
-              activeRequestCount: 2,
+              functionName: 'func',
+              workers: [
+                {
+                  name: 'hello',
+                  // maxActivateRequests: 10,
+                  activeRequestCount: 7,
+                },
+                {
+                  name: 'foo',
+                  // maxActivateRequests: 10,
+                  activeRequestCount: 4,
+                },
+                {
+                  name: 'coco',
+                  // maxActivateRequests: 10,
+                  activeRequestCount: 2,
+                },
+              ],
             },
           ]);
           broker.workers.forEach(worker => {
@@ -326,13 +357,13 @@ describe(common.testName(__filename), () => {
 
       describe('get reservationCount', () => {
         it('should get 1 when isInspector is true', () => {
-          broker = new Broker(profileManager.getProfile('func')!, true);
+          const broker = stateManager.getOrCreateBroker('func', true)!;
 
           assert.strictEqual(broker.reservationCount, 1);
         });
 
         it('should get from worker config', () => {
-          broker = new Broker(profileManager.getProfile('func')!, false);
+          const broker = stateManager.getOrCreateBroker('func', false)!;
 
           sinon.stub(broker.profile.worker, 'reservationCount').value(10);
 
@@ -342,7 +373,7 @@ describe(common.testName(__filename), () => {
 
       describe('get memoryLimit', () => {
         it('should get from worker config', () => {
-          broker = new Broker(profileManager.getProfile('func')!, false);
+          const broker = stateManager.getOrCreateBroker('func', false)!;
 
           sinon.stub(broker.profile.resourceLimit, 'memory').value(100);
 
@@ -354,7 +385,7 @@ describe(common.testName(__filename), () => {
     describe('.sync()', () => {
       it('should sync', () => {
         const testContainerManager = new TestContainerManager();
-        const broker = new Broker(profileManager.getProfile('func')!, true);
+        const broker = stateManager.getOrCreateBroker('func', true)!;
         registerWorkers(broker, [
           {
             processName: 'hello',
@@ -375,16 +406,22 @@ describe(common.testName(__filename), () => {
           { pid: 2, name: 'hello', status: TurfContainerStates.running },
         ]);
         testContainerManager.reconcileContainers();
-        broker.sync([
+        stateManager._syncBrokerData([
           {
-            name: 'hello',
-            // maxActivateRequests: 10,
-            activeRequestCount: 7,
-          },
-          {
-            name: 'non-exists',
-            // maxActivateRequests: 10,
-            activeRequestCount: 1,
+            functionName: 'func',
+            inspector: true,
+            workers: [
+              {
+                name: 'hello',
+                // maxActivateRequests: 10,
+                activeRequestCount: 7,
+              },
+              {
+                name: 'non-exists',
+                // maxActivateRequests: 10,
+                activeRequestCount: 1,
+              },
+            ],
           },
         ]);
 
