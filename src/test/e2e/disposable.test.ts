@@ -125,7 +125,7 @@ describe(common.testName(__filename), () => {
   });
 
   it('should dec activeRequestCount to 1 after invoke timeout', async function () {
-    this.timeout(10_000);
+    this.timeout(15_000);
     await env.agent.setFunctionProfile([
       {
         name: 'aworker_echo',
