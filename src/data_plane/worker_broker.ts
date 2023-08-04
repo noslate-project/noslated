@@ -204,7 +204,10 @@ export class Worker extends EventEmitter {
         e['queueing'] = waitMs;
         e['workerName'] = this.name;
       }
-
+      this.activeRequestCount--;
+      if (this.activeRequestCount === 0) {
+        this.emit('downToZero');
+      }
       throw e;
     }
   }
