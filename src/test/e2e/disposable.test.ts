@@ -124,6 +124,36 @@ describe(common.testName(__filename), () => {
     stub.restore();
   });
 
+  it('should dec activeRequestCount to 1 after invoke timeout', async function () {
+    this.timeout(15_000);
+    await env.agent.setFunctionProfile([
+      {
+        name: 'aworker_echo',
+        runtime: 'aworker',
+        url: `file://${common.baselineDir}/aworker_error`,
+        sourceFile: 'no_response.js',
+        signature: 'md5:234234',
+        worker: {
+          maxActivateRequests: 10,
+          disposable: true,
+        },
+      },
+    ]);
+
+    await assert.rejects(async () => {
+      await env.agent.invoke('aworker_echo', Buffer.from('ok'), {
+        method: 'POST',
+      });
+    }, /Request Timeout/);
+
+    const dpBroker = env.data.dataFlowController.getBroker('aworker_echo')!;
+    const dpWorker = Array.from(dpBroker.workers())[0];
+
+    await sleep(2000);
+    // 需等待事件同步
+    assert.strictEqual(dpWorker.activeRequestCount, 0);
+  });
+
   it('should wait response sent', async () => {
     await env.agent.setFunctionProfile([
       {
