@@ -259,3 +259,6 @@ export class BackoffCounter {
     this.count = 0;
   }
 }
+
+// for typescript check, do nothing
+export function _existCheck(value: unknown): asserts value {}

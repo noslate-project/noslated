@@ -19,6 +19,8 @@ import { Dispatcher, DispatcherDelegate } from './dispatcher/dispatcher';
 import { DisposableDispatcher } from './dispatcher/disposable';
 import { LeastRequestCountDispatcher } from './dispatcher/least_request_count';
 import { RoundRobinDispatcher } from './dispatcher/round_robin';
+import e from 'express';
+import { NoslatedError } from '#self/delegate/noslated_ipc';
 
 enum CredentialStatus {
   PENDING = 1,
@@ -200,17 +202,32 @@ export class Worker extends EventEmitter {
 
       return ret;
     } catch (e: unknown) {
-      if (e instanceof Error) {
-        e['queueing'] = waitMs;
-        e['workerName'] = this.name;
-      }
+      extendErrorWithInvokeDetail(e as Error, this.name, waitMs);
+
       this.activeRequestCount--;
       if (this.activeRequestCount === 0) {
         this.emit('downToZero');
       }
+
       throw e;
     }
   }
+}
+
+export function extendErrorWithInvokeDetail(
+  error: Error,
+  workerName: string,
+  queueing: number
+) {
+  if (error instanceof Error) {
+    error['workerName'] = workerName;
+    error['queueing'] = queueing;
+  }
+}
+
+export interface ErrorWithInvokeDetail extends Error {
+  workerName: string;
+  queueing: number;
 }
 
 interface BrokerOptions {

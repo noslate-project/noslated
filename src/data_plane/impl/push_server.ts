@@ -1,5 +1,4 @@
 import loggers from '#self/lib/logger';
-import { RequestLogger, RequestPerformance } from '../request_logger';
 import { createDeferred } from '#self/lib/util';
 import { Metadata, TriggerResponse } from '#self/delegate/request_response';
 import { tuplesToPairs, pairsToTuples } from '#self/lib/rpc/key_value_pair';
@@ -11,7 +10,6 @@ import * as root from '#self/proto/root';
 import { NotNullableInterface } from '#self/lib/interfaces';
 import { Readable } from 'stream';
 import { IPushServer } from '#self/lib/interfaces/push_server';
-import { kDefaultQueueingTime, kDefaultWorkerName } from '#self/lib/constants';
 
 interface InvokeRequest extends Readable {
   /** InvokeRequest name */
@@ -31,24 +29,14 @@ interface InvokeRequest extends Readable {
   debuggerTag?: string;
 }
 
-interface PipeResult {
-  bytesSent: number;
-  status: number;
-  error?: unknown;
-  workerName: string;
-  performance: RequestPerformance;
-}
-
 export class PushServerImpl implements IPushServer {
   logger: Logger;
-  requestLogger: RequestLogger;
 
   constructor(
     public dataFlowController: DataFlowController,
     public config: Config
   ) {
     this.logger = loggers.get('push server');
-    this.requestLogger = new RequestLogger(this.config);
   }
 
   async #invoke(
@@ -59,7 +47,6 @@ export class PushServerImpl implements IPushServer {
       root.noslated.data.InvokeResponse
     >
   ) {
-    const start = Date.now();
     const metadata = new Metadata({
       url: req.url,
       method: req.method,
@@ -77,28 +64,8 @@ export class PushServerImpl implements IPushServer {
     });
 
     const resFuture = this.dataFlowController[type](req.name, req, metadata);
-    const pipeResult = await this._pipeResponse(resFuture, call);
-    const end = Date.now();
-    this.requestLogger.access(
-      req.name,
-      pipeResult.workerName,
-      metadata,
-      start,
-      end,
-      String(pipeResult.status),
-      pipeResult.bytesSent,
-      req.requestId,
-      pipeResult.performance
-    );
 
-    if (pipeResult.error) {
-      this.requestLogger.error(
-        req.name,
-        pipeResult.workerName,
-        pipeResult.error as Error,
-        req.requestId
-      );
-    }
+    await this._pipeResponse(resFuture, call);
   }
 
   async invoke(
@@ -174,7 +141,7 @@ export class PushServerImpl implements IPushServer {
       root.noslated.data.IInvokeRequest,
       root.noslated.data.IInvokeResponse
     >
-  ): Promise<PipeResult> {
+  ): Promise<void> {
     let res: TriggerResponse;
     try {
       res = await resFuture;
@@ -183,24 +150,7 @@ export class PushServerImpl implements IPushServer {
         error: e as root.noslated.data.IInvokeErrorResponse,
       });
 
-      let workerName = kDefaultWorkerName;
-      let queueing = kDefaultQueueingTime;
-
-      if (e instanceof Error) {
-        workerName = e['workerName'];
-        queueing = e['queueing'];
-      }
-
-      return {
-        status: 0,
-        bytesSent: 0,
-        error: e,
-        workerName,
-        performance: {
-          ttfb: Date.now(),
-          queueing,
-        },
-      };
+      return;
     }
 
     call.write({
@@ -210,46 +160,26 @@ export class PushServerImpl implements IPushServer {
       },
     });
 
-    // time to first byte
-    const ttfb = Date.now();
+    const deferred = createDeferred<void>();
 
-    const deferred = createDeferred<PipeResult>();
-    let bytesSent = 0;
     res.on('data', chunk => {
       call.write({
         result: {
           body: chunk,
         },
       });
-      bytesSent += chunk.byteLength;
     });
+
     res.on('end', () => {
       call.end();
-      deferred.resolve({
-        status: res.status,
-        bytesSent,
-        workerName: res.workerName,
-        performance: {
-          ttfb,
-          queueing: res.queueing,
-        },
-      });
+      deferred.resolve();
     });
     res.on('error', e => {
       call.write({
         error: e as root.noslated.data.IInvokeErrorResponse,
       });
       call.end();
-      deferred.resolve({
-        status: res.status,
-        bytesSent,
-        error: e,
-        workerName: res.workerName,
-        performance: {
-          ttfb,
-          queueing: res.queueing,
-        },
-      });
+      deferred.resolve();
     });
 
     // destroy response when the call has been cancelled.
