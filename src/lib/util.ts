@@ -260,5 +260,6 @@ export class BackoffCounter {
   }
 }
 
-// for typescript check, do nothing
-export function _existCheck(value: unknown): asserts value {}
+// check exist on debug
+// TODO: https://nodejs.org/api/packages.html#resolving-user-conditions, implement on debug
+export function DCheck(value: unknown): asserts value {}

@@ -19,8 +19,6 @@ import { Dispatcher, DispatcherDelegate } from './dispatcher/dispatcher';
 import { DisposableDispatcher } from './dispatcher/disposable';
 import { LeastRequestCountDispatcher } from './dispatcher/least_request_count';
 import { RoundRobinDispatcher } from './dispatcher/round_robin';
-import e from 'express';
-import { NoslatedError } from '#self/delegate/noslated_ipc';
 
 enum CredentialStatus {
   PENDING = 1,

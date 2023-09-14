@@ -8,7 +8,7 @@ import {
   FunctionProfileManager,
   FunctionProfileManagerContext,
 } from '#self/lib/function_profile';
-import { _existCheck, getCurrentPlaneId, setDifference } from '#self/lib/util';
+import { DCheck, getCurrentPlaneId, setDifference } from '#self/lib/util';
 import { InspectorAgent } from '#self/diagnostics/inspector_agent';
 import { RpcError, RpcStatus } from '#self/lib/rpc/error';
 import { SystemCircuitBreaker } from './circuit_breaker';
@@ -508,7 +508,7 @@ export class DataFlowController extends BaseOf(EventEmitter) {
     }
 
     // non error, response should exist
-    _existCheck(response);
+    DCheck(response);
 
     const cloned = cloneable(response);
 
