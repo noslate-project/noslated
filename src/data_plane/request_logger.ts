@@ -35,9 +35,9 @@ export class RequestLogger {
     funcName: string,
     workerName: string = kDefaultWorkerName,
     metadata: Metadata,
-    status: string = `${TriggerErrorStatus.DEFAULT}`,
+    status = `${TriggerErrorStatus.DEFAULT}`,
     performance: RequestTiming,
-    bytesSent: number = 0
+    bytesSent = 0
   ) {
     // logTime, requestId, dataPlanePid, functionName, workerName, method, url, invokeSuccess, timeToFirstByte, timeForQueueing, rt, statusCode, responseSize
     const { method = '-', url = '-', requestId = kDefaultRequestId } = metadata;
