@@ -120,15 +120,16 @@ describe(common.testName(__filename), () => {
         metadata
       );
 
-      await Promise.allSettled([
-        await new Promise<void>(resolve => {
-          setTimeout(() => {
-            response.destroy();
-            resolve();
-          }, 500);
-        }),
-        await bufferFromStream(response),
-      ]);
+      response.on('data', chunk => {
+        console.log('first chunk: ', chunk);
+      });
+
+      await new Promise<void>(resolve => {
+        setTimeout(() => {
+          response.destroy();
+          resolve();
+        }, 500);
+      });
 
       // wait log write
       await sleep(10);
@@ -262,20 +263,16 @@ describe(common.testName(__filename), () => {
         metadata
       );
 
-      try {
-        await Promise.allSettled([
-          await new Promise<void>(resolve => {
-            setTimeout(() => {
-              response.destroy(new Error('mock abort'));
-              resolve();
-            }, 500);
-          }),
-          await bufferFromStream(response),
-        ]);
-      } catch (error) {
-        // ignore error
-        // different with push_server, it use grpc catch error
-      }
+      response.on('data', chunk => {
+        console.log('first chunk: ', chunk);
+      });
+
+      await new Promise<void>(resolve => {
+        setTimeout(() => {
+          response.destroy(new Error('mock abort'));
+          resolve();
+        }, 500);
+      });
 
       // wait log write
       await sleep(10);
