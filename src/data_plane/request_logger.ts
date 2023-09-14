@@ -22,11 +22,11 @@ export class RequestLogger {
     err: Error,
     requestId: string = kDefaultRequestId
   ) {
-    // logTime, dataPlanePid, requestId, functionName, workerName, error
+    // logTime, requestId, dataPlanePid, functionName, workerName, error
     this.errorLogger.write(
-      `${dayjs().format(this.timestampFormat)} ${
+      `${dayjs().format(this.timestampFormat)} ${requestId} ${
         process.pid
-      } ${requestId} ${funcName} ${workerName} - `,
+      } ${funcName} ${workerName} - `,
       err
     );
   }
@@ -35,31 +35,36 @@ export class RequestLogger {
     funcName: string,
     workerName: string = kDefaultWorkerName,
     metadata: Metadata,
-    start: number,
-    end: number,
-    status: string,
-    bytesSent: number,
-    requestId: string = kDefaultRequestId,
-    performance: RequestPerformance
+    status = `${TriggerErrorStatus.DEFAULT}`,
+    performance: RequestTiming,
+    bytesSent = 0
   ) {
-    // logTime, dataPlanePid, requestId, functionName, workerName, method, url, invokeSuccess, timeToFirstByte, timeForQueueing, rt, statusCode, responseSize
-    const { method = '-', url = '-' } = metadata;
-    const { ttfb, queueing } = performance;
+    // logTime, requestId, dataPlanePid, functionName, workerName, method, url, invokeSuccess, timeToFirstByte, timeForQueueing, rt, statusCode, responseSize
+    const { method = '-', url = '-', requestId = kDefaultRequestId } = metadata;
+    const { ttfb = 0, queueing = 0, rt = 0 } = performance;
 
     this.accessLogger.write(
       `${dayjs().format(this.timestampFormat)} ${requestId} ${
         process.pid
       } ${funcName} ${workerName} ${method} ${url} ` +
-        `${`${status}` === '200'} ${ttfb - start} ${queueing} ${
-          end - start
-        } ${status} ${bytesSent}`
+        `${
+          `${status}` === '200'
+        } ${ttfb} ${queueing} ${rt} ${status} ${bytesSent}`
     );
   }
 }
 
-export interface RequestPerformance {
-  // 响应首包返回时间，time to first byte
-  ttfb: number;
+export interface RequestTiming {
   // 请求排队时间，即到达系统至 worker 执行请求的时间
   queueing: number;
+  // 响应首包返回时间，time to first byte
+  ttfb: number;
+  // 请求 RT，响应发送完毕
+  rt: number;
+}
+
+export enum TriggerErrorStatus {
+  DEFAULT = 0,
+  INTERNAL = -1,
+  ABORT = -2,
 }
