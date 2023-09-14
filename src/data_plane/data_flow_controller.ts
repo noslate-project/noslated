@@ -8,11 +8,11 @@ import {
   FunctionProfileManager,
   FunctionProfileManagerContext,
 } from '#self/lib/function_profile';
-import { getCurrentPlaneId, setDifference } from '#self/lib/util';
+import { DCheck, getCurrentPlaneId, setDifference } from '#self/lib/util';
 import { InspectorAgent } from '#self/diagnostics/inspector_agent';
 import { RpcError, RpcStatus } from '#self/lib/rpc/error';
 import { SystemCircuitBreaker } from './circuit_breaker';
-import { Worker, WorkerBroker } from './worker_broker';
+import { Worker, WorkerBroker, ErrorWithInvokeDetail } from './worker_broker';
 import { ServiceProfileItem, ServiceSelector } from './service_selector';
 import { getMeter } from '#self/lib/telemetry/otel';
 import {
@@ -27,12 +27,18 @@ import * as root from '#self/proto/root';
 import { RawFunctionProfile } from '#self/lib/json/function_profile';
 import { Readable } from 'stream';
 import { Metadata, TriggerResponse } from '#self/delegate/request_response';
-import { WorkerStatusReport } from '#self/lib/constants';
+import { WorkerStatusReport, kDefaultWorkerName } from '#self/lib/constants';
 import { DataPlaneHost } from './data_plane_host';
 import { DependencyContext } from '#self/lib/dependency_context';
 import { EventBus } from '#self/lib/event-bus';
 import { events } from './events';
 import { DataPlaneInspectorAgentDelegate } from './inspector_agent_delegate';
+import {
+  RequestLogger,
+  RequestTiming,
+  TriggerErrorStatus,
+} from './request_logger';
+import cloneable from 'cloneable-readable';
 
 const logger = require('#self/lib/logger').get('data flow controller');
 
@@ -61,6 +67,8 @@ export class DataFlowController extends BaseOf(EventEmitter) {
   orphanBrokerCleanInterval: NodeJS.Timer | null;
 
   telemetry: WorkerTelemetry;
+
+  requestLogger: RequestLogger;
 
   constructor(public host: DataPlaneHost, public config: Config) {
     super();
@@ -126,6 +134,8 @@ export class DataFlowController extends BaseOf(EventEmitter) {
     this.orphanBrokerCleanInterval = null;
 
     this.telemetry = new WorkerTelemetry(this.meter, this.delegate, this);
+
+    this.requestLogger = new RequestLogger(this.config);
   }
 
   getResourceUsages() {
@@ -435,10 +445,26 @@ export class DataFlowController extends BaseOf(EventEmitter) {
     });
 
     const startTime = Date.now();
+
+    let resp: TriggerResponse | undefined = undefined;
+    let triggerError: ErrorWithInvokeDetail | undefined = undefined;
+
     try {
-      const resp = await broker.invoke(inputStream, metadata);
+      resp = await broker.invoke(inputStream, metadata);
       return resp;
+    } catch (error: unknown) {
+      triggerError = error as ErrorWithInvokeDetail;
+
+      throw error;
     } finally {
+      this.requestLog(
+        triggerError,
+        resp,
+        name,
+        metadata,
+        startTime,
+        serviceName
+      );
       const endTime = Date.now();
       this.#invokeCounter.add(1, {
         [PlaneMetricAttributes.FUNCTION_NAME]: name,
@@ -449,6 +475,100 @@ export class DataFlowController extends BaseOf(EventEmitter) {
         [PlaneMetricAttributes.SERVICE_NAME]: serviceName,
       });
     }
+  }
+
+  requestLog(
+    error: Error | undefined,
+    response: TriggerResponse | undefined,
+    invokeName: string,
+    metadata: Metadata,
+    start: number,
+    serviceName?: string
+  ) {
+    const now = Date.now();
+    const ttfb = now - start;
+    invokeName = serviceName ? `${serviceName}:${invokeName}` : invokeName;
+
+    if (error) {
+      // trigger error
+      this.accessError(
+        error,
+        invokeName,
+        (error as ErrorWithInvokeDetail).workerName || kDefaultWorkerName,
+        metadata,
+        TriggerErrorStatus.INTERNAL,
+        {
+          ttfb,
+          queueing: (error as ErrorWithInvokeDetail).queueing || 0,
+          rt: ttfb,
+        }
+      );
+
+      return;
+    }
+
+    // non error, response should exist
+    DCheck(response);
+
+    const cloned = cloneable(response);
+
+    let bytesSent = 0;
+
+    cloned.on('data', chunk => {
+      bytesSent += chunk.byteLength;
+    });
+
+    cloned.on('end', () => {
+      this.requestLogger.access(
+        invokeName,
+        response.workerName || kDefaultWorkerName,
+        metadata,
+        String(response.status || TriggerErrorStatus.DEFAULT),
+        {
+          ttfb,
+          queueing: response!.queueing || 0,
+          rt: Date.now() - start,
+        },
+        bytesSent
+      );
+    });
+
+    cloned.on('error', e => {
+      // response send error
+      this.accessError(
+        e,
+        invokeName,
+        response.workerName || kDefaultWorkerName,
+        metadata,
+        TriggerErrorStatus.ABORT,
+        {
+          ttfb,
+          queueing: response.queueing || 0,
+          rt: Date.now() - start,
+        },
+        bytesSent
+      );
+    });
+  }
+
+  accessError(
+    error: Error,
+    invokeName: string,
+    workerName: string,
+    metadata: Metadata,
+    status: number,
+    timing: RequestTiming,
+    bytesSent?: number
+  ) {
+    this.requestLogger.error(invokeName, workerName, error, metadata.requestId);
+    this.requestLogger.access(
+      invokeName,
+      workerName,
+      metadata,
+      String(status),
+      timing,
+      bytesSent ?? 0
+    );
   }
 
   async invokeService(

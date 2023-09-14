@@ -259,3 +259,7 @@ export class BackoffCounter {
     this.count = 0;
   }
 }
+
+// check exist on debug
+// TODO: https://nodejs.org/api/packages.html#resolving-user-conditions, implement on debug
+export function DCheck(value: unknown): asserts value {}
