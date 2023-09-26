@@ -41,17 +41,22 @@ export class NoslatedClient extends EventEmitter {
   useInspectorSet: Set<string>;
   platformEnvironmentVariables: root.noslated.IKeyValuePair[];
 
-  constructor() {
+  constructor(options?: NoslatedClientOptions) {
     super();
-    loggers.setSink(loggers.getPrettySink('sdk.log'));
     dumpConfig('sdk', config);
+
+    if (options?.logger) {
+      this.logger = options.logger;
+    } else {
+      loggers.setSink(loggers.getPrettySink('sdk.log'));
+      this.logger = loggers.get('noslated client');
+    }
 
     this.dataPlaneClientManager = new DataPlaneClientManager(this, config);
     this.controlPlaneClientManager = new ControlPlaneClientManager(
       this,
       config
     );
-    this.logger = loggers.get('noslated client');
     this.validator = new JSONValidator();
 
     this.functionProfiles = null;
@@ -392,3 +397,7 @@ export class NoslatedClient extends EventEmitter {
 }
 
 type InvokeType = 'invoke' | 'invokeService';
+
+interface NoslatedClientOptions {
+  logger?: Logger;
+}
