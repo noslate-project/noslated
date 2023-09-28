@@ -13,6 +13,7 @@ service ControlPlane {
 message WorkerAdditionalData {
   int32 activeRequestCount = 2;
   bool trafficOff = 3;
+  int32 accumulatedRequestCount = 4;
 }
 
 message GetFunctionProfileResponse {

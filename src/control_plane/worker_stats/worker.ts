@@ -15,9 +15,11 @@ export type WorkerStats = noslated.data.IWorkerStats;
 
 class WorkerAdditionalData {
   activeRequestCount;
+  accumulatedRequestCount;
 
   constructor(data: WorkerStats) {
     this.activeRequestCount = data.activeRequestCount;
+    this.accumulatedRequestCount = data.accumulatedRequestCount;
   }
 }
 
