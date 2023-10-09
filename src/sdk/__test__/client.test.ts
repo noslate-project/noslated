@@ -19,11 +19,27 @@ describe(testName(__filename), () => {
       assert(res.health);
     });
 
+    it('should check control plane health with timeout work', async () => {
+      const res = await env.agent.checkControlPlaneHealth(1);
+
+      assert.strictEqual(res.name, 'ControlPlane');
+      assert(!res.health);
+      assert(res.reason!.indexOf('DEADLINE_EXCEEDED') > -1);
+    });
+
     it('should check data plane health work', async () => {
       const res = await env.agent.checkDataPlaneHealth();
 
       assert.strictEqual(res.name, 'DataPlane');
       assert(res.health);
+    });
+
+    it('should check data plane health with timeout work', async () => {
+      const res = await env.agent.checkDataPlaneHealth(1);
+
+      assert.strictEqual(res.name, 'DataPlane');
+      assert(!res.health);
+      assert(res.reason!.indexOf('DEADLINE_EXCEEDED') > -1);
     });
 
     it('should check health false when circuit breaker enabled', async () => {

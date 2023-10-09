@@ -161,11 +161,16 @@ export class NoslatedClient extends EventEmitter {
     this.platformEnvironmentVariables = envs;
   }
 
-  async checkControlPlaneHealth(): Promise<root.noslated.IPlaneHealthyResponse> {
+  async checkControlPlaneHealth(
+    timeout: number = 1000
+  ): Promise<root.noslated.IPlaneHealthyResponse> {
     try {
       const client = this.controlPlaneClientManager.sample();
 
-      return await (client as any).checkHealth({});
+      return await (client as any).checkHealth(
+        {},
+        { deadline: Date.now() + timeout }
+      );
     } catch (error) {
       return {
         health: false,
@@ -175,11 +180,16 @@ export class NoslatedClient extends EventEmitter {
     }
   }
 
-  async checkDataPlaneHealth(): Promise<root.noslated.IPlaneHealthyResponse> {
+  async checkDataPlaneHealth(
+    timeout: number = 1000
+  ): Promise<root.noslated.IPlaneHealthyResponse> {
     const client = this.dataPlaneClientManager.sample();
 
     try {
-      return await (client as any).checkHealth({});
+      return await (client as any).checkHealth(
+        {},
+        { deadline: Date.now() + timeout }
+      );
     } catch (error) {
       return {
         health: false,
