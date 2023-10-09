@@ -65,3 +65,9 @@ message FunctionProfileWorker {
   bool disableRequestQueue = 11;
   string dispatchMode = 12;
 }
+
+message PlaneHealthyResponse {
+  string name = 1;
+  bool health = 2;
+  string reason = 3;
+}

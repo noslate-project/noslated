@@ -1,34 +1,67 @@
 import assert from 'assert';
-import mm from 'mm';
-import { NoslatedClient } from '#self/sdk/index';
-import { testName } from '#self/test/common';
-import { ControlPlane } from '#self/control_plane/index';
-import { ControlPlaneClientManager } from '#self/sdk/control_plane_client_manager';
-import { DataPlaneClientManager } from '#self/sdk/data_plane_client_manager';
-import { DataPlaneClientManager as _DataPlaneClientManager } from '#self/control_plane/data_plane_client/manager';
-import { Guest } from '#self/lib/rpc/guest';
-import { mockClientCreatorForManager } from '#self/test/util';
-import { DataPlane } from '#self/data_plane/index';
-import { startTurfD, stopTurfD } from '#self/test/turf';
+import { testName, baselineDir } from '#self/test/common';
 import sinon from 'sinon';
 import { PlatformEnvironsUpdatedEvent } from '#self/control_plane/events';
+import { DefaultEnvironment } from '#self/test/env/environment';
+import { bufferFromStream, sleep } from '#self/lib/util';
+import { isEmpty } from 'lodash';
 
 describe(testName(__filename), () => {
-  let agent: NoslatedClient;
-  let control: ControlPlane;
-  let data: DataPlane;
+  const env = new DefaultEnvironment();
 
-  beforeEach(async () => {
-    startTurfD();
-    agent = new NoslatedClient();
-  });
+  describe('check plane health', function () {
+    this.timeout(10000);
 
-  afterEach(async () => {
-    mm.restore();
-    await agent.close();
-    await control?.close();
-    await data?.close();
-    stopTurfD();
+    it('should check control plane health work', async () => {
+      const res = await env.agent.checkControlPlaneHealth();
+
+      assert.strictEqual(res.name, 'ControlPlane');
+      assert(res.health);
+    });
+
+    it('should check data plane health work', async () => {
+      const res = await env.agent.checkDataPlaneHealth();
+
+      assert.strictEqual(res.name, 'DataPlane');
+      assert(res.health);
+    });
+
+    it('should check health false when circuit breaker enabled', async () => {
+      const stub = sinon
+        .stub(
+          env.data.dataFlowController.circuitBreaker,
+          '_getPendingRequestCount'
+        )
+        .callsFake(() => {
+          return 10000;
+        });
+
+      // wait circuit breaker check 5 times
+      await sleep(5000);
+
+      const res = await env.agent.checkDataPlaneHealth();
+      assert.strictEqual(res.name, 'DataPlane');
+      assert(res.health === false);
+      assert.strictEqual(res.reason, 'Circuit Breaker Enabled');
+
+      stub.reset();
+    });
+
+    it('shoule check health false when control plane close', async () => {
+      await env.control.close();
+      const res = await env.agent.checkControlPlaneHealth();
+
+      assert.strictEqual(res.name, 'ControlPlane');
+      assert(res.health === false);
+    });
+
+    it('shoule check health false when data plane close', async () => {
+      await env.data.close();
+      const res = await env.agent.checkDataPlaneHealth();
+
+      assert.strictEqual(res.name, 'DataPlane');
+      assert(res.health === false);
+    });
   });
 
   describe('.setPlatformEnvironmentVariables()', () => {
@@ -40,60 +73,45 @@ describe(testName(__filename), () => {
     ];
 
     it('should set platform environment variables even if no client connected', async () => {
-      mockClientCreatorForManager(ControlPlaneClientManager);
-      mockClientCreatorForManager(DataPlaneClientManager);
-      await agent.start();
-      agent.controlPlaneClientManager
-        .clients()[0]
-        .emit(
-          Guest.events.CONNECTIVITY_STATE_CHANGED,
-          Guest.connectivityState.CONNECTING
-        );
-      await agent.setPlatformEnvironmentVariables(envs);
+      const stub = sinon
+        .stub(env.agent.controlPlaneClientManager, 'availableClients')
+        .callsFake(() => {
+          return [];
+        });
 
-      assert.notStrictEqual(agent.platformEnvironmentVariables, envs);
-      assert.deepStrictEqual(agent.platformEnvironmentVariables, envs);
+      await env.agent.setPlatformEnvironmentVariables(envs);
+
+      assert.deepStrictEqual(env.agent.platformEnvironmentVariables, envs);
+
+      stub.reset();
     });
 
     it('should publish platform environment variables updated events', async () => {
-      control = new ControlPlane();
-      mockClientCreatorForManager(DataPlaneClientManager);
-      mockClientCreatorForManager(_DataPlaneClientManager);
-      await control.ready();
-      await agent.start();
-
-      const stub = sinon.stub();
-      const eventBus = control._ctx.getInstance('eventBus');
+      const spy = sinon.spy();
+      const eventBus = env.control._ctx.getInstance('eventBus');
       eventBus.subscribe(PlatformEnvironsUpdatedEvent, {
-        next: stub,
+        next: spy,
       });
 
-      await agent.setPlatformEnvironmentVariables(envs);
+      await env.agent.setPlatformEnvironmentVariables(envs);
 
-      assert.notStrictEqual(agent.platformEnvironmentVariables, envs);
-      assert.deepStrictEqual(agent.platformEnvironmentVariables, envs);
+      assert.deepStrictEqual(env.agent.platformEnvironmentVariables, envs);
 
-      assert.strictEqual(stub.callCount, 1);
-      assert.deepStrictEqual(stub.args[0][0].data, {
+      assert(spy.calledOnce);
+      assert.deepStrictEqual(spy.args[0][0].data, {
         foo: 'bar',
       });
     });
 
     it('should throw error if not string', async () => {
-      control = new ControlPlane();
-      mockClientCreatorForManager(DataPlaneClientManager);
-      mockClientCreatorForManager(_DataPlaneClientManager);
-      await control.ready();
-      await agent.start();
-
-      const stub = sinon.stub();
-      const eventBus = control._ctx.getInstance('eventBus');
+      const spy = sinon.spy();
+      const eventBus = env.control._ctx.getInstance('eventBus');
       eventBus.subscribe(PlatformEnvironsUpdatedEvent, {
-        next: stub,
+        next: spy,
       });
 
       await assert.rejects(
-        agent.setPlatformEnvironmentVariables([
+        env.agent.setPlatformEnvironmentVariables([
           ...envs,
           { key: '你瞅啥', value: 1000 },
         ]),
@@ -103,25 +121,19 @@ describe(testName(__filename), () => {
         }
       );
 
-      assert.deepStrictEqual(agent.platformEnvironmentVariables, []);
-      assert.strictEqual(stub.callCount, 0);
+      assert.deepStrictEqual(env.agent.platformEnvironmentVariables, []);
+      assert.strictEqual(spy.callCount, 0);
     });
 
     it('should throw error if reserved key hits', async () => {
-      control = new ControlPlane();
-      mockClientCreatorForManager(DataPlaneClientManager);
-      mockClientCreatorForManager(_DataPlaneClientManager);
-      await control.ready();
-      await agent.start();
-
-      const stub = sinon.stub();
-      const eventBus = control._ctx.getInstance('eventBus');
+      const spy = sinon.spy();
+      const eventBus = env.control._ctx.getInstance('eventBus');
       eventBus.subscribe(PlatformEnvironsUpdatedEvent, {
-        next: stub,
+        next: spy,
       });
 
       await assert.rejects(
-        agent.setPlatformEnvironmentVariables([
+        env.agent.setPlatformEnvironmentVariables([
           ...envs,
           { key: 'NOSLATED_你瞅啥', value: '瞅你咋地' },
         ]),
@@ -131,8 +143,96 @@ describe(testName(__filename), () => {
         }
       );
 
-      assert.deepStrictEqual(agent.platformEnvironmentVariables, []);
-      assert.strictEqual(stub.callCount, 0);
+      assert.deepStrictEqual(env.agent.platformEnvironmentVariables, []);
+      assert.strictEqual(spy.callCount, 0);
+    });
+  });
+
+  describe('.invoke()', () => {
+    it('should invoke work', async () => {
+      await env.agent.setFunctionProfile([
+        {
+          name: 'aworker_echo',
+          runtime: 'aworker',
+          url: `file://${baselineDir}/aworker_echo`,
+          sourceFile: 'index.js',
+          signature: 'md5:234234',
+        },
+      ]);
+
+      const response = await env.agent.invoke(
+        'aworker_echo',
+        Buffer.from('foobar'),
+        {
+          method: 'POST',
+        }
+      );
+
+      const responseBuffer = await bufferFromStream(response);
+
+      assert.strictEqual(responseBuffer.toString(), 'foobar');
+    });
+  });
+
+  describe('.invokeService()', () => {
+    it('should invokeService work', async () => {
+      await env.agent.setFunctionProfile([
+        {
+          name: 'aworker_echo',
+          runtime: 'aworker',
+          url: `file://${baselineDir}/aworker_echo`,
+          sourceFile: 'index.js',
+          signature: 'md5:234234',
+        },
+      ]);
+
+      await env.agent.setServiceProfile([
+        {
+          name: 'aworker',
+          type: 'default',
+          selector: {
+            functionName: 'aworker_echo',
+          },
+        },
+      ]);
+
+      const response = await env.agent.invokeService(
+        'aworker',
+        Buffer.from('foobar'),
+        {
+          method: 'POST',
+        }
+      );
+
+      const responseBuffer = await bufferFromStream(response);
+
+      assert.strictEqual(responseBuffer.toString(), 'foobar');
+    });
+  });
+
+  describe('.getWorkerStatsSnapshot()', () => {
+    it('should getWorkerStatsSnapshot work', async () => {
+      let result = await env.agent.getWorkerStatsSnapshot();
+
+      assert(isEmpty(result));
+
+      await env.agent.setFunctionProfile([
+        {
+          name: 'aworker_echo',
+          runtime: 'aworker',
+          url: `file://${baselineDir}/aworker_echo`,
+          sourceFile: 'index.js',
+          signature: 'md5:234234',
+        },
+      ]);
+
+      await env.agent.invoke('aworker_echo', Buffer.from('foo'), {
+        method: 'POST',
+      });
+
+      result = await env.agent.getWorkerStatsSnapshot();
+
+      assert(!isEmpty(result));
     });
   });
 });

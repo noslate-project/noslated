@@ -161,6 +161,40 @@ export class NoslatedClient extends EventEmitter {
     this.platformEnvironmentVariables = envs;
   }
 
+  async checkControlPlaneHealth(): Promise<root.noslated.IPlaneHealthyResponse> {
+    try {
+      const client = this.controlPlaneClientManager.sample();
+
+      return await (client as any).checkHealth({});
+    } catch (error) {
+      return {
+        health: false,
+        name: 'ControlPlane',
+        reason: (error as Error).message,
+      };
+    }
+  }
+
+  async checkDataPlaneHealth(): Promise<root.noslated.IPlaneHealthyResponse> {
+    const client = this.dataPlaneClientManager.sample();
+
+    try {
+      return await (client as any).checkHealth({});
+    } catch (error) {
+      return {
+        health: false,
+        name: 'DataPlane',
+        reason: (error as Error).message,
+      };
+    }
+  }
+
+  async getWorkerStatsSnapshot(): Promise<root.noslated.control.IWorkerStatsSnapshotResponse> {
+    const client = this.controlPlaneClientManager.sample();
+
+    return (client as any).getWorkerStatsSnapshot({});
+  }
+
   /**
    * Get platform environment variables.
    */

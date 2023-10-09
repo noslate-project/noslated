@@ -290,4 +290,15 @@ export class DataPlaneImpl implements IDataPlane {
       path: this.dataFlowController.delegate.serverSockPath(),
     };
   }
+
+  async checkHealth(): Promise<root.noslated.IPlaneHealthyResponse> {
+    // TODO: add health check action
+    const breakerEnabled = this.dataFlowController.circuitBreaker.opened;
+
+    return {
+      name: 'DataPlane',
+      health: !breakerEnabled,
+      reason: breakerEnabled ? 'Circuit Breaker Enabled' : '',
+    };
+  }
 }
