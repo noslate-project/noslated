@@ -22,6 +22,8 @@ service DataPlane {
    * experimental
    */
   rpc setTracingCategories(SetTracingCategoriesRequest) returns (Empty);
+
+  rpc checkHealth(Empty) returns (PlaneHealthyResponse);
 }
 
 message UseInspectorRequest {

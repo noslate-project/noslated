@@ -116,4 +116,13 @@ export class HeraldImpl {
   async getWorkerStatsSnapshot(): Promise<root.noslated.control.IWorkerStatsSnapshotResponse> {
     return { brokers: this._stateManager.getSnapshot() };
   }
+
+  async checkHealth(): Promise<root.noslated.IPlaneHealthyResponse> {
+    // TODO: add health check action
+    return {
+      name: 'ControlPlane',
+      health: true,
+      reason: '',
+    };
+  }
 }

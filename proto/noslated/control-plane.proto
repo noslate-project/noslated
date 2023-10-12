@@ -8,6 +8,7 @@ service ControlPlane {
   rpc getFunctionProfile(Empty) returns (GetFunctionProfileResponse);
   rpc setPlatformEnvironmentVariables(SetPlatformEnvironmentVariablesRequest) returns (SetPlatformEnvironmentVariablesResponse);
   rpc getWorkerStatsSnapshot(Empty) returns (WorkerStatsSnapshotResponse);
+  rpc checkHealth(Empty) returns (PlaneHealthyResponse);
 }
 
 message WorkerAdditionalData {
