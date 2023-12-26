@@ -7,6 +7,7 @@ import { RawFunctionProfile } from '#self/lib/json/function_profile';
 import { ControlPlaneDependencyContext } from '../deps';
 import { FunctionProfileManager } from '#self/lib/function_profile';
 import { EventBus } from '#self/lib/event-bus';
+import { Clock } from '#self/lib/clock';
 
 /**
  * Data plane client manager
@@ -14,6 +15,7 @@ import { EventBus } from '#self/lib/event-bus';
 export class DataPlaneClientManager extends BasePlaneClientManager {
   private _functionProfile: FunctionProfileManager;
   private _eventBus: EventBus;
+  private _clock: Clock;
 
   constructor(ctx: ControlPlaneDependencyContext) {
     const config = ctx.getInstance('config');
@@ -24,6 +26,7 @@ export class DataPlaneClientManager extends BasePlaneClientManager {
     );
     this._functionProfile = ctx.getInstance('functionProfile');
     this._eventBus = ctx.getInstance('eventBus');
+    this._clock = ctx.getInstance('clock');
   }
 
   /**
@@ -32,7 +35,12 @@ export class DataPlaneClientManager extends BasePlaneClientManager {
    * @return {DataPlaneGuest} The created plane client.
    */
   _createPlaneClient(planeId: number): DataPlaneClient {
-    return new DataPlaneClient(this._eventBus, planeId, this.config);
+    return new DataPlaneClient(
+      this._eventBus,
+      planeId,
+      this.config,
+      this._clock
+    );
   }
 
   /**

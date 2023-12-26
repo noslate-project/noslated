@@ -31,6 +31,24 @@ export interface ProcessFunctionProfile {
      * Not applicable if `disposable` is true.
      */
     dispatchMode?: DispatchMode;
+    // 并发度滑动时间窗口大小，单位 ms，默认 60s
+    concurrencySlidingWindowSize?: number;
+    // 并发度滑动时间窗口分桶数，默认 6
+    concurrencySlidingBucketCount?: number;
+    // 指数移动平均平滑系数 (0,1]，默认 0.5
+    emaConcurrencyAlpha?: number;
+    // 并发度扩容水位阈值，默认 0.7
+    concurrencyExpandThreshold?: number;
+    // 并发度缩容水位阈值，默认 0.3
+    concurrencyShrinkThreshold?: number;
+    // 扩容冷却时间，单位 ms，默认 1s
+    expandCooldown?: number;
+    // 缩容冷却时间，单位 ms，默认 60s
+    shrinkCooldown?: number;
+    // 扩缩容后并发度水位，影响扩缩容操作数量
+    scaleFactor?: number;
+    // ema concurrency 小于该值则视为 0
+    precisionZeroThreshold?: number;
   };
   environments?: {
     key: string;

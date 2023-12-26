@@ -26,17 +26,18 @@ export class CapacityManager extends Base {
   private virtualMemoryPoolSize: number;
   private logger: Logger;
   private stateManager: StateManager;
+  private _useEmaScaling: boolean;
 
   constructor(ctx: ControlPlaneDependencyContext) {
     super();
     const config = ctx.getInstance('config');
     this.stateManager = ctx.getInstance('stateManager');
-
     this.virtualMemoryPoolSize = bytes(config.virtualMemoryPoolSize);
     this._shrinkRedundantTimes =
       config.controlPlane.workerRedundantVictimSpareTimes;
     this._scalingStage = config.controlPlane.capacityScalingStage;
     this.logger = loggers.get('capacity manager');
+    this._useEmaScaling = config.controlPlane.useEmaScaling;
   }
 
   /**
@@ -169,19 +170,85 @@ export class CapacityManager extends Base {
   }
 
   /**
-   * Evaluate the water level.
-   * @param {boolean} [expansionOnly] Whether do the expansion action only or not.
-   * @return {number} How much processes (workers) should be scale. (> 0 means expand, < 0 means shrink)
+   * 使用 ema concurrency 计算扩容水位
+   * TODO: 进一步可以引入历史指标趋势计算
+   * return 0; 什么都不做
+   * return >0; 扩容
+   * return <0; 缩容
+   * @returns
    */
-  evaluateWaterLevel(broker: Broker, expansionOnly = false) {
-    if (broker.disposable) {
-      return 0;
+  private evaluateWaterLevelByEMAConcurrency(broker: Broker) {
+    const { totalMaxActivateRequests } = broker;
+    const emaConcurrency = broker.getEMAConcurrency();
+    const waterLevel = emaConcurrency / totalMaxActivateRequests;
+    const requiredCapacity = emaConcurrency / broker.scaleFactor;
+    const requiredWorkers = Math.ceil(
+      requiredCapacity / broker.profile.worker.maxActivateRequests
+    );
+
+    let delta = 0;
+    const now = Date.now();
+
+    if (
+      waterLevel > broker.concurrencyExpandThreshold ||
+      broker.activeWorkerCount < broker.reservationCount
+    ) {
+      if (broker.isExpandCooldown(now)) {
+        this.logger.info(
+          '[Auto Scale] [%s] expand cooldown, ema concurrency is %d, water level is %d, required worker is %d, skip.',
+          broker.name,
+          emaConcurrency,
+          waterLevel,
+          requiredWorkers
+        );
+        return 0;
+      }
+      const workersToAdd =
+        Math.max(requiredWorkers, broker.reservationCount) -
+        broker.activeWorkerCount;
+
+      broker.resetExpandCooldownTime(now);
+
+      delta = workersToAdd;
+    } else if (
+      waterLevel < broker.concurrencyShrinkThreshold &&
+      broker.activeWorkerCount > requiredWorkers
+    ) {
+      if (broker.isShirnkCooldown(now)) {
+        this.logger.info(
+          '[Auto Scale] [%s] shrink cooldown, ema concurrency is %d, water level is %d, required worker is %d, skip.',
+          broker.name,
+          emaConcurrency,
+          waterLevel,
+          requiredWorkers
+        );
+        return 0;
+      }
+      const shouldRetainOneWorker =
+        broker.activeWorkerCount === 1 && emaConcurrency > 0;
+      const workersToRemove = shouldRetainOneWorker
+        ? 0
+        : broker.activeWorkerCount -
+          Math.max(requiredWorkers, broker.reservationCount);
+
+      broker.resetShrinkCooldownTime(now);
+
+      delta = -workersToRemove;
     }
 
-    if (!broker.activeWorkerCount) {
-      return 0;
-    }
+    this.logger.info(
+      '[Auto Scale] ema concurrency is %d, water level is %d, required workers is %d, plan scale delta %d workers %s. ',
+      emaConcurrency,
+      waterLevel,
+      requiredWorkers,
+      delta,
+      broker.name
+    );
 
+    return delta;
+  }
+
+  private evaluateWaterLevelLegacy(broker: Broker, expansionOnly: boolean) {
     const { totalMaxActivateRequests } = broker;
     const activeRequestCount = broker.getActiveRequestCount();
     const waterLevel = activeRequestCount / totalMaxActivateRequests;
@@ -261,6 +328,25 @@ export class CapacityManager extends Base {
         return Math.max(deltaInstanceCount, 0);
       }
     }
+  }
+
+  /**
+   * Evaluate the water level.
+   * @param {boolean} [expansionOnly] Whether do the expansion action only or not.
+   * @return {number} How much processes (workers) should be scale. (> 0 means expand, < 0 means shrink)
+   */
+  evaluateWaterLevel(broker: Broker, expansionOnly = false) {
+    if (broker.disposable) {
+      return 0;
+    }
+
+    if (!broker.activeWorkerCount) {
+      return 0;
+    }
+
+    return this._useEmaScaling
+      ? this.evaluateWaterLevelByEMAConcurrency(broker)
+      : this.evaluateWaterLevelLegacy(broker, expansionOnly);
   }
 
   assertExpandingAllowed(

@@ -116,7 +116,8 @@ export function resolveConfig(): Config {
   );
   const userFileConfig = loadConfig(process.env.NOSLATED_CONFIG_PATH);
   const envConfig = resolveEnvConfig();
-  return extend(
+
+  const finalConfig = extend(
     /** deep */ true,
     config,
     defaultConfig,
@@ -125,6 +126,13 @@ export function resolveConfig(): Config {
     userFileConfig,
     envConfig
   );
+
+  // 开启 useEmaScaling 时，强制 workerTrafficStatsPullingMs 为 1000ms，确保数据同步及时
+  if (finalConfig.controlPlane.useEmaScaling === true) {
+    finalConfig.controlPlane.workerTrafficStatsPullingMs = 1000;
+  }
+
+  return finalConfig;
 }
 
 export function dumpConfig(name: string, config: Config) {

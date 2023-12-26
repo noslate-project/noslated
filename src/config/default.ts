@@ -17,6 +17,7 @@ export default {
     workerTrafficStatsPullingMs: 10_000,
     workerRedundantVictimSpareTimes: 6,
     capacityScalingStage: 0.7,
+    useEmaScaling: false,
   },
 
   dataPlane: {

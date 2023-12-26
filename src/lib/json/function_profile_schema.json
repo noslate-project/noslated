@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-04/schema#",
   "title": "Noslated Function Metadata",
   "description": "the metadata schema for Functions in Noslated",
-  "type":"array",
+  "type": "array",
   "uniqueItems": true,
   "additionalItems": false,
   "definitions": {
@@ -34,10 +34,7 @@
             "description": "environment value"
           }
         },
-        "required": [
-          "key",
-          "value"
-        ]
+        "required": ["key", "value"]
       }
     },
     "worker": {
@@ -70,7 +67,7 @@
         "shrinkStrategy": {
           "type": "string",
           "description": "The shrink strategy",
-          "enum": [ "FILO", "FIFO", "LCC" ]
+          "enum": ["FILO", "FIFO", "LCC"]
         },
         "v8Options": {
           "type": "array",
@@ -98,6 +95,42 @@
           "type": "string",
           "description": "The dispatching mode",
           "enum": ["least-request-count", "round-robin"]
+        },
+        "concurrencySlidingWindowSize": {
+          "type": "number",
+          "description": "Slide window size for ema concurrency"
+        },
+        "concurrencySlidingBucketCount": {
+          "type": "number",
+          "description": "Slide window size time bucket count"
+        },
+        "emaConcurrencyAlpha": {
+          "type": "number",
+          "description": "EMA alpha"
+        },
+        "concurrencyExpandThreshold": {
+          "type": "number",
+          "description": "Concurrency threshold to expand"
+        },
+        "concurrencyShrinkThreshold": {
+          "type": "number",
+          "description": "Concurrency threshold to shrink"
+        },
+        "expandCooldown": {
+          "type": "number",
+          "description": "Expand cooldown time"
+        },
+        "shrinkCooldown": {
+          "type": "number",
+          "description": "Shrink cooldown time"
+        },
+        "scaleFactor": {
+          "type": "number",
+          "description": "Scale worker count factor"
+        },
+        "precisionZeroThreshold": {
+          "type": "number",
+          "description": "If ema concurrency small then this threshold, it will be set to zero"
         }
       },
       "additionalProperties": true
@@ -121,126 +154,111 @@
     }
   },
   "items": {
-    "oneOf": [{
-      "additionalProperties": false,
-      "type": "object",
-      "properties": {
-        "name": {
-          "type": "string",
-          "description": "the function name"
+    "oneOf": [
+      {
+        "additionalProperties": false,
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "the function name"
+          },
+          "runtime": {
+            "type": "string",
+            "enum": ["nodejs"],
+            "description": "the function runtime"
+          },
+          "url": {
+            "type": "string",
+            "description": "the code download URL",
+            "examples": [
+              "file:///home/admin/code/A",
+              "https://oss/foobar/A.zip"
+            ]
+          },
+          "signature": {
+            "type": "string",
+            "description": "the code sign",
+            "examples": ["md5:xxx"]
+          },
+          "handler": {
+            "type": "string",
+            "pattern": "^[^\\.]+\\.[^\\.]+$",
+            "description": "the function handler. e.g. foo.bar"
+          },
+          "initializer": {
+            "type": "string",
+            "pattern": "^[^\\.]+\\.[^\\.]+$",
+            "description": "the function initializer. e.g. foo.bar"
+          },
+          "rateLimit": {
+            "$ref": "#/definitions/rateLimit"
+          },
+          "resourceLimit": {
+            "$ref": "#/definitions/resourceLimit"
+          },
+          "worker": {
+            "$ref": "#/definitions/worker"
+          },
+          "environments": {
+            "$ref": "#/definitions/environments"
+          },
+          "namespace": {
+            "type": "string",
+            "description": "worker related resources namespace, eg. kv_storage"
+          }
         },
-        "runtime": {
-          "type": "string",
-          "enum": [ "nodejs" ],
-          "description": "the function runtime"
-        },
-        "url": {
-          "type": "string",
-          "description": "the code download URL",
-          "examples": [
-            "file:///home/admin/code/A",
-            "https://oss/foobar/A.zip"
-          ]
-        },
-        "signature": {
-          "type": "string",
-          "description": "the code sign",
-          "examples": [
-            "md5:xxx"
-          ]
-        },
-        "handler": {
-          "type": "string",
-          "pattern": "^[^\\.]+\\.[^\\.]+$",
-          "description": "the function handler. e.g. foo.bar"
-        },
-        "initializer": {
-          "type": "string",
-          "pattern": "^[^\\.]+\\.[^\\.]+$",
-          "description": "the function initializer. e.g. foo.bar"
-        },
-        "rateLimit": {
-          "$ref": "#/definitions/rateLimit"
-        },
-        "resourceLimit": {
-          "$ref": "#/definitions/resourceLimit"
-        },
-        "worker": {
-          "$ref": "#/definitions/worker"
-        },
-        "environments": {
-          "$ref": "#/definitions/environments"
-        },
-        "namespace": {
-          "type": "string",
-          "description": "worker related resources namespace, eg. kv_storage"
-        }
+        "required": ["name", "runtime", "url", "signature", "handler"]
       },
-      "required": [
-        "name",
-        "runtime",
-        "url",
-        "signature",
-        "handler"
-      ]
-    }, {
-      "additionalProperties": false,
-      "type": "object",
-      "properties": {
-        "name": {
-          "type": "string",
-          "description": "the function name"
+      {
+        "additionalProperties": false,
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "the function name"
+          },
+          "runtime": {
+            "type": "string",
+            "enum": ["aworker"],
+            "description": "the function runtime"
+          },
+          "url": {
+            "type": "string",
+            "description": "the code download URL",
+            "examples": [
+              "file:///home/admin/code/A",
+              "https://oss/foobar/A.zip"
+            ]
+          },
+          "signature": {
+            "type": "string",
+            "description": "the code sign",
+            "examples": ["md5:xxx"]
+          },
+          "sourceFile": {
+            "type": "string",
+            "description": "the source code file of aworker.js function"
+          },
+          "rateLimit": {
+            "$ref": "#/definitions/rateLimit"
+          },
+          "resourceLimit": {
+            "$ref": "#/definitions/resourceLimit"
+          },
+          "worker": {
+            "$ref": "#/definitions/worker"
+          },
+          "environments": {
+            "$ref": "#/definitions/environments"
+          },
+          "namespace": {
+            "type": "string",
+            "description": "worker related resources namespace, eg. kv_storage"
+          }
         },
-        "runtime": {
-          "type": "string",
-          "enum": [
-            "aworker"
-          ],
-          "description": "the function runtime"
-        },
-        "url": {
-          "type": "string",
-          "description": "the code download URL",
-          "examples": [
-            "file:///home/admin/code/A",
-            "https://oss/foobar/A.zip"
-          ]
-        },
-        "signature": {
-          "type": "string",
-          "description": "the code sign",
-          "examples": [
-            "md5:xxx"
-          ]
-        },
-        "sourceFile": {
-          "type": "string",
-          "description": "the source code file of aworker.js function"
-        },
-        "rateLimit": {
-          "$ref": "#/definitions/rateLimit"
-        },
-        "resourceLimit": {
-          "$ref": "#/definitions/resourceLimit"
-        },
-        "worker": {
-          "$ref": "#/definitions/worker"
-        },
-        "environments": {
-          "$ref": "#/definitions/environments"
-        },
-        "namespace": {
-          "type": "string",
-          "description": "worker related resources namespace, eg. kv_storage"
-        }
-      },
-      "required": [
-        "name",
-        "runtime",
-        "url",
-        "signature",
-        "sourceFile"
-      ]
-    }]
+        "required": ["name", "runtime", "url", "signature", "sourceFile"]
+      }
+    ]
   }
 }

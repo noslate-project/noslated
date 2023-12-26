@@ -32,6 +32,8 @@ export class StateManager extends Base {
 
   private _gcWorkers: Set<Worker> = new Set();
 
+  private _useEmaScaling: boolean;
+
   constructor(ctx: ControlPlaneDependencyContext) {
     super();
     this._logger = loggers.get('state manager');
@@ -62,6 +64,7 @@ export class StateManager extends Base {
     });
 
     this._statLogger = new StatLogger(this._config);
+    this._useEmaScaling = this._config.controlPlane.useEmaScaling;
   }
 
   _updateWorkerStatusByReport(eve: WorkerStatusReportEvent) {
@@ -137,6 +140,8 @@ export class StateManager extends Base {
         }`;
         worker.sync(allSyncData.get(name) ?? null);
       }
+
+      broker.recalculateConcurrency();
     }
 
     allSyncData.clear();
@@ -154,7 +159,7 @@ export class StateManager extends Base {
     if (broker) return broker;
     const profile = this._functionProfile.getProfile(functionName);
     if (profile == null) return null;
-    broker = new Broker(profile, isInspector);
+    broker = new Broker(profile, isInspector, this._useEmaScaling);
     this._brokers.set(Broker.getKey(functionName, isInspector), broker);
     return broker;
   }

@@ -9,6 +9,7 @@ import {
   WorkerStatusReportEvent,
   WorkerTrafficStatsEvent,
 } from '../events';
+import { Clock } from '#self/lib/clock';
 
 export class DataPlaneSubscription {
   static SubscriptionNames = ['requestQueueing', 'containerStatusReport'];
@@ -21,7 +22,8 @@ export class DataPlaneSubscription {
   constructor(
     private eventBus: EventBus,
     private client: DataPlaneClient,
-    private pullingInterval: number
+    private pullingInterval: number,
+    private _clock: Clock
   ) {
     this.client = client;
     this.logger = loggers.get('data plane subscription');
@@ -90,10 +92,10 @@ export class DataPlaneSubscription {
         if (this.closed) {
           return;
         }
-        this.trafficStatsTimeout = setTimeout(
+        this.trafficStatsTimeout = this._clock.setTimeout(
           this._onWorkerTrafficStatsTimeout,
           this.pullingInterval
-        );
+        ) as NodeJS.Timeout;
       });
   };
 
@@ -114,10 +116,10 @@ export class DataPlaneSubscription {
         }
       });
     }
-    this.trafficStatsTimeout = setTimeout(
+    this.trafficStatsTimeout = this._clock.setTimeout(
       this._onWorkerTrafficStatsTimeout,
       this.pullingInterval
-    );
+    ) as NodeJS.Timeout;
   }
 
   unsubscribe() {
