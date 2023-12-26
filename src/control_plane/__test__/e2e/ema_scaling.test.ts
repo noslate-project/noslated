@@ -9,7 +9,7 @@ import { DefaultEnvironment } from '#self/test/env/environment';
  */
 describe(common.testName(__filename), function () {
   // Debug version of Node.js may take longer time to bootstrap.
-  this.timeout(110_000);
+  this.timeout(30_000);
 
   const env = new DefaultEnvironment({
     createTestClock: true,
@@ -40,12 +40,14 @@ describe(common.testName(__filename), function () {
       },
     ]);
 
-    const sequence = generateWeightedSequence(10, WEIGHTS);
+    const sequence = [1, 1, 1, 10, 1, 6, 5, 0, 0, 0];
 
     for (const concurrency of sequence) {
       await makeConcurrencyRequest('aworker_echo_ema', concurrency, env);
       await sleep(1000);
     }
+
+    await sleep(1000);
   });
 });
 
