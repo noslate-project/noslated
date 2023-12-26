@@ -162,7 +162,7 @@ export class NoslatedClient extends EventEmitter {
   }
 
   async checkControlPlaneHealth(
-    timeout: number = 1000
+    timeout = 1000
   ): Promise<root.noslated.IPlaneHealthyResponse> {
     try {
       const client = this.controlPlaneClientManager.sample();
@@ -181,7 +181,7 @@ export class NoslatedClient extends EventEmitter {
   }
 
   async checkDataPlaneHealth(
-    timeout: number = 1000
+    timeout = 1000
   ): Promise<root.noslated.IPlaneHealthyResponse> {
     const client = this.dataPlaneClientManager.sample();
 
