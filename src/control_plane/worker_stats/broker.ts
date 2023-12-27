@@ -134,6 +134,16 @@ class Broker {
     return a;
   }
 
+  getAccumulatedRequestCount() {
+    let a = 0;
+    for (const worker of this.workers.values()) {
+      if (!worker.isActive()) continue;
+      a += worker.data?.accumulatedRequestCount || 0;
+    }
+
+    return a;
+  }
+
   /**
    * Get worker.
    * @param processName The process name (worker name).

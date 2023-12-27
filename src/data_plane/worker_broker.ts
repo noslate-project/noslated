@@ -89,6 +89,7 @@ export class PendingRequest extends EventEmitter {
 
 export class Worker extends EventEmitter {
   activeRequestCount: number;
+  accumulatedRequestCount: number;
   private logger: PrefixedLogger;
   trafficOff: boolean;
 
@@ -105,6 +106,7 @@ export class Worker extends EventEmitter {
   ) {
     super();
     this.activeRequestCount = 0;
+    this.accumulatedRequestCount = 0;
     this.logger = new PrefixedLogger('worker', this.name);
 
     // + if `trafficOff` is `false`, then traffic may in;
@@ -140,6 +142,10 @@ export class Worker extends EventEmitter {
     return promise;
   }
 
+  zeroAccumulatedRequestCount() {
+    this.accumulatedRequestCount = 0;
+  }
+
   /**
    * Pipe input stream to worker process and get response.
    */
@@ -172,6 +178,7 @@ export class Worker extends EventEmitter {
     }
 
     this.activeRequestCount++;
+    this.accumulatedRequestCount++;
     this.logger.info(
       '[%s] Dispatching request, activeRequestCount: %s, wait: %sms.',
       requestId,
@@ -473,10 +480,16 @@ export class WorkerBroker extends Base implements DispatcherDelegate {
     return {
       functionName: this.name,
       inspector: this.options.inspect === true,
-      workers: Array.from(this._workerMap.values()).map(item => ({
-        name: item.name,
-        activeRequestCount: item.worker?.activeRequestCount ?? 0,
-      })),
+      workers: Array.from(this._workerMap.values()).map(item => {
+        const data = {
+          name: item.name,
+          activeRequestCount: item.worker?.activeRequestCount ?? 0,
+          accumulatedRequestCount: item.worker?.accumulatedRequestCount ?? 0,
+        };
+        // 读出累计数据后直接清空
+        item.worker?.zeroAccumulatedRequestCount();
+        return data;
+      }),
     };
   }
 

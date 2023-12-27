@@ -232,6 +232,16 @@ export class CapacityManager extends Base {
           ) {
             deltaInstance = broker.activeWorkerCount - broker.reservationCount;
           }
+          
+          // 如果周期内有请求，则不缩容到 0，改为缩容到 1
+          if (broker.getAccumulatedRequestCount() > 0 && broker.activeWorkerCount - deltaInstance === 0) {
+            broker.redundantTimes = 0;
+            if (broker.activeWorkerCount > 1) {
+              return 1 - broker.activeWorkerCount;
+            } else {
+              return 0;
+            }
+          }
 
           broker.redundantTimes = 0;
           return -deltaInstance;
