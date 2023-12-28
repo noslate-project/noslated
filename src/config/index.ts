@@ -114,6 +114,12 @@ export interface ControlPlaneConfig {
    * Default: 0.7
    */
   capacityScalingStage: number;
+  /**
+   * 使用基于时间窗口的移动加权平均算法进行扩容
+   * 默认为 false
+   * 此配置开启会强制设置 workerTrafficStatsPullingMs 为 1000ms，确保数据同步及时
+   */
+  useEmaScaling: boolean;
 }
 
 export interface DatePlaneConfig {

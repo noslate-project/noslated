@@ -3,7 +3,8 @@ import {
   RawWithDefaultsFunctionProfile,
   ReadonlyProfile,
 } from '#self/lib/json/function_profile';
-import { Worker, WorkerMetadata, WorkerStats } from './worker';
+import { Worker, WorkerMetadata } from './worker';
+import { EMAConcurrency } from '#self/lib/ema_concurrency';
 
 class Broker {
   redundantTimes: number;
@@ -16,15 +17,33 @@ class Broker {
 
   private _initiatingWorkerCount = 0;
   private _activeWorkerCount = 0;
+  private _emaConcurrency: EMAConcurrency | null = null;
+  private _lastExpandTime: number;
+  private _lastShrinkTime: number;
 
-  constructor(profile: RawWithDefaultsFunctionProfile, isInspector: boolean) {
+  constructor(
+    profile: RawWithDefaultsFunctionProfile,
+    isInspector: boolean,
+    private _useEmaScaling: boolean
+  ) {
     this.#profile = profile;
     this.name = this.#profile.name;
     this.isInspector = !!isInspector;
 
+    if (this._useEmaScaling) {
+      this._emaConcurrency = new EMAConcurrency(
+        this.concurrencySlidingWindowSize,
+        this.concurrencySlidingBucketCount,
+        this.emaConcurrencyAlpha,
+        this.precisionZeroThreshold
+      );
+    }
+
     this.workers = new Map();
 
     this.redundantTimes = 0;
+    this._lastExpandTime = 0;
+    this._lastShrinkTime = 0;
   }
 
   get runtime() {
@@ -53,6 +72,58 @@ class Broker {
 
   get profile(): ReadonlyProfile {
     return this.#profile;
+  }
+
+  get concurrencySlidingWindowSize() {
+    return this.#profile.worker.concurrencySlidingWindowSize || 60 * 1000;
+  }
+
+  get concurrencySlidingBucketCount() {
+    return this.#profile.worker.concurrencySlidingBucketCount || 6;
+  }
+
+  get emaConcurrencyAlpha() {
+    return this.#profile.worker.emaConcurrencyAlpha || 0.5;
+  }
+
+  get concurrencyExpandThreshold() {
+    return this.#profile.worker.concurrencyExpandThreshold || 0.7;
+  }
+
+  get concurrencyShrinkThreshold() {
+    return this.#profile.worker.concurrencyShrinkThreshold || 0.3;
+  }
+
+  get expandCooldown() {
+    return this.#profile.worker.expandCooldown || 1000;
+  }
+
+  get shrinkCooldown() {
+    return this.#profile.worker.shrinkCooldown || 60 * 1000;
+  }
+
+  get scaleFactor() {
+    return this.#profile.worker.scaleFactor || 0.5;
+  }
+
+  get precisionZeroThreshold() {
+    return this.#profile.worker.precisionZeroThreshold || 0.01;
+  }
+
+  isExpandCooldown(now: number) {
+    return now - this._lastExpandTime < this.expandCooldown;
+  }
+
+  isShirnkCooldown(now: number) {
+    return now - this._lastShrinkTime < this.shrinkCooldown;
+  }
+
+  resetExpandCooldownTime(now: number) {
+    this._lastExpandTime = now;
+  }
+
+  resetShrinkCooldownTime(now: number) {
+    this._lastShrinkTime = now;
   }
 
   /**
@@ -132,6 +203,20 @@ class Broker {
     }
 
     return a;
+  }
+
+  recalculateConcurrency() {
+    if (!this._useEmaScaling) return;
+
+    const current = this.getActiveRequestCount();
+
+    this._emaConcurrency!.recalculate(current);
+  }
+
+  getEMAConcurrency() {
+    if (!this._useEmaScaling) return this.getActiveRequestCount();
+
+    return this._emaConcurrency!.concurrency();
   }
 
   /**

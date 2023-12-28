@@ -5,6 +5,7 @@ import { BasePlaneClient } from '#self/lib/base_plane_client';
 import { Config } from '#self/config';
 import * as root from '#self/proto/root';
 import { EventBus } from '#self/lib/event-bus';
+import { Clock } from '#self/lib/clock';
 
 // @ts-ignore protobuf's proprietary EventEmitter
 export interface DataPlaneClient extends root.noslated.data.DataPlane {} // eslint-disable-line @typescript-eslint/no-empty-interface
@@ -12,7 +13,12 @@ export class DataPlaneClient extends BasePlaneClient {
   #serverSockPath: string;
   subscription: Subscription | null;
 
-  constructor(private eventBus: EventBus, planeId: number, config: Config) {
+  constructor(
+    private eventBus: EventBus,
+    planeId: number,
+    config: Config,
+    private _clock: Clock
+  ) {
     const dataPlaneSockPath = path.join(
       config.dirs.noslatedSock,
       `dp-${planeId}.sock`
@@ -30,7 +36,8 @@ export class DataPlaneClient extends BasePlaneClient {
     this.subscription = new Subscription(
       this.eventBus,
       this,
-      this.config.controlPlane.workerTrafficStatsPullingMs
+      this.config.controlPlane.workerTrafficStatsPullingMs,
+      this._clock
     );
     this.subscription.subscribe();
 

@@ -38,6 +38,7 @@ export class TestEnvironment extends MochaEnvironment {
     this.control = new ControlPlane({
       clock: this.clock,
       containerManager: this.containerManager,
+      config: this.options?.config,
     });
 
     await this.control.ready();

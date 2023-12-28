@@ -64,6 +64,15 @@ message FunctionProfileWorker {
   bool disableSeed = 10;
   bool disableRequestQueue = 11;
   string dispatchMode = 12;
+  int32 concurrencySlidingWindowSize = 13;
+  int32 concurrencySlidingBucketCount = 14;
+  float emaConcurrencyAlpha = 15;
+  float concurrencyExpandThreshold = 16;
+  float concurrencyShrinkThreshold = 17;
+  int32 expandCooldown = 18;
+  int32 shrinkCooldown = 19;
+  float scaleFactor = 20;
+  float precisionZeroThreshold = 21;
 }
 
 message PlaneHealthyResponse {
