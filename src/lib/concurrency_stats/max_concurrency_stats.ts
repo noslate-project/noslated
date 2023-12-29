@@ -2,8 +2,8 @@ import { ILogger } from '@midwayjs/logger';
 import { ConcurrencyStats } from './concurrency_stats';
 
 export class MaxConcurrencyStats extends ConcurrencyStats {
-  private currentConcurrency: number = 0;
-  private maxConcurrency: number = 0;
+  private currentConcurrency = 0;
+  private maxConcurrency = 0;
 
   public requestStarted(): void {
     this.currentConcurrency += 1;
