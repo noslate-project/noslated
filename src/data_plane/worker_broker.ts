@@ -19,6 +19,10 @@ import { Dispatcher, DispatcherDelegate } from './dispatcher/dispatcher';
 import { DisposableDispatcher } from './dispatcher/disposable';
 import { LeastRequestCountDispatcher } from './dispatcher/least_request_count';
 import { RoundRobinDispatcher } from './dispatcher/round_robin';
+import {
+  ConcurrencyStatsFactory,
+  ConcurrencyStats,
+} from '#self/lib/concurrency_stats/index';
 
 enum CredentialStatus {
   PENDING = 1,
@@ -253,6 +257,8 @@ export class WorkerBroker extends Base implements DispatcherDelegate {
   private _workerMap: Map<string, WorkerItem>;
   private tokenBucket: TokenBucket | undefined = undefined;
 
+  public concurrencyStats: ConcurrencyStats;
+
   /**
    * TODO(chengzhong.wcz): dependency review;
    */
@@ -287,6 +293,10 @@ export class WorkerBroker extends Base implements DispatcherDelegate {
     if (rateLimit) {
       this.tokenBucket = new TokenBucket(this.rateLimit as TokenBucketConfig);
     }
+
+    this.concurrencyStats = ConcurrencyStatsFactory.factory(
+      this._profile.worker.concurrencyStatsMode
+    );
   }
 
   get workerCount() {
@@ -477,6 +487,7 @@ export class WorkerBroker extends Base implements DispatcherDelegate {
         name: item.name,
         activeRequestCount: item.worker?.activeRequestCount ?? 0,
       })),
+      concurrency: this.concurrencyStats.getConcurrency(),
     };
   }
 

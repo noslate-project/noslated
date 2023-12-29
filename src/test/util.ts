@@ -228,3 +228,10 @@ export async function spawn(
     stderr,
   };
 }
+
+export function assertCloseTo(actual: number, expected: number, delta: number) {
+  assert.ok(
+    Math.abs(expected - actual) <= delta,
+    `The value ${actual} is not within ${delta} of ${expected}`
+  );
+}

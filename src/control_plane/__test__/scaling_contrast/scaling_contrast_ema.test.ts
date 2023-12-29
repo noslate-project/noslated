@@ -133,6 +133,8 @@ function generateBrokerData(
         activeRequestCount,
       },
     ],
+    // instant concurrency stats concurrency = sum(worker.activeRequestCount)
+    concurrency: activeRequestCount,
   };
 }
 

@@ -60,6 +60,7 @@ describe(common.testName(__filename), () => {
         activeRequestCount: 6,
       },
     ],
+    concurrency: 7,
   };
 
   const brokerData2: DeepRequired<noslated.data.IBrokerStats> = {
@@ -79,6 +80,7 @@ describe(common.testName(__filename), () => {
         activeRequestCount: 4,
       },
     ],
+    concurrency: 8,
   };
 
   describe('#autoScale()', () => {

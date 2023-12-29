@@ -450,6 +450,7 @@ export class DataFlowController extends BaseOf(EventEmitter) {
     let triggerError: ErrorWithInvokeDetail | undefined = undefined;
 
     try {
+      broker.concurrencyStats.requestStarted();
       resp = await broker.invoke(inputStream, metadata);
       return resp;
     } catch (error: unknown) {
@@ -457,6 +458,7 @@ export class DataFlowController extends BaseOf(EventEmitter) {
 
       throw error;
     } finally {
+      broker.concurrencyStats.requestFinished();
       this.requestLog(
         triggerError,
         resp,

@@ -51,6 +51,7 @@ message BrokerStats {
   string functionName = 1;
   bool inspector = 2;
   repeated WorkerStats workers = 3;
+  float concurrency = 4;
 }
 
 message WorkerTrafficStatsResponse {

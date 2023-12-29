@@ -131,6 +131,11 @@
         "precisionZeroThreshold": {
           "type": "number",
           "description": "If ema concurrency small then this threshold, it will be set to zero"
+        },
+        "concurrencyStatsMode": {
+          "type": "string",
+          "description": "The concurrency stats mode, default is instant",
+          "enum": ["instant", "periodic_max", "periodic_avg"]
         }
       },
       "additionalProperties": true

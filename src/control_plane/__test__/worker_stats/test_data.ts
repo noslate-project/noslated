@@ -44,6 +44,7 @@ export const brokerData: DeepRequired<noslated.data.IBrokerStats>[] = [
         activeRequestCount: 1,
       },
     ],
+    concurrency: 1,
   },
   {
     functionName: 'func',
@@ -55,5 +56,6 @@ export const brokerData: DeepRequired<noslated.data.IBrokerStats>[] = [
         activeRequestCount: 6,
       },
     ],
+    concurrency: 6,
   },
 ];
