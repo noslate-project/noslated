@@ -49,6 +49,8 @@ export interface ProcessFunctionProfile {
     scaleFactor?: number;
     // ema concurrency 小于该值则视为 0
     precisionZeroThreshold?: number;
+    // worker 并发度统计算法
+    concurrencyStatsMode?: ConcurrencyStatsMode;
   };
   environments?: {
     key: string;
@@ -94,3 +96,12 @@ export type RawWithDefaultsFunctionProfile = DeepRequired<
   Pick<RawFunctionProfile, OptionalKeys> &
   RawFunctionProfile;
 export type ReadonlyProfile = DeepReadonly<RawWithDefaultsFunctionProfile>;
+
+export enum ConcurrencyStatsMode {
+  // 瞬时值，默认行为，和原来保持一致
+  INSTANT = 'instant',
+  // 拉取区间内最大瞬时值
+  PERIODIC_MAX = 'periodic_max',
+  // 拉取区间内平均值，使用 QPS * RT 计算
+  PERIODIC_AVG = 'periodic_avg',
+}

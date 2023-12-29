@@ -205,12 +205,10 @@ class Broker {
     return a;
   }
 
-  recalculateConcurrency() {
+  recalculateConcurrency(concurrency: number) {
     if (!this._useEmaScaling) return;
 
-    const current = this.getActiveRequestCount();
-
-    this._emaConcurrency!.recalculate(current);
+    this._emaConcurrency!.recalculate(concurrency);
   }
 
   getEMAConcurrency() {

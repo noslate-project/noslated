@@ -73,6 +73,7 @@ message FunctionProfileWorker {
   int32 shrinkCooldown = 19;
   float scaleFactor = 20;
   float precisionZeroThreshold = 21;
+  string concurrencyStatsMode = 22;
 }
 
 message PlaneHealthyResponse {

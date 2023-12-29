@@ -124,26 +124,31 @@ export class StateManager extends Base {
 
   async _syncBrokerData(data: root.noslated.data.IBrokerStats[]) {
     const allSyncData = new Map<string, WorkerStats>();
+    const concurrencyStats = new Map<string, number>();
+
     for (const item of data) {
+      const borkerKey = Broker.getKey(item.functionName!, item.inspector!);
+      concurrencyStats.set(borkerKey, item.concurrency!);
+
       for (const workerData of item.workers ?? []) {
-        const name = `${Broker.getKey(item.functionName!, item.inspector!)}#${
-          workerData.name
-        }`;
+        const name = `${borkerKey}#${workerData.name}`;
         allSyncData.set(name, workerData);
       }
     }
 
     for (const broker of this.brokers()) {
+      const brokerKey = Broker.getKey(broker.name, broker.isInspector);
+
       for (const worker of broker.workers.values()) {
-        const name = `${Broker.getKey(broker.name, broker.isInspector)}#${
-          worker.name
-        }`;
+        const name = `${brokerKey}#${worker.name}`;
         worker.sync(allSyncData.get(name) ?? null);
       }
 
-      broker.recalculateConcurrency();
+      const concurrency = concurrencyStats.get(brokerKey) ?? 0;
+      broker.recalculateConcurrency(concurrency);
     }
 
+    concurrencyStats.clear();
     allSyncData.clear();
   }
 

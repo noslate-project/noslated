@@ -20,7 +20,7 @@ describe(testName(__filename), () => {
     });
 
     it('should check control plane health with timeout work', async () => {
-      const res = await env.agent.checkControlPlaneHealth(1);
+      const res = await env.agent.checkControlPlaneHealth(0);
 
       assert.strictEqual(res.name, 'ControlPlane');
       assert(!res.health);
@@ -35,7 +35,7 @@ describe(testName(__filename), () => {
     });
 
     it('should check data plane health with timeout work', async () => {
-      const res = await env.agent.checkDataPlaneHealth(1);
+      const res = await env.agent.checkDataPlaneHealth(0);
 
       assert.strictEqual(res.name, 'DataPlane');
       assert(!res.health);

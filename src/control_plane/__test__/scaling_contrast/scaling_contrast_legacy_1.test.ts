@@ -92,6 +92,7 @@ function generateBrokerData(
         activeRequestCount,
       },
     ],
+    concurrency: activeRequestCount,
   };
 }
 
