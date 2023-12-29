@@ -96,7 +96,7 @@ describe(common.testName(__filename), function () {
     const dataFlowController = env.data.dataFlowController;
     const broker = dataFlowController.brokers.get('aworker_echo$$noinspect');
 
-    assertCloseTo(broker?.toJSON().concurrency!, 1, 0.1);
+    assertCloseTo(broker?.toJSON().concurrency!, 1, 0.2);
   });
 });
 

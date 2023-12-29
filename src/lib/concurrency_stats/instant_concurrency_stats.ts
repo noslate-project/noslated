@@ -4,8 +4,9 @@ import { ConcurrencyStats } from './concurrency_stats';
 export class InstantConcurrencyStats extends ConcurrencyStats {
   private currentConcurrency = 0;
 
-  public requestStarted(): void {
+  public requestStarted(): number {
     this.currentConcurrency += 1;
+    return 0;
   }
 
   public requestFinished(): void {

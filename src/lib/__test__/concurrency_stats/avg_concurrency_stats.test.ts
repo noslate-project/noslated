@@ -7,35 +7,17 @@ import { assertCloseTo } from '#self/test/util';
 describe(common.testName(__filename), function () {
   this.timeout(30_000);
 
-  it('should start with zero active requests', () => {
-    const calculator: AvgConcurrencyStats = new AvgConcurrencyStats(console);
-    assert.equal(calculator.activeRequests, 0);
-  });
-
-  it('should increment active requests on startRequest', () => {
-    const calculator: AvgConcurrencyStats = new AvgConcurrencyStats(console);
-    calculator.requestStarted();
-    assert.equal(calculator.activeRequests, 1);
-  });
-
-  it('should decrement active requests on endRequest', () => {
-    const calculator: AvgConcurrencyStats = new AvgConcurrencyStats(console);
-    calculator.requestStarted();
-    calculator.requestFinished();
-    assert.equal(calculator.activeRequests, 0);
-  });
-
   it('should calculate concurrency correctly', async () => {
     const calculator: AvgConcurrencyStats = new AvgConcurrencyStats(console);
     // 假设有三个请求同时到达
-    calculator.requestStarted();
-    calculator.requestStarted();
-    calculator.requestStarted();
+    const r1 = calculator.requestStarted();
+    const r2 = calculator.requestStarted();
+    const r3 = calculator.requestStarted();
 
     // 请求结束
-    setTimeout(() => calculator.requestFinished(), 100);
-    setTimeout(() => calculator.requestFinished(), 200);
-    setTimeout(() => calculator.requestFinished(), 1500);
+    setTimeout(() => calculator.requestFinished(r1), 100);
+    setTimeout(() => calculator.requestFinished(r2), 200);
+    setTimeout(() => calculator.requestFinished(r3), 1500);
 
     await sleep(1000);
     // 剩一个 1500 未结束

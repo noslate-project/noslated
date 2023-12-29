@@ -3,9 +3,9 @@ import { ILogger } from '@midwayjs/logger';
 export abstract class ConcurrencyStats {
   constructor(protected logger: ILogger) {}
 
-  abstract requestStarted(): void;
+  abstract requestStarted(): number;
 
-  abstract requestFinished(): void;
+  abstract requestFinished(id?: number): void;
 
   abstract getConcurrency(): number;
 }

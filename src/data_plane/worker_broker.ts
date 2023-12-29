@@ -598,6 +598,7 @@ export class WorkerBroker extends Base implements DispatcherDelegate {
     inputStream: Readable | Buffer,
     metadata: Metadata
   ): Promise<TriggerResponse> {
+    const id = this.concurrencyStats.requestStarted();
     await this.ready();
     const acquiredToken = this.tokenBucket?.acquire() ?? true;
     if (!acquiredToken) {
@@ -606,7 +607,9 @@ export class WorkerBroker extends Base implements DispatcherDelegate {
       });
     }
 
-    return this._dispatcher.invoke(inputStream, metadata);
+    return this._dispatcher.invoke(inputStream, metadata).finally(() => {
+      this.concurrencyStats.requestFinished(id);
+    });
   }
 
   /**

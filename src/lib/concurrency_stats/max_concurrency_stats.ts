@@ -5,12 +5,13 @@ export class MaxConcurrencyStats extends ConcurrencyStats {
   private currentConcurrency = 0;
   private maxConcurrency = 0;
 
-  public requestStarted(): void {
+  public requestStarted(): number {
     this.currentConcurrency += 1;
     this.maxConcurrency = Math.max(
       this.maxConcurrency,
       this.currentConcurrency
     );
+    return 0;
   }
 
   public requestFinished(): void {
