@@ -7,10 +7,6 @@ export type Sink = Pick<
   'debug' | 'info' | 'error' | 'warn' | 'write'
 > & { close?: () => void };
 
-interface LoggerMeta {
-  label: string;
-}
-
 const noopSink: Sink = (() => {
   const log = () => {};
   const logger: any = {
@@ -35,6 +31,11 @@ function getPrettySink(filename: string) {
       enableError: false,
       // keep after rotater
       maxFiles: 3,
+      transports: {
+        file: {
+          bufferWrite: true,
+        },
+      },
     }
   );
   return midwayLogger;
@@ -45,14 +46,10 @@ interface Logger extends Sink {}
 class Logger {
   category: string;
   sink!: Sink;
-  meta: LoggerMeta;
 
   constructor(category: string, sink: Sink, level: LogLevels) {
     this.category = category;
     this.setSink(sink, level);
-    this.meta = {
-      label: this.category,
-    };
   }
 
   setSink(sink: Sink, level: LogLevels = 'debug') {
@@ -64,9 +61,7 @@ class Logger {
         continue;
       }
       this[lvl] = (...args) => {
-        this.sink[lvl](...args, {
-          label: this.meta.label,
-        });
+        this.sink[lvl](`[${this.category}] ${args.join(' ')}`);
       };
     }
   }
