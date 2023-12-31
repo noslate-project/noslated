@@ -2,16 +2,17 @@
 
 'use strict';
 
-const Logger = require('#self/lib/logger');
+const { LoggerFactory } = require('#self/lib/logger_factory');
 const { DataPlane } = require('#self/data_plane/index');
 
 (async function() {
-  Logger.setSink(Logger.getPrettySink('data_plane.log'));
+  LoggerFactory.init('data_plane.log');
   const dataPlane = new DataPlane();
   await dataPlane.ready();
 
   const onSignal = async () => {
     await dataPlane.close();
+    LoggerFactory.close();
     process.exit(0);
   };
 
@@ -19,5 +20,6 @@ const { DataPlane } = require('#self/data_plane/index');
   process.on('SIGTERM', onSignal);
 })().catch(err => {
   console.error(err);
+  LoggerFactory.close();
   process.exit(1);
 });

@@ -3,6 +3,7 @@ import { ControlPlaneClient } from './control_plane_client';
 import loggers from '#self/lib/logger';
 import { NoslatedClient } from './client';
 import { Config } from '#self/config';
+import { LoggerFactory } from '#self/lib/logger_factory';
 
 /**
  * Control plane client manager
@@ -17,7 +18,7 @@ export class ControlPlaneClientManager extends BasePlaneClientManager {
     super(
       config,
       config.plane.controlPlaneCount,
-      loggers.get('control plane client manager')
+      LoggerFactory.prefix('control plane client manager')
     );
   }
 

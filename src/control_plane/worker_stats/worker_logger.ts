@@ -1,20 +1,19 @@
-import loggers from '#self/lib/logger';
 import { WorkerMetadata } from './worker';
-import { Logger } from '#self/lib/loggers';
 import {
   WorkerStatus,
   WorkerStatusReport,
   ControlPlaneEvent,
   TurfStatusEvent,
 } from '#self/lib/constants';
+import { LoggerFactory, PrefixedLogger } from '#self/lib/logger_factory';
 
 export class WorkerLogger {
-  private logger: Logger;
+  private logger: PrefixedLogger;
   private readonly workerMetadata: WorkerMetadata;
 
   constructor(_workerMetadata: WorkerMetadata) {
     this.workerMetadata = _workerMetadata;
-    this.logger = loggers.get('worker');
+    this.logger = LoggerFactory.prefix('worker');
   }
 
   start(cost: number) {

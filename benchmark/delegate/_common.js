@@ -131,9 +131,9 @@ function createDelegate(filename, options, callback) {
   return main;
 
   function main(setup) {
-    require('#self/lib/logger').setSink(
-      require('#self/lib/logger').getPrettySink('benchmark.log')
-    );
+    const { LoggerFactory } = require('#self/lib/logger_factory');
+    LoggerFactory.init('benchmark.log');
+
     const {
       NoslatedDelegateService: DelegateService,
     } = require('#self/delegate/index');
@@ -207,6 +207,7 @@ function createDelegate(filename, options, callback) {
     }
 
     function end() {
+      LoggerFactory.close();
       delegate.resetPeer(credentials);
       cp.removeAllListeners('exit');
       cp.kill();

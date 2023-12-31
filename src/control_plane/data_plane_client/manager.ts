@@ -1,13 +1,13 @@
 import * as _ from 'lodash';
 import { BasePlaneClientManager } from '#self/lib/base_plane_client_manager';
 import { DataPlaneClient } from './client';
-import { loggers } from '#self/lib/loggers';
 import * as root from '#self/proto/root';
 import { RawFunctionProfile } from '#self/lib/json/function_profile';
 import { ControlPlaneDependencyContext } from '../deps';
 import { FunctionProfileManager } from '#self/lib/function_profile';
 import { EventBus } from '#self/lib/event-bus';
 import { Clock } from '#self/lib/clock';
+import { LoggerFactory } from '#self/lib/logger_factory';
 
 /**
  * Data plane client manager
@@ -22,7 +22,7 @@ export class DataPlaneClientManager extends BasePlaneClientManager {
     super(
       config,
       config.plane.dataPlaneCount,
-      loggers.get('data_plane/manager')
+      LoggerFactory.prefix('data_plane/manager')
     );
     this._functionProfile = ctx.getInstance('functionProfile');
     this._eventBus = ctx.getInstance('eventBus');

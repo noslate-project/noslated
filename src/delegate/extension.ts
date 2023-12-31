@@ -1,7 +1,7 @@
 import { NamespaceResolver } from './namespace';
-import { loggers } from '#self/lib/loggers';
+import { LoggerFactory } from '#self/lib/logger_factory';
 
-const logger = loggers.get('extension');
+const logger = LoggerFactory.prefix('extension');
 
 export class Extension {
   #namespaceResolver: NamespaceResolver;

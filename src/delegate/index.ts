@@ -295,6 +295,8 @@ export class NoslatedDelegateService extends EventEmitter {
         this.#onDisconnect(sessionId);
       }
     });
+
+    Logger.close();
   }
 
   /**

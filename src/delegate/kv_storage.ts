@@ -1,9 +1,9 @@
 import { CapacityExceededError, ConflictError, NotFoundError } from './error';
 import { config } from '#self/config';
 import LRU from 'lru-cache';
-import Loggers from '#self/lib/logger';
+import { LoggerFactory } from '#self/lib/logger_factory';
 
-const logger = Loggers.get('kv-storages');
+const logger = LoggerFactory.prefix('kv-storages');
 
 const kPerNamespaceCapacity = config.delegate.kvStoragePerNamespaceCapacity;
 const kPerNamespaceMaxSize = config.delegate.kvStoragePerNamespaceMaxSize;

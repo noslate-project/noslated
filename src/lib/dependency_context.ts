@@ -1,3 +1,5 @@
+import { LoggerFactory } from '#self/lib/logger_factory';
+
 export interface Injectable {
   ready?(): Promise<void>;
   close?(): Promise<void>;
@@ -126,6 +128,7 @@ export class DependencyContext<
     for (const { ins } of list) {
       await ins!.close?.();
     }
+    LoggerFactory.close();
   }
 
   snapshot() {

@@ -1,5 +1,4 @@
 import { Validator as JSONValidator } from 'jsonschema';
-import loggers from './logger';
 import SCHEMA_JSON from './json/function_profile_schema.json';
 import SPEC_JSON from './json/spec.template.json';
 import {
@@ -14,8 +13,9 @@ import { Event, EventBus } from './event-bus';
 import { DependencyContext } from './dependency_context';
 import _ from 'lodash';
 import { TaskQueue } from './task_queue';
+import { LoggerFactory } from './logger_factory';
 
-const logger = loggers.get('function_profile');
+const logger = LoggerFactory.prefix('function_profile');
 
 /**
  * Keys updated that requires reload of the workers.

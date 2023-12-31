@@ -4,7 +4,6 @@ import {
   WorkerStatus,
   WorkerStatusReport,
 } from '#self/lib/constants';
-import { Logger, loggers } from '#self/lib/loggers';
 import {
   ContainerReconciledEvent,
   WorkerStatusReportEvent,
@@ -20,9 +19,10 @@ import { StatLogger } from './stat_logger';
 import { EventBus } from '#self/lib/event-bus';
 import { RawWithDefaultsFunctionProfile } from '#self/lib/json/function_profile';
 import { FunctionsRemovedEvent } from '#self/lib/function_profile';
+import { LoggerFactory, PrefixedLogger } from '#self/lib/logger_factory';
 
 export class StateManager extends Base {
-  private _logger: Logger;
+  private _logger: PrefixedLogger;
   private _config: Config;
   private _functionProfile;
   private _eventBus: EventBus;
@@ -36,7 +36,7 @@ export class StateManager extends Base {
 
   constructor(ctx: ControlPlaneDependencyContext) {
     super();
-    this._logger = loggers.get('state manager');
+    this._logger = LoggerFactory.prefix('state manager');
     this._functionProfile = ctx.getInstance('functionProfile');
     this._config = ctx.getInstance('config');
 

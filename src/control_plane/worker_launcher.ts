@@ -1,6 +1,5 @@
 import { Base } from '#self/lib/sdk_base';
 import { castError } from '#self/lib/util';
-import loggers from '#self/lib/logger';
 import * as naming from '#self/lib/naming';
 import * as starters from './starter';
 import { ErrorCode, LauncherError } from './worker_launcher_error_code';
@@ -20,6 +19,7 @@ import { Container } from './container/container_manager';
 import { ControlPlaneDependencyContext } from './deps';
 import { CapacityManager } from './capacity_manager';
 import { StateManager } from './worker_stats/state_manager';
+import { LoggerFactory, PrefixedLogger } from '#self/lib/logger_factory';
 
 export interface WorkerStarter {
   start(
@@ -33,7 +33,7 @@ export interface WorkerStarter {
 }
 
 export class WorkerLauncher extends Base {
-  private logger;
+  private logger: PrefixedLogger;
   private config;
   starters;
   private codeManager: CodeManager;
@@ -52,7 +52,7 @@ export class WorkerLauncher extends Base {
     this.capacityManager = ctx.getInstance('capacityManager');
     this.stateManager = ctx.getInstance('stateManager');
 
-    this.logger = loggers.get('worker launcher');
+    this.logger = LoggerFactory.prefix('worker launcher');
 
     this.starters = {
       nodejs: new starters.Nodejs(ctx),

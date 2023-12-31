@@ -1,9 +1,9 @@
 import cp from 'child_process';
 import path from 'path';
 import { config } from '#self/config';
-import { loggers } from '#self/lib/loggers';
+import { LoggerFactory } from '#self/lib/logger_factory';
 
-const logger = loggers.get('test/turfd');
+const logger = LoggerFactory.prefix('test/turfd');
 
 const turfPath = config.turf.bin;
 let turfDCP: cp.ChildProcess | undefined;
@@ -70,4 +70,5 @@ export async function stopTurfD() {
     turfDCP = undefined;
   }
   refreshTurfWorkspace();
+  LoggerFactory.close();
 }

@@ -5,10 +5,10 @@ import {
 import { PendingRequest } from '#self/data_plane/worker_broker';
 import { Metadata, TriggerResponse } from '#self/delegate/request_response';
 import { List } from '#self/lib/list';
-import { loggers } from '#self/lib/loggers';
 import { Readable } from 'stream';
+import { LoggerFactory } from '#self/lib/logger_factory';
 
-const logger = loggers.get('test');
+const logger = LoggerFactory.prefix('test');
 
 export class TestDispatcherDelegate implements DispatcherDelegate {
   pendingRequestList = new List<PendingRequest>();

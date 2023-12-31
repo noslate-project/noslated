@@ -6,8 +6,8 @@ import path from 'path';
 import { DefaultSerializer, DefaultDeserializer } from 'v8';
 import download from 'download';
 import crypto from 'crypto';
-import loggers from './logger';
 import { Clock, systemClock } from './clock';
+import { LoggerFactory } from './logger_factory';
 
 export {
   tryQ,
@@ -72,7 +72,7 @@ async function bufferFromStream(readable: Readable) {
 
 async function downloadZipAndExtractToDir(url: string, dir: string) {
   const { resolve, reject, promise } = createDeferred();
-  const logger = loggers.get('lib/util#downloadZipAndExtractToDir');
+  const logger = LoggerFactory.prefix('lib/util#downloadZipAndExtractToDir');
 
   const zipFilename = `${crypto.randomUUID()}.zip`;
 

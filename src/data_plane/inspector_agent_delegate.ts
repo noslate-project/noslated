@@ -2,11 +2,11 @@ import {
   InspectorAgentDelegate,
   InspectorTargetDescriptor,
 } from '#self/diagnostics/inspector_agent_delegate';
-import { loggers } from '#self/lib/loggers';
+import { LoggerFactory } from '#self/lib/logger_factory';
 import { aworker } from '#self/proto/aworker';
 import { DataFlowController } from './data_flow_controller';
 
-const logger = loggers.get('inspector delegate');
+const logger = LoggerFactory.prefix('inspector delegate');
 
 export class DataPlaneInspectorAgentDelegate implements InspectorAgentDelegate {
   constructor(private dataFlowController: DataFlowController) {}

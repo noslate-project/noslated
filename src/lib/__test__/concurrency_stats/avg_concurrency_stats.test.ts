@@ -3,12 +3,15 @@ import { AvgConcurrencyStats } from '#self/lib/concurrency_stats/avg_concurrency
 import assert from 'assert';
 import { sleep } from '#self/lib/util';
 import { assertCloseTo } from '#self/test/util';
+import { ILogger } from '@midwayjs/logger';
 
 describe(common.testName(__filename), function () {
   this.timeout(30_000);
 
   it('should calculate concurrency correctly', async () => {
-    const calculator: AvgConcurrencyStats = new AvgConcurrencyStats(console);
+    const calculator: AvgConcurrencyStats = new AvgConcurrencyStats(
+      console as unknown as ILogger
+    );
     // 假设有三个请求同时到达
     const r1 = calculator.requestStarted();
     const r2 = calculator.requestStarted();

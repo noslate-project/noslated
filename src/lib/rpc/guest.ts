@@ -20,9 +20,9 @@ import { BackoffCounter, createDeferred, raceEvent } from '../util';
 import { ServiceClient } from '@grpc/grpc-js/build/src/make-client';
 import * as root from '#self/proto/root';
 import { IHostClient } from '#self/lib/interfaces/guest';
-import { loggers } from '../loggers';
+import { LoggerFactory } from '../logger_factory';
 
-const logger = loggers.get('guest');
+const logger = LoggerFactory.prefix('guest');
 
 const kStreamDisconnectedCode = [status.CANCELLED, status.UNAVAILABLE];
 

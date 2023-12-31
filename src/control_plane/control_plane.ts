@@ -1,7 +1,5 @@
 import { BaseOf } from '#self/lib/sdk_base';
 import { dumpConfig } from '#self/config';
-import loggers from '#self/lib/logger';
-import { Logger } from '#self/lib/loggers';
 import { EventEmitter } from 'events';
 import { WorkerTelemetry } from './telemetry';
 import { getMeter } from '#self/lib/telemetry/otel';
@@ -14,6 +12,7 @@ import { EventBus } from '#self/lib/event-bus';
 import { StateManager } from './worker_stats/state_manager';
 import { CodeManager } from './code_manager';
 import { FunctionProfileUpdateEvent } from '#self/lib/function_profile';
+import { LoggerFactory, PrefixedLogger } from '#self/lib/logger_factory';
 
 /**
  * ControlPlane
@@ -26,7 +25,7 @@ export class ControlPlane extends BaseOf(EventEmitter) {
   public _ctx: ControlPlaneDependencyContext;
 
   private _meter: Meter;
-  private _logger: Logger;
+  private _logger: PrefixedLogger;
   private _workerTelemetry: WorkerTelemetry;
   private _eventBus: EventBus;
   private _stateManager: StateManager;
@@ -50,7 +49,7 @@ export class ControlPlane extends BaseOf(EventEmitter) {
       this._eventBus
     );
 
-    this._logger = loggers.get('control plane');
+    this._logger = LoggerFactory.prefix('control plane');
 
     this._ctx
       .getInstance('dataPlaneClientManager')

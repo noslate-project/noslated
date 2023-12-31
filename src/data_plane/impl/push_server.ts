@@ -1,4 +1,3 @@
-import loggers from '#self/lib/logger';
 import { createDeferred } from '#self/lib/util';
 import { Metadata, TriggerResponse } from '#self/delegate/request_response';
 import { tuplesToPairs, pairsToTuples } from '#self/lib/rpc/key_value_pair';
@@ -10,6 +9,7 @@ import * as root from '#self/proto/root';
 import { NotNullableInterface } from '#self/lib/interfaces';
 import { Readable } from 'stream';
 import { IPushServer } from '#self/lib/interfaces/push_server';
+import { LoggerFactory, PrefixedLogger } from '#self/lib/logger_factory';
 
 interface InvokeRequest extends Readable {
   /** InvokeRequest name */
@@ -30,13 +30,13 @@ interface InvokeRequest extends Readable {
 }
 
 export class PushServerImpl implements IPushServer {
-  logger: Logger;
+  logger: PrefixedLogger;
 
   constructor(
     public dataFlowController: DataFlowController,
     public config: Config
   ) {
-    this.logger = loggers.get('push server');
+    this.logger = LoggerFactory.prefix('push server');
   }
 
   async #invoke(

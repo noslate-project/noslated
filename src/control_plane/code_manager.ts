@@ -3,11 +3,11 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import util from 'util';
 
-import loggers from '#self/lib/logger';
 import * as naming from '#self/lib/naming';
 import * as utils from '#self/lib/util';
 import { ConfigContext } from './deps';
 import { DependencyContext } from '#self/lib/dependency_context';
+import { LoggerFactory, PrefixedLogger } from '#self/lib/logger_factory';
 
 async function exists(filepath: string) {
   let exists = true;
@@ -20,14 +20,14 @@ async function exists(filepath: string) {
 }
 
 export class CodeManager extends EventEmitter {
-  logger;
+  logger: PrefixedLogger;
   map: Map<string, Promise<string> | boolean>;
   workDir: string;
 
   constructor(ctx: DependencyContext<ConfigContext>) {
     super();
     this.workDir = ctx.getInstance('config').dirs.noslatedWork;
-    this.logger = loggers.get('code manager');
+    this.logger = LoggerFactory.prefix('code manager');
 
     this.map = new Map();
   }

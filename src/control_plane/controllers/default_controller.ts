@@ -1,6 +1,4 @@
 import _ from 'lodash';
-import loggers from '#self/lib/logger';
-import { Logger } from '#self/lib/loggers';
 import { ControlPlaneEvent } from '#self/lib/constants';
 import { CapacityManager, Delta } from '../capacity_manager';
 import {
@@ -19,9 +17,10 @@ import { Worker, WorkerMetadata } from '../worker_stats/worker';
 import { ControlPlaneDependencyContext } from '../deps';
 import { DataPlaneClientManager } from '../data_plane_client/manager';
 import { ReservationController } from './reservation_controller';
+import { LoggerFactory, PrefixedLogger } from '#self/lib/logger_factory';
 
 export class DefaultController extends BaseController {
-  protected logger: Logger;
+  protected logger: PrefixedLogger;
 
   private shrinking: boolean;
   private _capacityManager: CapacityManager;
@@ -34,7 +33,7 @@ export class DefaultController extends BaseController {
     this._reservationController = ctx.getInstance('reservationController');
     this._dataPlaneClientManager = ctx.getInstance('dataPlaneClientManager');
 
-    this.logger = loggers.get('default controller');
+    this.logger = LoggerFactory.prefix('default controller');
     this.shrinking = false;
 
     const eventBus = ctx.getInstance('eventBus');
