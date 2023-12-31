@@ -188,7 +188,6 @@ export class BasePlaneClientManager extends BaseOf(EventEmitter) {
    * @return {Guest} The created client object.
    */
   _createPlaneClient(planeId: number): BasePlaneClient {
-    // eslint-disable-line
     throw new Error('_createPlaneClient() should be implemented');
   }
 
