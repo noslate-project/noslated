@@ -1,11 +1,12 @@
 import * as MidwayLogger from '@midwayjs/logger';
-import { IMidwayLogger } from '@midwayjs/logger';
 
 const levels = ['debug', 'info', 'warn', 'error'] as const;
 type LogLevels = (typeof levels)[number];
-export type Sink = {
-  [key in LogLevels]: (...args: unknown[]) => void;
-};
+// ILogger 未定义 close 方法
+export type Sink = Pick<
+  MidwayLogger.ILogger,
+  'debug' | 'info' | 'warn' | 'error' | 'write'
+> & { close?: () => void };
 
 interface LoggerMeta {
   label: string;
@@ -24,16 +25,24 @@ const noopSink: Sink = (() => {
 
 function getPrettySink(filename: string) {
   const { config } = require('#self/config');
-  const midwayLogger: IMidwayLogger = MidwayLogger.createLogger(filename, {
-    level: config.logger.level,
-    fileLogName: filename ?? 'noslated.log',
-    dir: config.logger.dir,
-    enableConsole: config.logger.enableConsole,
-    // no need to pipe errors to a different file.
-    enableError: false,
-    // keep after rotater
-    maxFiles: 3,
-  });
+  const midwayLogger: MidwayLogger.ILogger = MidwayLogger.createLogger(
+    filename,
+    {
+      level: config.logger.level,
+      fileLogName: filename ?? 'noslated.log',
+      dir: config.logger.dir,
+      enableConsole: config.logger.enableConsole,
+      // no need to pipe errors to a different file.
+      enableError: false,
+      // keep after rotater
+      maxFiles: 3,
+      transports: {
+        file: {
+          bufferWrite: true,
+        },
+      },
+    }
+  );
   return midwayLogger;
 }
 
@@ -139,6 +148,10 @@ class Loggers {
     const logger = new Logger(category, this.sink, this._sinkLevel);
     this.loggers.set(category, logger);
     return logger;
+  }
+
+  close() {
+    this.sink.close?.();
   }
 }
 

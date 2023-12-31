@@ -3,11 +3,11 @@ import { Config } from '#self/config';
 import { Clock } from '#self/lib/clock';
 import { Base } from '#self/lib/sdk_base';
 import { workerLogPath } from './container/container_manager';
-import { Logger, loggers } from '#self/lib/loggers';
 import { WorkerStoppedEvent } from './events';
 import { EventBus } from '#self/lib/event-bus';
 import { DependencyContext } from '#self/lib/dependency_context';
 import { TaskQueue } from '#self/lib/task_queue';
+import { LoggerFactory, PrefixedLogger } from '#self/lib/logger_factory';
 
 export type ResourceManagerContext = {
   config: Config;
@@ -19,7 +19,7 @@ export type ResourceManagerContext = {
 export class ResourceManager extends Base {
   private config: Config;
   private clock: Clock;
-  private logger: Logger;
+  private logger: PrefixedLogger;
   private gcQueue: TaskQueue<string>;
 
   constructor(ctx: DependencyContext<ResourceManagerContext>) {
@@ -27,7 +27,7 @@ export class ResourceManager extends Base {
     this.config = ctx.getInstance('config');
     this.clock = ctx.getInstance('clock');
 
-    this.logger = loggers.get('resource manager');
+    this.logger = LoggerFactory.prefix('resource manager');
     this.gcQueue = new TaskQueue(this.#gcLog, {
       clock: this.clock,
       delay: this.config.worker.gcLogDelay,

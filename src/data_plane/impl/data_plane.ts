@@ -1,5 +1,4 @@
 import { pairsToMap, mapToPairs } from '#self/lib/rpc/key_value_pair';
-import loggers from '#self/lib/logger';
 import { Config } from '#self/config';
 import * as root from '#self/proto/root';
 import { ServerUnaryCall } from '#self/lib/rpc/util';
@@ -9,8 +8,9 @@ import { RawFunctionProfile } from '#self/lib/json/function_profile';
 import { NotNullableInterface } from '#self/lib/interfaces/';
 import { ServiceProfileItem, ServiceType } from '../service_selector';
 import { IDataPlane } from '#self/lib/interfaces/data_plane';
+import { LoggerFactory } from '#self/lib/logger_factory';
 
-const logger = loggers.get('data plane impl');
+const logger = LoggerFactory.prefix('data plane impl');
 
 export class DataPlaneImpl implements IDataPlane {
   /**

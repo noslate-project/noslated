@@ -2,7 +2,7 @@ import { Config } from '#self/config';
 import { Clock } from '#self/lib/clock';
 import { DependencyContext } from '#self/lib/dependency_context';
 import { EventBus } from '#self/lib/event-bus';
-import { Logger, loggers } from '#self/lib/loggers';
+import { LoggerFactory, PrefixedLogger } from '#self/lib/logger_factory';
 import { createDeferred } from '#self/lib/util';
 import { ContainerReconciledEvent } from '../events';
 import { ContainerManager } from './container_manager';
@@ -19,7 +19,7 @@ export class ContainerReconciler {
   private _clock: Clock;
   private _containerManager: ContainerManager;
   private _eventBus: EventBus;
-  private _logger: Logger;
+  private _logger: PrefixedLogger;
   private _interval: unknown | null = null;
   private _closed = false;
 
@@ -31,7 +31,7 @@ export class ContainerReconciler {
       ctx.getInstance('config').turf.reconcilingInterval;
     this._containerManager = ctx.getInstance('containerManager');
     this._eventBus = ctx.getInstance('eventBus');
-    this._logger = loggers.get('container reconciler');
+    this._logger = LoggerFactory.prefix('container reconciler');
   }
 
   ready() {

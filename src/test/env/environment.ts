@@ -8,6 +8,7 @@ import { startTurfD, stopTurfD } from '#self/test/turf';
 import mm from 'mm';
 import { createTestClock, TestClock } from '../common';
 import { Config } from '#self/config';
+import { LoggerFactory } from '#self/lib/logger_factory';
 
 export abstract class MochaEnvironment {
   constructor() {
@@ -62,6 +63,7 @@ export class DefaultEnvironment extends MochaEnvironment {
 
   constructor(private options?: DefaultEnvironmentOptions) {
     super();
+    LoggerFactory.init('');
   }
 
   async beforeEach(ctx: Mocha.Context) {
@@ -114,5 +116,7 @@ export class DefaultEnvironment extends MochaEnvironment {
     }
 
     stopTurfD();
+
+    LoggerFactory.close();
   }
 }

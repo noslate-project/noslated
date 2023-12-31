@@ -1,6 +1,5 @@
 import path from 'path';
 import { Config } from '#self/config';
-import { Logger, loggers } from '#self/lib/loggers';
 import { createDeferred, Deferred, sleep } from '#self/lib/util';
 import {
   Container,
@@ -20,12 +19,13 @@ import {
 import { DependencyContext } from '#self/lib/dependency_context';
 import { ConfigContext } from '../deps';
 import { TaskQueue } from '#self/lib/task_queue';
+import { LoggerFactory, PrefixedLogger } from '#self/lib/logger_factory';
 
 const TurfStopRetryableCodes = [TurfCode.EAGAIN];
 
 export class TurfContainerManager implements ContainerManager {
   private config: Config;
-  private logger: Logger;
+  private logger: PrefixedLogger;
   private containers = new Map<string, TurfContainer>();
   _cleanupQueue: TaskQueue<TurfContainer>;
 
@@ -34,7 +34,7 @@ export class TurfContainerManager implements ContainerManager {
   constructor(ctx: DependencyContext<ConfigContext>) {
     this.config = ctx.getInstance('config');
     this.client = new Turf(this.config.turf.bin, this.config.turf.socketPath);
-    this.logger = loggers.get('turf-manager');
+    this.logger = LoggerFactory.prefix('turf-manager');
 
     this._cleanupQueue = new TaskQueue(this._cleanup, {
       concurrency: 1,
@@ -124,7 +124,7 @@ export class TurfContainerManager implements ContainerManager {
 
 export class TurfContainer implements Container {
   private client: Turf;
-  private logger: Logger;
+  private logger: PrefixedLogger;
   pid?: number;
   status: TurfContainerStates;
   onstatuschanged = () => {};

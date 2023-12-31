@@ -1,5 +1,9 @@
-import loggers from '#self/lib/logger';
+import { LoggerFactory } from '#self/lib/logger_factory';
 
 before(() => {
-  loggers.setSink(loggers.getPrettySink(''));
+  LoggerFactory.init('');
+});
+
+after(() => {
+  LoggerFactory.close();
 });

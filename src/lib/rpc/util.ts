@@ -7,10 +7,10 @@ import fs from 'fs';
 import { promisify } from 'util';
 import { RpcError } from './error';
 import * as protoRoot from '../../proto/root';
-import { loggers } from '../loggers';
 import { config } from '#self/config';
+import { LoggerFactory } from '../logger_factory';
 
-grpc.setLogger(loggers.get('grpc'));
+grpc.setLogger(LoggerFactory.prefix('grpc'));
 // Set the default verbosity to ERROR.
 if (process.env.GRPC_VERBOSITY == null) {
   grpc.setLogVerbosity(grpc.logVerbosity.ERROR);

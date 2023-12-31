@@ -1,14 +1,14 @@
-import { Logger, loggers } from '#self/lib/loggers';
 import { WorkerStatusReportEvent } from '../events';
 import { BaseController } from './base_controller';
 import { ControlPlaneDependencyContext } from '../deps';
+import { LoggerFactory, PrefixedLogger } from '#self/lib/logger_factory';
 
 export class DisposableController extends BaseController {
-  logger: Logger;
+  protected logger: PrefixedLogger;
 
   constructor(ctx: ControlPlaneDependencyContext) {
     super(ctx);
-    this.logger = loggers.get('disposable controller');
+    this.logger = LoggerFactory.prefix('disposable controller');
 
     const eventBus = ctx.getInstance('eventBus');
     eventBus.subscribe(WorkerStatusReportEvent, {

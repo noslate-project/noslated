@@ -6,6 +6,7 @@ import { DefaultEnvironment } from '#self/test/env/environment';
 
 /**
  * 仅观测行为
+ * 在内部 ci 时因配置问题，容易触发 load 系统保护
  */
 describe(common.testName(__filename), function () {
   // Debug version of Node.js may take longer time to bootstrap.
@@ -40,7 +41,7 @@ describe(common.testName(__filename), function () {
       },
     ]);
 
-    const sequence = [1, 1, 1, 10, 1, 6, 5, 0, 0, 0];
+    const sequence = [1, 1, 1, 5, 1, 0, 0, 0];
 
     for (const concurrency of sequence) {
       await makeConcurrencyRequest('aworker_echo_ema', concurrency, env);
@@ -52,7 +53,7 @@ describe(common.testName(__filename), function () {
 });
 
 async function request(functionName: string, env: DefaultEnvironment) {
-  const data = Buffer.from('1000');
+  const data = Buffer.from('100');
 
   const response = await env.agent.invoke(functionName, data, {
     method: 'POST',
@@ -73,41 +74,4 @@ function makeConcurrencyRequest(
   });
 
   return Promise.all(requests);
-}
-
-const WEIGHTS = {
-  0: 10,
-  1: 10,
-  2: 8,
-  3: 8,
-  4: 7,
-  5: 6,
-  6: 5,
-  7: 4,
-  8: 3,
-  9: 2,
-  10: 1,
-};
-
-function generateWeightedSequence(
-  length: number,
-  weights: Record<number, number>
-): number[] {
-  const sequence = [];
-  const weightedValues = [];
-
-  // 构造根据权重扩展的值数组
-  for (const [value, weight] of Object.entries(weights)) {
-    for (let i = 0; i < weight; i++) {
-      weightedValues.push(parseInt(value));
-    }
-  }
-
-  // 生成序列
-  while (sequence.length < length) {
-    const randomIndex = Math.floor(Math.random() * weightedValues.length);
-    sequence.push(weightedValues[randomIndex]);
-  }
-
-  return sequence;
 }

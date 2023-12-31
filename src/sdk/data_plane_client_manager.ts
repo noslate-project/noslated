@@ -3,6 +3,7 @@ import { DataPlaneClient } from './data_plane_client';
 import loggers from '#self/lib/logger';
 import { NoslatedClient } from './client';
 import { Config } from '#self/config';
+import { LoggerFactory } from '#self/lib/logger_factory';
 
 export class DataPlaneClientManager extends BasePlaneClientManager {
   /**
@@ -14,7 +15,7 @@ export class DataPlaneClientManager extends BasePlaneClientManager {
     super(
       config,
       config.plane.dataPlaneCount,
-      loggers.get('data plane client manager')
+      LoggerFactory.prefix('data plane client manager')
     );
   }
 

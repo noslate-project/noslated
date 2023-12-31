@@ -8,10 +8,10 @@ import * as common from '#self/test/common';
 import { createDeferred } from '#self/lib/util';
 import { Guest } from '#self/lib/rpc/guest';
 import { Host } from '#self/lib/rpc/host';
-import loggers from '#self/lib/logger';
 import { Config } from '#self/config';
 import * as root from '../../proto/test';
 import { ServerWritableStream } from '@grpc/grpc-js';
+import { LoggerFactory } from '../logger_factory';
 
 class Manager extends BasePlaneClientManager {
   _createPlaneClient(planeId: number) {
@@ -56,7 +56,7 @@ describe(common.testName(__filename), function () {
           plane: { planeFirstConnectionTimeout: 1000 },
         } as Config,
         2,
-        loggers.get('manager')
+        LoggerFactory.prefix('manager')
       );
       await manager.ready();
     });
@@ -70,7 +70,7 @@ describe(common.testName(__filename), function () {
           plane: { planeFirstConnectionTimeout: 1000 },
         } as Config,
         2,
-        loggers.get('manager')
+        LoggerFactory.prefix('manager')
       );
       await assert.rejects(manager.ready(), {
         message: /Timeout on waiting first plane client ready/,
@@ -85,7 +85,7 @@ describe(common.testName(__filename), function () {
           plane: { planeFirstConnectionTimeout: 1000 },
         } as Config,
         2,
-        loggers.get('manager')
+        LoggerFactory.prefix('manager')
       );
       manager.on('newClientReady', client => {
         clients.push(client);
@@ -108,7 +108,7 @@ describe(common.testName(__filename), function () {
           plane: { planeFirstConnectionTimeout: 1000 },
         } as Config,
         2,
-        loggers.get('manager')
+        LoggerFactory.prefix('manager')
       );
       await manager.ready();
       assert.strictEqual(manager.clients().length, 2);
@@ -121,7 +121,7 @@ describe(common.testName(__filename), function () {
           plane: { planeFirstConnectionTimeout: 1000 },
         } as Config,
         2,
-        loggers.get('manager')
+        LoggerFactory.prefix('manager')
       );
 
       await manager.ready();
@@ -141,7 +141,7 @@ describe(common.testName(__filename), function () {
           plane: { planeFirstConnectionTimeout: 1000 },
         } as Config,
         2,
-        loggers.get('manager')
+        LoggerFactory.prefix('manager')
       );
 
       await manager.ready();
@@ -166,7 +166,7 @@ describe(common.testName(__filename), function () {
           plane: { planeFirstConnectionTimeout: 1000 },
         } as Config,
         2,
-        loggers.get('manager')
+        LoggerFactory.prefix('manager')
       );
       await manager.ready();
 
@@ -180,7 +180,7 @@ describe(common.testName(__filename), function () {
           plane: { planeFirstConnectionTimeout: 1000 },
         } as Config,
         2,
-        loggers.get('manager')
+        LoggerFactory.prefix('manager')
       );
       await manager.ready();
 
@@ -197,7 +197,7 @@ describe(common.testName(__filename), function () {
           plane: { planeFirstConnectionTimeout: 1000 },
         } as Config,
         2,
-        loggers.get('manager')
+        LoggerFactory.prefix('manager')
       );
       await manager.ready();
 
@@ -224,7 +224,7 @@ describe(common.testName(__filename), function () {
           plane: { planeFirstConnectionTimeout: 1000 },
         } as Config,
         2,
-        loggers.get('manager')
+        LoggerFactory.prefix('manager')
       );
       await manager.ready();
 
@@ -260,7 +260,7 @@ describe(common.testName(__filename), function () {
           plane: { planeFirstConnectionTimeout: 1000 },
         } as Config,
         10,
-        loggers.get('manager')
+        LoggerFactory.prefix('manager')
       );
       await manager.ready();
 
@@ -274,7 +274,7 @@ describe(common.testName(__filename), function () {
           plane: { planeFirstConnectionTimeout: 1000 },
         } as Config,
         2,
-        loggers.get('manager')
+        LoggerFactory.prefix('manager')
       );
       await manager.ready();
       await host.close();
@@ -306,7 +306,7 @@ describe(common.testName(__filename), function () {
           plane: { planeFirstConnectionTimeout: 1000 },
         } as Config,
         2,
-        loggers.get('manager')
+        LoggerFactory.prefix('manager')
       );
       await manager.ready();
 
@@ -339,7 +339,7 @@ describe(common.testName(__filename), function () {
           plane: { planeFirstConnectionTimeout: 1000 },
         } as Config,
         2,
-        loggers.get('manager')
+        LoggerFactory.prefix('manager')
       );
       await manager.ready();
 
@@ -375,7 +375,7 @@ describe(common.testName(__filename), function () {
           plane: { planeFirstConnectionTimeout: 1000 },
         } as Config,
         2,
-        loggers.get('manager')
+        LoggerFactory.prefix('manager')
       );
       await manager.ready();
 
@@ -417,7 +417,7 @@ describe(common.testName(__filename), function () {
           plane: { planeFirstConnectionTimeout: 1000 },
         } as Config,
         2,
-        loggers.get('manager')
+        LoggerFactory.prefix('manager')
       );
       await manager.ready();
       // wait second client ready.
@@ -465,7 +465,7 @@ describe(common.testName(__filename), function () {
           plane: { planeFirstConnectionTimeout: 1000 },
         } as Config,
         2,
-        loggers.get('manager')
+        LoggerFactory.prefix('manager')
       );
       await manager.ready();
       // wait second client ready.

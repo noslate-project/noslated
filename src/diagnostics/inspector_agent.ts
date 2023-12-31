@@ -1,13 +1,11 @@
 import { WebSocket } from 'ws';
 import { InspectorSocketServer } from './inspector_socket_server';
 import { NoslatedDelegateService, Events } from '#self/delegate/index';
-import loggers from '#self/lib/logger';
 import {
   DefaultInspectorAgentDelegate,
   InspectorAgentDelegate,
 } from './inspector_agent_delegate';
-
-const logger = loggers.get('inspector_socket_server');
+import { LoggerFactory } from '#self/lib/logger_factory';
 
 const CredentialSymbol = Symbol('credential');
 const ConnectedSessionIdsSymbol = Symbol('sessions');
@@ -88,12 +86,14 @@ export class InspectorAgent {
   #diagnosticsChannels = new Map();
   #targets = new Map<string, InspectorTarget>();
   #sessions = new Map<number, InspectorSession>();
+  #logger = LoggerFactory.prefix('inspector_socket_server');
+
   #onInspectorStarted = async (cred: string) => {
     let targets;
     try {
       targets = await this.#delegate.GetInspectorTargets(cred);
     } catch (e) {
-      logger.error('list inspector targets failed', cred, e);
+      this.#logger.error('list inspector targets failed', cred, e);
       return;
     }
     this.#diagnosticsChannels.set(cred, { targets });
@@ -113,7 +113,7 @@ export class InspectorAgent {
         url: target.url,
         webSocketDebuggerUrl: `ws://${webSocketAddress}`,
       });
-      logger.debug('register target', target.id);
+      this.#logger.debug('register target', target.id);
     }
   };
   #onDisconnect = (cred: string) => {
@@ -207,7 +207,7 @@ export class InspectorAgent {
     this.#delegate
       .SendInspectorCommand(credential, inspectorSessionId, message)
       .catch((err: unknown) => {
-        logger.error('unexpected error on send inspector command', err);
+        this.#logger.error('unexpected error on send inspector command', err);
       });
   }
 
@@ -225,7 +225,7 @@ export class InspectorAgent {
         targetId
       );
     } catch (e) {
-      logger.error('failed to open inspector', e);
+      this.#logger.error('failed to open inspector', e);
       return false;
     }
 
@@ -237,7 +237,7 @@ export class InspectorAgent {
   }
 
   terminateSession(inspectorSessionId: number) {
-    logger.debug('terminate session', inspectorSessionId);
+    this.#logger.debug('terminate session', inspectorSessionId);
     const session = this.#sessions.get(inspectorSessionId);
     if (session == null) {
       return;
@@ -255,10 +255,10 @@ export class InspectorAgent {
 
     this.#delegate.InspectorEndSession(credential, inspectorSessionId).then(
       () => {
-        logger.debug('inspector closed');
+        this.#logger.debug('inspector closed');
       },
       (err: unknown) => {
-        logger.error('unexpected error on close inspector', err);
+        this.#logger.error('unexpected error on close inspector', err);
       }
     );
   }

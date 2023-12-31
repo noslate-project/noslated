@@ -1,7 +1,5 @@
 import bytes from 'bytes';
 import { Base } from '#self/lib/sdk_base';
-import loggers from '#self/lib/logger';
-import { Logger } from '#self/lib/loggers';
 import { Broker } from './worker_stats/broker';
 import { RequestQueueingEvent } from './events';
 import { ControlPlaneDependencyContext } from './deps';
@@ -9,6 +7,7 @@ import { StateManager } from './worker_stats/state_manager';
 import { kMemoryLimit } from './constants';
 import { RawWithDefaultsFunctionProfile } from '#self/lib/json/function_profile';
 import { ErrorCode, LauncherError } from './worker_launcher_error_code';
+import { LoggerFactory, PrefixedLogger } from '#self/lib/logger_factory';
 
 enum WaterLevelAction {
   UNKNOWN = 0,
@@ -24,7 +23,7 @@ export class CapacityManager extends Base {
   private _shrinkRedundantTimes: number;
   private _scalingStage: number;
   private virtualMemoryPoolSize: number;
-  private logger: Logger;
+  private logger: PrefixedLogger;
   private stateManager: StateManager;
   private _useEmaScaling: boolean;
 
@@ -36,7 +35,7 @@ export class CapacityManager extends Base {
     this._shrinkRedundantTimes =
       config.controlPlane.workerRedundantVictimSpareTimes;
     this._scalingStage = config.controlPlane.capacityScalingStage;
-    this.logger = loggers.get('capacity manager');
+    this.logger = LoggerFactory.prefix('capacity manager');
     this._useEmaScaling = config.controlPlane.useEmaScaling;
   }
 

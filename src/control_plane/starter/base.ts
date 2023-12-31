@@ -3,7 +3,6 @@ import os from 'os';
 import path from 'path';
 import extend from 'extend';
 
-import loggers from '#self/lib/logger';
 import { pairsToMap } from '#self/lib/rpc/key_value_pair';
 import {
   ProcessFunctionProfile,
@@ -18,6 +17,7 @@ import { EventBus } from '#self/lib/event-bus';
 import { DependencyContext } from '#self/lib/dependency_context';
 import { ResourceManager, ResourceManagerContext } from '../resource_manager';
 import { WorkerStarter } from '../worker_launcher';
+import { LoggerFactory, PrefixedLogger } from '#self/lib/logger_factory';
 
 export interface BaseOptions {
   inspect?: boolean;
@@ -94,7 +94,7 @@ export abstract class BaseStarter implements WorkerStarter {
   private containerManager;
   private resourceManager;
   protected bin;
-  protected logger;
+  protected logger: PrefixedLogger;
   protected config;
 
   private platformEnvirons: Record<string, string> = {};
@@ -107,7 +107,7 @@ export abstract class BaseStarter implements WorkerStarter {
   ) {
     this.runtime = runtime;
     this.bin = bin;
-    this.logger = loggers.get(loggerName);
+    this.logger = LoggerFactory.prefix(loggerName);
     this.config = ctx.getInstance('config');
     this.containerManager = ctx.getInstance('containerManager');
     this.resourceManager = ctx.getInstance('resourceManager');

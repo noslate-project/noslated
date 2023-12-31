@@ -2,17 +2,18 @@
 
 'use strict';
 
-const Logger = require('#self/lib/logger');
+const { LoggerFactory } = require('#self/lib/logger_factory');
 const { ControlPlane } = require('#self/control_plane/index');
 
 (async function() {
-  Logger.setSink(Logger.getPrettySink('control_plane.log'));
+  LoggerFactory.init('control_plane.log');
 
   const controlPlane = new ControlPlane();
   await controlPlane.ready();
 
   const onSignal = async () => {
     await controlPlane.close();
+    LoggerFactory.close();
     process.exit(0);
   };
 
@@ -20,5 +21,6 @@ const { ControlPlane } = require('#self/control_plane/index');
   process.on('SIGTERM', onSignal);
 })().catch(err => {
   console.error(err);
+  LoggerFactory.close();
   process.exit(1);
 });

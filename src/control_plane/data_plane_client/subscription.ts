@@ -1,6 +1,4 @@
-import loggers from '#self/lib/logger';
 import { DataPlaneClient } from './client';
-import { Logger } from '#self/lib/loggers';
 import * as root from '#self/proto/root';
 import { NotNullableInterface } from '#self/lib/interfaces';
 import { EventBus } from '#self/lib/event-bus';
@@ -10,11 +8,12 @@ import {
   WorkerTrafficStatsEvent,
 } from '../events';
 import { Clock, TimerHandle } from '#self/lib/clock';
+import { LoggerFactory, PrefixedLogger } from '#self/lib/logger_factory';
 
 export class DataPlaneSubscription {
   static SubscriptionNames = ['requestQueueing', 'containerStatusReport'];
 
-  private logger: Logger;
+  private logger: PrefixedLogger;
   private closed = false;
 
   private trafficStatsTimeout: TimerHandle | null = null;
@@ -26,7 +25,7 @@ export class DataPlaneSubscription {
     private _clock: Clock
   ) {
     this.client = client;
-    this.logger = loggers.get('data plane subscription');
+    this.logger = LoggerFactory.prefix('data plane subscription');
   }
 
   async requestQueueing(

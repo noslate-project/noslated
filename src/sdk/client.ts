@@ -18,7 +18,6 @@ import { DataPlaneClientManager } from './data_plane_client_manager';
 import { ControlPlaneClientManager } from './control_plane_client_manager';
 // json could not be loaded with #self.
 import kServiceProfileSchema from '../lib/json/service_profile_schema.json';
-import { Logger } from '#self/lib/loggers';
 import { RawFunctionProfile } from '#self/lib/json/function_profile';
 import { FunctionProfileManager, Mode } from '#self/lib/function_profile';
 import { ServiceProfileItem } from '#self/data_plane/service_selector';
@@ -26,6 +25,8 @@ import * as root from '#self/proto/root';
 import { kDefaultRequestId } from '#self/lib/constants';
 import { ClientDuplexStream } from '@grpc/grpc-js';
 import { isUint8Array } from 'util/types';
+import { LoggerFactory, PrefixedLogger } from '#self/lib/logger_factory';
+import { ILogger } from '@midwayjs/logger';
 
 /**
  * Noslated client
@@ -33,7 +34,7 @@ import { isUint8Array } from 'util/types';
 export class NoslatedClient extends EventEmitter {
   dataPlaneClientManager: DataPlaneClientManager;
   controlPlaneClientManager: ControlPlaneClientManager;
-  logger: Logger;
+  logger: PrefixedLogger;
   validator: JSONValidator;
   functionProfiles: RawFunctionProfile[] | null;
   functionProfilesMode: Mode;
@@ -45,12 +46,8 @@ export class NoslatedClient extends EventEmitter {
     super();
     dumpConfig('sdk', config);
 
-    if (options?.logger) {
-      this.logger = options.logger;
-    } else {
-      loggers.setSink(loggers.getPrettySink('sdk.log'));
-      this.logger = loggers.get('noslated client');
-    }
+    LoggerFactory.init('sdk.log', options?.logger);
+    this.logger = LoggerFactory.prefix('noslated client');
 
     this.dataPlaneClientManager = new DataPlaneClientManager(this, config);
     this.controlPlaneClientManager = new ControlPlaneClientManager(
@@ -93,6 +90,7 @@ export class NoslatedClient extends EventEmitter {
     await Promise.all([
       this.dataPlaneClientManager.close(),
       this.controlPlaneClientManager.close(),
+      LoggerFactory.close(),
     ]);
   }
 
@@ -443,5 +441,5 @@ export class NoslatedClient extends EventEmitter {
 type InvokeType = 'invoke' | 'invokeService';
 
 interface NoslatedClientOptions {
-  logger?: Logger;
+  logger?: ILogger;
 }

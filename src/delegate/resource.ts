@@ -1,9 +1,9 @@
-import loggers from '#self/lib/logger';
 import { config } from '#self/config';
 import iterator from '#self/lib/iterator';
 import { EventEmitter } from 'events';
+import { LoggerFactory } from '#self/lib/logger_factory';
 
-const logger = loggers.get('delegate resource');
+const logger = LoggerFactory.prefix('delegate resource');
 const kExclusive = 'ex';
 const kShared = 'sh';
 const kTimeout = config.delegate.resourceAcquisitionTimeout;

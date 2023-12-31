@@ -1,5 +1,4 @@
 import { ControlPlaneEvent } from '#self/lib/constants';
-import { Logger } from '#self/lib/loggers';
 import { Delta } from '../capacity_manager';
 import { WorkerMetadata } from '../worker_stats/worker';
 import { FunctionProfileManager } from '#self/lib/function_profile';
@@ -7,9 +6,10 @@ import { ContainerManager } from '../container/container_manager';
 import { ControlPlaneDependencyContext } from '../deps';
 import { WorkerLauncher } from '../worker_launcher';
 import { StateManager } from '../worker_stats/state_manager';
+import { PrefixedLogger } from '#self/lib/logger_factory';
 
 export abstract class BaseController {
-  protected abstract logger: Logger;
+  protected abstract logger: PrefixedLogger;
   protected _functionProfile: FunctionProfileManager;
   protected _workerLauncher: WorkerLauncher;
   protected _containerManager: ContainerManager;

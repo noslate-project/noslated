@@ -5,8 +5,8 @@ import { Base } from '#self/lib/sdk_base';
 import { DataFlowController } from './data_flow_controller';
 import { DataPlaneHost } from './data_plane_host';
 import { getCurrentPlaneId } from '#self/lib/util';
-import { Logger, loggers } from '#self/lib/loggers';
 import { DaprAdaptor } from '#self/delegate/dapr_adaptor';
+import { LoggerFactory, PrefixedLogger } from '#self/lib/logger_factory';
 
 export interface ConfigurableDataPlaneDeps {
   config?: Config;
@@ -14,7 +14,7 @@ export interface ConfigurableDataPlaneDeps {
 
 export class DataPlane extends Base {
   config: Config;
-  logger: Logger;
+  logger: PrefixedLogger;
   host: DataPlaneHost;
   dataFlowController: DataFlowController;
 
@@ -23,7 +23,8 @@ export class DataPlane extends Base {
     this.config = deps?.config ?? config;
     dumpConfig('data', this.config);
 
-    this.logger = loggers.get('data plane');
+    this.logger = LoggerFactory.prefix('data plane');
+
     const sockPath = path.join(
       config.dirs.noslatedSock,
       `dp-${getCurrentPlaneId()}.sock`
@@ -35,7 +36,11 @@ export class DataPlane extends Base {
   }
 
   _close() {
-    return Promise.all([this.dataFlowController.close(), this.host.close()]);
+    return Promise.all([
+      this.dataFlowController.close(),
+      this.host.close(),
+      LoggerFactory.close(),
+    ]);
   }
 
   async _init() {
@@ -63,7 +68,7 @@ export class DataPlane extends Base {
 
     const options = Object.assign(
       {
-        logger: loggers.get('dapr'),
+        logger: LoggerFactory.prefix('dapr'),
       },
       modOptions || {}
     );

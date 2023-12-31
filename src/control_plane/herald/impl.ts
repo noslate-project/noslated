@@ -1,4 +1,3 @@
-import loggers from '#self/lib/logger';
 import { pairsToMap, KVPairs } from '#self/lib/rpc/key_value_pair';
 import * as root from '#self/proto/root';
 import { ServerWritableStream } from '@grpc/grpc-js';
@@ -13,12 +12,13 @@ import { EventBus } from '#self/lib/event-bus';
 import { WorkerLauncher } from '../worker_launcher';
 import { DataPlaneClientManager } from '../data_plane_client/manager';
 import { StateManager } from '../worker_stats/state_manager';
+import { LoggerFactory, PrefixedLogger } from '#self/lib/logger_factory';
 
 /**
  * Herald impl
  */
 export class HeraldImpl {
-  private logger;
+  private logger: PrefixedLogger;
   private _eventBus: EventBus;
   private _workerLauncher: WorkerLauncher;
   private _functionProfile: FunctionProfileManager;
@@ -26,7 +26,7 @@ export class HeraldImpl {
   private _stateManager: StateManager;
 
   constructor(ctx: ControlPlaneDependencyContext) {
-    this.logger = loggers.get('herald impl');
+    this.logger = LoggerFactory.prefix('herald impl');
     this._eventBus = ctx.getInstance('eventBus');
     this._workerLauncher = ctx.getInstance('workerLauncher');
     this._functionProfile = ctx.getInstance('functionProfile');

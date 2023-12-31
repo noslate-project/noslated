@@ -1,15 +1,15 @@
-import loggers from '#self/lib/logger';
-import { IMidwayLogger } from '@midwayjs/logger';
 import { Config } from '#self/config';
 import dayjs from 'dayjs';
 import { kDefaultRequestId } from '#self/lib/constants';
+import { LoggerFactory } from '#self/lib/logger_factory';
+import { ILogger } from '@midwayjs/logger';
 
 export class StatLogger {
-  private exitLogger: IMidwayLogger;
+  private exitLogger: ILogger;
   private timestampFormat: string;
 
   constructor(public config: Config) {
-    this.exitLogger = loggers.getPrettySink('resource_usage.log');
+    this.exitLogger = LoggerFactory.create('resource_usage.log');
     this.timestampFormat = this.config.logger.timestampFormat;
   }
 
