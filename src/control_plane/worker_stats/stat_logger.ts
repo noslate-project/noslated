@@ -1,11 +1,11 @@
 import loggers from '#self/lib/logger';
-import { IMidwayLogger } from '@midwayjs/logger';
+import { ILogger } from '@midwayjs/logger';
 import { Config } from '#self/config';
 import dayjs from 'dayjs';
 import { kDefaultRequestId } from '#self/lib/constants';
 
 export class StatLogger {
-  private exitLogger: IMidwayLogger;
+  private exitLogger: ILogger;
   private timestampFormat: string;
 
   constructor(public config: Config) {

@@ -71,6 +71,7 @@ describe('test/lib/logger.test.js', () => {
       info: neverCalls,
       warn: neverCalls,
       error: tracker.calls(1),
+      write: neverCalls,
     };
 
     loggers.setSink(someSink, 'error');

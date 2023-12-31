@@ -1,13 +1,13 @@
 import { Metadata } from '#self/delegate/request_response';
 import loggers from '#self/lib/logger';
-import { IMidwayLogger } from '@midwayjs/logger';
+import { ILogger } from '@midwayjs/logger';
 import { kDefaultRequestId, kDefaultWorkerName } from '#self/lib/constants';
 import { Config } from '#self/config';
 import dayjs from 'dayjs';
 
 export class RequestLogger {
-  accessLogger: IMidwayLogger;
-  errorLogger: IMidwayLogger;
+  accessLogger: ILogger;
+  errorLogger: ILogger;
   private timestampFormat: string;
 
   constructor(public config: Config) {
