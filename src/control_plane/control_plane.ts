@@ -14,6 +14,7 @@ import { EventBus } from '#self/lib/event-bus';
 import { StateManager } from './worker_stats/state_manager';
 import { CodeManager } from './code_manager';
 import { FunctionProfileUpdateEvent } from '#self/lib/function_profile';
+import { clearAllLoggers } from '@midwayjs/logger';
 
 /**
  * ControlPlane
@@ -78,6 +79,7 @@ export class ControlPlane extends BaseOf(EventEmitter) {
    */
   async _close() {
     await this._ctx.dispose();
+    clearAllLoggers();
   }
 
   private async _onPresetFunctionProfile(event: FunctionProfileUpdateEvent) {

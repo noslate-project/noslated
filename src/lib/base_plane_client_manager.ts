@@ -7,7 +7,7 @@ import { sleep } from './util';
 import { BasePlaneClient } from './base_plane_client';
 import { connectivityState } from '@grpc/grpc-js';
 import { Config } from '#self/config';
-import { ILogger } from '@midwayjs/logger';
+import { Logger } from '#self/lib/loggers';
 
 export class BasePlaneClientManager extends BaseOf(EventEmitter) {
   #clients: BasePlaneClient[];
@@ -25,7 +25,7 @@ export class BasePlaneClientManager extends BaseOf(EventEmitter) {
   constructor(
     public config: Config,
     private sockCount: number,
-    private logger: ILogger
+    private logger: Logger
   ) {
     super();
 
@@ -187,7 +187,7 @@ export class BasePlaneClientManager extends BaseOf(EventEmitter) {
    * @param {number} planeId The plane ID.
    * @return {Guest} The created client object.
    */
-  _createPlaneClient(planeId: number): BasePlaneClient {  // eslint-disable-line
+  _createPlaneClient(planeId: number): BasePlaneClient {
     throw new Error('_createPlaneClient() should be implemented');
   }
 

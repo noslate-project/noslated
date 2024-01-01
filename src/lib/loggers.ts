@@ -1,15 +1,11 @@
 import * as MidwayLogger from '@midwayjs/logger';
-import { IMidwayLogger } from '@midwayjs/logger';
 
 const levels = ['debug', 'info', 'warn', 'error'] as const;
 type LogLevels = (typeof levels)[number];
-export type Sink = {
-  [key in LogLevels]: (...args: unknown[]) => void;
-};
-
-interface LoggerMeta {
-  label: string;
-}
+export type Sink = Pick<
+  MidwayLogger.ILogger,
+  'debug' | 'info' | 'error' | 'warn' | 'write'
+> & { close?: () => void };
 
 const noopSink: Sink = (() => {
   const log = () => {};
@@ -24,16 +20,24 @@ const noopSink: Sink = (() => {
 
 function getPrettySink(filename: string) {
   const { config } = require('#self/config');
-  const midwayLogger: IMidwayLogger = MidwayLogger.createLogger(filename, {
-    level: config.logger.level,
-    fileLogName: filename ?? 'noslated.log',
-    dir: config.logger.dir,
-    enableConsole: config.logger.enableConsole,
-    // no need to pipe errors to a different file.
-    enableError: false,
-    // keep after rotater
-    maxFiles: 3,
-  });
+  const midwayLogger: MidwayLogger.ILogger = MidwayLogger.createLogger(
+    filename,
+    {
+      level: config.logger.level,
+      fileLogName: filename ?? 'noslated.log',
+      dir: config.logger.dir,
+      enableConsole: config.logger.enableConsole,
+      // no need to pipe errors to a different file.
+      enableError: false,
+      // keep after rotater
+      maxFiles: 3,
+      transports: {
+        file: {
+          bufferWrite: true,
+        },
+      },
+    }
+  );
   return midwayLogger;
 }
 
@@ -42,14 +46,10 @@ interface Logger extends Sink {}
 class Logger {
   category: string;
   sink!: Sink;
-  meta: LoggerMeta;
 
   constructor(category: string, sink: Sink, level: LogLevels) {
     this.category = category;
     this.setSink(sink, level);
-    this.meta = {
-      label: this.category,
-    };
   }
 
   setSink(sink: Sink, level: LogLevels = 'debug') {
@@ -61,9 +61,7 @@ class Logger {
         continue;
       }
       this[lvl] = (...args) => {
-        this.sink[lvl](...args, {
-          label: this.meta.label,
-        });
+        this.sink[lvl](`[${this.category}] ${args.join(' ')}`);
       };
     }
   }

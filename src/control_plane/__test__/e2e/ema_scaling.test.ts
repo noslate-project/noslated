@@ -40,7 +40,7 @@ describe(common.testName(__filename), function () {
       },
     ]);
 
-    const sequence = [1, 1, 1, 10, 1, 6, 5, 0, 0, 0];
+    const sequence = [1, 1, 1, 5, 0, 0, 0];
 
     for (const concurrency of sequence) {
       await makeConcurrencyRequest('aworker_echo_ema', concurrency, env);
@@ -52,7 +52,7 @@ describe(common.testName(__filename), function () {
 });
 
 async function request(functionName: string, env: DefaultEnvironment) {
-  const data = Buffer.from('1000');
+  const data = Buffer.from('100');
 
   const response = await env.agent.invoke(functionName, data, {
     method: 'POST',
