@@ -26,7 +26,6 @@ import * as root from '#self/proto/root';
 import { kDefaultRequestId } from '#self/lib/constants';
 import { ClientDuplexStream } from '@grpc/grpc-js';
 import { isUint8Array } from 'util/types';
-import { clearAllLoggers } from '@midwayjs/logger';
 
 /**
  * Noslated client
@@ -94,7 +93,7 @@ export class NoslatedClient extends EventEmitter {
     await Promise.all([
       this.dataPlaneClientManager.close(),
       this.controlPlaneClientManager.close(),
-      clearAllLoggers(),
+      loggers.close(),
     ]);
   }
 

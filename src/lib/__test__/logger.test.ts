@@ -145,6 +145,10 @@ describe(common.testName(__filename), () => {
 
     after(() => {
       stubConfig.restore();
+      // 还原状态
+      Loggers.loggerFactory = Loggers.createLoggerFactory();
+      const sink = Loggers.getPrettySink('');
+      loggers.setSink(sink);
     });
 
     it('should use custom logger factory', () => {

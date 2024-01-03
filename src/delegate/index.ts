@@ -13,7 +13,6 @@ import { NoslatedServer } from './noslated_ipc';
 import { Readable } from 'stream';
 import { Metadata, MetadataInit } from './request_response';
 import { DaprAdaptor } from './dapr_adaptor';
-import { clearAllLoggers } from '@midwayjs/logger';
 
 const logger = Logger.get('delegate');
 
@@ -297,7 +296,7 @@ export class NoslatedDelegateService extends EventEmitter {
       }
     });
 
-    clearAllLoggers();
+    Logger.close();
   }
 
   /**

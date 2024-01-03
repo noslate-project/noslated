@@ -22,7 +22,13 @@ export interface ILoggerFactory<T extends LoggerOptions = LoggerOptions> {
 }
 
 export interface Sink
-  extends Pick<ILogger, 'debug' | 'info' | 'error' | 'warn' | 'write'> {}
+  extends Pick<ILogger, 'debug' | 'info' | 'error' | 'warn' | 'write'> {
+  debug(msg: any, ...args: any[]): void;
+  info(msg: any, ...args: any[]): void;
+  error(msg: any, ...args: any[]): void;
+  warn(msg: any, ...args: any[]): void;
+  write(msg: any, ...args: any[]): void;
+}
 
 // logger.info('foobar');
 // output: [CATEGORY] foobar
@@ -124,9 +130,7 @@ export class Loggers {
     return new LoggerFactoryClz();
   }
 
-  // 初始化 noslate 内部的 loggerFactory，防止干扰
-  // 默认 midwayjs/logger 导出的是全局的
-  static loggerFactory = this.createLoggerFactory();
+  static loggerFactory: ILoggerFactory;
 
   static getPrettySink(filename: string) {
     return this.loggerFactory.createLogger(
@@ -178,4 +182,7 @@ export class Loggers {
   }
 }
 
+// 初始化 noslate 内部的 loggerFactory，防止干扰
+// 默认 midwayjs/logger 导出的是全局的
+Loggers.loggerFactory = Loggers.createLoggerFactory();
 export const loggers = new Loggers();
