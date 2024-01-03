@@ -21,7 +21,7 @@ describe(common.testName(__filename), function () {
       },
       systemCircuitBreaker: {
         // 部分 CI 环境性能较差，防止触发 breaker
-        systemLoad1Limit: 30,
+        systemLoad1Limit: 50,
       },
     }),
   });
