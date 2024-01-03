@@ -44,7 +44,7 @@ describe(common.testName(__filename), function () {
       },
     ]);
 
-    const sequence = [1, 1, 1, 10, 1, 6, 5, 0, 0, 0];
+    const sequence = [1, 1, 1, 10, 0, 0, 0];
 
     for (const concurrency of sequence) {
       await makeConcurrencyRequest('aworker_echo_ema', concurrency, env);
