@@ -1,4 +1,4 @@
-import loggers from '#self/lib/logger';
+import { Loggers } from '#self/lib/loggers';
 import { ILogger } from '@midwayjs/logger';
 import { Config } from '#self/config';
 import dayjs from 'dayjs';
@@ -9,7 +9,7 @@ export class StatLogger {
   private timestampFormat: string;
 
   constructor(public config: Config) {
-    this.exitLogger = loggers.getPrettySink('resource_usage.log');
+    this.exitLogger = Loggers.getPrettySink('resource_usage.log');
     this.timestampFormat = this.config.logger.timestampFormat;
   }
 

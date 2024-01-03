@@ -18,7 +18,7 @@ import { DataPlaneClientManager } from './data_plane_client_manager';
 import { ControlPlaneClientManager } from './control_plane_client_manager';
 // json could not be loaded with #self.
 import kServiceProfileSchema from '../lib/json/service_profile_schema.json';
-import { Logger } from '#self/lib/loggers';
+import { Loggers, Logger } from '#self/lib/loggers';
 import { RawFunctionProfile } from '#self/lib/json/function_profile';
 import { FunctionProfileManager, Mode } from '#self/lib/function_profile';
 import { ServiceProfileItem } from '#self/data_plane/service_selector';
@@ -49,7 +49,7 @@ export class NoslatedClient extends EventEmitter {
     if (options?.logger) {
       this.logger = options.logger;
     } else {
-      loggers.setSink(loggers.getPrettySink('sdk.log'));
+      loggers.setSink(Loggers.getPrettySink('sdk.log'));
       this.logger = loggers.get('noslated client');
     }
 
