@@ -19,6 +19,10 @@ describe(common.testName(__filename), function () {
         useEmaScaling: true,
         workerTrafficStatsPullingMs: 1000,
       },
+      systemCircuitBreaker: {
+        // 部分 CI 环境性能较差，防止触发 breaker
+        systemLoad1Limit: 30,
+      },
     }),
   });
 
@@ -40,7 +44,7 @@ describe(common.testName(__filename), function () {
       },
     ]);
 
-    const sequence = [1, 1, 1, 5, 0, 0, 0];
+    const sequence = [1, 1, 1, 10, 1, 6, 5, 0, 0, 0];
 
     for (const concurrency of sequence) {
       await makeConcurrencyRequest('aworker_echo_ema', concurrency, env);
@@ -52,7 +56,7 @@ describe(common.testName(__filename), function () {
 });
 
 async function request(functionName: string, env: DefaultEnvironment) {
-  const data = Buffer.from('100');
+  const data = Buffer.from('200');
 
   const response = await env.agent.invoke(functionName, data, {
     method: 'POST',
