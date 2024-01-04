@@ -4,7 +4,7 @@ import {
   WorkerStatus,
   WorkerStatusReport,
 } from '#self/lib/constants';
-import { Logger, loggers } from '#self/lib/loggers';
+import { Logger, loggers, PrefixedLogger } from '#self/lib/loggers';
 import {
   ContainerReconciledEvent,
   WorkerStatusReportEvent,
@@ -34,11 +34,19 @@ export class StateManager extends Base {
 
   private _useEmaScaling: boolean;
 
+  private _dumpLogger: Pick<PrefixedLogger, 'info'> = {
+    info: () => {},
+  };
+
   constructor(ctx: ControlPlaneDependencyContext) {
     super();
     this._logger = loggers.get('state manager');
     this._functionProfile = ctx.getInstance('functionProfile');
     this._config = ctx.getInstance('config');
+
+    if (this._config.controlPlane.dumpWorkerTrafficStats) {
+      this._dumpLogger = new PrefixedLogger('state manager', 'dump');
+    }
 
     this._eventBus = ctx.getInstance('eventBus');
     this._eventBus.subscribe(WorkerTrafficStatsEvent, {
@@ -129,6 +137,12 @@ export class StateManager extends Base {
     for (const item of data) {
       const borkerKey = Broker.getKey(item.functionName!, item.inspector!);
       concurrencyStats.set(borkerKey, item.concurrency!);
+
+      this._dumpLogger.info(
+        `sync broker %s concurrency %d.`,
+        borkerKey,
+        item.concurrency!
+      );
 
       for (const workerData of item.workers ?? []) {
         const name = `${borkerKey}#${workerData.name}`;

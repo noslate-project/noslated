@@ -120,6 +120,11 @@ export interface ControlPlaneConfig {
    * 此配置开启会强制设置 workerTrafficStatsPullingMs 为 1000ms，确保数据同步及时
    */
   useEmaScaling: boolean;
+  /**
+   * 输出 worker traffic stats 同步数据
+   * 默认为 false
+   */
+  dumpWorkerTrafficStats: boolean;
 }
 
 export interface DatePlaneConfig {
