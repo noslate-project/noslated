@@ -310,6 +310,11 @@ export interface LoggerConfig {
    * 默认为 YYYY-MM-DD HH:mm:ss.SSS
    */
   timestampFormat: string;
+  /**
+   * 自定义 LoggerFactory 模块路径
+   * module.exports = CustomLoggerFactory;
+   */
+  customFactoryPath?: string;
 }
 
 export interface GrpcConfig {

@@ -1,5 +1,5 @@
 import { Metadata } from '#self/delegate/request_response';
-import loggers from '#self/lib/logger';
+import { Loggers } from '#self/lib/loggers';
 import { ILogger } from '@midwayjs/logger';
 import { kDefaultRequestId, kDefaultWorkerName } from '#self/lib/constants';
 import { Config } from '#self/config';
@@ -11,8 +11,8 @@ export class RequestLogger {
   private timestampFormat: string;
 
   constructor(public config: Config) {
-    this.accessLogger = loggers.getPrettySink('access.log');
-    this.errorLogger = loggers.getPrettySink('error.log');
+    this.accessLogger = Loggers.getPrettySink('access.log');
+    this.errorLogger = Loggers.getPrettySink('error.log');
     this.timestampFormat = this.config.logger.timestampFormat;
   }
 

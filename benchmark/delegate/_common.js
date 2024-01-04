@@ -131,9 +131,10 @@ function createDelegate(filename, options, callback) {
   return main;
 
   function main(setup) {
-    require('#self/lib/logger').setSink(
-      require('#self/lib/logger').getPrettySink('benchmark.log')
-    );
+    const { Loggers, loggers } = require('#self/lib/loggers');
+    const sink = Loggers.getPrettySink('benchmark.log');
+    loggers.setSink(sink);
+
     const {
       NoslatedDelegateService: DelegateService,
     } = require('#self/delegate/index');
