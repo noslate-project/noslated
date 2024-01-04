@@ -18,6 +18,7 @@ export default {
     workerRedundantVictimSpareTimes: 6,
     capacityScalingStage: 0.7,
     useEmaScaling: false,
+    dumpWorkerTrafficStats: false,
   },
 
   dataPlane: {
