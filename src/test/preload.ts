@@ -2,7 +2,6 @@ import os from 'os';
 import path from 'path';
 import { isatty } from 'tty';
 import { createHook } from 'async_hooks';
-import { clearAllLoggers } from '@midwayjs/logger';
 
 process.env.NOSLATED_LOG_LEVEL = 'debug';
 process.env.NOSLATED_SOCKS_DIR = path.join(
@@ -19,7 +18,6 @@ process.env.MIDWAY_LOGGER_DISABLE_COLORS =
 // See https://github.com/nodejs/node/issues/37236
 // Force GC before node shutdown.
 process.on('exit', () => {
-  clearAllLoggers();
   if (global.gc) {
     global.gc();
   }

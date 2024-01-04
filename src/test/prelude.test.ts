@@ -1,5 +1,5 @@
-import loggers from '#self/lib/logger';
+import { Loggers, loggers } from '#self/lib/loggers';
 
 before(() => {
-  loggers.setSink(loggers.getPrettySink(''));
+  loggers.setSink(Loggers.getPrettySink(''));
 });

@@ -18,6 +18,8 @@ node_modules
 .code/caches
 .code/logs
 .code/run
+.code/*.log
+.code/logs*
 .nyc_output
 coverage
 

@@ -1,7 +1,7 @@
 import EventEmitter from 'events';
 import path from 'path';
 import { Meter, createNoopMeter } from '@opentelemetry/api';
-import Logger from '../lib/logger';
+import loggers from '../lib/logger';
 import { aworker } from '../proto/aworker';
 import { CredentialRegistration } from './registration';
 import { DefaultNamespaceResolver, NamespaceResolver } from './namespace';
@@ -13,9 +13,8 @@ import { NoslatedServer } from './noslated_ipc';
 import { Readable } from 'stream';
 import { Metadata, MetadataInit } from './request_response';
 import { DaprAdaptor } from './dapr_adaptor';
-import { clearAllLoggers } from '@midwayjs/logger';
 
-const logger = Logger.get('delegate');
+const logger = loggers.get('delegate');
 
 const { CredentialTargetType } = aworker.ipc;
 
@@ -267,7 +266,7 @@ export class NoslatedDelegateService extends EventEmitter {
 
     const server = new NoslatedServer(
       this.#sharedState.serverPath,
-      Logger.get('noslated server')
+      loggers.get('noslated server')
     );
 
     server.onRequest = this.#onRequest;
@@ -297,7 +296,7 @@ export class NoslatedDelegateService extends EventEmitter {
       }
     });
 
-    clearAllLoggers();
+    loggers.close();
   }
 
   /**

@@ -7,7 +7,6 @@ import { DataPlaneHost } from './data_plane_host';
 import { getCurrentPlaneId } from '#self/lib/util';
 import { Logger, loggers } from '#self/lib/loggers';
 import { DaprAdaptor } from '#self/delegate/dapr_adaptor';
-import { clearAllLoggers } from '@midwayjs/logger';
 
 export interface ConfigurableDataPlaneDeps {
   config?: Config;
@@ -39,7 +38,7 @@ export class DataPlane extends Base {
     return Promise.all([
       this.dataFlowController.close(),
       this.host.close(),
-      clearAllLoggers(),
+      loggers.close(),
     ]);
   }
 
