@@ -2,11 +2,11 @@
 
 'use strict';
 
-const Logger = require('#self/lib/logger');
+const { Loggers, loggers } = require('#self/lib/loggers');
 const { ControlPlane } = require('#self/control_plane/index');
 
-(async function() {
-  Logger.setSink(Logger.getPrettySink('control_plane.log'));
+(async function () {
+  loggers.setSink(Loggers.getPrettySink('control_plane.log'));
 
   const controlPlane = new ControlPlane();
   await controlPlane.ready();
