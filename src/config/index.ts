@@ -208,6 +208,14 @@ export interface WorkerDefaultConfig {
 
 export interface StarterConfig {
   aworker: AworkerStarterConfig;
+  nodejs: NodejsStarterConfig;
+}
+
+export interface NodejsStarterConfig {
+  /**
+   * 默认集成环境变量
+   */
+  defaultEnvirons?: Record<string, string>;
 }
 
 export interface AworkerStarterConfig {
