@@ -52,6 +52,6 @@ export class NodejsStarter extends BaseStarter implements Injectable {
     }
     const menv = Object.assign(this.config.starter.nodejs.defaultEnvirons || {}, envs)
 
-    return this.doStart(name, bundlePath, commands, profile, envs, options);
+    return this.doStart(name, bundlePath, commands, profile, menv, options);
   }
 }
