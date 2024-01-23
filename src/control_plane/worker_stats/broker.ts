@@ -43,7 +43,10 @@ class Broker {
 
     this.redundantTimes = 0;
     this._lastExpandTime = 0;
-    this._lastShrinkTime = 0;
+    // 开启时，启动后缩容进入冷却，防止 worker 被过快回收
+    this._lastShrinkTime = this.shrinkCooldownOnStartup
+      ? Date.now() + this.shrinkCooldown
+      : 0;
   }
 
   get runtime() {
@@ -108,6 +111,10 @@ class Broker {
 
   get precisionZeroThreshold() {
     return this.#profile.worker.precisionZeroThreshold || 0.01;
+  }
+
+  get shrinkCooldownOnStartup() {
+    return this.#profile.worker.shrinkCooldownOnStartup || false;
   }
 
   isExpandCooldown(now: number) {

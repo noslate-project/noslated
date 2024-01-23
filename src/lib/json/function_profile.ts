@@ -51,6 +51,8 @@ export interface ProcessFunctionProfile {
     precisionZeroThreshold?: number;
     // worker 并发度统计算法
     concurrencyStatsMode?: ConcurrencyStatsMode;
+    // 启动后是否进入缩容冷却期，默认为 false
+    shrinkCooldownOnStartup?: boolean;
   };
   environments?: {
     key: string;
