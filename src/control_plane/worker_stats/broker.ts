@@ -44,9 +44,7 @@ class Broker {
     this.redundantTimes = 0;
     this._lastExpandTime = 0;
     // 开启时，启动后缩容进入冷却，防止 worker 被过快回收
-    this._lastShrinkTime = this.shrinkCooldownOnStartup
-      ? Date.now() + this.shrinkCooldown
-      : 0;
+    this._lastShrinkTime = this.shrinkCooldownOnStartup ? Date.now() : 0;
   }
 
   get runtime() {
