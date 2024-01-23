@@ -112,7 +112,7 @@ class Broker {
   }
 
   get shrinkCooldownOnStartup() {
-    return this.#profile.worker.shrinkCooldownOnStartup || false;
+    return this.#profile.worker.shrinkCooldownOnStartup ?? true;
   }
 
   isExpandCooldown(now: number) {

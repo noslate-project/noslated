@@ -29,6 +29,7 @@ describe(common.testName(__filename), function () {
         signature: 'md5:234234',
         worker: {
           maxActivateRequests: 1,
+          shrinkCooldownOnStartup: false,
         },
         resourceLimit: {
           memory: 200 * 1024 * 1024,
