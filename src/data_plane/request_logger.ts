@@ -25,7 +25,7 @@ export class RequestLogger {
     workerName: string = kDefaultWorkerName,
     err: Error,
     requestId: string = kDefaultRequestId,
-    useNewWorker: boolean = false
+    useNewWorker = false
   ) {
     // logTime, requestId, dataPlanePid, functionName, workerName, useNewWorker, error
     this.errorLogger.write(
@@ -43,7 +43,7 @@ export class RequestLogger {
     status = `${TriggerErrorStatus.DEFAULT}`,
     performance: RequestTiming,
     bytesSent = 0,
-    useNewWorker: boolean = false
+    useNewWorker = false
   ) {
     // logTime, requestId, dataPlanePid, functionName, workerName, useNewWorker, method, url, invokeSuccess, timeToFirstByte, timeForQueueing, rt, statusCode, responseSize
     const { method = '-', url = '-', requestId = kDefaultRequestId } = metadata;
