@@ -45,11 +45,11 @@ export interface ProcessFunctionProfile {
     expandCooldown?: number;
     // 缩容冷却时间，单位 ms，默认 60s
     shrinkCooldown?: number;
-    // 扩缩容后并发度水位，影响扩缩容操作数量
+    // 扩缩容后并发度水位，影响扩缩容操作数量，默认为 0.5
     scaleFactor?: number;
-    // ema concurrency 小于该值则视为 0
+    // ema concurrency 小于该值则视为 0，默认为 0.01
     precisionZeroThreshold?: number;
-    // worker 并发度统计算法
+    // worker 并发度统计算法，默认为 ConcurrencyStatsMode.INSTANT
     concurrencyStatsMode?: ConcurrencyStatsMode;
     // 启动后是否进入缩容冷却期，默认为 true
     shrinkCooldownOnStartup?: boolean;

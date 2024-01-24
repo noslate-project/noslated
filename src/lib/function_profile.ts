@@ -52,6 +52,20 @@ function buildProfile(
       disableRequestQueue: false,
       v8Options: [],
       execArgv: [],
+
+      concurrencySlidingWindowSize: config.worker.concurrencySlidingWindowSize,
+      concurrencySlidingBucketCount:
+        config.worker.concurrencySlidingBucketCount,
+      emaConcurrencyAlpha: config.worker.emaConcurrencyAlpha,
+      concurrencyExpandThreshold: config.worker.concurrencyExpandThreshold,
+      concurrencyShrinkThreshold: config.worker.concurrencyShrinkThreshold,
+      expandCooldown: config.worker.expandCooldown,
+      shrinkCooldown: config.worker.shrinkCooldown,
+      scaleFactor: config.worker.scaleFactor,
+      precisionZeroThreshold: config.worker.precisionZeroThreshold,
+      concurrencyStatsMode: config.worker.concurrencyStatsMode,
+      shrinkCooldownOnStartup: config.worker.shrinkCooldownOnStartup,
+
       ...(json.worker ?? {}),
     },
     environments: json.environments ?? [],
