@@ -1,6 +1,7 @@
 import type { LoggerLevel } from '@midwayjs/logger';
 import type { ChannelOptions } from '@grpc/grpc-js';
 import { resolveConfig } from './loader';
+import { ConcurrencyStatsMode } from '#self/lib/json/function_profile';
 
 export const config = resolveConfig();
 export { dumpConfig } from './loader';
@@ -204,6 +205,29 @@ export interface WorkerDefaultConfig {
    * 默认为 10
    */
   replicaCountLimit: number;
+
+  // 并发度滑动时间窗口大小，单位 ms，默认 60s
+  concurrencySlidingWindowSize?: number;
+  // 并发度滑动时间窗口分桶数，默认 6
+  concurrencySlidingBucketCount?: number;
+  // 指数移动平均平滑系数 (0,1]，默认 0.5
+  emaConcurrencyAlpha?: number;
+  // 并发度扩容水位阈值，默认 0.7
+  concurrencyExpandThreshold?: number;
+  // 并发度缩容水位阈值，默认 0.3
+  concurrencyShrinkThreshold?: number;
+  // 扩容冷却时间，单位 ms，默认 1s
+  expandCooldown?: number;
+  // 缩容冷却时间，单位 ms，默认 60s
+  shrinkCooldown?: number;
+  // 扩缩容后并发度水位，影响扩缩容操作数量
+  scaleFactor?: number;
+  // ema concurrency 小于该值则视为 0
+  precisionZeroThreshold?: number;
+  // worker 并发度统计算法，默认为 ConcurrencyStatsMode.INSTANT
+  concurrencyStatsMode?: ConcurrencyStatsMode;
+  // 启动后是否进入缩容冷却期，默认为 true
+  shrinkCooldownOnStartup?: boolean;
 }
 
 export interface StarterConfig {

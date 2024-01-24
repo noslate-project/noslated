@@ -1,3 +1,4 @@
+import { ConcurrencyStatsMode } from '#self/lib/json/function_profile';
 import path from 'path';
 
 const projectRoot = path.resolve(__dirname, '../../');
@@ -42,6 +43,19 @@ export default {
     maxActivateRequests: 10,
     defaultInitializerTimeout: 10_000,
     replicaCountLimit: 10,
+
+    // ema 相关默认值
+    concurrencySlidingWindowSize: 60_000,
+    concurrencySlidingBucketCount: 6,
+    emaConcurrencyAlpha: 0.5,
+    concurrencyExpandThreshold: 0.7,
+    concurrencyShrinkThreshold: 0.3,
+    expandCooldown: 1000,
+    shrinkCooldown: 60_000,
+    scaleFactor: 0.5,
+    precisionZeroThreshold: 0.01,
+    concurrencyStatsMode: ConcurrencyStatsMode.INSTANT,
+    shrinkCooldownOnStartup: true,
   },
   starter: {
     aworker: {
