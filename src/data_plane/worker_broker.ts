@@ -100,6 +100,7 @@ export class Worker extends EventEmitter {
   debuggerTag: string | undefined;
 
   private _dispatcherData: unknown;
+  private _unworked = true;
 
   constructor(
     public delegate: NoslatedDelegateService,
@@ -193,6 +194,7 @@ export class Worker extends EventEmitter {
 
       ret.queueing = waitMs;
       ret.workerName = this.name;
+      ret.useNewWorker = this._unworked;
 
       // do not await the response body finishing.
       ret.finish().finally(() => {
@@ -204,7 +206,12 @@ export class Worker extends EventEmitter {
 
       return ret;
     } catch (e: unknown) {
-      extendErrorWithInvokeDetail(e as Error, this.name, waitMs);
+      extendErrorWithInvokeDetail(
+        e as Error,
+        this.name,
+        waitMs,
+        this._unworked
+      );
 
       this.activeRequestCount--;
       if (this.activeRequestCount === 0) {
@@ -212,6 +219,8 @@ export class Worker extends EventEmitter {
       }
 
       throw e;
+    } finally {
+      this._unworked = false;
     }
   }
 }
@@ -219,17 +228,20 @@ export class Worker extends EventEmitter {
 export function extendErrorWithInvokeDetail(
   error: Error,
   workerName: string,
-  queueing: number
+  queueing: number,
+  useNewWorker: boolean
 ) {
   if (error instanceof Error) {
     error['workerName'] = workerName;
     error['queueing'] = queueing;
+    error['useNewWorker'] = useNewWorker;
   }
 }
 
 export interface ErrorWithInvokeDetail extends Error {
   workerName: string;
   queueing: number;
+  useNewWorker: boolean;
 }
 
 interface BrokerOptions {

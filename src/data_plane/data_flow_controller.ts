@@ -495,6 +495,7 @@ export class DataFlowController extends BaseOf(EventEmitter) {
         error,
         invokeName,
         (error as ErrorWithInvokeDetail).workerName || kDefaultWorkerName,
+        (error as ErrorWithInvokeDetail).useNewWorker,
         metadata,
         TriggerErrorStatus.INTERNAL,
         {
@@ -529,7 +530,8 @@ export class DataFlowController extends BaseOf(EventEmitter) {
           queueing: response!.queueing || 0,
           rt: Date.now() - start,
         },
-        bytesSent
+        bytesSent,
+        response.useNewWorker
       );
     });
 
@@ -539,6 +541,7 @@ export class DataFlowController extends BaseOf(EventEmitter) {
         e,
         invokeName,
         response.workerName || kDefaultWorkerName,
+        response.useNewWorker,
         metadata,
         TriggerErrorStatus.ABORT,
         {
@@ -555,19 +558,27 @@ export class DataFlowController extends BaseOf(EventEmitter) {
     error: Error,
     invokeName: string,
     workerName: string,
+    useNewWorker: boolean,
     metadata: Metadata,
     status: number,
     timing: RequestTiming,
     bytesSent?: number
   ) {
-    this.requestLogger.error(invokeName, workerName, error, metadata.requestId);
+    this.requestLogger.error(
+      invokeName,
+      workerName,
+      error,
+      metadata.requestId,
+      useNewWorker
+    );
     this.requestLogger.access(
       invokeName,
       workerName,
       metadata,
       String(status),
       timing,
-      bytesSent ?? 0
+      bytesSent ?? 0,
+      useNewWorker
     );
   }
 

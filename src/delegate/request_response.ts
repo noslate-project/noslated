@@ -92,6 +92,7 @@ class TriggerResponse extends Readable {
   // time for request wait to be invoked
   #queueing: number;
   #workerName: string;
+  #useNewWorker: boolean;
 
   constructor(init?: TriggerResponseInit) {
     super({
@@ -106,6 +107,7 @@ class TriggerResponse extends Readable {
     this.#metadata = metadata as Metadata;
     this.#queueing = kDefaultQueueingTime;
     this.#workerName = kDefaultWorkerName;
+    this.#useNewWorker = false;
     this.#finishDeferred = createDeferred<boolean>();
 
     this.once('close', () => {
@@ -147,6 +149,14 @@ class TriggerResponse extends Readable {
 
   get workerName(): string {
     return this.#workerName;
+  }
+
+  get useNewWorker(): boolean {
+    return this.#useNewWorker;
+  }
+
+  set useNewWorker(val: boolean) {
+    this.#useNewWorker = val;
   }
 
   async finish(): Promise<boolean> {

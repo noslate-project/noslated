@@ -1,7 +1,11 @@
 import { Metadata } from '#self/delegate/request_response';
 import { Loggers } from '#self/lib/loggers';
 import { ILogger } from '@midwayjs/logger';
-import { kDefaultRequestId, kDefaultWorkerName } from '#self/lib/constants';
+import {
+  kDefaultRequestId,
+  kDefaultWorkerName,
+  UseNewWorkerState,
+} from '#self/lib/constants';
 import { Config } from '#self/config';
 import dayjs from 'dayjs';
 
@@ -20,13 +24,14 @@ export class RequestLogger {
     funcName: string,
     workerName: string = kDefaultWorkerName,
     err: Error,
-    requestId: string = kDefaultRequestId
+    requestId: string = kDefaultRequestId,
+    useNewWorker = false
   ) {
-    // logTime, requestId, dataPlanePid, functionName, workerName, error
+    // logTime, requestId, dataPlanePid, functionName, workerName, useNewWorker, error
     this.errorLogger.write(
       `${dayjs().format(this.timestampFormat)} ${requestId} ${
         process.pid
-      } ${funcName} ${workerName} - `,
+      } ${funcName} ${workerName} ${useNewWorker ?? false} - `,
       err
     );
   }
@@ -37,16 +42,17 @@ export class RequestLogger {
     metadata: Metadata,
     status = `${TriggerErrorStatus.DEFAULT}`,
     performance: RequestTiming,
-    bytesSent = 0
+    bytesSent = 0,
+    useNewWorker = false
   ) {
-    // logTime, requestId, dataPlanePid, functionName, workerName, method, url, invokeSuccess, timeToFirstByte, timeForQueueing, rt, statusCode, responseSize
+    // logTime, requestId, dataPlanePid, functionName, workerName, useNewWorker, method, url, invokeSuccess, timeToFirstByte, timeForQueueing, rt, statusCode, responseSize
     const { method = '-', url = '-', requestId = kDefaultRequestId } = metadata;
     const { ttfb = 0, queueing = 0, rt = 0 } = performance;
 
     this.accessLogger.write(
       `${dayjs().format(this.timestampFormat)} ${requestId} ${
         process.pid
-      } ${funcName} ${workerName} ${method} ${url} ` +
+      } ${funcName} ${workerName} ${useNewWorker ?? false} ${method} ${url} ` +
         `${
           `${status}` === '200'
         } ${ttfb} ${queueing} ${rt} ${status} ${bytesSent}`
