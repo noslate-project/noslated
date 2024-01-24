@@ -136,6 +136,10 @@
           "type": "string",
           "description": "The concurrency stats mode, default is instant",
           "enum": ["instant", "periodic_max", "periodic_avg"]
+        },
+        "shrinkCooldownOnStartup": {
+          "type": "boolean",
+          "description": "whether shrink cooldown on worker startup"
         }
       },
       "additionalProperties": true
