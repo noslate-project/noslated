@@ -141,6 +141,10 @@ export interface DatePlaneConfig {
    * Beacon Host 模块路径
    */
   beaconHostModulePath?: string;
+  /**
+   * 关闭流量超时时间，单位毫秒，默认 30s
+   */
+  closeTrafficTimeout: number;
 }
 
 export interface DirConfig {

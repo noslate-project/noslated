@@ -128,19 +128,37 @@ export class Worker extends EventEmitter {
   /**
    * Close this worker's traffic.
    */
-  async closeTraffic() {
+  async closeTraffic(timeout: number) {
     this.trafficOff = true;
+    this.logger.info(
+      'traffic closed, waiting for activeRequestCount down to 0...'
+    );
 
     if (this.activeRequestCount <= 0) {
       return Promise.resolve(true);
     }
 
     const { promise, resolve } = utils.createDeferred<boolean>();
+
+    let timer: NodeJS.Timeout | undefined = undefined;
+
     const downToZero: (...args: any[]) => void = () => {
+      clearTimeout(timer);
+      this.logger.debug('activeRequestCount down to 0.');
       resolve(true);
     };
 
     this.once('downToZero', downToZero);
+
+    timer = setTimeout(() => {
+      this.logger.warn(
+        `waiting for activeRequestCount down to 0 timeout, activeRequestCount is ${this.activeRequestCount}, will force kill.`
+      );
+      resolve(true);
+      this.removeListener('downToZero', downToZero);
+    }, timeout);
+
+    timer.unref();
 
     return promise;
   }
@@ -277,7 +295,8 @@ export class WorkerBroker extends Base implements DispatcherDelegate {
   constructor(
     public dataFlowController: DataFlowController,
     private _profile: RawWithDefaultsFunctionProfile,
-    public options: BrokerOptions = {}
+    public options: BrokerOptions = {},
+    private _closeTrafficTimeout = 10_000
   ) {
     super();
 
@@ -354,7 +373,7 @@ export class WorkerBroker extends Base implements DispatcherDelegate {
   async closeTraffic(worker: Worker) {
     try {
       this._dispatcher.unregisterWorker(worker);
-      await worker.closeTraffic();
+      await worker.closeTraffic(this._closeTrafficTimeout);
 
       // 同步 RequestDrained
       this.host.broadcastContainerStatusReport({
