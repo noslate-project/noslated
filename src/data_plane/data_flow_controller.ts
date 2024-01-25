@@ -241,7 +241,7 @@ export class DataFlowController extends BaseOf(EventEmitter) {
     const tag = worker
       ? (worker as Worker).name || `{${credential}}`
       : `{${credential}}`;
-    logger.info('worker(%s) disconnected %s', tag);
+    logger.info('worker(%s) disconnected', tag);
 
     broker.removeWorker(credential);
     this.credentialBrokerMap.delete(credential);
@@ -314,7 +314,12 @@ export class DataFlowController extends BaseOf(EventEmitter) {
         code: RpcStatus.NOT_FOUND,
       });
     }
-    const broker = new WorkerBroker(this, profile, options);
+    const broker = new WorkerBroker(
+      this,
+      profile,
+      options,
+      this.config.dataPlane.closeTrafficTimeout
+    );
     this.brokers.set(key, broker);
     return broker;
   }

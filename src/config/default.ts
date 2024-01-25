@@ -26,6 +26,7 @@ export default {
     daprAdaptorModulePath: undefined,
     daprAdaptorModuleOptions: undefined,
     beaconHostModulePath: undefined,
+    closeTrafficTimeout: 30_000,
   },
 
   dirs: {
