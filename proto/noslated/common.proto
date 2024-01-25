@@ -75,6 +75,7 @@ message FunctionProfileWorker {
   float precisionZeroThreshold = 21;
   string concurrencyStatsMode = 22;
   bool shrinkCooldownOnStartup = 23;
+  bool resetShrinkCooldownOnRequestActive = 24;
 }
 
 message PlaneHealthyResponse {
