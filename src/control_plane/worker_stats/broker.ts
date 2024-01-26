@@ -76,39 +76,39 @@ class Broker {
   }
 
   get concurrencySlidingWindowSize() {
-    return this.#profile.worker.concurrencySlidingWindowSize || 60 * 1000;
+    return this.#profile.worker.concurrencySlidingWindowSize ?? 60 * 1000;
   }
 
   get concurrencySlidingBucketCount() {
-    return this.#profile.worker.concurrencySlidingBucketCount || 6;
+    return this.#profile.worker.concurrencySlidingBucketCount ?? 6;
   }
 
   get emaConcurrencyAlpha() {
-    return this.#profile.worker.emaConcurrencyAlpha || 0.5;
+    return this.#profile.worker.emaConcurrencyAlpha ?? 0.5;
   }
 
   get concurrencyExpandThreshold() {
-    return this.#profile.worker.concurrencyExpandThreshold || 0.7;
+    return this.#profile.worker.concurrencyExpandThreshold ?? 0.7;
   }
 
   get concurrencyShrinkThreshold() {
-    return this.#profile.worker.concurrencyShrinkThreshold || 0.3;
+    return this.#profile.worker.concurrencyShrinkThreshold ?? 0.3;
   }
 
   get expandCooldown() {
-    return this.#profile.worker.expandCooldown || 1000;
+    return this.#profile.worker.expandCooldown ?? 1000;
   }
 
   get shrinkCooldown() {
-    return this.#profile.worker.shrinkCooldown || 60 * 1000;
+    return this.#profile.worker.shrinkCooldown ?? 60 * 1000;
   }
 
   get scaleFactor() {
-    return this.#profile.worker.scaleFactor || 0.5;
+    return this.#profile.worker.scaleFactor ?? 0.5;
   }
 
   get precisionZeroThreshold() {
-    return this.#profile.worker.precisionZeroThreshold || 0.01;
+    return this.#profile.worker.precisionZeroThreshold ?? 0.01;
   }
 
   get shrinkCooldownOnStartup() {
