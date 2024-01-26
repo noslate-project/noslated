@@ -57,6 +57,7 @@ export default {
     precisionZeroThreshold: 0.01,
     concurrencyStatsMode: ConcurrencyStatsMode.INSTANT,
     shrinkCooldownOnStartup: true,
+    resetShrinkCooldownOnRequestActive: false,
   },
   starter: {
     aworker: {

@@ -115,6 +115,10 @@ class Broker {
     return this.#profile.worker.shrinkCooldownOnStartup ?? true;
   }
 
+  get resetShrinkCooldownOnRequestActive() {
+    return this.#profile.worker.resetShrinkCooldownOnRequestActive ?? false;
+  }
+
   isExpandCooldown(now: number) {
     return now - this._lastExpandTime < this.expandCooldown;
   }
@@ -212,6 +216,10 @@ class Broker {
 
   recalculateConcurrency(concurrency: number) {
     if (!this._useEmaScaling) return;
+
+    if (concurrency > 0 && this.resetShrinkCooldownOnRequestActive) {
+      this.resetShrinkCooldownTime(Date.now());
+    }
 
     this._emaConcurrency!.recalculate(concurrency);
   }

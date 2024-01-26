@@ -140,6 +140,10 @@
         "shrinkCooldownOnStartup": {
           "type": "boolean",
           "description": "whether shrink cooldown on worker startup"
+        },
+        "resetShrinkCooldownOnRequestActive": {
+          "type": "boolean",
+          "description": "whether reset shrink cooldown on request active"
         }
       },
       "additionalProperties": true

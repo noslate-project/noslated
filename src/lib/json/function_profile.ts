@@ -53,6 +53,8 @@ export interface ProcessFunctionProfile {
     concurrencyStatsMode?: ConcurrencyStatsMode;
     // 启动后是否进入缩容冷却期，默认为 true
     shrinkCooldownOnStartup?: boolean;
+    // 请求激活后是否重置缩容冷却期，默认为 false
+    resetShrinkCooldownOnRequestActive?: boolean;
   };
   environments?: {
     key: string;
