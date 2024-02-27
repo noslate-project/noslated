@@ -20,6 +20,9 @@ async function main(argv: string[]) {
   if (sockAddr == null) {
     throw new IcuError('use --sock <address> to set host address');
   }
+  if (sockAddr.startsWith('/')) {
+    sockAddr = `unix://${sockAddr}`;
+  }
 
   const guest = new Guest(sockAddr);
   await guest.start();

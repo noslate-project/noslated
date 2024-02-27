@@ -24,9 +24,12 @@ async function main(argv: string[]) {
       'use --service <path> to set service proto definition url'
     );
   }
-  const sockAddr = args['--sock'] ?? getSockAddr(service);
+  let sockAddr = args['--sock'] ?? getSockAddr(service);
   if (sockAddr == null) {
     throw new IcuError('use --sock <address> to set host address');
+  }
+  if (sockAddr.startsWith('/')) {
+    sockAddr = `unix://${sockAddr}`;
   }
   const { grpcDescriptor } = loadDescriptor(args['--include']);
   const serviceDescriptor: any = _.get(grpcDescriptor, service);
