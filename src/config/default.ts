@@ -63,6 +63,9 @@ export default {
       defaultSeedScript: null,
       defaultEnvirons: {},
     },
+    nodejs: {
+      defaultEnvirons: {},
+    },
   },
 
   turf: {
